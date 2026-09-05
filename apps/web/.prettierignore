@@ -1,0 +1,8 @@
+# Vendored Untitled UI code keeps upstream formatting (see docs/06-engineering/03-coding-conventions.md §6)
+src/components/**
+src/styles/**
+src/hooks/**
+src/utils/**
+src/providers/**
+.next
+node_modules
