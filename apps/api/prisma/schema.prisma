@@ -1,0 +1,545 @@
+// Data model — docs/02-architecture/04-data-model.md. Raw SQL additions (partial unique indexes, generated tsvector, view,
+// deferrable FK) live in hand-edited migration files. Enums/tables map to snake_case.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ───────────────────────── enums ─────────────────────────
+enum Platform {
+  threads
+
+  @@map("platform")
+}
+
+enum QueryType {
+  keyword
+  topic_tag
+
+  @@map("query_type")
+}
+
+enum SearchMode {
+  KEYWORD
+  TAG
+
+  @@map("search_mode")
+}
+
+enum SearchType {
+  RECENT
+  TOP
+
+  @@map("search_type")
+}
+
+enum UserRole {
+  admin
+  analyst
+  viewer
+
+  @@map("user_role")
+}
+
+enum IntegrationStatus {
+  disconnected
+  connected
+  expired
+  permission_error
+  error
+
+  @@map("integration_status")
+}
+
+enum JobStatus {
+  queued
+  running
+  success
+  partial
+  failed
+  cancelled
+
+  @@map("job_status")
+}
+
+enum JobTrigger {
+  scheduled
+  manual
+  backfill
+  retry
+
+  @@map("job_trigger")
+}
+
+enum AnalysisStatus {
+  pending
+  processing
+  completed
+  failed
+  skipped
+  stale
+
+  @@map("analysis_status")
+}
+
+enum AnalysisTrigger {
+  ingest
+  content_change
+  manual
+  bulk
+  retry
+  version_change
+
+  @@map("analysis_trigger")
+}
+
+enum RelevanceLabel {
+  relevant
+  uncertain
+  irrelevant
+
+  @@map("relevance_label")
+}
+
+enum SentimentLabel {
+  positive
+  neutral
+  negative
+
+  @@map("sentiment_label")
+}
+
+enum SafetyLevel {
+  safe
+  sensitive
+  severe
+
+  @@map("safety_level")
+}
+
+enum OverrideField {
+  relevance
+  sentiment
+  safety_level
+  intents
+  topics
+
+  @@map("override_field")
+}
+
+// ───────────────────────── core ─────────────────────────
+model MonitoringProject {
+  id          String   @id @db.Uuid
+  name        String
+  slug        String   @unique
+  description String?
+  timezone    String   @default("Asia/Ho_Chi_Minh")
+  settings    Json     @default("{}")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  members         ProjectMember[]
+  queries         ListeningQuery[]
+  integrations    IntegrationConnection[]
+  posts           SocialPost[]
+  syncJobs        SyncJob[]
+  analysisRuns    AnalysisRun[]
+  analyses        PostAnalysis[]
+  overrides       AnalysisOverride[]
+  auditLogs       AuditLog[]
+  collectorStates CollectorState[]
+
+  @@map("monitoring_projects")
+}
+
+model UserProfile {
+  id          String    @id @db.Uuid // = auth.users.id
+  email       String    @unique
+  displayName String?   @map("display_name")
+  avatarUrl   String?   @map("avatar_url")
+  lastLoginAt DateTime? @map("last_login_at") @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  memberships ProjectMember[]
+  auditLogs   AuditLog[]
+
+  @@map("user_profiles")
+}
+
+model ProjectMember {
+  projectId    String   @map("project_id") @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  role         UserRole
+  invitedEmail String?  @map("invited_email")
+  createdBy    String?  @map("created_by") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  project MonitoringProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    UserProfile       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, userId])
+  @@index([userId])
+  @@map("project_members")
+}
+
+// ───────────────────────── integrations ─────────────────────────
+model IntegrationConnection {
+  id                String            @id @db.Uuid
+  projectId         String            @map("project_id") @db.Uuid
+  platform          Platform
+  status            IntegrationStatus @default(disconnected)
+  accountIdentifier String?           @map("account_identifier")
+  grantedScopes     String[]          @default([]) @map("granted_scopes")
+  tokenExpiresAt    DateTime?         @map("token_expires_at") @db.Timestamptz(6)
+  lastVerifiedAt    DateTime?         @map("last_verified_at") @db.Timestamptz(6)
+  lastSuccessAt     DateTime?         @map("last_success_at") @db.Timestamptz(6)
+  lastErrorCode     String?           @map("last_error_code")
+  lastErrorMessage  String?           @map("last_error_message")
+  lastErrorAt       DateTime?         @map("last_error_at") @db.Timestamptz(6)
+  createdAt         DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  project MonitoringProject  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  secret  IntegrationSecret?
+
+  @@unique([projectId, platform])
+  @@map("integration_connections")
+}
+
+/// Encrypted provider token (AES-256-GCM). Never selected by list endpoints — only ThreadsTokenStore reads it.
+model IntegrationSecret {
+  id           String    @id @db.Uuid
+  connectionId String    @unique @map("connection_id") @db.Uuid
+  keyId        String    @map("key_id")
+  ciphertext   Bytes
+  iv           Bytes
+  authTag      Bytes     @map("auth_tag")
+  rotatedAt    DateTime? @map("rotated_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  connection IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@map("integration_secrets")
+}
+
+// ───────────────────────── listening ─────────────────────────
+model ListeningQuery {
+  id                  String     @id @db.Uuid
+  projectId           String     @map("project_id") @db.Uuid
+  platform            Platform   @default(threads)
+  displayName         String     @map("display_name")
+  queryValue          String     @map("query_value")
+  queryType           QueryType  @map("query_type")
+  searchMode          SearchMode @map("search_mode")
+  scheduledSearchType SearchType @default(RECENT) @map("scheduled_search_type")
+  enabled             Boolean    @default(true)
+  excludeTerms        String[]   @default([]) @map("exclude_terms")
+  includeTerms        String[]   @default([]) @map("include_terms")
+  pollIntervalSeconds Int        @default(600) @map("poll_interval_seconds")
+  overlapSeconds      Int        @default(1200) @map("overlap_seconds")
+  initialBackfillDays Int        @default(1) @map("initial_backfill_days")
+
+  nextRunAt            DateTime? @map("next_run_at") @db.Timestamptz(6)
+  lastRunAt            DateTime? @map("last_run_at") @db.Timestamptz(6)
+  lastSuccessfulSyncAt DateTime? @map("last_successful_sync_at") @db.Timestamptz(6)
+  lastErrorAt          DateTime? @map("last_error_at") @db.Timestamptz(6)
+  lastErrorCode        String?   @map("last_error_code")
+  lastErrorMessage     String?   @map("last_error_message")
+  consecutiveFailures  Int       @default(0) @map("consecutive_failures")
+  lockedAt             DateTime? @map("locked_at") @db.Timestamptz(6)
+  lockedBy             String?   @map("locked_by")
+
+  createdBy String?   @map("created_by") @db.Uuid
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  project  MonitoringProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  matches  PostQueryMatch[]
+  syncJobs SyncJob[]
+
+  // Partial unique (project_id, platform, query_type, lower(query_value)) WHERE deleted_at IS NULL → raw SQL migration.
+  @@index([projectId, enabled, nextRunAt])
+  @@map("listening_queries")
+}
+
+// ───────────────────────── posts ─────────────────────────
+model SocialPost {
+  id             String   @id @db.Uuid
+  projectId      String   @map("project_id") @db.Uuid
+  platform       Platform
+  platformPostId String   @map("platform_post_id")
+
+  username          String?
+  ownerId           String? @map("owner_id")
+  text              String?
+  permalink         String?
+  shortcode         String?
+  mediaType         String? @map("media_type")
+  mediaUrl          String? @map("media_url")
+  thumbnailUrl      String? @map("thumbnail_url")
+  altText           String? @map("alt_text")
+  linkAttachmentUrl String? @map("link_attachment_url")
+  isQuotePost       Boolean? @map("is_quote_post")
+  hasReplies        Boolean? @map("has_replies")
+  quotedPostId      String? @map("quoted_post_id")
+  repostedPostId    String? @map("reposted_post_id")
+
+  publishedAt  DateTime @map("published_at") @db.Timestamptz(6)
+  contentHash  String   @map("content_hash")
+  revision     Int      @default(1)
+  rawData      Json?    @map("raw_data")
+  rawTruncated Boolean  @default(false) @map("raw_truncated")
+
+  currentAnalysisId String?         @map("current_analysis_id") @db.Uuid
+  latestRunStatus   AnalysisStatus? @map("latest_run_status")
+  /// Generated column: to_tsvector('simple', coalesce(text,'')) + GIN index — created in raw SQL migration.
+  searchVector      Unsupported("tsvector")? @map("search_vector")
+
+  firstSeenAt DateTime @map("first_seen_at") @db.Timestamptz(6)
+  lastSeenAt  DateTime @map("last_seen_at") @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  project         MonitoringProject  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  currentAnalysis PostAnalysis?      @relation("CurrentAnalysis", fields: [currentAnalysisId], references: [id], onDelete: SetNull)
+  matches         PostQueryMatch[]
+  analysisRuns    AnalysisRun[]
+  analyses        PostAnalysis[]     @relation("PostAnalyses")
+  overrides       AnalysisOverride[]
+
+  @@unique([platform, platformPostId])
+  @@index([projectId, publishedAt(sort: Desc)])
+  @@index([projectId, firstSeenAt(sort: Desc)])
+  @@index([projectId, latestRunStatus])
+  @@index([projectId, currentAnalysisId])
+  @@map("social_posts")
+}
+
+model PostQueryMatch {
+  postId          String   @map("post_id") @db.Uuid
+  queryId         String   @map("query_id") @db.Uuid
+  firstMatchedAt  DateTime @map("first_matched_at") @db.Timestamptz(6)
+  lastMatchedAt   DateTime @map("last_matched_at") @db.Timestamptz(6)
+  excludedByTerms Boolean  @default(false) @map("excluded_by_terms")
+
+  post  SocialPost     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  query ListeningQuery @relation(fields: [queryId], references: [id], onDelete: Cascade)
+
+  @@id([postId, queryId])
+  @@index([queryId, postId])
+  @@map("post_query_matches")
+}
+
+// ───────────────────────── jobs ─────────────────────────
+model SyncJob {
+  id         String     @id @db.Uuid
+  projectId  String     @map("project_id") @db.Uuid
+  queryId    String?    @map("query_id") @db.Uuid
+  status     JobStatus
+  trigger    JobTrigger
+  searchType SearchType @map("search_type")
+  searchMode SearchMode @map("search_mode")
+
+  windowSince DateTime? @map("window_since") @db.Timestamptz(6)
+  windowUntil DateTime? @map("window_until") @db.Timestamptz(6)
+  startedAt   DateTime? @map("started_at") @db.Timestamptz(6)
+  completedAt DateTime? @map("completed_at") @db.Timestamptz(6)
+
+  pagesFetched      Int @default(0) @map("pages_fetched")
+  recordsFetched    Int @default(0) @map("records_fetched")
+  recordsInserted   Int @default(0) @map("records_inserted")
+  recordsUpdated    Int @default(0) @map("records_updated")
+  recordsDuplicated Int @default(0) @map("records_duplicated")
+  recordsInvalid    Int @default(0) @map("records_invalid")
+  recordsExcluded   Int @default(0) @map("records_excluded")
+  providerRequests  Int @default(0) @map("provider_requests")
+  rateLimitEvents   Int @default(0) @map("rate_limit_events")
+  providerUsage     Json? @map("provider_usage")
+
+  lastCursor   String? @map("last_cursor")
+  errorCode    String? @map("error_code")
+  errorMessage String? @map("error_message")
+  requestedBy  String? @map("requested_by") @db.Uuid
+  lockedBy     String? @map("locked_by")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  project MonitoringProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  query   ListeningQuery?   @relation(fields: [queryId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([queryId, createdAt(sort: Desc)])
+  @@index([status])
+  @@map("sync_jobs")
+}
+
+/// Per-project collector circuit-breaker state (shared across instances).
+model CollectorState {
+  projectId                   String    @id @map("project_id") @db.Uuid
+  consecutiveProviderFailures Int       @default(0) @map("consecutive_provider_failures")
+  circuitOpenUntil            DateTime? @map("circuit_open_until") @db.Timestamptz(6)
+  circuitReason               String?   @map("circuit_reason")
+  updatedAt                   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  project MonitoringProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("collector_state")
+}
+
+// ───────────────────────── analysis ─────────────────────────
+model AnalysisRun {
+  id        String          @id @db.Uuid
+  postId    String          @map("post_id") @db.Uuid
+  projectId String          @map("project_id") @db.Uuid
+  status    AnalysisStatus
+  trigger   AnalysisTrigger
+
+  sourceContentHash String @map("source_content_hash")
+  sourceRevision    Int    @map("source_revision")
+  effectiveVersion  String @map("effective_version")
+
+  classifierProvider  String? @map("classifier_provider")
+  classifierModel     String? @map("classifier_model")
+  promptVersion       String? @map("prompt_version")
+  taxonomyVersion     String? @map("taxonomy_version")
+  safetyProvider      String? @map("safety_provider")
+  safetyModel         String? @map("safety_model")
+  safetyPolicyVersion String? @map("safety_policy_version")
+
+  startedAt        DateTime? @map("started_at") @db.Timestamptz(6)
+  completedAt      DateTime? @map("completed_at") @db.Timestamptz(6)
+  inputTokens      Int?      @map("input_tokens")
+  outputTokens     Int?      @map("output_tokens")
+  estimatedCostUsd Decimal?  @map("estimated_cost_usd") @db.Decimal(12, 6)
+  attemptCount     Int       @default(0) @map("attempt_count")
+  skippedReason    String?   @map("skipped_reason")
+  errorCode        String?   @map("error_code")
+  errorMessage     String?   @map("error_message")
+  lockedAt         DateTime? @map("locked_at") @db.Timestamptz(6)
+  lockedBy         String?   @map("locked_by")
+  requestedBy      String?   @map("requested_by") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  post    SocialPost        @relation(fields: [postId], references: [id], onDelete: Cascade)
+  project MonitoringProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  result  PostAnalysis?
+
+  // Partial unique (post_id, source_content_hash, effective_version) WHERE status IN ('pending','processing') → raw SQL migration.
+  @@index([postId, createdAt(sort: Desc)])
+  @@index([status, createdAt])
+  @@index([sourceContentHash, effectiveVersion])
+  @@index([projectId, status])
+  @@map("analysis_runs")
+}
+
+model PostAnalysis {
+  id            String @id @db.Uuid
+  analysisRunId String @unique @map("analysis_run_id") @db.Uuid
+  postId        String @map("post_id") @db.Uuid
+  projectId     String @map("project_id") @db.Uuid
+
+  relevanceLabel       RelevanceLabel? @map("relevance_label")
+  relevanceConfidence  Decimal?        @map("relevance_confidence") @db.Decimal(5, 4)
+  relevanceExplanation String?         @map("relevance_explanation")
+  sentimentLabel       SentimentLabel? @map("sentiment_label")
+  sentimentConfidence  Decimal?        @map("sentiment_confidence") @db.Decimal(5, 4)
+  safetyLevel          SafetyLevel?    @map("safety_level")
+  safetyFlagged        Boolean?        @map("safety_flagged")
+  safetyCategoryScores Json?           @map("safety_category_scores")
+  languageCode         String?         @map("language_code")
+  summary              String?
+  overallModelConfidence Decimal?      @map("overall_model_confidence") @db.Decimal(5, 4)
+  createdAt            DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  run       AnalysisRun       @relation(fields: [analysisRunId], references: [id], onDelete: Cascade)
+  post      SocialPost        @relation("PostAnalyses", fields: [postId], references: [id], onDelete: Cascade)
+  project   MonitoringProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  intents   AnalysisIntent[]
+  topics    AnalysisTopic[]
+  currentOf SocialPost[]      @relation("CurrentAnalysis")
+  overrides AnalysisOverride[]
+
+  @@index([postId])
+  @@index([projectId, relevanceLabel])
+  @@index([projectId, sentimentLabel])
+  @@index([projectId, safetyLevel])
+  @@index([projectId, languageCode])
+  @@map("post_analyses")
+}
+
+model AnalysisIntent {
+  analysisId String   @map("analysis_id") @db.Uuid
+  label      String
+  confidence Decimal? @db.Decimal(5, 4)
+
+  analysis PostAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@id([analysisId, label])
+  @@index([label, analysisId])
+  @@map("analysis_intents")
+}
+
+model AnalysisTopic {
+  analysisId String   @map("analysis_id") @db.Uuid
+  label      String
+  confidence Decimal? @db.Decimal(5, 4)
+
+  analysis PostAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@id([analysisId, label])
+  @@index([label, analysisId])
+  @@map("analysis_topics")
+}
+
+/// P1 — analyst overrides; effective value = active override > latest AI (BR-025).
+model AnalysisOverride {
+  id            String        @id @db.Uuid
+  postId        String        @map("post_id") @db.Uuid
+  projectId     String        @map("project_id") @db.Uuid
+  analysisId    String?       @map("analysis_id") @db.Uuid
+  field         OverrideField
+  previousValue Json?         @map("previous_value")
+  overrideValue Json          @map("override_value")
+  reason        String?
+  reviewedBy    String        @map("reviewed_by") @db.Uuid
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  revokedAt     DateTime?     @map("revoked_at") @db.Timestamptz(6)
+  revokedBy     String?       @map("revoked_by") @db.Uuid
+
+  post     SocialPost        @relation(fields: [postId], references: [id], onDelete: Cascade)
+  project  MonitoringProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  analysis PostAnalysis?     @relation(fields: [analysisId], references: [id], onDelete: SetNull)
+
+  // Partial unique (post_id, field) WHERE revoked_at IS NULL → raw SQL migration.
+  @@index([postId, field])
+  @@map("analysis_overrides")
+}
+
+// ───────────────────────── audit ─────────────────────────
+model AuditLog {
+  id          String   @id @db.Uuid
+  projectId   String?  @map("project_id") @db.Uuid
+  actorUserId String?  @map("actor_user_id") @db.Uuid
+  action      String
+  entityType  String?  @map("entity_type")
+  entityId    String?  @map("entity_id")
+  metadata    Json?
+  requestId   String?  @map("request_id")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  project MonitoringProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  actor   UserProfile?       @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([action])
+  @@map("audit_logs")
+}
