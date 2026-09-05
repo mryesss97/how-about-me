@@ -2,7 +2,7 @@
   "name": "how-about-me",
   "version": "0.0.1",
   "private": true,
-  "description": "How About Me — Threads social listening & content intelligence (MVP monorepo)",
+  "description": "How About Me \u2014 Threads social listening & content intelligence (MVP monorepo)",
   "packageManager": "pnpm@10.24.0",
   "engines": {
     "node": ">=24.0.0",
@@ -17,7 +17,7 @@
     "clean": "turbo run clean && rm -rf node_modules/.cache .turbo",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "ci:local": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "ci:local": "pnpm --filter @how-about-me/api prisma:generate && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
     "db:migrate": "pnpm --filter @how-about-me/api db:migrate",
