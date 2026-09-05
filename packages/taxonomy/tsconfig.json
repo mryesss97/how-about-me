@@ -1,0 +1,5 @@
+{
+  "extends": "@how-about-me/tsconfig/library.json",
+  "include": ["src", "test"],
+  "compilerOptions": { "rootDir": ".", "noEmit": true }
+}

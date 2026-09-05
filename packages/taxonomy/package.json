@@ -1,0 +1,36 @@
+{
+  "name": "@how-about-me/taxonomy",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Classification taxonomy v1 (labels, labelling guides), confidence bands, safety policy v1 and version constants",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean --sourcemap",
+    "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@how-about-me/eslint-config": "workspace:*",
+    "@how-about-me/tsconfig": "workspace:*",
+    "eslint": "^9.39.1",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

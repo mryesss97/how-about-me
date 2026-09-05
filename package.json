@@ -40,10 +40,7 @@
     "typescript": "^5.9.3"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,mjs,cjs,json,md,yml,yaml,css}": "prettier --write --ignore-unknown",
-    "apps/api/**/*.ts": "eslint --fix --no-warn-ignored",
-    "apps/web/src/**/*.{ts,tsx}": "eslint --fix --no-warn-ignored",
-    "packages/**/*.ts": "eslint --fix --no-warn-ignored"
+    "*.{json,md,yml,yaml,mjs,cjs,js,css}": "prettier --write --ignore-unknown"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

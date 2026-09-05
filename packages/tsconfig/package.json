@@ -1,0 +1,16 @@
+{
+  "name": "@how-about-me/tsconfig",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Shared TypeScript configs",
+  "files": [
+    "*.json"
+  ],
+  "scripts": {
+    "lint": "echo skip",
+    "typecheck": "echo skip",
+    "test": "echo skip",
+    "build": "echo skip",
+    "clean": "echo skip"
+  }
+}
