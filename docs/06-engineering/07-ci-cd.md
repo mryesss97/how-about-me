@@ -12,6 +12,10 @@
 
 Deploy jobs are scaffolded with placeholders for the hosting provider (decision pending — see risk R14); they fail fast with a clear message until secrets are configured.
 
+## 1.1 Manual dispatch & current status (2026-09-05)
+
+`ci.yml` supports `workflow_dispatch` (`gh workflow run ci.yml -R mryesss97/how-about-me --ref <branch>`). The first dispatched run on `main` passed all four jobs (lint-typecheck, test with Postgres service + migrations, build + FE secret scan, security). **Event-triggered runs (push / pull_request) did not start on this repository at scaffold time** although Actions are enabled; the owner is checking repository Actions and billing settings (see the comment on the T-003 issue). Branch protection (T-002) depends on event-triggered checks.
+
 ## 2. Required checks
 
 `ci / lint-typecheck`, `ci / test`, `ci / build` on `develop` and `main`.
