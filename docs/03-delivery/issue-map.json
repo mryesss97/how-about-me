@@ -1,0 +1,632 @@
+{
+  "T-001": {
+    "number": 1,
+    "url": "https://github.com/mryesss97/how-about-me/issues/1",
+    "title": "[T-001] Verify monorepo scaffold & local run on every dev machine"
+  },
+  "T-002": {
+    "number": 2,
+    "url": "https://github.com/mryesss97/how-about-me/issues/2",
+    "title": "[T-002] GitHub branch protection, CODEOWNERS and repo settings"
+  },
+  "T-003": {
+    "number": 3,
+    "url": "https://github.com/mryesss97/how-about-me/issues/3",
+    "title": "[T-003] CI hardening: Postgres service, coverage, FE secret scan, gitleaks"
+  },
+  "T-004": {
+    "number": 4,
+    "url": "https://github.com/mryesss97/how-about-me/issues/4",
+    "title": "[T-004] Create Supabase staging project & configure Auth"
+  },
+  "T-005": {
+    "number": 5,
+    "url": "https://github.com/mryesss97/how-about-me/issues/5",
+    "title": "[T-005] Hosting decision & staging deploy pipeline for API/worker"
+  },
+  "T-006": {
+    "number": 6,
+    "url": "https://github.com/mryesss97/how-about-me/issues/6",
+    "title": "[T-006] Web staging deploy (Vercel) with env configuration"
+  },
+  "T-007": {
+    "number": 7,
+    "url": "https://github.com/mryesss97/how-about-me/issues/7",
+    "title": "[T-007] Verify & finalise Prisma baseline migration (init + init_extras) against Postgres"
+  },
+  "T-008": {
+    "number": 8,
+    "url": "https://github.com/mryesss97/how-about-me/issues/8",
+    "title": "[T-008] Idempotent seed: project, admin membership, 4 queries, integration placeholder"
+  },
+  "T-009": {
+    "number": 9,
+    "url": "https://github.com/mryesss97/how-about-me/issues/9",
+    "title": "[T-009] Contracts package: enums, error codes, common schemas, resource DTOs skeleton"
+  },
+  "T-010": {
+    "number": 10,
+    "url": "https://github.com/mryesss97/how-about-me/issues/10",
+    "title": "[T-010] Taxonomy package v1: labels, guides, safety policy v1, versions"
+  },
+  "T-011": {
+    "number": 11,
+    "url": "https://github.com/mryesss97/how-about-me/issues/11",
+    "title": "[T-011] Untitled UI foundation: theme, app shell, semantic badges, state components"
+  },
+  "T-012": {
+    "number": 12,
+    "url": "https://github.com/mryesss97/how-about-me/issues/12",
+    "title": "[T-012] NestJS foundation: config schema, pino logging with redaction, request-id, error envelope, Zod pipe, Swagger, health"
+  },
+  "T-013": {
+    "number": 13,
+    "url": "https://github.com/mryesss97/how-about-me/issues/13",
+    "title": "[T-013] Fake providers (Threads fixtures, Safety, Classifier) and PROVIDERS_MODE wiring"
+  },
+  "T-014": {
+    "number": 14,
+    "url": "https://github.com/mryesss97/how-about-me/issues/14",
+    "title": "[T-014] API test infrastructure: Jest integration with Docker Postgres, Supertest, JWT test helper"
+  },
+  "T-015": {
+    "number": 15,
+    "url": "https://github.com/mryesss97/how-about-me/issues/15",
+    "title": "[T-015] Web test infrastructure: Vitest + Testing Library + Playwright skeleton"
+  },
+  "T-016": {
+    "number": 16,
+    "url": "https://github.com/mryesss97/how-about-me/issues/16",
+    "title": "[T-016] Kickoff, backlog refinement for M1–M2, sprint 1 plan"
+  },
+  "T-017": {
+    "number": 17,
+    "url": "https://github.com/mryesss97/how-about-me/issues/17",
+    "title": "[T-017] QC environment readiness: staging access, role accounts, fixture scenarios list"
+  },
+  "T-020": {
+    "number": 18,
+    "url": "https://github.com/mryesss97/how-about-me/issues/18",
+    "title": "[T-020] POC: Meta app setup, scopes and long-lived token acquisition"
+  },
+  "T-021": {
+    "number": 19,
+    "url": "https://github.com/mryesss97/how-about-me/issues/19",
+    "title": "[T-021] POC: Threads client spike (search, pagination, field selection) in NestJS"
+  },
+  "T-022": {
+    "number": 20,
+    "url": "https://github.com/mryesss97/how-about-me/issues/20",
+    "title": "[T-022] POC: run search tests S1–S12 and measure lag, duplicates, depth"
+  },
+  "T-023": {
+    "number": 21,
+    "url": "https://github.com/mryesss97/how-about-me/issues/21",
+    "title": "[T-023] POC: rate-limit and error behaviour capture (headers, 400/401/403/429/5xx)"
+  },
+  "T-024": {
+    "number": 22,
+    "url": "https://github.com/mryesss97/how-about-me/issues/22",
+    "title": "[T-024] POC: reply access tests and third-party limitation write-up"
+  },
+  "T-025": {
+    "number": 23,
+    "url": "https://github.com/mryesss97/how-about-me/issues/23",
+    "title": "[T-025] POC: record and sanitise ≥20 fixtures for FakeThreadsProvider and contract tests"
+  },
+  "T-026": {
+    "number": 24,
+    "url": "https://github.com/mryesss97/how-about-me/issues/24",
+    "title": "[T-026] POC report, parameter recommendations and M1 exit review"
+  },
+  "T-027": {
+    "number": 25,
+    "url": "https://github.com/mryesss97/how-about-me/issues/25",
+    "title": "[T-027] QC: review POC data-quality sample (100 posts per term) and seed eval-set candidates"
+  },
+  "T-030": {
+    "number": 26,
+    "url": "https://github.com/mryesss97/how-about-me/issues/26",
+    "title": "[T-030] Auth: Supabase JWT guard (JWKS/HS256), /me endpoint, profile upsert"
+  },
+  "T-031": {
+    "number": 27,
+    "url": "https://github.com/mryesss97/how-about-me/issues/27",
+    "title": "[T-031] RBAC: ProjectRoleGuard, @Roles, project setting gates, role-matrix tests"
+  },
+  "T-032": {
+    "number": 28,
+    "url": "https://github.com/mryesss97/how-about-me/issues/28",
+    "title": "[T-032] Web auth: login page, Supabase client, session refresh, API client with bearer & 401 handling, sign out"
+  },
+  "T-033": {
+    "number": 29,
+    "url": "https://github.com/mryesss97/how-about-me/issues/29",
+    "title": "[T-033] Web: role-aware navigation, RequireRole, forbidden state"
+  },
+  "T-034": {
+    "number": 30,
+    "url": "https://github.com/mryesss97/how-about-me/issues/30",
+    "title": "[T-034] Projects module: list/get/patch with timezone validation, settings, audit"
+  },
+  "T-035": {
+    "number": 31,
+    "url": "https://github.com/mryesss97/how-about-me/issues/31",
+    "title": "[T-035] Members module: add/change/remove, last-admin rule, lazy profile, optional Supabase invite"
+  },
+  "T-036": {
+    "number": 32,
+    "url": "https://github.com/mryesss97/how-about-me/issues/32",
+    "title": "[T-036] Web: Settings → Project and Members screens"
+  },
+  "T-037": {
+    "number": 33,
+    "url": "https://github.com/mryesss97/how-about-me/issues/33",
+    "title": "[T-037] Crypto service: AES-256-GCM token encryption with key ids and rewrap CLI"
+  },
+  "T-038": {
+    "number": 34,
+    "url": "https://github.com/mryesss97/how-about-me/issues/34",
+    "title": "[T-038] Integrations module: Threads status, PUT token, verify, disconnect, secrets table, audit"
+  },
+  "T-039": {
+    "number": 35,
+    "url": "https://github.com/mryesss97/how-about-me/issues/35",
+    "title": "[T-039] ThreadsDiscoveryProvider (real): search, pagination, field selection, error mapping, rate-limit metadata, timeouts"
+  },
+  "T-040": {
+    "number": 36,
+    "url": "https://github.com/mryesss97/how-about-me/issues/36",
+    "title": "[T-040] Integration status transitions on 401/403, scheduler pause and token refresh job"
+  },
+  "T-041": {
+    "number": 37,
+    "url": "https://github.com/mryesss97/how-about-me/issues/37",
+    "title": "[T-041] Web: Settings → Integrations (Threads card, update token, verify, read-only for non-admin)"
+  },
+  "T-042": {
+    "number": 38,
+    "url": "https://github.com/mryesss97/how-about-me/issues/38",
+    "title": "[T-042] Listening queries CRUD: validation, duplicates, immutables, soft delete/restore, enable/disable scheduling, audit"
+  },
+  "T-043": {
+    "number": 39,
+    "url": "https://github.com/mryesss97/how-about-me/issues/39",
+    "title": "[T-043] Run-now endpoint with SYNC_ALREADY_RUNNING and throttling"
+  },
+  "T-044": {
+    "number": 40,
+    "url": "https://github.com/mryesss97/how-about-me/issues/40",
+    "title": "[T-044] Term matcher utility (exclude/include, NFC, case-insensitive) with tests"
+  },
+  "T-045": {
+    "number": 41,
+    "url": "https://github.com/mryesss97/how-about-me/issues/41",
+    "title": "[T-045] Query list sync summary: last job, last error, matched post counts (all-time/24h)"
+  },
+  "T-046": {
+    "number": 42,
+    "url": "https://github.com/mryesss97/how-about-me/issues/42",
+    "title": "[T-046] Web: Listening Queries table screen"
+  },
+  "T-047": {
+    "number": 43,
+    "url": "https://github.com/mryesss97/how-about-me/issues/43",
+    "title": "[T-047] Web: Create/Edit query drawer and actions (run now, enable/disable, delete/restore)"
+  },
+  "T-048": {
+    "number": 44,
+    "url": "https://github.com/mryesss97/how-about-me/issues/44",
+    "title": "[T-048] Scheduler tick with DB claiming (FOR UPDATE SKIP LOCKED), next_run_at/backoff, stale locks"
+  },
+  "T-049": {
+    "number": 45,
+    "url": "https://github.com/mryesss97/how-about-me/issues/45",
+    "title": "[T-049] WindowCalculator with edge-case tests"
+  },
+  "T-050": {
+    "number": 46,
+    "url": "https://github.com/mryesss97/how-about-me/issues/46",
+    "title": "[T-050] PostNormalizer: provider item → NormalizedPost, validation counters, content hash"
+  },
+  "T-051": {
+    "number": 47,
+    "url": "https://github.com/mryesss97/how-about-me/issues/47",
+    "title": "[T-051] IngestionService: upsert/dedupe/matches/change detection/excluded flag/enqueue analysis (page transaction)"
+  },
+  "T-052": {
+    "number": 48,
+    "url": "https://github.com/mryesss97/how-about-me/issues/48",
+    "title": "[T-052] CollectorService run loop: pagination, page cap, partial, last_cursor, counters, rate-limit recording"
+  },
+  "T-053": {
+    "number": 49,
+    "url": "https://github.com/mryesss97/how-about-me/issues/49",
+    "title": "[T-053] Retry policy: exponential backoff with jitter, Retry-After, error-class rules"
+  },
+  "T-054": {
+    "number": 50,
+    "url": "https://github.com/mryesss97/how-about-me/issues/50",
+    "title": "[T-054] Circuit breaker with DB-persisted state and status exposure"
+  },
+  "T-055": {
+    "number": 51,
+    "url": "https://github.com/mryesss97/how-about-me/issues/51",
+    "title": "[T-055] Sync jobs module: list/detail/retry (resume from cursor)"
+  },
+  "T-057": {
+    "number": 52,
+    "url": "https://github.com/mryesss97/how-about-me/issues/52",
+    "title": "[T-057] System status endpoint v1 (threads, collector, database; analysis stub)"
+  },
+  "T-058": {
+    "number": 53,
+    "url": "https://github.com/mryesss97/how-about-me/issues/53",
+    "title": "[T-058] Metrics endpoint (prom-client) with core collector/API metrics"
+  },
+  "T-059": {
+    "number": 54,
+    "url": "https://github.com/mryesss97/how-about-me/issues/54",
+    "title": "[T-059] Audit module: record helper and admin list endpoint"
+  },
+  "T-060": {
+    "number": 55,
+    "url": "https://github.com/mryesss97/how-about-me/issues/55",
+    "title": "[T-060] Web: System Status screen v1 (overview cards + sync jobs tab + job detail drawer)"
+  },
+  "T-061": {
+    "number": 56,
+    "url": "https://github.com/mryesss97/how-about-me/issues/56",
+    "title": "[T-061] Web: Audit log tab (admin)"
+  },
+  "T-062": {
+    "number": 57,
+    "url": "https://github.com/mryesss97/how-about-me/issues/57",
+    "title": "[T-062] Staging soak: run scheduler ≥3 days with real token; review duplicates/failures (M2 gate)"
+  },
+  "T-063": {
+    "number": 58,
+    "url": "https://github.com/mryesss97/how-about-me/issues/58",
+    "title": "[T-063] QC: TC-AUTH test cases execution (authentication & RBAC)"
+  },
+  "T-064": {
+    "number": 59,
+    "url": "https://github.com/mryesss97/how-about-me/issues/59",
+    "title": "[T-064] QC: TC-PROJ execution (project & members)"
+  },
+  "T-065": {
+    "number": 60,
+    "url": "https://github.com/mryesss97/how-about-me/issues/60",
+    "title": "[T-065] QC: TC-INT execution (Threads integration & secrets)"
+  },
+  "T-066": {
+    "number": 61,
+    "url": "https://github.com/mryesss97/how-about-me/issues/61",
+    "title": "[T-066] QC: TC-LQ execution (listening queries)"
+  },
+  "T-067": {
+    "number": 62,
+    "url": "https://github.com/mryesss97/how-about-me/issues/62",
+    "title": "[T-067] QC: TC-COL execution (collector, dedupe, retry, partial, circuit) with fake and real providers"
+  },
+  "T-070": {
+    "number": 63,
+    "url": "https://github.com/mryesss97/how-about-me/issues/63",
+    "title": "[T-070] Analysis runs: state machine, enqueue with version dedupe, batch claiming worker, watchdog"
+  },
+  "T-071": {
+    "number": 64,
+    "url": "https://github.com/mryesss97/how-about-me/issues/64",
+    "title": "[T-071] SafetyProvider: OpenAI moderation adapter + policy mapping wiring"
+  },
+  "T-072": {
+    "number": 65,
+    "url": "https://github.com/mryesss97/how-about-me/issues/65",
+    "title": "[T-072] ContentClassifier: OpenAI structured-output adapter, prompt v1 file, usage & cost"
+  },
+  "T-073": {
+    "number": 66,
+    "url": "https://github.com/mryesss97/how-about-me/issues/66",
+    "title": "[T-073] Classifier output schema (Zod ↔ JSON schema) and post-validation rules"
+  },
+  "T-074": {
+    "number": 67,
+    "url": "https://github.com/mryesss97/how-about-me/issues/67",
+    "title": "[T-074] Pipeline orchestration: relevance gate, two-step flag, persist analyses + labels, current_analysis_id transaction"
+  },
+  "T-075": {
+    "number": 68,
+    "url": "https://github.com/mryesss97/how-about-me/issues/68",
+    "title": "[T-075] Analysis failure handling: retries, corrective schema retry, error codes, provider-auth pause, daily budget pause"
+  },
+  "T-076": {
+    "number": 69,
+    "url": "https://github.com/mryesss97/how-about-me/issues/69",
+    "title": "[T-076] Re-analyze single mention endpoint (force) with audit and ANALYSIS_ALREADY_PENDING"
+  },
+  "T-077": {
+    "number": 70,
+    "url": "https://github.com/mryesss97/how-about-me/issues/70",
+    "title": "[T-077] Analysis ops endpoints (runs list, retry, retry-failed) and System Status analysis section"
+  },
+  "T-078": {
+    "number": 71,
+    "url": "https://github.com/mryesss97/how-about-me/issues/71",
+    "title": "[T-078] Stale marking on content change and version change helper"
+  },
+  "T-079": {
+    "number": 72,
+    "url": "https://github.com/mryesss97/how-about-me/issues/72",
+    "title": "[T-079] Evaluation script `eval:classifier` (JSONL → per-dimension metrics report)"
+  },
+  "T-080": {
+    "number": 73,
+    "url": "https://github.com/mryesss97/how-about-me/issues/73",
+    "title": "[T-080] Build labelled evaluation dataset v1 (≥150 items, VI/EN, quotas, double labelling)"
+  },
+  "T-081": {
+    "number": 74,
+    "url": "https://github.com/mryesss97/how-about-me/issues/74",
+    "title": "[T-081] Prompt v1 tuning iterations against eval set; freeze classifier-v1 / taxonomy-v1 / safety-policy-v1"
+  },
+  "T-082": {
+    "number": 75,
+    "url": "https://github.com/mryesss97/how-about-me/issues/75",
+    "title": "[T-082] QC: TC-ANA execution (analysis pipeline)"
+  },
+  "T-083": {
+    "number": 76,
+    "url": "https://github.com/mryesss97/how-about-me/issues/76",
+    "title": "[T-083] QC: AI evaluation report review and safety threshold tuning proposal"
+  },
+  "T-090": {
+    "number": 77,
+    "url": "https://github.com/mryesss97/how-about-me/issues/77",
+    "title": "[T-090] Analytics foundation: filter parsing, range/timezone utilities, previous-period math, base CTE"
+  },
+  "T-091": {
+    "number": 78,
+    "url": "https://github.com/mryesss97/how-about-me/issues/78",
+    "title": "[T-091] Overview endpoint: KPIs, coverage, dataQuality, compare, metricsVersion"
+  },
+  "T-092": {
+    "number": 79,
+    "url": "https://github.com/mryesss97/how-about-me/issues/79",
+    "title": "[T-092] Timeseries endpoint: hour/day bucketing, zero-fill, previous series"
+  },
+  "T-093": {
+    "number": 80,
+    "url": "https://github.com/mryesss97/how-about-me/issues/80",
+    "title": "[T-093] Distribution endpoints: sentiment, safety, intents, topics (distinct counts, denominators)"
+  },
+  "T-094": {
+    "number": 81,
+    "url": "https://github.com/mryesss97/how-about-me/issues/81",
+    "title": "[T-094] Analytics fixture dataset with expected numbers and drill-down equivalence tests"
+  },
+  "T-095": {
+    "number": 82,
+    "url": "https://github.com/mryesss97/how-about-me/issues/82",
+    "title": "[T-095] Mentions list endpoint: filters, FTS, cursor pagination, sorts, count"
+  },
+  "T-096": {
+    "number": 83,
+    "url": "https://github.com/mryesss97/how-about-me/issues/83",
+    "title": "[T-096] Mention detail endpoint: source, matches, current analysis with versions & scores, runs history"
+  },
+  "T-097": {
+    "number": 84,
+    "url": "https://github.com/mryesss97/how-about-me/issues/84",
+    "title": "[T-097] Index & query-plan pass at 100k seeded posts (perf seed generator)"
+  },
+  "T-098": {
+    "number": 85,
+    "url": "https://github.com/mryesss97/how-about-me/issues/85",
+    "title": "[T-098] Web: filter bar, URL state (nuqs), time presets/timezone, shared filters lib"
+  },
+  "T-099": {
+    "number": 86,
+    "url": "https://github.com/mryesss97/how-about-me/issues/86",
+    "title": "[T-099] Web: Overview KPI cards with definitions, deltas, New state, coverage & data-quality banners"
+  },
+  "T-100": {
+    "number": 87,
+    "url": "https://github.com/mryesss97/how-about-me/issues/87",
+    "title": "[T-100] Web: Overview charts — mentions over time, sentiment distribution, sentiment over time"
+  },
+  "T-101": {
+    "number": 88,
+    "url": "https://github.com/mryesss97/how-about-me/issues/88",
+    "title": "[T-101] Web: Overview charts — safety distribution, top topics, intent distribution"
+  },
+  "T-102": {
+    "number": 89,
+    "url": "https://github.com/mryesss97/how-about-me/issues/89",
+    "title": "[T-102] Web: compare toggle and drill-down navigation from KPIs/segments"
+  },
+  "T-103": {
+    "number": 90,
+    "url": "https://github.com/mryesss97/how-about-me/issues/90",
+    "title": "[T-103] Web: Mentions Explorer list (rows, badges, load more, search, sort, keyboard)"
+  },
+  "T-104": {
+    "number": 91,
+    "url": "https://github.com/mryesss97/how-about-me/issues/91",
+    "title": "[T-104] Web: Mention detail (slide-out + route), Current/History tabs, operations, re-analyze"
+  },
+  "T-105": {
+    "number": 92,
+    "url": "https://github.com/mryesss97/how-about-me/issues/92",
+    "title": "[T-105] Web: empty/loading/error/forbidden states audit and copy pass across screens"
+  },
+  "T-106": {
+    "number": 93,
+    "url": "https://github.com/mryesss97/how-about-me/issues/93",
+    "title": "[T-106] Web: System Status — analyzer section, analysis failures tab, retry actions"
+  },
+  "T-107": {
+    "number": 94,
+    "url": "https://github.com/mryesss97/how-about-me/issues/94",
+    "title": "[T-107] Web: Settings → Project toggles (allowAnalystReanalyze, allowViewerExport)"
+  },
+  "T-108": {
+    "number": 95,
+    "url": "https://github.com/mryesss97/how-about-me/issues/95",
+    "title": "[T-108] Web: responsive & accessibility pass (keyboard, focus, contrast, chart tables)"
+  },
+  "T-109": {
+    "number": 96,
+    "url": "https://github.com/mryesss97/how-about-me/issues/96",
+    "title": "[T-109] QC: TC-DASH execution (overview dashboard)"
+  },
+  "T-110": {
+    "number": 97,
+    "url": "https://github.com/mryesss97/how-about-me/issues/97",
+    "title": "[T-110] QC: TC-MEN execution (mentions explorer & detail)"
+  },
+  "T-111": {
+    "number": 98,
+    "url": "https://github.com/mryesss97/how-about-me/issues/98",
+    "title": "[T-111] QC: TC-SYS execution (system status, health, audit)"
+  },
+  "T-112": {
+    "number": 99,
+    "url": "https://github.com/mryesss97/how-about-me/issues/99",
+    "title": "[T-112] QC: analytics reconciliation on staging (checklist A1–A20)"
+  },
+  "T-120": {
+    "number": 100,
+    "url": "https://github.com/mryesss97/how-about-me/issues/100",
+    "title": "[T-120] Performance test (k6) for NFR-001…004 and tuning"
+  },
+  "T-121": {
+    "number": 101,
+    "url": "https://github.com/mryesss97/how-about-me/issues/101",
+    "title": "[T-121] Security checklist execution (secret scans, redaction test, CORS, throttling, headers, RBAC evidence)"
+  },
+  "T-122": {
+    "number": 102,
+    "url": "https://github.com/mryesss97/how-about-me/issues/102",
+    "title": "[T-122] Observability: alerts wired, dashboards, metrics verified, launch checklist"
+  },
+  "T-123": {
+    "number": 103,
+    "url": "https://github.com/mryesss97/how-about-me/issues/103",
+    "title": "[T-123] Production Supabase project, production secrets, production deploy pipeline with approval"
+  },
+  "T-124": {
+    "number": 104,
+    "url": "https://github.com/mryesss97/how-about-me/issues/104",
+    "title": "[T-124] Runbook finalisation and incident template"
+  },
+  "T-125": {
+    "number": 105,
+    "url": "https://github.com/mryesss97/how-about-me/issues/105",
+    "title": "[T-125] Backup restore drill on staging and purge CLI test"
+  },
+  "T-126": {
+    "number": 106,
+    "url": "https://github.com/mryesss97/how-about-me/issues/106",
+    "title": "[T-126] Retention/purge CLI (by post, project+date, sync jobs) with audit"
+  },
+  "T-127": {
+    "number": 107,
+    "url": "https://github.com/mryesss97/how-about-me/issues/107",
+    "title": "[T-127] QC: full regression on release branch + Playwright green"
+  },
+  "T-128": {
+    "number": 108,
+    "url": "https://github.com/mryesss97/how-about-me/issues/108",
+    "title": "[T-128] QC/BA: UAT sessions with stakeholders and sign-off record"
+  },
+  "T-129": {
+    "number": 109,
+    "url": "https://github.com/mryesss97/how-about-me/issues/109",
+    "title": "[T-129] Release v0.1.0: release branch, changelog, tag, production deploy, smoke, retrospective"
+  },
+  "T-130": {
+    "number": 110,
+    "url": "https://github.com/mryesss97/how-about-me/issues/110",
+    "title": "[T-130] Release notes and stakeholder onboarding (glossary, known limitations)"
+  },
+  "T-140": {
+    "number": 111,
+    "url": "https://github.com/mryesss97/how-about-me/issues/111",
+    "title": "[T-140] Backfill endpoint: validation, job creation, resume, caps"
+  },
+  "T-141": {
+    "number": 112,
+    "url": "https://github.com/mryesss97/how-about-me/issues/112",
+    "title": "[T-141] Web: Backfill UI with job progress"
+  },
+  "T-142": {
+    "number": 113,
+    "url": "https://github.com/mryesss97/how-about-me/issues/113",
+    "title": "[T-142] Overrides: create/revoke endpoints, effective view usage in analytics & mentions, audit"
+  },
+  "T-143": {
+    "number": 114,
+    "url": "https://github.com/mryesss97/how-about-me/issues/114",
+    "title": "[T-143] Web: override UI in detail with AI vs Analyst badges"
+  },
+  "T-144": {
+    "number": 115,
+    "url": "https://github.com/mryesss97/how-about-me/issues/115",
+    "title": "[T-144] Review queue: endpoint + /reviews screen + mark reviewed"
+  },
+  "T-145": {
+    "number": 116,
+    "url": "https://github.com/mryesss97/how-about-me/issues/116",
+    "title": "[T-145] Bulk re-analysis endpoint (filters, dryRun, cap, throttle, audit) and mark-stale by version"
+  },
+  "T-146": {
+    "number": 117,
+    "url": "https://github.com/mryesss97/how-about-me/issues/117",
+    "title": "[T-146] Web: bulk re-analysis UI (preview count, confirm)"
+  },
+  "T-147": {
+    "number": 118,
+    "url": "https://github.com/mryesss97/how-about-me/issues/118",
+    "title": "[T-147] CSV export: streaming endpoint with cap, BOM, viewer gate, audit + Export button"
+  },
+  "T-148": {
+    "number": 119,
+    "url": "https://github.com/mryesss97/how-about-me/issues/119",
+    "title": "[T-148] Language distribution chart (API + web)"
+  },
+  "T-149": {
+    "number": 120,
+    "url": "https://github.com/mryesss97/how-about-me/issues/120",
+    "title": "[T-149] Topic × sentiment matrix and negative-topic contributors (API + web)"
+  },
+  "T-150": {
+    "number": 121,
+    "url": "https://github.com/mryesss97/how-about-me/issues/121",
+    "title": "[T-150] Keyword (query) share of mentions chart (API + web)"
+  },
+  "T-151": {
+    "number": 122,
+    "url": "https://github.com/mryesss97/how-about-me/issues/122",
+    "title": "[T-151] Analysis settings: confidence bands and safety thresholds → new policy version (API + web)"
+  },
+  "T-152": {
+    "number": 123,
+    "url": "https://github.com/mryesss97/how-about-me/issues/123",
+    "title": "[T-152] analytics_daily aggregates with incremental refresh (only if perf triggers)"
+  },
+  "T-153": {
+    "number": 124,
+    "url": "https://github.com/mryesss97/how-about-me/issues/124",
+    "title": "[T-153] Scheduled retention job applying RETENTION_* defaults (dry-run log then apply)"
+  },
+  "T-154": {
+    "number": 125,
+    "url": "https://github.com/mryesss97/how-about-me/issues/125",
+    "title": "[T-154] QC: TC-REV and TC-EXP execution (analyst workflow, export)"
+  },
+  "T-155": {
+    "number": 126,
+    "url": "https://github.com/mryesss97/how-about-me/issues/126",
+    "title": "[T-155] QC: P1 analytics reconciliation (overrides affect metrics, P1 charts)"
+  }
+}
