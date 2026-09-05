@@ -1,0 +1,24 @@
+name: nightly
+on:
+  schedule: [{ cron: "0 2 * * *" }]
+  workflow_dispatch:
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .nvmrc, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: Playwright against staging
+        if: ${{ vars.STAGING_WEB_URL }}
+        env:
+          {
+            PLAYWRIGHT_BASE_URL: "${{ vars.STAGING_WEB_URL }}",
+            E2E_EMAIL: "${{ secrets.E2E_EMAIL }}",
+            E2E_PASSWORD: "${{ secrets.E2E_PASSWORD }}",
+          }
+        run: pnpm --filter @how-about-me/web exec playwright install --with-deps chromium && pnpm --filter @how-about-me/web e2e
+      - if: ${{ !vars.STAGING_WEB_URL }}
+        run: echo "::warning::Set STAGING_WEB_URL variable to enable nightly e2e."

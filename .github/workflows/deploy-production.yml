@@ -1,0 +1,17 @@
+name: deploy-production
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+jobs:
+  api:
+    name: api → production
+    runs-on: ubuntu-latest
+    environment: production # configure required reviewers in repo settings (manual approval)
+    steps:
+      - uses: actions/checkout@v4
+      - name: Guard — hosting not configured yet
+        if: ${{ !vars.API_HOST_PROVIDER }}
+        run: echo "::warning::Production deploy not configured (task T-123)."
+      # TODO(T-123): build, push, migrate (db:deploy), deploy, smoke (/health/ready)

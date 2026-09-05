@@ -1,0 +1,24 @@
+name: Engineering task
+description: A unit of engineering work (feature/chore/spike) traced to docs
+title: "[T-###] <title>"
+labels: ["role: engineer"]
+body:
+  - type: textarea
+    id: context
+    attributes: { label: Context, description: Why this task exists; link the user story / FR. }
+    validations: { required: true }
+  - type: textarea
+    id: docs
+    attributes: { label: Docs (read first), description: Links into docs/ }
+    validations: { required: true }
+  - type: textarea
+    id: scope
+    attributes: { label: Scope, description: Checklist of what to build }
+    validations: { required: true }
+  - type: textarea
+    id: acceptance
+    attributes: { label: Acceptance criteria, description: Checklist; name the QC test cases }
+    validations: { required: true }
+  - type: input
+    id: deps
+    attributes: { label: Depends on, placeholder: "#12, #34" }

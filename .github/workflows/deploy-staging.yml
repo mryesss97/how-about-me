@@ -1,0 +1,36 @@
+name: deploy-staging
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+concurrency: { group: deploy-staging, cancel-in-progress: false }
+
+jobs:
+  api:
+    name: api → staging
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - name: Guard — hosting not configured yet
+        if: ${{ !vars.API_HOST_PROVIDER }}
+        run: |
+          echo "::warning::Set repository variable API_HOST_PROVIDER (railway|fly|render|docker) and the matching secrets to enable API deploys (task T-005)."
+          exit 0
+      - uses: docker/setup-buildx-action@v3
+        if: ${{ vars.API_HOST_PROVIDER }}
+      - name: Build image
+        if: ${{ vars.API_HOST_PROVIDER }}
+        run: docker build -f apps/api/Dockerfile -t how-about-me-api:${{ github.sha }} .
+      # TODO(T-005): push image & deploy with the chosen provider CLI, then run migrations:
+      #   pnpm --filter @how-about-me/api db:deploy   (needs DIRECT_URL secret)
+      # and health-check: curl -f $API_BASE_URL/health/ready
+
+  web:
+    name: web → staging (Vercel)
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - run: echo "Web deploys via Vercel Git integration (task T-006). Nothing to do here."

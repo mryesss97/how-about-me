@@ -1,0 +1,22 @@
+name: QC task
+description: Test design / execution for an epic or feature
+title: "[T-###] QC: <title>"
+labels: ["type: qc", "role: qc"]
+body:
+  - type: textarea
+    id: scope
+    attributes: { label: Scope, description: Test-case file(s) and scenarios }
+    validations: { required: true }
+  - type: textarea
+    id: env
+    attributes: { label: Environment & build, placeholder: "staging · sha …" }
+  - type: textarea
+    id: results
+    attributes: { label: Execution log, description: "TC id · result · notes · bug links" }
+  - type: checkboxes
+    id: signoff
+    attributes:
+      label: Sign-off
+      options:
+        - label: All P0 cases pass or bugs linked
+        - label: Sign-off comment posted on engineering issue(s)

@@ -1,0 +1,34 @@
+name: Bug report
+description: A defect found in any environment
+title: "[area] <short description>"
+labels: ["type: bug"]
+body:
+  - type: input
+    id: env
+    attributes: { label: Environment & build, placeholder: "staging · sha abc123 · role analyst" }
+    validations: { required: true }
+  - type: textarea
+    id: steps
+    attributes: { label: Steps to reproduce }
+    validations: { required: true }
+  - type: textarea
+    id: expected
+    attributes: { label: Expected (quote FR/BR/metric id) }
+    validations: { required: true }
+  - type: textarea
+    id: actual
+    attributes: { label: Actual }
+    validations: { required: true }
+  - type: textarea
+    id: evidence
+    attributes: { label: Evidence, description: "Screenshot/GIF, requestId, job/run id, redacted logs" }
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        ["Sev-1 data/security/outage", "Sev-2 P0 broken / wrong metric", "Sev-3 workaround exists", "Sev-4 cosmetic"]
+    validations: { required: true }
+  - type: input
+    id: tc
+    attributes: { label: Related test case / issue }

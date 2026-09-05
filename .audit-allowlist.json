@@ -1,0 +1,3 @@
+{
+  "_comment": "Advisories accepted with justification and expiry. Format: { \"GHSA-xxxx\": { \"reason\": \"…\", \"expires\": \"YYYY-MM-DD\" } }"
+}

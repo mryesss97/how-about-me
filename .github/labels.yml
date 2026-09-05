@@ -1,0 +1,38 @@
+# Synced by `pnpm issues:sync` (scripts/github/sync-issues.mjs) and labels.yml workflow
+- { name: "type: feature", color: "1D76DB", description: "Product feature work" }
+- { name: "type: chore", color: "C5DEF5", description: "Tooling, infra, maintenance" }
+- { name: "type: spike", color: "BFD4F2", description: "Investigation / POC" }
+- { name: "type: docs", color: "0075CA", description: "Documentation" }
+- { name: "type: qc", color: "5319E7", description: "QC test design / execution" }
+- { name: "type: bug", color: "D73A4A", description: "Defect" }
+- { name: "role: engineer", color: "0E8A16", description: "Owned by engineering" }
+- { name: "role: qc", color: "7057FF", description: "Owned by QC" }
+- { name: "area: api", color: "FBCA04", description: "apps/api (NestJS)" }
+- { name: "area: web", color: "F9D0C4", description: "apps/web (Next.js)" }
+- { name: "area: contracts", color: "FEF2C0", description: "packages/contracts" }
+- { name: "area: taxonomy", color: "FEF2C0", description: "packages/taxonomy" }
+- { name: "area: db", color: "E99695", description: "Prisma / Postgres" }
+- { name: "area: ai", color: "D4C5F9", description: "Classification / providers" }
+- { name: "area: infra", color: "BFDADC", description: "CI/CD, hosting, environments" }
+- { name: "area: docs", color: "C2E0C6", description: "docs/ folder" }
+- { name: "area: qa", color: "E4E669", description: "Test assets" }
+- { name: "priority: P0", color: "B60205", description: "Required for MVP" }
+- { name: "priority: P1", color: "D93F0B", description: "Right after MVP" }
+- { name: "priority: P2", color: "FBCA04", description: "Later" }
+- { name: "epic: E01", color: "EDEDED", description: "Authentication & RBAC" }
+- { name: "epic: E02", color: "EDEDED", description: "Monitoring Project & Members" }
+- { name: "epic: E03", color: "EDEDED", description: "Threads Integration" }
+- { name: "epic: E04", color: "EDEDED", description: "Listening Queries" }
+- { name: "epic: E05", color: "EDEDED", description: "Collector & Sync Jobs" }
+- { name: "epic: E06", color: "EDEDED", description: "Content Intelligence" }
+- { name: "epic: E07", color: "EDEDED", description: "Overview Dashboard" }
+- { name: "epic: E08", color: "EDEDED", description: "Mentions Explorer & Detail" }
+- { name: "epic: E09", color: "EDEDED", description: "System Status & Observability" }
+- { name: "epic: E10", color: "EDEDED", description: "Settings" }
+- { name: "epic: E11", color: "EDEDED", description: "Analyst Workflow (P1)" }
+- { name: "epic: E12", color: "EDEDED", description: "Export (P1)" }
+- { name: "epic: E13", color: "EDEDED", description: "Engineering Foundation & Delivery" }
+- { name: "estimate: S", color: "F0F0F0", description: "≤ 1 day" }
+- { name: "estimate: M", color: "F0F0F0", description: "≤ 3 days" }
+- { name: "estimate: L", color: "F0F0F0", description: "≤ 5 days" }
+- { name: "needs: owner-input", color: "FF7619", description: "Blocked on Product Owner input" }
