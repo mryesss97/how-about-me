@@ -11,6 +11,7 @@ import { PrismaModule } from "./database/prisma.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { HealthModule } from "./modules/health/health.module";
 import { ProjectsModule } from "./modules/projects/projects.module";
+import { ProvidersModule } from "./modules/providers/providers.module";
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ProjectsModule } from "./modules/projects/projects.module";
     HealthModule,
     AuthModule,
     ProjectsModule,
+    ProvidersModule,
     // M2+: IntegrationsModule, ListeningQueriesModule, CollectorModule, SyncJobsModule, AuditModule, SystemStatusModule
     // M3+: AnalysisModule · M4+: MentionsModule, AnalyticsModule · M6: ReviewsModule, ExportModule
   ],
