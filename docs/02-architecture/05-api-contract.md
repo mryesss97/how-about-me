@@ -248,6 +248,8 @@ Adds: `ownerId, shortcode, mediaUrl, altText, linkAttachmentUrl, quotedPostId, r
 | `DELETE …/mentions/:id/overrides/:overrideId` | admin, analyst (P1)           | revoke → 204                                                                        |
 | `GET …/mentions/export.csv`                   | admin, analyst, viewer⚙️ (P1) | list filters; `413 EXPORT_TOO_LARGE {details:{cap}}`                                |
 
+**Single re-analyze (T-076, FR-115/FR-116).** No body. Creates a new run with `trigger=manual` (force: bypasses the completed-run dedupe; earlier runs are kept, BR-003). `404 NOT_FOUND` when the mention does not exist or belongs to another project. `409 ANALYSIS_ALREADY_PENDING` when the post has **any** `pending|processing` run (any content hash or effective version); the partial unique index (BR-024) still decides concurrent requests and the loser also gets 409. Writes audit `analysis.reanalyze_requested` (`entity_type=social_post`, metadata `{ runId, effectiveVersion }`, no post text) in the same transaction.
+
 ## 8. Sync jobs
 
 | Method & path                | Role   | Notes                                                                                                         |
