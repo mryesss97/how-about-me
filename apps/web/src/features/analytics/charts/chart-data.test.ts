@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { sentimentFixture, timeseriesFixture } from "../overview-fixture.test-utils";
-import { bucketRange, formatBucket, hasPrevious, shareOf, toMentionsRows, toSentimentStackRows } from "./chart-data";
+import {
+  bucketRange,
+  formatBucket,
+  hasPrevious,
+  humanizeLabel,
+  shareOf,
+  sumShares,
+  toBarRows,
+  toMentionsRows,
+  toSentimentStackRows,
+} from "./chart-data";
 
 describe("chart-data (T-100)", () => {
   it("FR-135: formats buckets in the bucketing tz, not the browser tz (UTC 17:00 → 00:00 next day in HCM)", () => {
@@ -34,5 +44,25 @@ describe("chart-data (T-100)", () => {
     expect(toMentionsRows({ interval: "day", timezone: "UTC", data: [] })).toEqual([]);
     expect(shareOf(3, 0)).toBeNull();
     expect(shareOf(1, 4)).toBe(0.25);
+  });
+});
+
+describe("toBarRows / humanizeLabel / sumShares (T-101)", () => {
+  it("FR-138: keeps API order and moves other last", () => {
+    const rows = toBarRows([
+      { label: "other", count: 1, share: 0.1 },
+      { label: "customer_service", count: 5, share: 0.5 },
+      { label: "ticket", count: 3, share: 0.3 },
+    ]);
+    expect(rows.map((r) => r.name)).toEqual(["Customer service", "Ticket", "Other"]);
+  });
+
+  it("BR-032: null share stays null (rendered as —)", () => {
+    expect(toBarRows([{ label: "x", count: 0, share: null }])[0]?.share).toBeNull();
+    expect(sumShares([{ key: "x", name: "X", count: 0, share: null }])).toBe(0);
+  });
+
+  it("humanizeLabel", () => {
+    expect(humanizeLabel("purchase_intent")).toBe("Purchase intent");
   });
 });
