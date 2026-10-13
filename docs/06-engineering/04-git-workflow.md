@@ -56,3 +56,17 @@ Semver; MVP = `v0.1.0`; P1 = `v0.2.0`. `CHANGELOG.md` generated from commits at 
 ## 7. Hygiene
 
 Rebase feature branches on `develop` before requesting review; no merge commits in feature branches; delete branches after merge; never commit `.env*` (pre-commit gitleaks).
+
+## 8. Issue loop (agent)
+
+Each request runs as one loop: one issue, one worktree, one PR, merge, then the next issue. Scripts run the fixed steps; the pipeline inside a ticket (triage → plan → code → review, with model choice and cost log) is in [.claude/WORKFLOW.md](../../.claude/WORKFLOW.md).
+
+| Step                                                                                                            | Command                                                      |
+| --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Worktree `../how-about-me-<issue>` on `<type>/<issue>-<slug>` from `origin/develop`, copy env files, install    | `pnpm issue:start <issue\|T-###> <type> <summary ≤ 5 words>` |
+| Prettier + `eslint --fix` on changed files                                                                      | `pnpm issue:tidy`                                            |
+| Checks, one line on pass, last 50 lines on fail                                                                 | `pnpm verify:quiet`                                          |
+| Verify, push, open PR (checks branch, title, target, `Closes #n`; adds Definition of Done and agent cost)       | `pnpm issue:ship --title "<subject>" --body-file <file>`     |
+| Squash-merge, close the issues (`Closes #n` does not auto-close into `develop`), delete branch, remove worktree | `pnpm issue:finish <PR>`                                     |
+
+The husky `pre-push` hook runs gitleaks, shellcheck and `pnpm verify` (reusing the result `issue:ship` just produced for the same commit), because Actions does not fire on push/PR in this repo yet.
