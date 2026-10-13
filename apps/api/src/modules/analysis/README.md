@@ -19,3 +19,7 @@ Design: see docs/02-architecture/02-backend-design.md §3 and the related pipeli
 - `markCurrentStale` (content change, FR-078) and `markVersionStale(oldVersion, { projectId? })` (version change helper, T-078; endpoint/bulk enqueue are P1).
 - `analysis-worker.service.ts` — poll loop; see `../../jobs/README.md`.
 - `run-processor.ts` — `ANALYSIS_RUN_PROCESSOR` port; real pipeline in T-074.
+
+## Pipeline (T-074)
+
+`AnalysisPipelineService` implements `RunProcessor` and is bound to `ANALYSIS_RUN_PROCESSOR`, so the worker polls when `APP_ROLE ∈ {worker, all}`. Order and persistence rules: doc 07 §2. Provider errors are rethrown; the worker re-queues (failure policy T-075). Tests: `analysis-pipeline.service.spec.ts`, `test/integration/analysis-pipeline.int-spec.ts`.

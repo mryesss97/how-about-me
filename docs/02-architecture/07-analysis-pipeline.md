@@ -41,6 +41,14 @@ for each run (bounded concurrency ANALYSIS_CONCURRENCY):
 
 Implementation note: v1 may merge step 1 and 3 into one structured call when the provider supports it cheaply; the relevance gate is then applied to the response (skip summary storage for irrelevant). The interface keeps both entry points so the cheap two-step path can be enabled by config `ANALYSIS_TWO_STEP=true`.
 
+Implementation (T-074, `AnalysisPipelineService`, bound to `ANALYSIS_RUN_PROCESSOR`):
+
+- Single-step (default, `ANALYSIS_TWO_STEP=false`): `classify()` first, the irrelevant gate is applied to its output, then `moderate()` only for non-irrelevant posts (sequential, no parallel calls). Two-step: `relevance()` → gate → `moderate()` → `classify(languageHint)`.
+- Irrelevant posts end `completed` with `skipped_reason='irrelevant'`; a `post_analyses` row holds relevance + language only (summary `""`, no sentiment/safety, no intents/topics) and becomes `current_analysis_id`.
+- Inputs: `brandContext` = `ANALYSIS_BRAND_CONTEXT` (seeded with a default text), or project name (+ description) when that variable is set empty; `matchedTerms` = `query_value` of matched, non-excluded `post_query_matches`.
+- One transaction: insert analysis + labels, `markCompleted` with usage and the 7 version fields (rolled back if the run is no longer held by the worker), then move the pointer. Pointer guard: a run never overwrites `current_analysis_id` when a newer run of the same post has already completed (FR-114); the post row is locked (`FOR UPDATE`) before that check so concurrent runs of one post serialize.
+- `overall_model_confidence = min(relevance, sentiment)` (relevance only for irrelevant); confidences rounded to 4 places.
+
 ## 3. Provider interfaces
 
 ```ts
@@ -205,7 +213,7 @@ effective_version = `${classifier.provider}|${classifier.model}|${classifier.pro
 | empty text                                         | `skipped empty_text`                                                                                                                                                                                          |
 | stuck `processing` > `ANALYSIS_STUCK_MINUTES` (10) | watchdog (first step of every worker tick) re-queues to `pending` and clears the lock; if `attempt_count >= ANALYSIS_MAX_ATTEMPTS` → `failed` (`ANALYSIS_PROVIDER_ERROR`, message `stuck_processing_timeout`) |
 
-`attempt_count` is incremented at claim time. In T-070 `requeue` returns the run to `pending` immediately; the backoff above is added with the failure policy (T-074/T-075).
+`attempt_count` is incremented at claim time. In T-070 `requeue` returns the run to `pending` immediately; the backoff above is added with the failure policy (T-075). T-074 does not retry: provider errors (including `ANALYSIS_SCHEMA_INVALID` and `ANALYSIS_PROVIDER_AUTH`) are rethrown by the pipeline and the worker's `catch` re-queues the run; the corrective retry and auth pause land in that catch with T-075.
 
 Two retry tiers: inside one job attempt the adapter retries transient errors via `withRetry` (`OPENAI_MAX_RETRIES=2`, base 2 s, cap 30 s, `Retry-After` honoured up to 60 s — longer ends the attempt), so one attempt makes at most 3 HTTP calls and a whole job (3 attempts) at most 9. Non-transient codes are never retried in the adapter.
 
