@@ -16,6 +16,8 @@ type Labels = {
   safety?: "safe" | "sensitive" | "severe";
   intents?: string[];
   topics?: string[];
+  /** Defaults to "vi"; `null` = no language assigned. */
+  language?: string | null;
 };
 type Item = { label: string; count: number; share: number | null };
 type Dist = { denominator: number; distribution: Item[] };
@@ -67,7 +69,7 @@ describe("Analytics distributions (T-093)", () => {
       await prisma.socialPost.update({ where: { id: post.id }, data: { latestRunStatus: "pending" } });
       return post.id;
     }
-    const l: Labels = { relevance: "relevant", sentiment: "neutral", safety: "safe", ...opts.labels };
+    const l: Labels = { relevance: "relevant", sentiment: "neutral", safety: "safe", language: "vi", ...opts.labels };
     const runId = randomUUID();
     const analysisId = randomUUID();
     await prisma.analysisRun.create({
@@ -92,7 +94,7 @@ describe("Analytics distributions (T-093)", () => {
         relevanceLabel: l.relevance,
         sentimentLabel: l.sentiment,
         safetyLevel: l.safety,
-        languageCode: "vi",
+        languageCode: l.language,
         intents: { create: (l.intents ?? []).map((label) => ({ label })) },
         topics: { create: (l.topics ?? []).map((label) => ({ label })) },
       },
@@ -205,7 +207,7 @@ describe("Analytics distributions (T-093)", () => {
   });
 
   it("denominator 0 → every label with count 0 and share null (FR-140)", async () => {
-    for (const path of ["sentiment", "safety", "intents", "topics"]) {
+    for (const path of ["sentiment", "safety", "intents", "topics", "languages"]) {
       const d = await dist(path);
       expect(d.denominator).toBe(0);
       expect(d.distribution.length).toBeGreaterThan(0);
@@ -239,5 +241,56 @@ describe("Analytics distributions (T-093)", () => {
     const bad = await get("intents", { from: WEEK.to, to: WEEK.from });
     expect(bad.status).toBe(400);
     expect(bad.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  describe("languages (T-148, FR-143)", () => {
+    it("TC-DASH-027: all 8 codes, count desc, ties in taxonomy order; NULL excluded, unknown counted, foreign → other", async () => {
+      await seedPost({ at: "2026-10-02T03:00:00Z", labels: { language: "en" } });
+      await seedPost({ at: "2026-10-02T04:00:00Z", labels: { language: "en" } });
+      await seedPost({ at: "2026-10-02T05:00:00Z", labels: { language: "vi" } });
+      await seedPost({ at: "2026-10-02T06:00:00Z", labels: { language: "unknown" } });
+      await seedPost({ at: "2026-10-02T07:00:00Z", labels: { language: "fr" } });
+      await seedPost({ at: "2026-10-02T08:00:00Z", labels: { language: null } });
+      await seedPost({ at: "2026-10-02T09:00:00Z", labels: null });
+      const d = await dist("languages");
+      expect(d.denominator).toBe(5);
+      expect(d.distribution.map((x) => x.label)).toEqual(["en", "vi", "other", "unknown", "ko", "ja", "th", "zh"]);
+      expect(countOf(d, "other")).toBe(1);
+      expect(countOf(d, "unknown")).toBe(1);
+      expect(d.distribution[0]?.share).toBeCloseTo(0.4);
+      expect(d.distribution.reduce((s, x) => s + (x.share ?? 0), 0)).toBeCloseTo(1);
+    });
+
+    it("FR-147: a post matched by two queries counts once", async () => {
+      await seedPost({ at: "2026-10-02T03:00:00Z", matches: { [q1]: false, [q2]: false } });
+      const d = await dist("languages");
+      expect(d.denominator).toBe(1);
+      expect(countOf(d, "vi")).toBe(1);
+    });
+
+    it("BR-016: irrelevant excluded by default, included with relevance=irrelevant", async () => {
+      await seedPost({ at: "2026-10-02T03:00:00Z" });
+      await seedPost({ at: "2026-10-02T04:00:00Z", labels: { relevance: "irrelevant", language: "en" } });
+      expect((await dist("languages")).denominator).toBe(1);
+      const all = await dist("languages", { ...WEEK, relevance: "relevant,irrelevant" });
+      expect(all.denominator).toBe(2);
+      expect(countOf(all, "en")).toBe(1);
+    });
+
+    it("language filter keeps only matching posts", async () => {
+      await seedPost({ at: "2026-10-02T03:00:00Z", labels: { language: "vi" } });
+      await seedPost({ at: "2026-10-02T04:00:00Z", labels: { language: "en" } });
+      const d = await dist("languages", { ...WEEK, language: "vi" });
+      expect(d.denominator).toBe(1);
+      expect(countOf(d, "en")).toBe(0);
+    });
+
+    it("FR-015: viewer 200, non-member denied, invalid query 400", async () => {
+      expect((await get("languages")).status).toBe(200);
+      expect([403, 404]).toContain((await get("languages", WEEK, "outsider")).status);
+      const bad = await get("languages", { from: WEEK.to, to: WEEK.from });
+      expect(bad.status).toBe(400);
+      expect(bad.body.error.code).toBe("VALIDATION_ERROR");
+    });
   });
 });

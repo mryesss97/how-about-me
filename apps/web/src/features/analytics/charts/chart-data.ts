@@ -1,5 +1,5 @@
 import type { SentimentResponse, TimeseriesResponse } from "@how-about-me/contracts";
-import type { SafetyLevel, SentimentLabel } from "@how-about-me/taxonomy";
+import type { LanguageCode, SafetyLevel, SentimentLabel } from "@how-about-me/taxonomy";
 
 /** Pure data helpers for the overview charts (T-100) — kept free of React/Recharts so they are unit-testable. */
 
@@ -100,3 +100,27 @@ export function toBarRows<K extends string>(
 
 /** Sum of shares — above 1 for multi-label dimensions (topics/intents); never normalised. */
 export const sumShares = (rows: readonly BarRow[]) => rows.reduce((s, r) => s + (r.share ?? 0), 0);
+
+/** Display names for language codes (FR-143). */
+export const LANGUAGE_NAMES: Record<LanguageCode, string> = {
+  vi: "Vietnamese",
+  en: "English",
+  ko: "Korean",
+  ja: "Japanese",
+  th: "Thai",
+  zh: "Chinese",
+  other: "Other",
+  unknown: "Unknown",
+};
+
+/** Language donut colours: distinct utility hues; `other` / `unknown` stay neutral. */
+export const LANGUAGE_COLORS: Record<LanguageCode, string> = {
+  vi: "var(--color-utility-brand-500)",
+  en: "var(--color-utility-blue-500)",
+  ko: "var(--color-utility-indigo-500)",
+  ja: "var(--color-utility-pink-500)",
+  th: "var(--color-utility-orange-500)",
+  zh: "var(--color-utility-purple-500)",
+  other: "var(--color-utility-neutral-400)",
+  unknown: "var(--color-utility-neutral-300)",
+};
