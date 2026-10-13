@@ -27,6 +27,12 @@ function codeForStatus(status: number): ErrorCode {
   return "VALIDATION_ERROR";
 }
 
+function retryAfterSeconds(details: unknown): number | undefined {
+  if (typeof details !== "object" || details === null) return undefined;
+  const v = (details as { retryAfterSeconds?: unknown }).retryAfterSeconds;
+  return typeof v === "number" && Number.isInteger(v) && v > 0 ? v : undefined;
+}
+
 /**
  * Maps every error to `{ error: { code, message, requestId, details? } }` — docs/02-architecture/02-backend-design.md §5.
  * 5xx never expose the original message or stack; dev/test add `details.debug.message` only.
@@ -94,6 +100,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const envelope: ApiErrorEnvelope = {
       error: { code, message, requestId, ...(details !== undefined ? { details } : {}) },
     };
+    // api-contract §1: 429 carries `Retry-After` when the domain error knows the wait (T-145).
+    const retryAfter = status === 429 ? retryAfterSeconds(details) : undefined;
+    if (retryAfter !== undefined) res.setHeader("Retry-After", String(retryAfter));
     res.status(status).json(envelope);
   }
 }

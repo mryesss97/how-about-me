@@ -1,5 +1,5 @@
 import { encodeSortCursor } from "../../common/pagination/cursor";
-import { MENTION_SORTS, MentionsListQuerySchema } from "@how-about-me/contracts";
+import { BulkReanalyzeBodySchema, MENTION_SORTS, MentionsListQuerySchema } from "@how-about-me/contracts";
 import {
   decodeMentionCursor,
   escapeLike,
@@ -7,6 +7,7 @@ import {
   MENTION_SORT_SPECS,
   mentionsFromWhere,
   orderBy,
+  resolveFilterScope,
   resolveMentionsScope,
   searchMode,
   sortKeySelect,
@@ -98,6 +99,14 @@ describe("mentions-query", () => {
     expect(r.scope.filters).not.toHaveProperty("reviewStatus");
     expect(r.scope.filters).not.toHaveProperty("q");
     expect(r).toMatchObject({ sort: "newest", limit: 25, count: false });
+  });
+
+  it("T-145 resolveFilterScope: bulk body → same scope as list (default range, BR-016), no reviewStatus", () => {
+    const { dryRun: _d, ...body } = BulkReanalyzeBodySchema.parse({ reviewStatus: "reviewed", dryRun: true });
+    const r = resolveFilterScope(body, PID, now);
+    expect(r.scope).toEqual(resolveMentionsScope(MentionsListQuerySchema.parse({}), PID, now).scope);
+    expect(r.scope.filters).not.toHaveProperty("dryRun");
+    expect(r.scope.filters).not.toHaveProperty("reviewStatus");
   });
 
   describe("#195 cursor key validation", () => {

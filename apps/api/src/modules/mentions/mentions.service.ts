@@ -1,11 +1,21 @@
-import { Injectable } from "@nestjs/common";
-import type { MentionDetail, MentionsListQuery, MentionsPage, ReanalyzeResponse } from "@how-about-me/contracts";
+import { Inject, Injectable } from "@nestjs/common";
+import type {
+  BulkReanalyzeBody,
+  BulkReanalyzeResponse,
+  MentionDetail,
+  MentionsListQuery,
+  MentionsPage,
+  ReanalyzeResponse,
+} from "@how-about-me/contracts";
 import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 import { AppError } from "../../common/errors/app.error";
 import { encodeSortCursor } from "../../common/pagination/cursor";
+import { APP_CONFIG, type AppConfig } from "../../config/config.module";
+import { BULK_TX_TIMEOUT_MS } from "../analysis/analysis-runs.service";
 import { AnalysisService } from "../analysis/analysis.service";
+import { BULK_REANALYZE_AUDIT_ACTION, BulkReanalyzeThrottle } from "../analysis/bulk-reanalyze-throttle";
 import { AuditService } from "../audit/audit.service";
-import { decodeMentionCursor, resolveMentionsScope } from "./mentions-query";
+import { decodeMentionCursor, resolveFilterScope, resolveMentionsScope } from "./mentions-query";
 import { toMentionDetail, toMentionListItem } from "./mentions.mapper";
 import { MentionsRepository } from "./mentions.repository";
 
@@ -20,6 +30,8 @@ export class MentionsService {
     private readonly analysis: AnalysisService,
     private readonly audit: AuditService,
     @InjectPinoLogger(MentionsService.name) private readonly logger: PinoLogger,
+    private readonly throttle: BulkReanalyzeThrottle,
+    @Inject(APP_CONFIG) private readonly cfg: AppConfig,
   ) {}
 
   /**
@@ -102,5 +114,59 @@ export class MentionsService {
       );
       return { runId: res.runId, status: "pending" };
     });
+  }
+
+  /**
+   * FR-196 / T-145: bulk re-analysis over the list filters (base set B, BR-002, default `relevant` BR-016).
+   * dryRun only counts — no throttle, no enqueue, no audit (TC-REV-008). Otherwise: throttle 1/5 min/project
+   * (NFR-017), enqueue up to `ANALYSIS_BULK_MAX` posts in `sort` order with `trigger=bulk` (not a force trigger,
+   * so BR-024 dedupe holds), keep old runs (BR-003) and audit in the same tx — also when nothing was enqueued.
+   */
+  async bulkReanalyze(
+    projectId: string,
+    body: BulkReanalyzeBody,
+    actorUserId: string,
+    requestId: string | null,
+    now: Date = new Date(),
+  ): Promise<BulkReanalyzeResponse> {
+    const cap = this.cfg.ANALYSIS_BULK_MAX;
+    const { dryRun, ...filters } = body;
+    const s = resolveFilterScope(filters, projectId, now);
+    if (dryRun) return { matched: await this.repo.countMatched(s.scope, s.q), enqueued: 0, cap };
+    return this.repo.transaction(
+      async (tx) => {
+        await this.throttle.assertAllowed(tx, projectId);
+        const matched = await this.repo.countMatched(s.scope, s.q, tx);
+        const ev = await this.analysis.effectiveVersionFor(projectId, tx);
+        const candidates = await this.repo.selectBulkCandidates(tx, s.scope, s.q, s.sort, ev, cap);
+        const res = await this.analysis.enqueueMany(tx, {
+          projectId,
+          posts: candidates.map((c) => ({ postId: c.id, contentHash: c.contentHash, revision: c.revision })),
+          trigger: "bulk",
+          requestedBy: actorUserId,
+        });
+        const enqueued = res.postIds.length;
+        // FR-200: filters only, never post ids/text.
+        await this.audit.record(
+          {
+            projectId,
+            actorUserId,
+            action: BULK_REANALYZE_AUDIT_ACTION,
+            entityType: "monitoring_project",
+            entityId: projectId,
+            metadata: {
+              scope: "filters",
+              filters,
+              counts: { matched, enqueued, cap },
+              effectiveVersion: res.effectiveVersion,
+            },
+            requestId,
+          },
+          tx,
+        );
+        return { matched, enqueued, cap };
+      },
+      { timeout: BULK_TX_TIMEOUT_MS },
+    );
   }
 }

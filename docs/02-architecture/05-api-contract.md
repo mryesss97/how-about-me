@@ -294,6 +294,8 @@ Adds: `ownerId, shortcode, mediaUrl, altText, linkAttachmentUrl, quotedPostId, r
 
 **Single re-analyze (T-076, FR-115/FR-116).** No body. Creates a new run with `trigger=manual` (force: bypasses the completed-run dedupe; earlier runs are kept, BR-003). `404 NOT_FOUND` when the mention does not exist or belongs to another project. `409 ANALYSIS_ALREADY_PENDING` when the post has **any** `pending|processing` run (any content hash or effective version); the partial unique index (BR-024) still decides concurrent requests and the loser also gets 409. Writes audit `analysis.reanalyze_requested` (`entity_type=social_post`, metadata `{ runId, effectiveVersion }`, no post text) in the same transaction.
 
+**Bulk re-analyze (T-145, FR-196).** Admin only. Body = list filters (same base set as `GET …/mentions`: default last 7×24h, `relevance=[relevant]` BR-016; `reviewStatus` ignored) + `dryRun` (default `false`). Always `200 { matched, enqueued, cap }`. `matched` = DISTINCT posts matching the filters + `q` (equals the list `totalCount` for the same filters). `cap = ANALYSIS_BULK_MAX`. `dryRun=true` only counts: no enqueue, no audit, does not consume the throttle. Otherwise picks up to `cap` posts in `sort` order that have no `pending|processing` run and no `completed` run for the same `(content_hash, current effective_version)` (BR-024, not a force trigger), creates runs `trigger=bulk` (old runs kept, BR-003), and writes audit `analysis.bulk_reanalyze_requested` (`entity_type=monitoring_project`, metadata `{ scope:"filters", filters, counts:{ matched, enqueued, cap }, effectiveVersion }`, no post ids/text) in the same transaction — also when `enqueued=0`. Throttle: one real call per 5 min per project, shared with `mark-stale` (§9), DB-backed (project row lock + last audit row); exceeded → `429 RATE_LIMITED` with header `Retry-After` and `details.retryAfterSeconds`.
+
 ## 8. Sync jobs
 
 | Method & path                | Role   | Notes                                                                                                         |
@@ -313,11 +315,14 @@ Job object:
 
 ## 9. Analysis runs (ops)
 
-| Method & path                       | Role   | Notes                                                                    |
-| ----------------------------------- | ------ | ------------------------------------------------------------------------ |
-| `GET …/analysis-runs`               | member | `status[], from, to, cursor` (used by System Status → Analysis failures) |
-| `POST …/analysis-runs/:id/retry`    | admin  | failed → pending; `202 { runId, status:"pending" }`                      |
-| `POST …/analysis-runs/retry-failed` | admin  | `{ limit ≤ 500 (default 100) }` → `{ enqueued }`                         |
+| Method & path                                                 | Role   | Notes                                                                                                              |
+| ------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------ |
+| `GET …/analysis-runs`                                         | member | `status[], from, to, cursor` (used by System Status → Analysis failures)                                           |
+| `POST …/analysis-runs/:id/retry`                              | admin  | failed → pending; `202 { runId, status:"pending" }`                                                                |
+| `POST …/analysis-runs/retry-failed`                           | admin  | `{ limit ≤ 500 (default 100) }` → `{ enqueued }`                                                                   |
+| `POST …/analysis-runs/mark-stale?version=<old>&dryRun=<bool>` | admin  | T-145: → `200 { marked, enqueued, cap }` · `400 VALIDATION_ERROR` (current version) · `429` (shared bulk throttle) |
+
+**Mark stale by version (T-145, BR-023).** In the project, `pending|completed` runs of `version` → `stale`; then up to `cap = ANALYSIS_BULK_MAX` affected posts (newest `published_at` first, without an open run, effective relevance not `irrelevant` — BR-016) get a new run `trigger=version_change` at the current effective version. `dryRun=true` returns the would-be `marked` count and changes nothing. Audit `analysis.bulk_reanalyze_requested` with `scope:"version_change"`, `filters:{ version }`, `counts:{ marked, enqueued, cap }`.
 
 Run object: `{ id, postId, status, trigger, effectiveVersion, attemptCount, errorCode, errorMessage, startedAt, completedAt, createdAt }`.
 

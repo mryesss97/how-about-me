@@ -159,6 +159,7 @@ export const BulkReanalyzeResponseSchema = z.object({
   enqueued: z.number().int().nonnegative(),
   cap: z.number().int().nonnegative(),
 });
+export type BulkReanalyzeResponse = z.infer<typeof BulkReanalyzeResponseSchema>;
 
 /** Override value per field — docs/02-architecture/04-data-model.md §4.13. */
 const OverrideReason = z.string().trim().max(500).optional();

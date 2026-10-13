@@ -2,6 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import type { AnalysisStatus, AnalysisTrigger } from "@how-about-me/contracts";
 import { Prisma } from "@prisma/client";
 import { v7 as uuidv7 } from "uuid";
+import { AppError } from "../../common/errors/app.error";
 import { APP_CONFIG, type AppConfig } from "../../config/config.module";
 import { PrismaService } from "../../database/prisma.service";
 import { TAXONOMY_VERSION } from "@how-about-me/taxonomy";
@@ -50,6 +51,12 @@ type Db = Prisma.TransactionClient;
 
 /** Triggers that bypass the "already completed" dedupe — doc 07 §7, FR-116. */
 const FORCE_TRIGGERS: readonly AnalysisTrigger[] = ["manual", "retry"];
+
+// Message kept stable: existing tests match /current effective_version/.
+const refuseCurrentVersion = () =>
+  new AppError("VALIDATION_ERROR", "markVersionStale: refusing to mark the current effective_version stale", {
+    path: "version",
+  });
 
 /**
  * Analysis run lifecycle (T-070): enqueue with version dedupe, batch claiming, guarded transitions and
@@ -149,7 +156,7 @@ export class AnalysisService implements AnalysisEnqueuer {
 
   /**
    * Version change helper (doc 07 §7, BR-023, FR-100): pending|completed runs of `oldVersion` → stale.
-   * Does not re-enqueue (bulk enqueue within caps and the `mark-stale` endpoint are P1).
+   * Does not re-enqueue (the `mark-stale` endpoint uses `markVersionStaleInProject` + `enqueueMany`).
    * Throws when `oldVersion` is a current effective version, so current results are never staled: with
    * `projectId`, the project's current version; without it, the current version of any project (incl. v1 default).
    */
@@ -161,18 +168,94 @@ export class AnalysisService implements AnalysisEnqueuer {
     const current = opts.projectId
       ? new Set([await this.effectiveVersionFor(opts.projectId, tx)])
       : new Set([...(await this.policies.activePolicyVersions())].map((v) => this.effectiveVersionOf(v)));
-    if (current.has(oldVersion)) {
-      throw new Error("markVersionStale: refusing to mark the current effective_version stale");
-    }
+    if (current.has(oldVersion)) throw refuseCurrentVersion();
     const projectFilter = opts.projectId ? Prisma.sql`AND project_id = ${opts.projectId}::uuid` : Prisma.empty;
+    const { marked } = await this.staleVersionRuns(tx, oldVersion, projectFilter);
+    return { marked };
+  }
+
+  /** T-145 mark-stale endpoint: like `markVersionStale` scoped to one project, also returns affected posts. */
+  async markVersionStaleInProject(
+    tx: Db,
+    projectId: string,
+    oldVersion: string,
+  ): Promise<{ marked: number; postIds: string[] }> {
+    await this.assertNotCurrentVersion(tx, projectId, oldVersion);
+    return this.staleVersionRuns(tx, oldVersion, Prisma.sql`AND project_id = ${projectId}::uuid`);
+  }
+
+  /** 400 when `version` is the project's current effective_version (BR-023: never stale current results). */
+  async assertNotCurrentVersion(tx: Db, projectId: string, version: string): Promise<void> {
+    if ((await this.effectiveVersionFor(projectId, tx)) === version) throw refuseCurrentVersion();
+  }
+
+  /** Dry-run count for mark-stale: runs of `version` in the project that would become stale. */
+  async countVersionRuns(tx: Db, projectId: string, version: string): Promise<number> {
     const rows = await tx.$queryRaw<{ n: number }[]>(Prisma.sql`
+      SELECT count(*)::int AS n FROM analysis_runs
+      WHERE project_id = ${projectId}::uuid AND effective_version = ${version} AND status IN ('pending', 'completed')`);
+    return rows[0]?.n ?? 0;
+  }
+
+  /**
+   * Set-based enqueue for bulk re-analysis (T-145, FR-196). One effective_version read (BR-023), uuidv7 ids
+   * generated in order (syncLatestStatus / setCurrentAnalysis rely on it). Skips posts with any open run
+   * (FR-115) and, for non-force triggers, posts already completed for the same (hash, version) (BR-024, FR-116).
+   */
+  async enqueueMany(
+    tx: Db,
+    input: {
+      projectId: string;
+      posts: { postId: string; contentHash: string; revision: number }[];
+      trigger: AnalysisTrigger;
+      requestedBy?: string | null;
+    },
+  ): Promise<{ postIds: string[]; effectiveVersion: string }> {
+    const ev = await this.effectiveVersionFor(input.projectId, tx);
+    if (input.posts.length === 0) return { postIds: [], effectiveVersion: ev };
+    const ids = input.posts.map(() => uuidv7());
+    const postIds = input.posts.map((p) => p.postId);
+    const hashes = input.posts.map((p) => p.contentHash);
+    const revisions = input.posts.map((p) => p.revision);
+    const completedGuard = FORCE_TRIGGERS.includes(input.trigger)
+      ? Prisma.empty
+      : Prisma.sql`AND NOT EXISTS (SELECT 1 FROM analysis_runs x
+          WHERE x.post_id = u.post_id AND x.source_content_hash = u.hash
+            AND x.effective_version = ${ev} AND x.status = 'completed')`;
+    const rows = await tx.$queryRaw<{ post_id: string }[]>(Prisma.sql`
+      INSERT INTO analysis_runs (id, post_id, project_id, status, trigger, source_content_hash, source_revision, effective_version, requested_by)
+      SELECT u.id, u.post_id, ${input.projectId}::uuid, 'pending'::analysis_status, ${input.trigger}::analysis_trigger,
+             u.hash, u.rev, ${ev}, ${input.requestedBy ?? null}::uuid
+      FROM unnest(${ids}::uuid[], ${postIds}::uuid[], ${hashes}::text[], ${revisions}::int[]) AS u(id, post_id, hash, rev)
+      WHERE NOT EXISTS (SELECT 1 FROM analysis_runs o
+          WHERE o.post_id = u.post_id AND o.status IN ('pending', 'processing'))
+        ${completedGuard}
+      ORDER BY u.id
+      ON CONFLICT (post_id, source_content_hash, effective_version) WHERE status IN ('pending', 'processing')
+      DO NOTHING
+      RETURNING post_id`);
+    const created = rows.map((r) => r.post_id);
+    if (created.length > 0) {
+      await tx.$executeRaw(
+        Prisma.sql`UPDATE social_posts SET latest_run_status = 'pending' WHERE id = ANY(${created}::uuid[])`,
+      );
+    }
+    return { postIds: created, effectiveVersion: ev };
+  }
+
+  private async staleVersionRuns(
+    tx: Db,
+    oldVersion: string,
+    projectFilter: Prisma.Sql,
+  ): Promise<{ marked: number; postIds: string[] }> {
+    const rows = await tx.$queryRaw<{ n: number; post_ids: string[] | null }[]>(Prisma.sql`
       WITH c AS (
         UPDATE analysis_runs SET status = 'stale'
         WHERE effective_version = ${oldVersion} AND status IN ('pending', 'completed') ${projectFilter}
         RETURNING id, post_id),
       p AS (${this.syncLatestStatus(Prisma.sql`c`, Prisma.sql`'stale'::analysis_status`)})
-      SELECT count(*)::int AS n FROM c`);
-    return { marked: rows[0]?.n ?? 0 };
+      SELECT count(*)::int AS n, array_agg(DISTINCT post_id)::text[] AS post_ids FROM c`);
+    return { marked: rows[0]?.n ?? 0, postIds: rows[0]?.post_ids ?? [] };
   }
 
   /**

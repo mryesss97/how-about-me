@@ -6,6 +6,8 @@ import type { AnalysisService } from "../analysis/analysis.service";
 import type { AuditService } from "../audit/audit.service";
 import type { MentionForReanalyze, MentionsRepository } from "./mentions.repository";
 import { MentionsService } from "./mentions.service";
+import type { AppConfig } from "../../config/config.module";
+import type { BulkReanalyzeThrottle } from "../analysis/bulk-reanalyze-throttle";
 
 const PID = "00000000-0000-7000-8000-000000000001";
 const MID = "00000000-0000-7000-8000-000000000002";
@@ -35,6 +37,8 @@ function setup(opts: { post?: MentionForReanalyze | null; open?: boolean; create
     analysis as unknown as AnalysisService,
     audit as unknown as AuditService,
     { warn: jest.fn() } as unknown as PinoLogger,
+    { assertAllowed: jest.fn() } as unknown as BulkReanalyzeThrottle,
+    { ANALYSIS_BULK_MAX: 2000 } as AppConfig,
   );
   return { svc, repo, analysis, audit, tx };
 }
@@ -123,6 +127,8 @@ function listSetup(rows: MentionPageRow[], count: number | null = 7) {
     {} as AnalysisService,
     {} as AuditService,
     logger as unknown as PinoLogger,
+    {} as BulkReanalyzeThrottle,
+    {} as AppConfig,
   );
   return { svc, repo, logger };
 }
@@ -207,6 +213,8 @@ describe("MentionsService.detail", () => {
       {} as AnalysisService,
       {} as AuditService,
       { warn: jest.fn() } as unknown as PinoLogger,
+      {} as BulkReanalyzeThrottle,
+      {} as AppConfig,
     );
     return { svc, repo };
   };
@@ -232,5 +240,80 @@ describe("MentionsService.detail", () => {
     await svc.detail(PID, MID);
     expect(repo.hydrate).toHaveBeenCalledWith([MID], []);
     expect(repo.listRuns).toHaveBeenCalledWith(MID);
+  });
+});
+
+/** FR-196 / NFR-017 / BR-024 — POST …/mentions/reanalyze (T-145). */
+describe("MentionsService.bulkReanalyze", () => {
+  const NOW = new Date("2026-10-13T00:00:00Z");
+  function bulkSetup(throttleError?: Error) {
+    const tx = {} as Prisma.TransactionClient;
+    const repo = {
+      countMatched: jest.fn().mockResolvedValue(5),
+      selectBulkCandidates: jest.fn().mockResolvedValue([post]),
+      transaction: jest.fn((fn: (t: Prisma.TransactionClient) => Promise<unknown>) => fn(tx)),
+    };
+    const analysis = {
+      effectiveVersionFor: jest.fn().mockResolvedValue("v2"),
+      enqueueMany: jest.fn().mockResolvedValue({ postIds: [MID], effectiveVersion: "v2" }),
+    };
+    const audit = { record: jest.fn().mockResolvedValue(undefined) };
+    const throttle = {
+      assertAllowed: throttleError ? jest.fn().mockRejectedValue(throttleError) : jest.fn(),
+    };
+    const svc = new MentionsService(
+      repo as unknown as MentionsRepository,
+      analysis as unknown as AnalysisService,
+      audit as unknown as AuditService,
+      { warn: jest.fn() } as unknown as PinoLogger,
+      throttle as unknown as BulkReanalyzeThrottle,
+      { ANALYSIS_BULK_MAX: 3 } as AppConfig,
+    );
+    return { svc, repo, analysis, audit, throttle, tx };
+  }
+  const body = {
+    dryRun: false,
+    sort: "newest" as const,
+    relevance: ["relevant" as const],
+    q: "abc",
+  } as unknown as Parameters<MentionsService["bulkReanalyze"]>[1];
+
+  it("TC-REV-008: dryRun counts only — no throttle, enqueue or audit", async () => {
+    const { svc, repo, analysis, audit, throttle } = bulkSetup();
+    await expect(svc.bulkReanalyze(PID, { ...body, dryRun: true }, ACTOR, null, NOW)).resolves.toEqual({
+      matched: 5,
+      enqueued: 0,
+      cap: 3,
+    });
+    expect(repo.transaction).not.toHaveBeenCalled();
+    expect(throttle.assertAllowed).not.toHaveBeenCalled();
+    expect(analysis.enqueueMany).not.toHaveBeenCalled();
+    expect(audit.record).not.toHaveBeenCalled();
+  });
+
+  it("TC-REV-009 / BR-024: cap is the candidate limit, trigger=bulk, audit has filters but no post ids", async () => {
+    const { svc, repo, analysis, audit, tx } = bulkSetup();
+    await expect(svc.bulkReanalyze(PID, body, ACTOR, "req-1", NOW)).resolves.toEqual({
+      matched: 5,
+      enqueued: 1,
+      cap: 3,
+    });
+    expect(repo.selectBulkCandidates).toHaveBeenCalledWith(tx, expect.anything(), "abc", "newest", "v2", 3);
+    expect(analysis.enqueueMany).toHaveBeenCalledWith(tx, expect.objectContaining({ trigger: "bulk" }));
+    const meta = (audit.record.mock.calls[0]?.[0] as { metadata: Record<string, unknown> }).metadata;
+    expect(meta).toMatchObject({
+      scope: "filters",
+      counts: { matched: 5, enqueued: 1, cap: 3 },
+      effectiveVersion: "v2",
+    });
+    expect(JSON.stringify(meta)).not.toContain(MID);
+    expect(meta.filters).not.toHaveProperty("dryRun");
+  });
+
+  it("NFR-017: throttle error propagates and nothing is enqueued", async () => {
+    const { svc, analysis, audit } = bulkSetup(new Error("429"));
+    await expect(svc.bulkReanalyze(PID, body, ACTOR, null, NOW)).rejects.toThrow("429");
+    expect(analysis.enqueueMany).not.toHaveBeenCalled();
+    expect(audit.record).not.toHaveBeenCalled();
   });
 });

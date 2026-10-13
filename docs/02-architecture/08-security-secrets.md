@@ -53,19 +53,19 @@ pino `redact` paths (`REDACT_PATHS` in `apps/api/src/common/logging/logger.confi
 
 ## 6. Audit log
 
-`AuditService.record({ projectId, actorUserId, action, entityType, entityId, metadata, requestId })` called from services (not controllers). Actions: `project.updated`, `member.added|role_changed|removed`, `integration.updated|verified|disconnected|refresh_failed`, `query.created|updated|enabled|disabled|deleted|restored|run_requested|backfill_requested`, `analysis.reanalyze_requested|bulk_reanalyze_requested|retry_requested`, `override.created|revoked`, `mentions.exported`, `analysis_settings.updated` (metadata `{ changes, effectiveVersion }`, T-151), `data.purged` (purge CLI T-126, scheduled retention job T-153). Immutable (no update/delete endpoints). Retention ≥ 12 months.
+`AuditService.record({ projectId, actorUserId, action, entityType, entityId, metadata, requestId })` called from services (not controllers). Actions: `project.updated`, `member.added|role_changed|removed`, `integration.updated|verified|disconnected|refresh_failed`, `query.created|updated|enabled|disabled|deleted|restored|run_requested|backfill_requested`, `analysis.reanalyze_requested|bulk_reanalyze_requested|retry_requested` (bulk metadata `{ scope: filters|version_change, filters, counts, effectiveVersion }`, T-145), `override.created|revoked`, `mentions.exported`, `analysis_settings.updated` (metadata `{ changes, effectiveVersion }`, T-151), `data.purged` (purge CLI T-126, scheduled retention job T-153). Immutable (no update/delete endpoints). Retention ≥ 12 months.
 
 Implementation (`apps/api/src/modules/audit/`, T-059):
 
 - `record(input, tx?)` — pass a Prisma `tx` to write the audit row in the same transaction as the mutation (audit failure then fails the mutation). Without `tx`, a failed write is logged at `warn` (no metadata) and never blocks the caller. `id` is a uuid v7; `requestId` comes from `req.id`.
-- Metadata sanitizing (`sanitizeAuditMetadata`): top-level keys must be in a shared allow-list (`changes, before, after, fields, role, previousRole, queryValue, queryType, since, until, jobId, runId, effectiveVersion, count, postIds, filters, format, rowCount, field, value, reason, status, errorCode, name, email, enabled`); keys matching `/token|secret|password|api[_-]?key|authorization|ciphertext|private|service[_-]?role|credential|cookie|^key$/i` are dropped at any depth, even when allow-listed. Max depth 3, strings ≤ 500 chars, serialized JSON ≤ 4 KB (otherwise stored as `{ truncated: true }`). Per-action allow-lists are post-MVP.
+- Metadata sanitizing (`sanitizeAuditMetadata`): top-level keys must be in a shared allow-list (`changes, before, after, fields, role, previousRole, queryValue, queryType, since, until, jobId, runId, effectiveVersion, count, postIds, filters, format, rowCount, field, value, reason, status, errorCode, name, email, enabled, scope, counts, platformPostId`); keys matching `/token|secret|password|api[_-]?key|authorization|ciphertext|private|service[_-]?role|credential|cookie|^key$/i` are dropped at any depth, even when allow-listed. Max depth 3, strings ≤ 500 chars, serialized JSON ≤ 4 KB (otherwise stored as `{ truncated: true }`). Per-action allow-lists are post-MVP.
 
 ## 7. Transport & app hardening
 
 - HTTPS everywhere (host-terminated). HSTS at host.
 - `helmet()` defaults; `CORS_ORIGINS` allow-list (exact origins); credentials not needed.
 - Body limit 1 MB; query array limits (≤ 50 values).
-- Throttling (`@nestjs/throttler`): global 300 req/min/user; `run` 10/min/project; bulk re-analysis 1/5 min/project; export 5/min/user; verify 5/min/project.
+- Throttling (`@nestjs/throttler`): global 300 req/min/user; `run` 10/min/project; bulk re-analysis 1/5 min/project (T-145: DB-backed, not `@nestjs/throttler` — locks the project row and checks the last `analysis.bulk_reanalyze_requested` audit row, so it holds across instances and `dryRun` is not counted; shared by bulk re-analyze and mark-stale; `429` + `Retry-After`); export 5/min/user; verify 5/min/project.
 - Zod validation on all inputs; enums strict; `q` max 200 chars; UUID params validated.
 - Output: post text delivered as JSON string; FE renders text nodes only; links rendered with `rel="noopener noreferrer"`.
 - Swagger disabled in production by default.

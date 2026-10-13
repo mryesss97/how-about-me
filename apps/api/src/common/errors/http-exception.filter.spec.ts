@@ -10,8 +10,12 @@ import { HttpExceptionFilter } from "./http-exception.filter";
 function run(exception: unknown, nodeEnv: AppConfig["NODE_ENV"] = "production") {
   const logger = { error: jest.fn(), debug: jest.fn() } as unknown as Logger;
   const filter = new HttpExceptionFilter(logger, { NODE_ENV: nodeEnv } as AppConfig);
-  const out: { status?: number; body?: unknown } = {};
+  const out: { status?: number; body?: unknown; headers: Record<string, string> } = { headers: {} };
   const res = {
+    setHeader(k: string, v: string) {
+      out.headers[k] = v;
+      return this;
+    },
     status(s: number) {
       out.status = s;
       return this;
@@ -26,7 +30,11 @@ function run(exception: unknown, nodeEnv: AppConfig["NODE_ENV"] = "production") 
     switchToHttp: () => ({ getResponse: () => res, getRequest: () => req }),
   } as unknown as ArgumentsHost;
   filter.catch(exception, host);
-  return { status: out.status, body: out.body as { error: Record<string, unknown> } & Record<string, unknown> };
+  return {
+    status: out.status,
+    headers: out.headers,
+    body: out.body as { error: Record<string, unknown> } & Record<string, unknown>,
+  };
 }
 
 describe("HttpExceptionFilter (backend-design §5, NFR-015)", () => {
@@ -60,6 +68,14 @@ describe("HttpExceptionFilter (backend-design §5, NFR-015)", () => {
     const dev = run(new Error("boom"), "development").body;
     expect(dev.error.details).toEqual({ debug: { message: "boom" } });
     expect(JSON.stringify(dev)).not.toContain("at ");
+  });
+
+  it("T-145: sets Retry-After on 429 AppError with details.retryAfterSeconds", () => {
+    const r = run(new AppError("RATE_LIMITED", "slow down", { retryAfterSeconds: 120 }));
+    expect(r.status).toBe(429);
+    expect(r.headers["Retry-After"]).toBe("120");
+    expect(r.body.error).toMatchObject({ code: "RATE_LIMITED", details: { retryAfterSeconds: 120 } });
+    expect(run(new ThrottlerException()).headers["Retry-After"]).toBeUndefined();
   });
 
   it("maps ThrottlerException to RATE_LIMITED and 404 to NOT_FOUND", () => {

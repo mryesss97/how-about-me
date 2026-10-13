@@ -1,7 +1,10 @@
-import { Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Query, Req } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Query, Req } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import {
+  BulkReanalyzeBodySchema,
   MentionsListQuerySchema,
+  type BulkReanalyzeBody,
+  type BulkReanalyzeResponse,
   type MentionDetail,
   type MentionsListQuery,
   type MentionsPage,
@@ -39,6 +42,19 @@ export class MentionsController {
     @Param("mentionId", ParseUUIDPipe) mentionId: string,
   ): Promise<MentionDetail> {
     return this.mentions.detail(projectId, mentionId);
+  }
+
+  /** T-145 / FR-196: bulk re-analysis by list filters — admin only (personas §3, no analyst gate). */
+  @Post("reanalyze")
+  @HttpCode(200)
+  @Roles("admin")
+  bulkReanalyze(
+    @Param("projectId", ParseUUIDPipe) projectId: string,
+    @Body(zod(BulkReanalyzeBodySchema)) body: BulkReanalyzeBody,
+    @CurrentUser() user: AuthUser,
+    @Req() req: AuthedRequest,
+  ): Promise<BulkReanalyzeResponse> {
+    return this.mentions.bulkReanalyze(projectId, body, user.id, req.id ?? null);
   }
 
   @Post(":mentionId/reanalyze")

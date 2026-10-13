@@ -145,23 +145,28 @@ export type MentionsScope = {
   count: boolean;
 };
 
+export type FilterScope = { scope: AnalyticsScope; q: string | undefined; sort: MentionSort };
+
 /**
  * Default range = last 7×24h like analytics (api-contract §6, BR-028: absolute UTC instants).
- * `reviewStatus` (P1) is accepted and ignored until review state exists (E11).
+ * `reviewStatus` (P1) is accepted and ignored until review state exists (E11). Shared by list and bulk
+ * re-analyze (T-145) so `matched` equals the list `totalCount` for the same filters.
  */
+export function resolveFilterScope(
+  query: Omit<MentionsListQuery, "cursor" | "limit" | "count">,
+  projectId: string,
+  now: Date = new Date(),
+): FilterScope {
+  const { from, to, timezone, q, sort, reviewStatus: _reviewStatus, ...filters } = query;
+  const r = resolveRange({ from, to, timezone }, { projectTimezone: timezone ?? "Asia/Ho_Chi_Minh", now });
+  return { scope: { projectId, range: { from: r.from, to: r.to }, timezone: r.timezone, filters }, q, sort };
+}
+
 export function resolveMentionsScope(
   query: MentionsListQuery,
   projectId: string,
   now: Date = new Date(),
 ): MentionsScope {
-  const { from, to, timezone, q, sort, cursor, limit, count, reviewStatus: _reviewStatus, ...filters } = query;
-  const r = resolveRange({ from, to, timezone }, { projectTimezone: timezone ?? "Asia/Ho_Chi_Minh", now });
-  return {
-    scope: { projectId, range: { from: r.from, to: r.to }, timezone: r.timezone, filters },
-    q,
-    sort,
-    cursor,
-    limit,
-    count,
-  };
+  const { cursor, limit, count, ...rest } = query;
+  return { ...resolveFilterScope(rest, projectId, now), cursor, limit, count };
 }
