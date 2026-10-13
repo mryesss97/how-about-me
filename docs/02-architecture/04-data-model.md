@@ -32,6 +32,7 @@ erDiagram
     monitoring_projects ||--o{ audit_logs : logs
     user_profiles ||--o{ audit_logs : acts
     monitoring_projects ||--o{ analysis_settings : versions
+    monitoring_projects ||--o| collector_state : breaker
 ```
 
 ## 3. Enums
@@ -74,7 +75,7 @@ erDiagram
 
 ### 4.3 `project_members`
 
-| project_id uuid FK · user_id uuid FK · role user_role NN · invited_email text · created_by uuid · created_at / updated_at · **PK (project_id, user_id)** |
+| project_id uuid FK · user_id uuid FK · role user_role NN · invited_email text · created_by uuid · created_at / updated_at · **PK (project_id, user_id)** · index `(user_id)` (`project_members_user_id_idx`) |
 Invitations before first login: row keyed by a placeholder profile created from email (id generated); reconciled on first login by email match. The placeholder has `last_login_at = null`; `invited_email` stores the normalized (trimmed, lower-case) email; `created_by` is the inviting admin (T-035).
 
 ### 4.4 `integration_connections`
@@ -113,7 +114,7 @@ Never selected by list endpoints; only `ThreadsTokenStore` reads it.
 | created_at / updated_at / deleted_at                 |                                 |                |
 
 Unique (partial, raw SQL migration): `UNIQUE (project_id, platform, query_type, lower(query_value)) WHERE deleted_at IS NULL`.
-Index: `(project_id, enabled, next_run_at) WHERE deleted_at IS NULL`.
+Index: `(project_id, enabled, next_run_at)` (`listening_queries_project_id_enabled_next_run_at_idx`, plain, not partial; the claim query filters `deleted_at IS NULL` itself).
 
 ### 4.7 `social_posts`
 
@@ -150,7 +151,8 @@ Unique `(platform, platform_post_id)`. Indexes: `(project_id, published_at DESC)
 
 ### 4.8 `post_query_matches`
 
-| post_id uuid FK · query_id uuid FK · first_matched_at NN · last_matched_at NN · excluded_by_terms boolean NN default false · **PK (post_id, query_id)** · index `(query_id, post_id) WHERE NOT excluded_by_terms` |
+| post_id uuid FK · query_id uuid FK · first_matched_at NN · last_matched_at NN · excluded_by_terms boolean NN default false · **PK (post_id, query_id)** · index `(query_id, post_id)` (`post_query_matches_query_id_post_id_idx`) |
+No partial index `WHERE NOT excluded_by_terms`: measured in #84 with no significant gain (overview uses a hash semi-join), see [12-performance-report.md](12-performance-report.md) §5. The `excluded_by_terms` filter is applied in the query.
 
 ### 4.9 `sync_jobs`
 
@@ -161,6 +163,7 @@ Indexes: `(project_id, created_at DESC)`, `(query_id, created_at DESC)`, `(statu
 
 | id uuid PK · post_id FK NN · project_id FK NN · status analysis_status NN · trigger analysis_trigger NN · source_content_hash text NN · source_revision int NN · effective_version text NN (BR-023 key) · classifier_provider / classifier_model / prompt_version / taxonomy_version · safety_provider / safety_model / safety_policy_version · started_at / completed_at · input_tokens / output_tokens int · estimated_cost_usd numeric(12,6) · attempt_count int NN 0 · skipped_reason text · error_code / error_message text · locked_at / locked_by · requested_by uuid · created_at |
 Indexes: `(post_id, created_at DESC)`, `(status, created_at)`, `(source_content_hash, effective_version)`, `(project_id, status)`.
+Partial unique (raw SQL, `init_extras`): `analysis_runs_open_unique (post_id, source_content_hash, effective_version) WHERE status IN ('pending','processing')`.
 Uniqueness (soft, enforced in service): one `completed` run per `(post_id, source_content_hash, effective_version)` unless `trigger='manual'`.
 
 ### 4.11 `post_analyses`
@@ -175,11 +178,11 @@ Indexes: `(post_id)`, `(project_id, relevance_label)`, `(project_id, sentiment_l
 ### 4.13 `analysis_overrides` (P1)
 
 | id uuid PK · post_id FK NN · project_id FK NN · analysis_id FK · field override_field NN · previous_value jsonb · override_value jsonb NN · reason text · reviewed_by uuid NN · created_at NN · revoked_at · revoked_by |
-Partial unique: `(post_id, field) WHERE revoked_at IS NULL`. `override_value = { "value": <label | label[]> }`; `previous_value = { "value": … }` = AI value of `analysis_id` (the post's `current_analysis_id` when the override was created), NULL when unanalysed. Revoke sets `revoked_at/revoked_by`, never deletes (FR-193). Written by ReviewsModule (T-142).
+Partial unique: `(post_id, field) WHERE revoked_at IS NULL`; plus plain index `(post_id, field)` (`analysis_overrides_post_id_field_idx`). `override_value = { "value": <label | label[]> }`; `previous_value = { "value": … }` = AI value of `analysis_id` (the post's `current_analysis_id` when the override was created), NULL when unanalysed. Revoke sets `revoked_at/revoked_by`, never deletes (FR-193). Written by ReviewsModule (T-142).
 
 ### 4.14 `audit_logs`
 
-| id uuid PK · project_id · actor_user_id · action text NN (`query.created`, `integration.updated`, …) · entity_type text · entity_id text · metadata jsonb · request_id text · created_at NN · index `(project_id, created_at DESC)`, `(action)` |
+| id uuid PK · project_id FK → monitoring_projects (`ON DELETE SET NULL`) · actor_user_id FK → user_profiles (`ON DELETE SET NULL`) · action text NN (`query.created`, `integration.updated`, …) · entity_type text · entity_id text · metadata jsonb · request_id text · created_at NN · index `(project_id, created_at DESC)`, `(action)` |
 
 ### 4.16 `analysis_settings` (P1, FR-190)
 
@@ -188,8 +191,15 @@ Append-only: one row per policy version, never updated or deleted. Active policy
 
 ### 4.15 `analytics_daily` (P1.5)
 
+Planned, **not created yet** (absent from `schema.prisma` and migrations).
+
 | bucket_date date · project_id · query_id (nullable = all) · relevant_mentions · positive/neutral/negative_count · safe/sensitive/severe_count · intent_counts jsonb · topic_counts jsonb · language_counts jsonb · refreshed_at · **PK (project_id, bucket_date, coalesce(query_id, '00000000-…'))** |
 Raw tables remain the source of truth; refreshed incrementally per day.
+
+### 4.17 `collector_state`
+
+| project_id uuid **PK** FK → monitoring_projects (cascade) · consecutive_provider_failures int NN default 0 · circuit_open_until timestamptz · circuit_reason text · updated_at NN |
+Project-level provider circuit breaker state; behaviour in [06-ingestion-pipeline.md](06-ingestion-pipeline.md).
 
 ## 5. Views
 
