@@ -160,7 +160,9 @@ describe("Analysis failure handling (T-075)", () => {
     }
 
     it("over budget today → only manual runs are processed", async () => {
-      await seedSpent(new Date());
+      // #189: "today" is the DB's UTC day; seed with DB now() rather than the Node clock.
+      const [row] = await prisma.$queryRaw<{ now: Date }[]>`SELECT now() AS now`;
+      await seedSpent(row?.now ?? new Date());
       await ingest.ingestPage(q, [post("i", `${POST_TEXT} ingest`), post("m", `${POST_TEXT} manual`)]);
       const pending = await prisma.analysisRun.findMany({ where: { status: "pending" }, orderBy: { id: "asc" } });
       await prisma.analysisRun.update({ where: { id: pending[1]?.id ?? "" }, data: { trigger: "manual" } });

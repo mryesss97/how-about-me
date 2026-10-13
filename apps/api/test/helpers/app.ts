@@ -17,6 +17,10 @@ export async function createTestApp(
   const app = moduleRef.createNestApplication({ logger: false });
   configureApp(app, app.get<AppConfig>(APP_CONFIG));
   await app.init();
+  // #189: listen once on the exact address supertest dials. Otherwise supertest calls listen(0) per request
+  // on `::`, and on macOS that ephemeral port can collide with another process bound to 127.0.0.1:<port>,
+  // so the request lands elsewhere (30 s timeout / socket hang up). app.close() closes this server.
+  await app.listen(0, "127.0.0.1");
   return { app, prisma: app.get(PrismaService) };
 }
 

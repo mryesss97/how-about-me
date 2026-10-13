@@ -8,7 +8,7 @@ Monorepo for **How About Me**, an internal Threads social-listening product (MVP
 
 - `apps/web` Next.js 16 (App Router) + Untitled UI (React Aria, Tailwind v4) + TanStack Query. `apps/api` NestJS 11 + Prisma 6 (Postgres/Supabase). `packages/contracts` Zod DTOs shared by both. `packages/taxonomy` classification labels/policy.
 - `pnpm dev | build | lint | typecheck | test`, `pnpm db:up|migrate|seed`, `pnpm backlog:render`, `pnpm issues:sync`.
-- `pnpm verify:quiet` (one line on pass, last 50 lines on fail), `pnpm issue:start|tidy|ship|finish`, `pnpm agent <triage|plan|code|review|cost> <ticket>`.
+- `pnpm verify:quiet` (one line on pass, last 50 lines on fail), `pnpm test:int:quiet` (same for API integration tests; per-worktree test DB), `pnpm issue:start|tidy|ship|finish`, `pnpm agent <triage|plan|code|review|cost> <ticket>`.
 - Untitled UI components live in `apps/web/src/components/**` (vendored, kebab-case files, React Aria imports prefixed `Aria*`). Add more with `npx untitledui@latest add <name> --dir apps/web`. Their upstream agent guide is in `apps/web/UNTITLED_UI_GUIDE.md`.
 
 ## Non-negotiable rules
