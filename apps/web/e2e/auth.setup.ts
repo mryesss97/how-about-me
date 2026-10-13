@@ -17,9 +17,6 @@ for (const role of ROLES) {
     // Always leave a valid file so dependent projects can load storageState.
     writeEmptyState(path);
     setup.skip(!hasCredentials(role), `needs E2E_${role.toUpperCase()}_EMAIL/PASSWORD`);
-    await page.goto("/login");
-    const loginWired = await page.getByRole("button", { name: "Continue" }).isEnabled();
-    setup.skip(!loginWired, "login form not wired yet (T-032)");
     await loginAs(page, role);
     await page.context().storageState({ path });
   });
