@@ -21,7 +21,8 @@ Design: see docs/02-architecture/02-backend-design.md §3 and the related pipeli
 
 ## Distributions (T-093)
 
-- `GET …/analytics/{sentiment,safety,intents,topics}` — `analytics-distributions.{controller,service,repository}.ts`, pure helpers in `distributions.ts`.
+- `GET …/analytics/{sentiment,safety,intents,topics,languages}` — `analytics-distributions.{controller,service,repository}.ts`, pure helpers in `distributions.ts`.
 - Denominators: sentiment/safety = sum of label counts; intents/topics = posts with ≥ 1 label (`intentAnalyzed`/`topicAnalyzed`), computed in the same SQL snapshot.
+- Languages (T-148): denominator = posts with `language_code IS NOT NULL`; foreign codes fold into `other`; 8 codes, count desc.
 - Topics: top 12 real labels + `other` bucket (DISTINCT posts tagged `other` or outside the top). Intent/topic overrides are not applied yet (T-142).
 - Sentiment includes `timeseries` from `AnalyticsTimeseriesService.sentimentTimeseries` (T-092; hour ≤ 48 h, else day, zero-filled).

@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
-import { TOPIC_LABELS } from "@how-about-me/taxonomy";
+import { LANGUAGE_CODES, TOPIC_LABELS } from "@how-about-me/taxonomy";
 import { PrismaService } from "../../database/prisma.service";
 import { type AnalyticsScope, withBase } from "./analytics-filters";
 import { type LabelCount, TOP_TOPICS } from "./distributions";
@@ -38,6 +38,22 @@ export class AnalyticsDistributionsRepository {
         scope,
         Prisma.sql`SELECT safety_level::text AS label, COUNT(DISTINCT post_id)::int AS count
                      FROM base WHERE safety_level IS NOT NULL GROUP BY 1`,
+      ),
+    );
+  }
+
+  /**
+   * §4 Language distribution (FR-143) — DISTINCT posts per language over posts with a language
+   * (`language_code IS NOT NULL`, `unknown` included). Codes outside the taxonomy fold into `other`.
+   */
+  languageCounts(scope: AnalyticsScope): Promise<LabelCount[]> {
+    const codes = [...LANGUAGE_CODES];
+    return this.prisma.$queryRaw<LabelCount[]>(
+      withBase(
+        scope,
+        Prisma.sql`SELECT CASE WHEN language_code = ANY(${codes}::text[]) THEN language_code ELSE 'other' END AS label,
+                          COUNT(DISTINCT post_id)::int AS count
+                     FROM base WHERE language_code IS NOT NULL GROUP BY 1`,
       ),
     );
   }
