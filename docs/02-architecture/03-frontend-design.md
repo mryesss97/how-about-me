@@ -33,7 +33,7 @@ apps/web/src/
 │  └─ reviews/ (P1)
 ├─ lib/
 │  ├─ api/                       typed fetch client (contracts), error envelope handling, auth header injection
-│  ├─ query/                     TanStack Query client + key factories
+│  ├─ query/                     TanStack Query client + key factories + infinite-list helpers
 │  ├─ filters/                   URL state (nuqs) schema shared by overview & mentions
 │  ├─ time/                      timezone formatting (date-fns-tz), presets → ranges
 │  ├─ format/                    number formatting for KPIs (count, rate or "—", growth/"New", pp delta)
@@ -43,7 +43,7 @@ apps/web/src/
 └─ styles/                       globals.css, theme.css (Untitled UI tokens), typography.css
 ```
 
-Feature folders never import from each other except via `lib/`. Known exceptions: Mentions renders the analytics `FilterBar` and reuses `useOverview` + `OverviewBanners` for its FR-159 banners (T-103). Reviews reuses `MentionDetailSlideout` and the list helpers `isRejectedCursor` / `flattenUnique` from Mentions (#219). Moving them to `features/shared` / `lib/query` is a follow-up. Untitled UI `components/` are treated as vendor-ish: modifications minimal and documented.
+Feature folders never import from each other, except `features/auth` (session, current project, role), which any feature may use. Shared code lives in `features/shared` (UI and shared hooks, e.g. `OverviewBanners`, `DetailSlideout`, `useOverview`) or `lib/` (e.g. `lib/query/infinite-list.ts` with `isRejectedCursor` / `flattenUnique`). Route files in `app/` compose features (e.g. the Mentions page renders the analytics `FilterBar`; the Reviews route injects `MentionDetail` into `ReviewsView` via `renderDetail`, #233). Remaining exception: Mentions detail opens the settings `SettingsDialog` (`features/settings`); moving it to `features/shared` is a follow-up. Untitled UI `components/` are treated as vendor-ish: modifications minimal and documented.
 
 ## 2. Rendering & data strategy
 

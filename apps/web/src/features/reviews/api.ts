@@ -12,7 +12,7 @@ import {
 import { useInfiniteQuery, useMutation, useQueryClient, type InfiniteData, type QueryKey } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
-import { isRejectedCursor } from "@/features/mentions/api";
+import { isRejectedCursor } from "@/lib/query/infinite-list";
 import { ApiError, apiFetch } from "@/lib/api/client";
 import { qk, staleTimes } from "@/lib/query/keys";
 

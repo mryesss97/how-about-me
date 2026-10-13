@@ -5,11 +5,11 @@ import { Button } from "@/components/base/buttons/button";
 import { Toggle } from "@/components/base/toggle/toggle";
 import { useCurrentProject } from "@/features/auth/use-current-project";
 import { useRole } from "@/features/auth/use-role";
-import { flattenUnique } from "@/features/mentions/api";
+import { flattenUnique } from "@/lib/query/infinite-list";
 import { ApiError } from "@/lib/api/client";
 import { env } from "@/lib/env";
 import { canMarkReviewed, useMarkReviewed, useReviewQueue, type ReviewFilters } from "./api";
-import { ReviewDetailSlideout } from "./review-detail-slideout";
+import { ReviewDetailSlideout, type RenderReviewDetail } from "./review-detail-slideout";
 import { ReviewTable } from "./review-table";
 import { ReviewTabs } from "./review-tabs";
 import { useReviewParams } from "./use-review-params";
@@ -24,7 +24,7 @@ const toStateError = (err: unknown) =>
     : null;
 
 /** /reviews body (UX §3.8, FR-195): tabs by reason → toolbar → table → slide-out. Viewer is read-only. */
-export function ReviewsView() {
+export function ReviewsView({ renderDetail }: { renderDetail: RenderReviewDetail }) {
   const { project } = useCurrentProject();
   const { role } = useRole();
   const pid = project?.id;
@@ -91,6 +91,7 @@ export function ReviewsView() {
           postId={item}
           canMark={canMark && items.some((i) => i.id === item)}
           onClose={params.closeItem}
+          renderDetail={renderDetail}
         />
       ) : null}
     </div>

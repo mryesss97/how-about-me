@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { ReviewsView } from "@/features/reviews/reviews-view";
+import { ReviewsRouteView } from "./reviews-route-view";
 
 export const metadata = { title: "Reviews" };
 
@@ -14,7 +14,7 @@ export default function ReviewsPage() {
         </p>
       </header>
       <Suspense fallback={null}>
-        <ReviewsView />
+        <ReviewsRouteView />
       </Suspense>
     </div>
   );

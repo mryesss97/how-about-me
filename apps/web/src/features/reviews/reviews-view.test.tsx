@@ -25,7 +25,6 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/features/auth/use-current-project", () => ({ useCurrentProject: () => ({ project: { id: PID } }) }));
 vi.mock("@/features/auth/use-role", () => ({ useRole: () => ({ role, settings: null }) }));
-vi.mock("@/features/mentions/detail/mention-detail", () => ({ MentionDetail: () => <p>detail body</p> }));
 vi.mock("sonner", () => ({
   toast: { success: (...a: unknown[]) => toastSuccess(...a), error: (...a: unknown[]) => toastError(...a) },
 }));
@@ -49,7 +48,7 @@ function setup() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={qc}>
-      <ReviewsView />
+      <ReviewsView renderDetail={() => <p>detail body</p>} />
     </QueryClientProvider>,
   );
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sentimentFixture, timeseriesFixture } from "../overview-fixture.test-utils";
+import { sentimentFixture, timeseriesFixture } from "@/features/shared/overview-fixture.test-utils";
 import { topicSentimentFixture } from "./topic-sentiment-fixture.test-utils";
 import {
   HEATMAP_MAX_OPACITY,

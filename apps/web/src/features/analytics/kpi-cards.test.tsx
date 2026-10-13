@@ -2,7 +2,7 @@ import { OverviewResponseSchema } from "@how-about-me/contracts";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { KpiCards } from "./kpi-cards";
-import { overviewFixture } from "./overview-fixture.test-utils";
+import { overviewFixture } from "@/features/shared/overview-fixture.test-utils";
 
 /** React Aria opens tooltips on keyboard focus; set keyboard modality first. */
 async function focusTrigger(el: HTMLElement) {
