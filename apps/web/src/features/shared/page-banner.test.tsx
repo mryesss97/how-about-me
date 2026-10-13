@@ -1,0 +1,51 @@
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { AnalysisPendingBanner, IntegrationExpiredBanner, PageBanner, SyncFailedBanner } from "./page-banner";
+
+describe("page banners (UX §2.3, BR-032)", () => {
+  it("a failed sync warns that the data may be incomplete and links to System Status", () => {
+    render(<SyncFailedBanner />);
+    expect(screen.getByText(/Latest Threads sync failed/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /system status/i })).toHaveAttribute("href", "/system-status");
+  });
+
+  it("pending analysis is its own state, with the count and a link to those mentions", () => {
+    render(<AnalysisPendingBanner count={1240} />);
+    expect(screen.getByText(/1,240 mentions are waiting for analysis/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /view pending/i })).toHaveAttribute(
+      "href",
+      "/mentions?analysisStatus=pending",
+    );
+  });
+
+  it("uses the singular form for one pending mention and hides itself at zero", () => {
+    const { rerender, container } = render(<AnalysisPendingBanner count={1} />);
+    expect(screen.getByText(/1 mention is waiting/i)).toBeInTheDocument();
+
+    rerender(<AnalysisPendingBanner count={0} />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("BR-033: only an admin gets the link to fix the Threads connection", () => {
+    const { rerender } = render(<IntegrationExpiredBanner canManage />);
+    expect(screen.getByRole("link", { name: /integrations/i })).toHaveAttribute("href", "/settings/integrations");
+
+    rerender(<IntegrationExpiredBanner />);
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    expect(screen.getByText(/ask a project admin/i)).toBeInTheDocument();
+  });
+
+  it("an expired integration is an alert; softer states are polite status messages", () => {
+    const { rerender } = render(<IntegrationExpiredBanner />);
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+
+    rerender(<SyncFailedBanner />);
+    expect(screen.getByRole("status")).toBeInTheDocument();
+  });
+
+  it("the generic banner renders any tone with a title and description", () => {
+    render(<PageBanner tone="info" title="Heads up" description="Something worth knowing." />);
+    expect(screen.getByText("Heads up")).toBeInTheDocument();
+    expect(screen.getByText("Something worth knowing.")).toBeInTheDocument();
+  });
+});
