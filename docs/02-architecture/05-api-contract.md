@@ -58,6 +58,8 @@
 | `PATCH /projects/:projectId/members/:userId`  | admin  | `{ role }`                                                                        | `Member` · `409 LAST_ADMIN`                          |
 | `DELETE /projects/:projectId/members/:userId` | admin  | —                                                                                 | 204 · `409 LAST_ADMIN`                               |
 
+`PATCH /projects/:projectId` (FR-032, T-034): body must have at least one field; `timezone` must be a valid IANA zone (`Intl.DateTimeFormat`, aliases such as `UTC` accepted) else `400 VALIDATION_ERROR`. `settings` is merged per key — unsent keys keep their current value. Only fields that actually change are written; the change is audited as `project.updated` in the same transaction with metadata `{ changes: { name?|timezone?|"settings.<key>"?: { from, to } } }` (no secrets). A no-op patch returns `200` with the current project and writes no audit row.
+
 ## 4. Integrations (Threads)
 
 | Method & path                                           | Role   | Body                                                   | Response                                                                                                                           |

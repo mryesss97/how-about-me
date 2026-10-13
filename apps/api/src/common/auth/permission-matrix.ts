@@ -23,7 +23,7 @@ const ALL = { admin: "allow", analyst: "allow", viewer: "allow" } as const;
 
 export const PERMISSION_MATRIX: readonly PermissionEntry[] = [
   { method: "GET", path: P, ...ALL, status: "implemented" },
-  { method: "PATCH", path: P, ...ADMIN_ONLY, status: "planned" },
+  { method: "PATCH", path: P, ...ADMIN_ONLY, status: "implemented" },
   { method: "GET", path: `${P}/members`, ...ADMIN_ONLY, status: "planned" },
   { method: "POST", path: `${P}/members`, ...ADMIN_ONLY, status: "planned" },
   { method: "PATCH", path: `${P}/members/:userId`, ...ADMIN_ONLY, status: "planned" },
