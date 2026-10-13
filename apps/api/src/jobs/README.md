@@ -13,3 +13,9 @@ Role bootstrap: scheduler (collector) and analysis worker are registered only wh
 ## Analysis worker (T-070)
 
 - `modules/analysis/analysis-worker.service.ts` adds the `analysis-worker` interval via `SchedulerRegistry` only when `APP_ROLE ∈ {worker, all}`, `NODE_ENV ≠ test` and `ANALYSIS_RUN_PROCESSOR` is bound. Tests call `tick()` directly.
+
+## Retention job (T-153)
+
+- `retention-job.module.ts` / `retention-job.service.ts` — `retention-job` cron (`RETENTION_JOB_CRON`, `RETENTION_JOB_TIMEZONE`), registered only when `RETENTION_JOB_MODE ≠ off`, `APP_ROLE ∈ {worker, all}` and `NODE_ENV ≠ test`. Reuses `modules/retention/purge.ts`; logs dry-run counts per scope, deletes only in `apply`. Tests call `run(now)` directly.
+- `retention-plan.ts` — pure UTC-midnight cutoffs and scope list (per project `project` + `runs`, then global `sync-jobs`).
+- See docs/05-operations/04-data-retention-purge.md.

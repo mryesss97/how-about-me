@@ -26,7 +26,15 @@ describe("parsePurgeArgs (T-126)", () => {
     expect(a.actorUserId).toBe(PID);
   });
 
+  it("runs scope (T-153) with optional --project", () => {
+    const a = parsePurgeArgs(["--runs", "--before", "2026-03-01", "--project", PID]);
+    expect(a.target).toEqual({ scope: "runs", projectId: PID, before: new Date("2026-03-01T00:00:00Z") });
+    expect(a.apply).toBe(false);
+  });
+
   it.each([
+    ["--runs without --before", ["--runs"]],
+    ["--runs with --sync-jobs", ["--runs", "--sync-jobs", "--before", "2026-01-01"]],
     ["--project without --before", ["--project", PID]],
     ["--sync-jobs without --before", ["--sync-jobs"]],
     ["several scopes", ["--post", "x", "--sync-jobs", "--before", "2026-01-01"]],

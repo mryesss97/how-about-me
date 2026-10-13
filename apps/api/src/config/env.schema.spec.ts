@@ -21,6 +21,22 @@ describe("loadEnv fail-fast", () => {
     expect(env.OPENAI_MAX_RETRIES).toBe(2);
   });
 
+  it("retention job defaults to off, Sunday 03:00 Asia/Ho_Chi_Minh (T-153, NFR-054)", () => {
+    const env = loadEnv(base);
+    expect(env.RETENTION_JOB_MODE).toBe("off");
+    expect(env.RETENTION_JOB_CRON).toBe("0 3 * * 0");
+    expect(env.RETENTION_JOB_TIMEZONE).toBe("Asia/Ho_Chi_Minh");
+  });
+
+  it.each([
+    ["unknown mode", { RETENTION_JOB_MODE: "yes" }],
+    ["invalid cron", { RETENTION_JOB_CRON: "every sunday" }],
+    ["zero retention days", { RETENTION_POSTS_DAYS: "0" }],
+    ["negative retention days", { RETENTION_RUNS_DAYS: "-5" }],
+  ])("rejects retention misconfiguration: %s (T-153)", (_n, extra) => {
+    expect(() => loadEnv({ ...base, ...extra })).toThrow();
+  });
+
   it("lists missing DATABASE_URL by path", () => {
     expect(() => loadEnv({ NODE_ENV: "test" })).toThrow(/DATABASE_URL/);
   });
