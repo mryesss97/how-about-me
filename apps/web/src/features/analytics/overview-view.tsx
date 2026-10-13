@@ -13,6 +13,7 @@ import {
   kpiDrillDown,
   queryDrillDown,
   segmentDrillDown,
+  topicSentimentDrillDown,
 } from "@/lib/filters/drill-down";
 import type { Filters } from "@/lib/filters/schema";
 import { useFilters } from "@/lib/filters/use-filters";
@@ -25,17 +26,20 @@ import {
   useSafetyDistribution,
   useQueryShare,
   useSentiment,
+  useTopicSentiment,
   useTopicsDistribution,
 } from "./api";
 import {
   IntentDistributionChart,
   LanguageDistributionChart,
   MentionsOverTimeChart,
+  NegativeTopicsChart,
   QueryShareChart,
   SafetyDistributionChart,
   SentimentDistributionChart,
   SentimentOverTimeChart,
   TopTopicsChart,
+  TopicSentimentHeatmap,
 } from "./charts";
 import { FilterBar } from "./filter-bar";
 import { KpiCards, KpiCardsSkeleton } from "./kpi-cards";
@@ -50,7 +54,8 @@ function toQueryError(err: unknown) {
 
 /**
  * /overview body: filters → banners → KPI cards (T-099) → charts (T-100). Safety chart slot is T-101;
- * P1 row: language donut (T-148), keyword share (T-150).
+ * P1 row: language donut (T-148), keyword share (T-150), negative-topic contributors (T-149); topic × sentiment
+ * heatmap (T-149) full width below. Contributors and heatmap share one topic-sentiment request.
  * Each chart has its own query state so one failing chart never blanks the page.
  */
 export function OverviewView() {
@@ -68,6 +73,7 @@ export function OverviewView() {
   const intents = useIntentsDistribution(project?.id, apiParams);
   const languages = useLanguagesDistribution(project?.id, apiParams);
   const queryShare = useQueryShare(project?.id, apiParams);
+  const topicSentiment = useTopicSentiment(project?.id, apiParams);
 
   // FR-142 drill-down: pin the exact range sent to analytics (not a fresh "now"), so the list matches the counts.
   const queriedTo = apiParams.to;
@@ -177,6 +183,23 @@ export function OverviewView() {
           isLoading={!project || queryShare.isLoading}
           error={toQueryError(queryShare.error)}
           onRetry={() => void queryShare.refetch()}
+        />
+        <NegativeTopicsChart
+          getHref={(t) => href(topicSentimentDrillDown(t, "negative"))}
+          onNavigate={navigate}
+          className="lg:col-span-4"
+          data={topicSentiment.data}
+          isLoading={!project || topicSentiment.isLoading}
+          error={toQueryError(topicSentiment.error)}
+          onRetry={() => void topicSentiment.refetch()}
+        />
+        <TopicSentimentHeatmap
+          getCellHref={(t, s) => href(topicSentimentDrillDown(t, s ?? undefined))}
+          className="lg:col-span-12"
+          data={topicSentiment.data}
+          isLoading={!project || topicSentiment.isLoading}
+          error={toQueryError(topicSentiment.error)}
+          onRetry={() => void topicSentiment.refetch()}
         />
       </div>
     </div>

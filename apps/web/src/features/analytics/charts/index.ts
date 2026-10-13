@@ -42,3 +42,11 @@ export const QueryShareChart = dynamic(() => import("./query-share-chart").then(
   ssr: false,
   loading,
 });
+export const NegativeTopicsChart = dynamic(() => import("./negative-topics-chart").then((m) => m.NegativeTopicsChart), {
+  ssr: false,
+  loading,
+});
+export const TopicSentimentHeatmap = dynamic(
+  () => import("./topic-sentiment-heatmap").then((m) => m.TopicSentimentHeatmap),
+  { ssr: false, loading },
+);

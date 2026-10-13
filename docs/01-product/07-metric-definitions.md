@@ -123,8 +123,8 @@ Same as 3.5 on intents (denominator `intentAnalyzed`); all labels returned, coun
 ## 4. Charts (P1)
 
 - **Language distribution**: distinct posts per `language_code` over posts with a language (`language_code IS NOT NULL`, `unknown` included; posts not yet analysed are excluded). Codes outside the taxonomy count as `other`; all 8 codes are listed, sorted by count desc (ties in taxonomy order). Filter `language=other` matches the same set (stored `other` or any non-NULL code outside the taxonomy) — drill-down equivalence (#201).
-- **Topic × sentiment**: matrix `topic → {positive, neutral, negative}` distinct counts; denominator per row = posts with that topic and a sentiment.
-- **Negative-topic contributors**: topics ranked by `negativeCount` and `negativeShareWithinTopic = negativeCount / topicSentimentAnalyzed`.
+- **Topic × sentiment** (T-149): matrix `topic → {positive, neutral, negative}` distinct counts; denominator per row = posts with that topic and a sentiment (`total = positive + neutral + negative`). Topics are effective labels (override > AI, BR-025), sentiment is the effective sentiment of `B`. All 12 taxonomy labels are returned (count 0 included); `other` = posts tagged `other` (a real label here, not the top-12 remainder of §3.5). Labels outside the taxonomy are ignored. Sorted `total` desc, ties in taxonomy order, `other` last. A post with a topic but no sentiment is not counted, so a row `total` can be lower than the same topic in Top topics. Multi-label: a post counts once in each of its topic rows, so the row totals are not summed.
+- **Negative-topic contributors** (T-149): topics ranked by `negativeCount` and `negativeShareWithinTopic = negativeCount / topicSentimentAnalyzed` (= `rows[].negativeShare`, null when the row total = 0, FR-140). The UI lists only topics with `negative > 0`, ranked `negative` desc, ties by share desc; no top-N cut.
 - **Keyword share**: distinct posts per query (overlap allowed); tooltip explains overlap. Denominator = distinct posts in `B` (= mentionCount). A query counts only its matches with `excluded_by_terms=false`. Lists every non-deleted query (count 0 included) plus soft-deleted queries with count > 0 (BR-010); with `queryIds` exactly those queries. Sorted count desc, then display name.
 
 ## 5. Previous-period math
@@ -143,23 +143,25 @@ Rule (`apps/api/src/common/time/range.ts` `previousPeriodInTz`): when both `from
 
 Each metric maps to a mentions filter that returns exactly the counted posts:
 
-| Metric / segment   | Mentions filters                                     |
-| ------------------ | ---------------------------------------------------- |
-| mentionCount       | `from,to,relevance=relevant` + active global filters |
-| mention growth     | same as mentionCount (current period)                |
-| positive segment   | `+ sentiment=positive`                               |
-| negative segment   | `+ sentiment=negative`                               |
-| sensitive+severe   | `+ safety=sensitive,severe`                          |
-| safety `severe`    | `+ safety=severe`                                    |
-| topic `ticket`     | `+ topic=ticket`                                     |
-| intent `complaint` | `+ intent=complaint` (also complaint rate)           |
-| query share bar q  | `queryIds=q` (replaces global `queryIds`)            |
-| timeseries bucket  | `from=bucketStart,to=bucketEnd`                      |
-| previous period    | `from=prevFrom,to=prevTo`                            |
+| Metric / segment              | Mentions filters                                     |
+| ----------------------------- | ---------------------------------------------------- |
+| mentionCount                  | `from,to,relevance=relevant` + active global filters |
+| mention growth                | same as mentionCount (current period)                |
+| positive segment              | `+ sentiment=positive`                               |
+| negative segment              | `+ sentiment=negative`                               |
+| sensitive+severe              | `+ safety=sensitive,severe`                          |
+| safety `severe`               | `+ safety=severe`                                    |
+| topic `ticket`                | `+ topic=ticket`                                     |
+| intent `complaint`            | `+ intent=complaint` (also complaint rate)           |
+| query share bar q             | `queryIds=q` (replaces global `queryIds`)            |
+| topic × sentiment cell (t, s) | `+ topic=t&sentiment=s`                              |
+| negative contributor t        | `+ topic=t&sentiment=negative`                       |
+| timeseries bucket             | `from=bucketStart,to=bucketEnd`                      |
+| previous period               | `from=prevFrom,to=prevTo`                            |
 
-For rates the list returns the numerator posts. Topic `other` is the top-12 remainder and has no filter, so it is not drillable. Language `other` is drillable: `language=other` matches stored `other` plus any non-NULL code outside the taxonomy, the same set the slice counts (#201). FE mapping: `apps/web/src/lib/filters/drill-down.ts` (T-102).
+For rates the list returns the numerator posts. Topic `other` is the top-12 remainder and has no filter, so it is not drillable. Language `other` is drillable: `language=other` matches stored `other` plus any non-NULL code outside the taxonomy, the same set the slice counts (#201). In the topic × sentiment matrix (T-149) `other` is a real label and is drillable (`topic=other`). Cell values replace the global `topic`/`sentiment` keys (as for every segment), so with a global `topic` filter active a cell of another topic can count fewer posts than its list (the matrix counts posts with both topics). FE mapping: `apps/web/src/lib/filters/drill-down.ts` (T-102).
 
-QA reconciles list totals (`totalCount` header from `/mentions?count=true`) against chart numbers.
+QA reconciles list totals (`totalCount` header from `/mentions?count=true`) against chart numbers. Automated on the shared fixture (T-094): `apps/api/test/integration/analytics/fixture-equivalence.int-spec.ts`, expected numbers in `apps/api/test/fixtures/analytics-expected.ts`.
 
 ## 7. Operational metrics
 

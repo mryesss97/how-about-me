@@ -1,13 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { sentimentFixture, timeseriesFixture } from "../overview-fixture.test-utils";
+import { topicSentimentFixture } from "./topic-sentiment-fixture.test-utils";
 import {
+  HEATMAP_MAX_OPACITY,
+  HEATMAP_MIN_OPACITY,
   bucketRange,
   formatBucket,
   hasPrevious,
+  heatmapOpacity,
   humanizeLabel,
   shareOf,
   sumShares,
   toBarRows,
+  toContributorRows,
   toMentionsRows,
   toSentimentStackRows,
 } from "./chart-data";
@@ -64,5 +69,20 @@ describe("toBarRows / humanizeLabel / sumShares (T-101)", () => {
 
   it("humanizeLabel", () => {
     expect(humanizeLabel("purchase_intent")).toBe("Purchase intent");
+  });
+});
+
+describe("topic × sentiment helpers (T-149, FR-144)", () => {
+  it("toContributorRows drops negative 0, ranks negative desc then share desc, keeps row total", () => {
+    const rows = toContributorRows(topicSentimentFixture().rows);
+    expect(rows.map((r) => r.key)).toEqual(["venue", "ticket", "other", "price"]);
+    expect(rows[1]).toEqual({ key: "ticket", name: "Ticket", count: 2, share: 0.5, total: 4 });
+  });
+
+  it("heatmapOpacity: 0/null → min, 1 → max, monotonic", () => {
+    expect(heatmapOpacity(null)).toBe(HEATMAP_MIN_OPACITY);
+    expect(heatmapOpacity(0)).toBe(HEATMAP_MIN_OPACITY);
+    expect(heatmapOpacity(1)).toBeCloseTo(HEATMAP_MAX_OPACITY);
+    expect(heatmapOpacity(0.5)).toBeGreaterThan(heatmapOpacity(0.2));
   });
 });

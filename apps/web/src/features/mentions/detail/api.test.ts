@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canReanalyze } from "./api";
+import { canOverride, canReanalyze } from "./api";
 
 // FR-155 / BR-033: FE gating mirrors the server rule.
 describe("canReanalyze (BR-033)", () => {
@@ -15,5 +15,17 @@ describe("canReanalyze (BR-033)", () => {
   it("viewer and no role never", () => {
     expect(canReanalyze("viewer", { allowAnalystReanalyze: true })).toBe(false);
     expect(canReanalyze(null, { allowAnalystReanalyze: true })).toBe(false);
+  });
+});
+
+// FR-191 / FR-015: only admin and analyst see override controls; the server enforces it too.
+describe("canOverride (FR-191)", () => {
+  it("admin and analyst", () => {
+    expect(canOverride("admin")).toBe(true);
+    expect(canOverride("analyst")).toBe(true);
+  });
+  it("viewer and no role never", () => {
+    expect(canOverride("viewer")).toBe(false);
+    expect(canOverride(null)).toBe(false);
   });
 });

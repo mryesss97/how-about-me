@@ -5,6 +5,7 @@ import type {
   LanguagesDistributionResponse,
   SafetyDistributionResponse,
   SentimentResponse,
+  TopicSentimentResponse,
   TopicsDistributionResponse,
 } from "@how-about-me/contracts";
 import { INTENT_LABELS, LANGUAGE_CODES, SAFETY_LEVELS, SENTIMENT_LABELS, TOPIC_LABELS } from "@how-about-me/taxonomy";
@@ -12,7 +13,7 @@ import { AppError } from "../../common/errors/app.error";
 import { type AnalyticsScope, resolveAnalyticsQuery } from "./analytics-filters";
 import { AnalyticsDistributionsRepository } from "./analytics-distributions.repository";
 import { AnalyticsTimeseriesService } from "./analytics-timeseries.service";
-import { sortByCountDesc, toDistribution, toTopicsDistribution } from "./distributions";
+import { sortByCountDesc, toDistribution, toTopicSentimentRows, toTopicsDistribution } from "./distributions";
 
 /** T-093 — FR-136…FR-140, FR-147; docs/02-architecture/05-api-contract.md §6. */
 @Injectable()
@@ -54,6 +55,12 @@ export class AnalyticsDistributionsService {
     const rows = await this.repo.languageCounts(await this.scope(projectId, query));
     const denominator = rows.reduce((s, r) => s + r.count, 0);
     return { denominator, distribution: sortByCountDesc(toDistribution(LANGUAGE_CODES, rows, denominator)) };
+  }
+
+  /** FR-144 — topic × sentiment matrix; one request feeds the heatmap and negative-topic contributors. */
+  async topicSentiment(projectId: string, query: AnalyticsQuery): Promise<TopicSentimentResponse> {
+    const counts = await this.repo.topicSentimentCounts(await this.scope(projectId, query));
+    return { rows: toTopicSentimentRows(TOPIC_LABELS, counts) };
   }
 
   private async scope(projectId: string, query: AnalyticsQuery): Promise<AnalyticsScope> {

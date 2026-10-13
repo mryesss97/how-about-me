@@ -1,13 +1,14 @@
 "use client";
 
-import type { MentionDetail } from "@how-about-me/contracts";
-import { Copy01, LinkExternal01, RefreshCw01 } from "@untitledui/icons";
+import type { CreateOverrideBody, MentionDetail } from "@how-about-me/contracts";
+import { Copy01, LinkExternal01, RefreshCw01, UserCheck01 } from "@untitledui/icons";
 import { useState } from "react";
 import { Button } from "@/components/base/buttons/button";
 import { RequireRole } from "@/features/auth/require-role";
 import { SettingsDialog } from "@/features/settings/settings-dialog";
 import { safePermalink } from "../mention-row";
 import { isInFlight } from "./api";
+import { OverrideDialog } from "./override-form";
 import { useCopy } from "./use-copy";
 
 type Props = {
@@ -16,11 +17,25 @@ type Props = {
   canReanalyze: boolean;
   onReanalyze: () => void;
   isReanalyzing: boolean;
+  /** `canOverride(role)` — admin or analyst (FR-191; server enforces, FR-015). */
+  canOverride: boolean;
+  /** Resolves `true` when the override was saved, so the dialog can close. */
+  onOverride: (body: CreateOverrideBody) => Promise<boolean>;
+  isOverriding: boolean;
 };
 
 /** Operations for one mention — FR-155, TC-MEN-013, TC-MEN-019. */
-export function OperationsToolbar({ mention: m, canReanalyze, onReanalyze, isReanalyzing }: Props) {
+export function OperationsToolbar({
+  mention: m,
+  canReanalyze,
+  onReanalyze,
+  isReanalyzing,
+  canOverride,
+  onOverride,
+  isOverriding,
+}: Props) {
   const [confirm, setConfirm] = useState(false);
+  const [overriding, setOverriding] = useState(false);
   const copy = useCopy();
   const link = safePermalink(m.permalink);
   const busy = isReanalyzing || isInFlight(m.analysis.status);
@@ -37,6 +52,13 @@ export function OperationsToolbar({ mention: m, canReanalyze, onReanalyze, isRea
             onClick={() => setConfirm(true)}
           >
             Re-analyze
+          </Button>
+        </RequireRole>
+      ) : null}
+      {canOverride ? (
+        <RequireRole roles={["admin", "analyst"]} fallback={null}>
+          <Button size="sm" color="secondary" iconLeading={UserCheck01} onClick={() => setOverriding(true)}>
+            Override
           </Button>
         </RequireRole>
       ) : null}
@@ -82,6 +104,13 @@ export function OperationsToolbar({ mention: m, canReanalyze, onReanalyze, isRea
           </Button>
         </div>
       </SettingsDialog>
+      <OverrideDialog
+        mention={m}
+        isOpen={overriding}
+        onClose={() => setOverriding(false)}
+        isPending={isOverriding}
+        onSubmit={(body) => void onOverride(body).then((ok) => ok && setOverriding(false))}
+      />
     </div>
   );
 }

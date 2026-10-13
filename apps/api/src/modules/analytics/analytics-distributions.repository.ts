@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { LANGUAGE_CODES, TOPIC_LABELS } from "@how-about-me/taxonomy";
 import { PrismaService } from "../../database/prisma.service";
 import { type AnalyticsScope, withBase } from "./analytics-filters";
-import { type LabelCount, TOP_TOPICS } from "./distributions";
+import { type LabelCount, TOP_TOPICS, type TopicSentimentCount } from "./distributions";
 
 export type TaggedCounts = { rows: LabelCount[]; denominator: number };
 export type TopicCounts = { top: LabelCount[]; otherCount: number; denominator: number };
@@ -99,6 +99,25 @@ export class AnalyticsDistributionsRepository {
     const { rows: rest, denominator } = splitDenominator(rows);
     const otherCount = rest.find((r) => r.label === OTHER)?.count ?? 0;
     return { top: rest.filter((r) => r.label !== OTHER), otherCount, denominator };
+  }
+
+  /**
+   * §4 Topic × sentiment (FR-144) — DISTINCT posts per (effective topic, effective sentiment), BR-025.
+   * Posts without sentiment drop out (row denominator = posts with topic and sentiment); labels outside the
+   * taxonomy are ignored.
+   */
+  topicSentimentCounts(scope: AnalyticsScope): Promise<TopicSentimentCount[]> {
+    const labels = [...TOPIC_LABELS];
+    return this.prisma.$queryRaw<TopicSentimentCount[]>(
+      withBase(
+        scope,
+        Prisma.sql`SELECT t.label::text AS topic, b.sentiment_label::text AS sentiment,
+                          COUNT(DISTINCT b.post_id)::int AS count
+                     FROM base b JOIN effective_post_topics t ON t.post_id = b.post_id
+                    WHERE b.sentiment_label IS NOT NULL AND t.label::text = ANY(${labels}::text[])
+                    GROUP BY 1, 2`,
+      ),
+    );
   }
 }
 
