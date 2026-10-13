@@ -5,7 +5,7 @@ import { parseRetryAfter, ProviderError } from "../../../common/errors/provider.
  * docs/02-architecture/07-analysis-pipeline.md §6/§8.
  *
  * One call = one HTTP request: the retry loop belongs to `withRetry` in the adapter, which in turn
- * complements (never replaces) the job-level backoff of T-075. Never logs or embeds the API key or the
+ * complements (never replaces) the job-level backoff in `analysis-failure-policy.ts`. Never logs or embeds the API key or the
  * request body in errors; from provider error bodies only `error.type`/`error.code` are kept.
  */
 export type FetchFn = (url: string, init: RequestInit) => Promise<Response>;

@@ -1,11 +1,16 @@
 import { Module } from "@nestjs/common";
+import { PrismaModule } from "../../database/prisma.module";
 import { AnalyticsDistributionsController } from "./analytics-distributions.controller";
 import { AnalyticsDistributionsRepository } from "./analytics-distributions.repository";
 import { AnalyticsDistributionsService } from "./analytics-distributions.service";
+import { OverviewController } from "./overview.controller";
+import { OverviewRepository } from "./overview.repository";
+import { OverviewService } from "./overview.service";
 
-/** Analytics routes (M4). Each ticket adds its own controller/service/repository lines. */
+/** Analytics API (M4) — T-091 overview, T-093 distributions. Each ticket adds its own lines. */
 @Module({
-  controllers: [AnalyticsDistributionsController],
-  providers: [AnalyticsDistributionsService, AnalyticsDistributionsRepository],
+  imports: [PrismaModule],
+  controllers: [OverviewController, AnalyticsDistributionsController],
+  providers: [OverviewService, OverviewRepository, AnalyticsDistributionsService, AnalyticsDistributionsRepository],
 })
 export class AnalyticsModule {}

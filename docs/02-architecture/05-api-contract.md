@@ -167,6 +167,7 @@ Common query params (all optional): `from`, `to` (defaults last 7 d), `timezone`
 ```
 
 `growthPct: null, growthState:"new"` when previous = 0; rates `null` when denominator = 0.
+`growthPct` is a percentage rounded to 1 decimal (`21.4` = +21.4 %); `flat` when |growth| < 0.5 %. `kpis.mentionCount` growth is always computed; `range.previous` and each rate's `previous` are present only when `compare=true`. Any project role (viewer+) may call it. Definitions: metric-definitions §1–§2.
 
 ### `GET …/analytics/mentions-timeseries`
 

@@ -22,7 +22,7 @@ import { postOpenAiJson, type FetchFn } from "./openai-http";
  * - Sentiment only; safety is a separate provider and is never inferred here (BR-017).
  * - Low-confidence relevance (< 0.60) is stored as `uncertain` via `effectiveRelevance` (BR-021, doc 08 §8).
  * - Invalid output → `ANALYSIS_SCHEMA_INVALID` with Zod path/message only, never post text. The corrective
- *   retry (FR-113) belongs to the orchestration (T-074/T-075).
+ *   retry (FR-113) lives in `AnalysisPipelineService`; issues are also exposed as `details.issues`.
  * - Nothing is logged; the request body and model content never reach errors.
  */
 export type OpenAiClassifierOptions = {
@@ -137,7 +137,9 @@ export class OpenAiStructuredClassifier implements ContentClassifier {
     const { content, usage } = await this.complete(input, "classifier_output_v1", FULL_SCHEMA);
     const parsed = parseClassifierOutput(content);
     if (!parsed.ok)
-      throw new ProviderError("ANALYSIS_SCHEMA_INVALID", `Classifier output invalid: ${parsed.issues.join("; ")}`);
+      throw new ProviderError("ANALYSIS_SCHEMA_INVALID", `Classifier output invalid: ${parsed.issues.join("; ")}`, {
+        details: { issues: parsed.issues },
+      });
     const out = { ...parsed.value, relevance: banded(parsed.value.relevance) };
     // FR-110: no summary for irrelevant posts, nor for spam when configured.
     const dropSummary =
@@ -198,5 +200,7 @@ function banded(relevance: ClassifierOutput["relevance"]): ClassifierOutput["rel
 
 function schemaInvalid(issues: z.core.$ZodIssue[]): ProviderError {
   const lines = issues.slice(0, 10).map((i) => `${i.path.map(String).join(".") || "(root)"}: ${i.message}`);
-  return new ProviderError("ANALYSIS_SCHEMA_INVALID", `Classifier output invalid: ${lines.join("; ")}`);
+  return new ProviderError("ANALYSIS_SCHEMA_INVALID", `Classifier output invalid: ${lines.join("; ")}`, {
+    details: { issues: lines },
+  });
 }

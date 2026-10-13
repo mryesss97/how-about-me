@@ -10,7 +10,7 @@ import { postOpenAiJson, type FetchFn } from "./openai-http";
  * docs/02-architecture/07-analysis-pipeline.md §3/§6/§8.
  *
  * Only the post text is sent. Retries transient failures (`ANALYSIS_PROVIDER_ERROR`) up to `maxRetries`
- * times inside one job attempt; this is in addition to the job-level backoff (T-075).
+ * times inside one job attempt; this is in addition to the job-level backoff (`analysis-failure-policy.ts`).
  */
 export type OpenAiModerationOptions = {
   apiKey: string;

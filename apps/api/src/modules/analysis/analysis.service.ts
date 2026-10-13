@@ -149,9 +149,18 @@ export class AnalysisService implements AnalysisEnqueuer {
 
   /**
    * pending → processing for up to `limit` runs, oldest first (FR-101). `FOR UPDATE SKIP LOCKED` lets
-   * concurrent workers claim disjoint batches (TC-ANA-002).
+   * concurrent workers claim disjoint batches (TC-ANA-002). `opts.triggers` restricts the claim, e.g. the
+   * daily budget pause only claims `manual` runs (doc 07 §9, T-075).
    */
-  async claimBatch(workerId: string, limit: number): Promise<ClaimedRun[]> {
+  async claimBatch(
+    workerId: string,
+    limit: number,
+    opts: { triggers?: readonly AnalysisTrigger[] } = {},
+  ): Promise<ClaimedRun[]> {
+    const triggerFilter =
+      opts.triggers && opts.triggers.length > 0
+        ? Prisma.sql`AND trigger IN (${Prisma.join(opts.triggers.map((t) => Prisma.sql`${t}::analysis_trigger`))})`
+        : Prisma.empty;
     const rows = await this.prisma.$queryRaw<
       {
         id: string;
@@ -169,7 +178,7 @@ export class AnalysisService implements AnalysisEnqueuer {
         SET status = 'processing', locked_at = now(), locked_by = ${workerId}, started_at = now(),
             attempt_count = r.attempt_count + 1
         WHERE r.id IN (
-          SELECT id FROM analysis_runs WHERE status = 'pending'
+          SELECT id FROM analysis_runs WHERE status = 'pending' ${triggerFilter}
           ORDER BY created_at LIMIT ${limit} FOR UPDATE SKIP LOCKED)
         RETURNING r.id, r.post_id, r.project_id, r.trigger, r.source_content_hash, r.source_revision,
                   r.effective_version, r.attempt_count, r.created_at),
@@ -267,19 +276,41 @@ export class AnalysisService implements AnalysisEnqueuer {
 
   /**
    * processing → pending (transient error), or → failed once `attempt_count >= ANALYSIS_MAX_ATTEMPTS`
-   * (doc 07 §8). Re-queue is immediate; backoff (2 s × 2^attempt) is left to T-075.
-   * Returns the resulting status, or null if the run is no longer held by `workerId`.
+   * (doc 07 §8). The worker sleeps the backoff before calling this (T-075). `message` is a short technical
+   * reason, never post text. Returns the resulting status, or null if the run is no longer held by `workerId`.
    */
-  async requeue(runId: string, workerId: string, code: string, tx: Db = this.prisma): Promise<AnalysisStatus | null> {
+  async requeue(
+    runId: string,
+    workerId: string,
+    code: string,
+    message?: string,
+    tx: Db = this.prisma,
+  ): Promise<AnalysisStatus | null> {
     const max = this.cfg.ANALYSIS_MAX_ATTEMPTS;
     return this.finish(
       tx,
       runId,
       workerId,
       Prisma.sql`status = (CASE WHEN attempt_count >= ${max} THEN 'failed' ELSE 'pending' END)::analysis_status,
-        error_code = ${code},
+        error_code = ${code}, error_message = ${message ?? null},
         completed_at = CASE WHEN attempt_count >= ${max} THEN now() ELSE NULL END,
         locked_at = NULL, locked_by = NULL`,
+    );
+  }
+
+  /**
+   * processing → pending without consuming the attempt (doc 07 §8 auth pause, T-075): used for runs claimed
+   * in a batch that the worker will not process. Returns false if the run is no longer held by `workerId`.
+   */
+  async release(runId: string, workerId: string, tx: Db = this.prisma): Promise<boolean> {
+    return (
+      (await this.finish(
+        tx,
+        runId,
+        workerId,
+        Prisma.sql`status = 'pending', attempt_count = GREATEST(attempt_count - 1, 0), started_at = NULL,
+          locked_at = NULL, locked_by = NULL`,
+      )) !== null
     );
   }
 

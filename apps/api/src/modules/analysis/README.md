@@ -22,4 +22,10 @@ Design: see docs/02-architecture/02-backend-design.md §3 and the related pipeli
 
 ## Pipeline (T-074)
 
-`AnalysisPipelineService` implements `RunProcessor` and is bound to `ANALYSIS_RUN_PROCESSOR`, so the worker polls when `APP_ROLE ∈ {worker, all}`. Order and persistence rules: doc 07 §2. Provider errors are rethrown; the worker re-queues (failure policy T-075). Tests: `analysis-pipeline.service.spec.ts`, `test/integration/analysis-pipeline.int-spec.ts`.
+`AnalysisPipelineService` implements `RunProcessor` and is bound to `ANALYSIS_RUN_PROCESSOR`, so the worker polls when `APP_ROLE ∈ {worker, all}`. Order and persistence rules: doc 07 §2. Classifier output is validated with one corrective retry (FR-113); other provider errors are rethrown to the worker. Tests: `analysis-pipeline.service.spec.ts`, `test/integration/analysis-pipeline.int-spec.ts`.
+
+## Failure policy & pauses (T-075)
+
+- `analysis-failure-policy.ts` — `decideFailure` (retry / fail / fail_and_pause), `backoffMs`, `AnalysisLockLostError` (doc 07 §8, FR-113).
+- `analysis-pause.service.ts` — `AnalysisPauseService.getState()`: daily budget (UTC) and provider-auth pause, read from the DB (doc 07 §9). Port for System Status (T-077).
+- Tests: `analysis-failure-policy.spec.ts`, `analysis-worker.service.spec.ts`, `test/integration/analysis-failures.int-spec.ts`.

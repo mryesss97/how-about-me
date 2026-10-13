@@ -8,6 +8,11 @@ Design: see docs/02-architecture/02-backend-design.md §3 and the related pipeli
 - `common/time/range.ts` — `resolveRange` (defaults, ≤ 366 d check), `previousPeriodInTz` (FR-141, calendar days for whole local days, ms otherwise), `formatInTz`/`toRangeDto` (ISO with tz offset).
 - `analytics-filters.ts` — `resolveAnalyticsQuery(query, project, now)` → `{ scope, previousScope? }`; `buildBaseSetCte(scope, { ignore })` → CTE `base` (one row per post, metric-definitions §0); `withBase(scope, body)`; `bucketExpr(col, interval, tz)` and `timeColumn(field)` for timeseries. All values are bound params; only whitelisted columns/units go through `Prisma.raw`.
 
+## Overview (T-091)
+
+- `GET /projects/:projectId/analytics/overview` — `overview.controller.ts` → `overview.service.ts` → `overview.repository.ts` (raw SQL over `base`). Pure helpers (`rate`, `growth`, `collectorStatus`) in `overview.math.ts`; `METRICS_VERSION` in `metrics-version.ts`.
+- KPIs use the filtered base set; coverage ignores relevance/status/label filters; mention growth is always computed vs the previous period, rate `previous` only with `compare=true` (metric-definitions §1–§2).
+
 ## Distributions (T-093)
 
 - `GET …/analytics/{sentiment,safety,intents,topics}` — `analytics-distributions.{controller,service,repository}.ts`, pure helpers in `distributions.ts`.
