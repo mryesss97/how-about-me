@@ -331,21 +331,23 @@ Run object: `{ id, postId, status, trigger, effectiveVersion, attemptCount, erro
 
 ## 13. Error codes
 
-| Code                                                                                                 | HTTP      | When                                |
-| ---------------------------------------------------------------------------------------------------- | --------- | ----------------------------------- |
-| `VALIDATION_ERROR`                                                                                   | 400       | Zod failure; `details.issues[]`     |
-| `QUERY_IMMUTABLE_FIELD`                                                                              | 400       | patching `queryValue/queryType`     |
-| `BACKFILL_WINDOW_INVALID`                                                                            | 400       | until ≤ since or > max days         |
-| `AUTH_MISSING_TOKEN` / `AUTH_INVALID_TOKEN` / `AUTH_TOKEN_EXPIRED`                                   | 401       |                                     |
-| `FORBIDDEN_ROLE` / `FORBIDDEN_PROJECT`                                                               | 403       |                                     |
-| `NOT_FOUND`                                                                                          | 404       |                                     |
-| `QUERY_DUPLICATE` / `SYNC_ALREADY_RUNNING` / `LAST_ADMIN` / `ANALYSIS_ALREADY_PENDING`               | 409       |                                     |
-| `EXPORT_TOO_LARGE`                                                                                   | 413       |                                     |
-| `RATE_LIMITED`                                                                                       | 429       | internal throttling                 |
-| `THREADS_UNAUTHORIZED` / `THREADS_FORBIDDEN`                                                         | 502       | surfaced on verify; jobs store code |
-| `THREADS_RATE_LIMITED` / `THREADS_UPSTREAM_ERROR` / `THREADS_TIMEOUT` / `THREADS_MALFORMED_RESPONSE` | 503 / 502 |                                     |
-| `INTEGRATION_NOT_CONFIGURED`                                                                         | 409       | run/verify without token            |
-| `INTERNAL`                                                                                           | 500       | never leaks stack                   |
+| Code                                                                                                                                              | HTTP      | When                                              |
+| ------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------------------------------------------------- |
+| `VALIDATION_ERROR`                                                                                                                                | 400       | Zod failure; `details.issues[]`                   |
+| `QUERY_IMMUTABLE_FIELD`                                                                                                                           | 400       | patching `queryValue/queryType`                   |
+| `BACKFILL_WINDOW_INVALID`                                                                                                                         | 400       | until ≤ since or > max days                       |
+| `AUTH_MISSING_TOKEN` / `AUTH_INVALID_TOKEN` / `AUTH_TOKEN_EXPIRED`                                                                                | 401       |                                                   |
+| `FORBIDDEN_ROLE` / `FORBIDDEN_PROJECT`                                                                                                            | 403       |                                                   |
+| `NOT_FOUND`                                                                                                                                       | 404       |                                                   |
+| `QUERY_DUPLICATE` / `SYNC_ALREADY_RUNNING` / `LAST_ADMIN` / `ANALYSIS_ALREADY_PENDING`                                                            | 409       |                                                   |
+| `EXPORT_TOO_LARGE`                                                                                                                                | 413       |                                                   |
+| `RATE_LIMITED`                                                                                                                                    | 429       | internal throttling                               |
+| `THREADS_UNAUTHORIZED` / `THREADS_FORBIDDEN`                                                                                                      | 502       | surfaced on verify; jobs store code               |
+| `THREADS_RATE_LIMITED` / `THREADS_UPSTREAM_ERROR` / `THREADS_TIMEOUT` / `THREADS_MALFORMED_RESPONSE`                                              | 503 / 502 |                                                   |
+| `INTEGRATION_NOT_CONFIGURED`                                                                                                                      | 409       | run/verify without token                          |
+| `INTERNAL`                                                                                                                                        | 500       | never leaks stack                                 |
+| `ANALYSIS_PROVIDER_ERROR` (retryable: 429/5xx/timeout/network) / `ANALYSIS_PROVIDER_AUTH` (401/403) / `ANALYSIS_PROVIDER_BAD_REQUEST` (other 4xx) | 502       | run `error_code` only (T-071)                     |
+| `ANALYSIS_SCHEMA_INVALID`                                                                                                                         | 500       | provider response shape invalid; run `error_code` |
 
 ## 14. Versioning & compatibility
 

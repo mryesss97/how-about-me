@@ -41,6 +41,7 @@ export const RETRYABLE_ERROR_CODES: readonly ErrorCode[] = [
   "THREADS_RATE_LIMITED",
   "THREADS_UPSTREAM_ERROR",
   "THREADS_TIMEOUT",
+  "ANALYSIS_PROVIDER_ERROR",
 ];
 
 /** Deterministic failures: retrying cannot help and only wastes provider quota. */
@@ -49,6 +50,9 @@ export const NON_RETRYABLE_ERROR_CODES: readonly ErrorCode[] = [
   "THREADS_FORBIDDEN",
   "THREADS_MALFORMED_RESPONSE",
   "VALIDATION_ERROR",
+  "ANALYSIS_PROVIDER_AUTH",
+  "ANALYSIS_PROVIDER_BAD_REQUEST",
+  "ANALYSIS_SCHEMA_INVALID",
 ];
 
 export function retryPolicyFromConfig(cfg: { COLLECTOR_MAX_RETRIES: number }, over: Partial<RetryPolicy> = {}) {
