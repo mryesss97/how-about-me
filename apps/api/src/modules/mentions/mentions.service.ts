@@ -2,10 +2,10 @@ import { Injectable } from "@nestjs/common";
 import type { MentionDetail, MentionsListQuery, MentionsPage, ReanalyzeResponse } from "@how-about-me/contracts";
 import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 import { AppError } from "../../common/errors/app.error";
-import { decodeSortCursor, encodeSortCursor } from "../../common/pagination/cursor";
+import { encodeSortCursor } from "../../common/pagination/cursor";
 import { AnalysisService } from "../analysis/analysis.service";
 import { AuditService } from "../audit/audit.service";
-import { MENTION_SORT_SPECS, resolveMentionsScope } from "./mentions-query";
+import { decodeMentionCursor, resolveMentionsScope } from "./mentions-query";
 import { toMentionDetail, toMentionListItem } from "./mentions.mapper";
 import { MentionsRepository } from "./mentions.repository";
 
@@ -28,8 +28,7 @@ export class MentionsService {
    */
   async list(projectId: string, query: MentionsListQuery, now: Date = new Date()): Promise<MentionsPage> {
     const s = resolveMentionsScope(query, projectId, now);
-    const arity = MENTION_SORT_SPECS[s.sort].length;
-    const cursor = decodeSortCursor(s.cursor, { sort: s.sort, arity });
+    const cursor = decodeMentionCursor(s.cursor, s.sort);
     const [rows, total] = await Promise.all([
       this.repo.listPage(s.scope, s.q, s.sort, cursor, s.limit),
       s.count ? this.repo.count(s.scope, s.q) : Promise.resolve(undefined),

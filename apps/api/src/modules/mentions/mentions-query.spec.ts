@@ -1,5 +1,7 @@
+import { encodeSortCursor } from "../../common/pagination/cursor";
 import { MENTION_SORTS, MentionsListQuerySchema } from "@how-about-me/contracts";
 import {
+  decodeMentionCursor,
   escapeLike,
   keysetPredicate,
   MENTION_SORT_SPECS,
@@ -7,6 +9,7 @@ import {
   orderBy,
   resolveMentionsScope,
   searchMode,
+  sortKeySelect,
   textSearchPredicate,
   withMentionsBase,
 } from "./mentions-query";
@@ -95,5 +98,52 @@ describe("mentions-query", () => {
     expect(r.scope.filters).not.toHaveProperty("reviewStatus");
     expect(r.scope.filters).not.toHaveProperty("q");
     expect(r).toMatchObject({ sort: "newest", limit: 25, count: false });
+  });
+
+  describe("#195 cursor key validation", () => {
+    const T = "2026-10-01T00:00:00.123456Z";
+    const dec = (sort: (typeof MENTION_SORTS)[number], keys: (string | number)[]) => () =>
+      decodeMentionCursor(encodeSortCursor({ sort, keys, id: ID }), sort);
+
+    it("sortKeySelect: to_char UTC µs for timestamptz, ::text for int/numeric", () => {
+      const s = norm(sortKeySelect(MENTION_SORT_SPECS.relevance_desc));
+      expect(s).toContain(`to_char((b.published_at) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS k2`);
+      expect(s).toMatch(/END\)\)::text AS k0/);
+      expect(s).toContain("(COALESCE(b.relevance_confidence, -1))::text AS k1");
+    });
+
+    it("no cursor → null", () => {
+      expect(decodeMentionCursor(undefined, "newest")).toBeNull();
+    });
+
+    it("valid keys per sort pass and are normalised to strings", () => {
+      expect(dec("newest", [T])()).toEqual({ sort: "newest", keys: [T], id: ID });
+      expect(dec("oldest", [T])()?.keys).toEqual([T]);
+      expect(dec("safety_desc", [3, T])()?.keys).toEqual(["3", T]);
+      expect(dec("confidence_asc", ["0.5000", T])()?.keys).toEqual(["0.5000", T]);
+      expect(dec("confidence_asc", [2, T])()?.keys).toEqual(["2", T]);
+      expect(dec("relevance_desc", ["3", "-1", T])()?.keys).toEqual(["3", "-1", T]);
+    });
+
+    it.each<[(typeof MENTION_SORTS)[number], (string | number)[]]>([
+      ["newest", ["abc"]],
+      ["newest", [1700000000]],
+      ["newest", ["2026-10-01 00:00:00.123456+00"]], // legacy pre-#195 format
+      ["newest", ["2026-02-30T00:00:00.000000Z"]],
+      ["oldest", ["t"]],
+      ["safety_desc", ["x", T]],
+      ["safety_desc", ["99999999999", T]],
+      ["safety_desc", ["2147483648", T]],
+      ["safety_desc", ["1.5", T]],
+      ["safety_desc", [1.5, T]],
+      ["confidence_asc", ["NaN", T]],
+      ["confidence_asc", ["Infinity", T]],
+      ["confidence_asc", ["1e400", T]],
+      ["confidence_asc", ["", T]],
+      ["relevance_desc", ["3", "abc", T]],
+      ["relevance_desc", ["3", "0.5", "x"]],
+    ])("%s with keys %j → VALIDATION_ERROR", (sort, keys) => {
+      expect(dec(sort, keys)).toThrow(expect.objectContaining({ code: "VALIDATION_ERROR" }));
+    });
   });
 });

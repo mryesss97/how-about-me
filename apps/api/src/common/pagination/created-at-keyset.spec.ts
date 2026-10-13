@@ -1,5 +1,11 @@
 import { Prisma } from "@prisma/client";
-import { createdAtKeysetSql, decodeCreatedAtCursor, encodeCreatedAtCursor, orderByIds } from "./created-at-keyset";
+import {
+  createdAtKeysetSql,
+  isUtcMicrosKey,
+  decodeCreatedAtCursor,
+  encodeCreatedAtCursor,
+  orderByIds,
+} from "./created-at-keyset";
 import { encodeSortCursor } from "./cursor";
 
 /** #188 (FR-051, FR-201): createdAt keyset cursor keeps µs and rejects tampering with 400. */
@@ -39,5 +45,13 @@ describe("created-at keyset (#188)", () => {
 
   it("orderByIds follows keyset order and drops vanished ids", () => {
     expect(orderByIds(["b", "x", "a"], [{ id: "a" }, { id: "b" }])).toEqual([{ id: "b" }, { id: "a" }]);
+  });
+
+  it("#195 isUtcMicrosKey: accepts only real UTC µs keys", () => {
+    expect(isUtcMicrosKey(key)).toBe(true);
+    expect(isUtcMicrosKey("2026-10-01T00:00:00.123Z")).toBe(false);
+    expect(isUtcMicrosKey("2026-10-01 00:00:00.123456+00")).toBe(false);
+    expect(isUtcMicrosKey("2026-02-30T00:00:00.000000Z")).toBe(false);
+    expect(isUtcMicrosKey(1700000000)).toBe(false);
   });
 });
