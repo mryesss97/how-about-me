@@ -126,7 +126,10 @@ describe("Analysis failure handling (T-075)", () => {
     await ingest.ingestPage(q, [post("d1", `${POST_TEXT} 1`), post("d2", `${POST_TEXT} 2`)]);
     const { w, pause } = worker();
     await w.tick();
-    const [r1, r2] = await runs();
+    // Claim order is not id order: find each run by status.
+    const all = await runs();
+    const r1 = all.find((r) => r.status === "failed");
+    const r2 = all.find((r) => r.status !== "failed");
     expect(r1).toMatchObject({ status: "failed", errorCode: "ANALYSIS_PROVIDER_AUTH" });
     expect(r2).toMatchObject({ status: "pending", attemptCount: 0 });
     expect(await w.tick()).toBe(0);
