@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { Toaster } from "sonner";
 import { QueryProvider } from "@/lib/query/provider";
 import { RouteProvider } from "@/providers/router-provider";
 import { Theme } from "@/providers/theme";
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <Theme>
             <NuqsAdapter>
               <QueryProvider>{children}</QueryProvider>
+              <Toaster position="bottom-right" richColors />
             </NuqsAdapter>
           </Theme>
         </RouteProvider>
