@@ -10,7 +10,7 @@
 
 - `nestjs-pino`, JSON in staging/prod, pretty in local. Level `info` default; `debug` via `LOG_LEVEL`.
 - Standard fields: `time, level, msg, request_id, user_id, project_id, job_id, run_id, query_id, provider, status, duration_ms, result_count, error_code, app_role, version (git sha)`.
-- One log line per: HTTP request (interceptor), provider request (adapter), job start/finish, run finish, scheduler tick summary, circuit open/close, integration status change.
+- One log line per: HTTP request (pino-http autoLogging: `request_id`, `duration_ms`, `user_id`, `project_id`; errors add `error_code`), provider request (adapter), job start/finish, run finish, scheduler tick summary, circuit open/close, integration status change.
 - Never log tokens/keys (redaction list in [08-security-secrets.md](08-security-secrets.md#5-redaction--logging)); post text logged only at `debug` and truncated to 120 chars.
 
 ## 2. Metrics (Prometheus text at `GET /metrics`, protected by `METRICS_TOKEN` header; or periodic `metrics` log line when scraping is unavailable)

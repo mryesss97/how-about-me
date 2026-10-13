@@ -10,7 +10,7 @@ Source of truth: `apps/api/.env.example`, `apps/web/.env.example`. Validated at 
 | `APP_ROLE`                                                     | yes        | `all`                                 | `api` \| `worker` \| `all`                                                                           |
 | `PORT`                                                         | no         | `4000`                                |                                                                                                      |
 | `LOG_LEVEL`                                                    | no         | `info`                                |                                                                                                      |
-| `CORS_ORIGINS`                                                 | prod       | `http://localhost:3000`               | comma list                                                                                           |
+| `CORS_ORIGINS`                                                 | prod       | `http://localhost:3000`               | comma list; `*` rejected in production (NFR-016)                                                     |
 | `DATABASE_URL`                                                 | yes        | —                                     | pooled (Supabase: port 6543, `?pgbouncer=true&connection_limit=10`) _(owner input for staging/prod)_ |
 | `DIRECT_URL`                                                   | yes        | —                                     | direct connection for migrations                                                                     |
 | `SUPABASE_URL`                                                 | yes        | —                                     | `https://<ref>.supabase.co`                                                                          |
@@ -34,7 +34,7 @@ Source of truth: `apps/api/.env.example`, `apps/web/.env.example`. Validated at 
 | `OPENAI_API_KEY`                                               | yes (real) | —                                     | _(owner input)_                                                                                      |
 | `EXPORT_MAX_ROWS`                                              | no         | `10000`                               | P1                                                                                                   |
 | `METRICS_TOKEN`                                                | no         | —                                     | protects `/metrics`                                                                                  |
-| `SWAGGER_ENABLED`                                              | no         | `true` (dev)                          |                                                                                                      |
+| `SWAGGER_ENABLED`                                              | no         | unset → on, off in production         | `true` enables Swagger in production too                                                             |
 | `RETENTION_*_DAYS`                                             | no         | see retention doc                     |                                                                                                      |
 
 ## apps/web

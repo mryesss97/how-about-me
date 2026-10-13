@@ -14,7 +14,8 @@ export const EnvSchema = z
     PORT: int(4000),
     LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
     CORS_ORIGINS: z.string().default("http://localhost:3000"),
-    SWAGGER_ENABLED: bool.default(true),
+    /** Unset → enabled outside production (docs/02-architecture/02-backend-design.md §9); see `isSwaggerEnabled`. */
+    SWAGGER_ENABLED: bool.optional(),
     APP_VERSION: z.string().default(process.env.GIT_SHA ?? "dev"),
 
     DATABASE_URL: z.string().min(1),
@@ -100,6 +101,10 @@ export const EnvSchema = z
     if (env.NODE_ENV === "production" && Object.keys(env.INTEGRATION_ENCRYPTION_KEYS).length === 0) {
       ctx.addIssue({ code: "custom", path: ["INTEGRATION_ENCRYPTION_KEYS"], message: "required in production" });
     }
+    // NFR-016: no wildcard CORS in production.
+    if (env.NODE_ENV === "production" && env.CORS_ORIGINS.includes("*")) {
+      ctx.addIssue({ code: "custom", path: ["CORS_ORIGINS"], message: "wildcard origin not allowed in production" });
+    }
   });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -111,4 +116,9 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     throw new Error(`Invalid environment configuration:\n${issues}`);
   }
   return r.data;
+}
+
+/** Swagger defaults to on outside production; production needs an explicit `SWAGGER_ENABLED=true`. */
+export function isSwaggerEnabled(env: Pick<Env, "SWAGGER_ENABLED" | "NODE_ENV">): boolean {
+  return env.SWAGGER_ENABLED ?? env.NODE_ENV !== "production";
 }
