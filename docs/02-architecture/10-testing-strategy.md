@@ -91,3 +91,40 @@ Unit tests for logic, integration test for persistence/HTTP behaviour, manual QC
 - **ESM-only dependencies.** Jest 30 runs tests in a CommonJS module registry. `jose` (Supabase JWT verification) ships ESM only, so `require("jose")` from the compiled `AppModule` fails with `Must use import to load ES Module`. `apps/api/jest.config.ts` lets `ts-jest` compile `jose` to CJS (`transformIgnorePatterns` allow-list plus a `.js` transform, target `es2022`). Production is unaffected: `nest build` emits CJS and Node 24 loads `jose` through native `require(esm)`.
 - Decision (2026-10-13, #137). Rejected alternative: run Jest with `--experimental-vm-modules` and raise `engines.node` to `>=24.9`. Jest only takes its `require(esm)` path when both hold (verified: Node 24.4.1 fails even with the flag; 24.21.0 passes). It relies on an experimental Node API, prints an `ExperimentalWarning`, needs `NODE_OPTIONS` plumbing per platform, and forces every developer onto 24.9+. The transform works on any Node 24.x with stock Jest. Cost: tests exercise a CJS-compiled copy of `jose` (module syntax only, no down-levelling). Revisit if `jose` adds top-level `await` (it cannot compile to CJS) or when Jest's ESM support is stable.
 - New ESM-only dependency imported by API code: add its name to the `transformIgnorePatterns` allow-list.
+- Helpers for writing specs (factories, actors): see §10.
+
+## 10. API integration test helpers
+
+| Helper                                                                                | File (`apps/api/test/helpers/`) | Purpose                                                                                                                |
+| ------------------------------------------------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `createTestApp({ imports, customize })`                                               | `app.ts`                        | Boots `AppModule` (+ extra modules / provider overrides) with production `configureApp`; returns `{ app, prisma }`     |
+| `resetDb(prisma)`                                                                     | `app.ts`                        | Truncates business tables; call in `beforeEach`                                                                        |
+| `mintTestJwt({ sub, email, ... })`                                                    | `auth.ts`                       | Supabase-shaped HS256 token signed with `AUTH_TEST_JWT_SECRET`                                                         |
+| `createActor(prisma, { projectId?, role? })`                                          | `actors.ts`                     | User + optional membership + token → `{ user, token }`                                                                 |
+| `api(app, token)`                                                                     | `actors.ts`                     | Supertest wrapper with `/api/v1` prefix and bearer header                                                              |
+| `createProject`, `createUser`, `addMember`, `createQuery`, `createPost({ queryId? })` | `factories.ts`                  | Insert rows with unique defaults; accept Prisma overrides. `createPost` with `queryId` also inserts a `PostQueryMatch` |
+| `RbacFixtureModule`                                                                   | `rbac-fixture.module.ts`        | Fixture routes for guard / setting-gate tests                                                                          |
+| `discoverRoutes(app)`                                                                 | `route-discovery.ts`            | Lists routes with `@Roles` and setting gates for matrix checks                                                         |
+
+All helpers are re-exported from `test/helpers/index.ts`. Sample: `test/integration/sample-factories.int-spec.ts`.
+
+```ts
+let app: INestApplication, prisma: PrismaService;
+beforeAll(async () => ({ app, prisma } = await createTestApp()));
+beforeEach(() => resetDb(prisma));
+afterAll(() => app.close());
+
+it("lists my projects", async () => {
+  const p = await createProject(prisma);
+  const me = await createActor(prisma, { projectId: p.id, role: "analyst" });
+  const res = await api(app, me.token).get("/projects");
+  expect(res.body[0].role).toBe("analyst");
+});
+```
+
+Conventions:
+
+- Ids are app-generated UUIDs; factories make unique slug/email/`platformPostId` so tests never collide.
+- Each test starts from `resetDb()`; never rely on seed data.
+- Do not set generated columns (`social_posts.search_vector`).
+- A new business table must be added to the `resetDb()` TRUNCATE list.
