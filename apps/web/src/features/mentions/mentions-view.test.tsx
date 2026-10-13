@@ -4,7 +4,7 @@ import { NuqsTestingAdapter, type UrlUpdateEvent } from "nuqs/adapters/testing";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type * as ClientModule from "@/lib/api/client";
 import { overviewFixture } from "@/features/analytics/overview-fixture.test-utils";
-import { flattenUnique } from "./api";
+import { flattenUnique, isRejectedCursor } from "./api";
 import { mentionFixture } from "./fixtures.test-utils";
 import { MentionsView } from "./mentions-view";
 
@@ -212,6 +212,24 @@ describe("MentionsView (UX §3.3)", () => {
     await waitFor(() => expect(screen.getAllByTestId("mention-row")).toHaveLength(30));
   });
 
+  it("#195: a rejected cursor on Load more resets to the first page instead of an error", async () => {
+    const { ApiError } = await import("@/lib/api/client");
+    apiFetch
+      .mockResolvedValueOnce(page(25, "stale", 30))
+      .mockRejectedValueOnce(new ApiError(400, "VALIDATION_ERROR", "Invalid cursor", "req-9", { path: "cursor" }))
+      .mockResolvedValueOnce(page(25, "fresh", 30));
+    setup();
+    await waitFor(() => expect(screen.getAllByTestId("mention-row")).toHaveLength(25));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Load more" })));
+    await waitFor(() => expect(listCalls()).toHaveLength(3));
+    const third = nth(listCalls(), 2)[1].params;
+    expect(third.cursor).toBeUndefined();
+    expect(third.count).toBe("true");
+    await waitFor(() => expect(screen.getAllByTestId("mention-row")).toHaveLength(25));
+    expect(screen.queryByTestId("request-id")).toBeNull();
+    expect(screen.getByRole("button", { name: "Load more" })).toBeEnabled();
+  });
+
   it("TC-MEN-020: ↑/↓ moves focus between rows, Enter opens detail keeping filters", async () => {
     const data = page(3, null, 3);
     apiFetch.mockResolvedValueOnce(data);
@@ -224,6 +242,21 @@ describe("MentionsView (UX §3.3)", () => {
     expect(document.activeElement).toBe(rows[0]);
     fireEvent.keyDown(nth(rows, 0), { key: "Enter" });
     expect(push).toHaveBeenCalledWith(`/mentions/${nth(data.items, 0).id}?preset=7d`);
+  });
+});
+
+describe("isRejectedCursor (#195)", () => {
+  it("matches 400 VALIDATION_ERROR on cursor only", async () => {
+    const { ApiError } = await import("@/lib/api/client");
+    expect(isRejectedCursor(new ApiError(400, "VALIDATION_ERROR", "x", "r", { path: "cursor" }))).toBe(true);
+    expect(
+      isRejectedCursor(
+        new ApiError(400, "VALIDATION_ERROR", "x", "r", { issues: [{ path: "cursor", message: "m", code: "c" }] }),
+      ),
+    ).toBe(true);
+    expect(isRejectedCursor(new ApiError(400, "VALIDATION_ERROR", "x", "r", { path: "limit" }))).toBe(false);
+    expect(isRejectedCursor(new ApiError(500, "INTERNAL", "x", "r", { path: "cursor" }))).toBe(false);
+    expect(isRejectedCursor(new Error("x"))).toBe(false);
   });
 });
 

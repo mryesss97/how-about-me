@@ -124,7 +124,7 @@ Chart details (T-101, decided 2026-10-13 on #88):
 - Empty states per 2.3.
 - Implementation notes (T-103, decisions 2026-10-13 on #90):
   - Header count comes from `count=true` on the first page only. If the API omits `totalCount` (count timed out), the header shows "N+ mentions loaded" while more pages exist, or the exact "N mentions" once the last page is loaded.
-  - Rows are de-duplicated by `id` across pages. "Load more" and infinite scroll share the same request; a failed further page shows an inline error with Retry and keeps the loaded rows.
+  - Rows are de-duplicated by `id` across pages. "Load more" and infinite scroll share the same request; a failed further page shows an inline error with Retry and keeps the loaded rows. If the API rejects the cursor (`400 VALIDATION_ERROR` on `cursor`, e.g. a cursor from before a deploy, #195), the list starts over from the first page instead of showing an error.
   - With a relative preset, the resolved range is pinned when the page loads or a filter changes, so a new minute never resets the loaded pages.
   - Matched-query chips whose exclude terms matched (`excludedByTerms`) are hidden in the list (FR-059, TC-MEN-021); detail (T-104) shows them as "excluded".
   - `Esc` in the search box clears it. On rows, `Esc` does nothing until the slide-out exists (T-104).

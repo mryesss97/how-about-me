@@ -1,8 +1,9 @@
 "use client";
 
 import { MentionsPageSchema, type MentionListItem, type MentionsPage } from "@how-about-me/contracts";
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/api/client";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo } from "react";
+import { ApiError, apiFetch } from "@/lib/api/client";
 import { qk, staleTimes } from "@/lib/query/keys";
 
 export const MENTIONS_PAGE_SIZE = 25;
@@ -12,8 +13,10 @@ export const MENTIONS_PAGE_SIZE = 25;
  * query key or the URL — so changing a filter resets the list. `count=true` only on the first page.
  */
 export function useMentionsList(pid: string | null | undefined, params: Record<string, string>) {
-  return useInfiniteQuery({
-    queryKey: qk.mentions(pid ?? "", params),
+  const qc = useQueryClient();
+  const queryKey = useMemo(() => qk.mentions(pid ?? "", params), [pid, params]);
+  const query = useInfiniteQuery({
+    queryKey,
     initialPageParam: null as string | null,
     queryFn: async ({ pageParam }) =>
       MentionsPageSchema.parse(
@@ -29,6 +32,24 @@ export function useMentionsList(pid: string | null | undefined, params: Record<s
     staleTime: staleTimes.mentions,
     enabled: !!pid,
   });
+  const { fetchNextPage: fetchNext } = query;
+  /**
+   * The API rejects a stale or tampered cursor with 400 VALIDATION_ERROR on `cursor` (#195, e.g. a cursor issued
+   * before a deploy). Load more then starts over from the first page instead of showing an error.
+   */
+  const fetchNextPage = useCallback(async () => {
+    const res = await fetchNext();
+    if (res.isFetchNextPageError && isRejectedCursor(res.error)) await qc.resetQueries({ queryKey, exact: true });
+    return res;
+  }, [fetchNext, qc, queryKey]);
+  return { ...query, fetchNextPage };
+}
+
+/** 400 VALIDATION_ERROR whose details point at `cursor` (`{ path }` or `{ issues: [{ path }] }`). */
+export function isRejectedCursor(err: unknown): boolean {
+  if (!(err instanceof ApiError) || err.status !== 400 || err.code !== "VALIDATION_ERROR") return false;
+  const d = err.details as { path?: unknown; issues?: { path?: unknown }[] } | undefined;
+  return d?.path === "cursor" || (Array.isArray(d?.issues) && d.issues.some((i) => i?.path === "cursor"));
 }
 
 /** Rows can shift into the next page when new data lands between requests — keep the first occurrence (TC-MEN-003). */
