@@ -85,6 +85,9 @@ Plus `dataQuality`: `lastSyncStatus` (success/partial/failed/none in last 2 × m
 
 - Bucket: `hour` if range ≤ 48 h, else `day`; computed with `date_trunc(bucket, published_at AT TIME ZONE tz)`.
 - Series: `mentions` = distinct posts per bucket from `B`. Zero-filled. Optional `previous` series aligned by offset when `compare=true`.
+- Bucketing uses the filter's `timeField` (`published_at` default, or `first_seen_at`).
+- Zero-fill: `generate_series` over local time from `date_trunc(bucket, from AT TIME ZONE tz)` to `date_trunc(bucket, (to − 1 µs) AT TIME ZONE tz)`, step 1 bucket, converted back with `AT TIME ZONE tz` and de-duplicated (DST-safe: one bucket per local day/hour; the skipped local hour on a spring-forward day yields no extra bucket). The first bucket may start before `from` (partial); the last bucket is the one containing `to − ε`. `sum(mentions) = |B|`.
+- `previous`: computed on the previous period (§5) with the **same** interval, aligned by bucket position (bucket i ↔ bucket i); missing → 0, extra buckets dropped (only around DST).
 
 ### 3.2 Sentiment distribution
 
@@ -92,7 +95,7 @@ Plus `dataQuality`: `lastSyncStatus` (success/partial/failed/none in last 2 × m
 
 ### 3.3 Sentiment over time
 
-Per bucket: counts for each label; stacked or 100 % stacked in UI (toggle).
+Per bucket: counts for each label (`COUNT(DISTINCT post_id)` from `B`, same buckets and zero-fill as §3.1, no `previous`); stacked or 100 % stacked in UI (toggle).
 
 ### 3.4 Safety distribution
 
