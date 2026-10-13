@@ -97,6 +97,13 @@ Interactions: click a KPI → `/mentions` with filters; click a bar/segment → 
 
 Chart library: Recharts via Untitled UI `charts-base.tsx` wrappers; palette from theme tokens; patterns for safety chart.
 
+Chart details (T-100, decided 2026-10-13 on #87):
+
+- Mentions over time: tooltip share = bucket ÷ all mentions in the range ("of N mentions"; "—" when N = 0). Compare draws a dashed "Previous period" line; a range with 0 mentions but a non-zero previous period still shows the chart.
+- Sentiment donut: centre shows the denominator ("analysed"); the legend lists Positive · Neutral · Negative with their share as text. Sentiment over time: stacked bars, legend toggles series, tooltip share per bucket total.
+- Ghost series only on Mentions over time: the sentiment API has no previous-period data.
+- Bucket labels use the bucketing timezone (`hour` → `HH:mm dd/MM`, `day` → `dd/MM`). Each chart has its own loading, empty ("No mentions in this range") and error (request ID + Retry) state. "View as table" is a toggle button (`aria-pressed`), and long tables scroll inside the card.
+
 ### 3.3 Mentions Explorer (`/mentions`) — P0
 
 - Filter bar (2.1) + search input (`q`, debounced 400 ms) + sort select (Newest, Oldest, Highest safety severity, Lowest confidence, Highest relevance).

@@ -83,6 +83,8 @@ UI: `features/analytics/filter-bar.tsx` (+ `time-controls.tsx`, `enum-multi-sele
 
 Recharts via Untitled UI `application/charts/charts-base.tsx` wrappers. Rules: colours from theme tokens (`--color-utility-*`), each series has a text label & pattern for safety; tooltips show count, share, denominator; "View as table" renders a `Table` with the same data; click handlers call `router.push(toMentionsHref(...))`.
 
+Implementation pattern (T-100, `features/analytics/charts/`): every chart is wrapped in `ChartCard` (title, "View as table" `ToggleButton` with `aria-pressed`, per-chart `QueryState` so one failing chart never blanks the page, explicit empty state per BR-032) and tooltips use `MetricTooltip`. Charts are loaded lazily via `next/dynamic({ ssr: false })` with a fixed-height skeleton (`charts/index.ts`). Bucket labels use the bucketing timezone (response `timezone`, else the filter `tz`), never the browser's. Compare ghost series (dashed "Previous period") exists only on Mentions over time — `SentimentResponse` carries no previous-period data. Click-through drill-down is T-102.
+
 ## 6. Components mapping (Untitled UI)
 
 | Need                                          | Component                                                                      |
