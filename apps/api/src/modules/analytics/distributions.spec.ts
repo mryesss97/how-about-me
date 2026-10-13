@@ -1,0 +1,75 @@
+import { INTENT_LABELS, TOPIC_LABELS } from "@how-about-me/taxonomy";
+import { bucketInterval } from "../../common/time/range";
+import { sortByCountDesc, toDistribution, toTopicsDistribution } from "./distributions";
+
+/** T-093 pure helpers — metric-definitions §3.1–3.6, FR-140. */
+describe("distributions helpers (T-093)", () => {
+  it("toDistribution fills missing labels with 0 in taxonomy order", () => {
+    const d = toDistribution(["positive", "neutral", "negative"], [{ label: "negative", count: 1 }], 4);
+    expect(d).toEqual([
+      { label: "positive", count: 0, share: 0 },
+      { label: "neutral", count: 0, share: 0 },
+      { label: "negative", count: 1, share: 0.25 },
+    ]);
+  });
+
+  it("share is null when denominator = 0 (FR-140)", () => {
+    expect(toDistribution(["safe"], [], 0)).toEqual([{ label: "safe", count: 0, share: null }]);
+  });
+
+  it("intents: all labels, sorted desc, ties keep taxonomy order", () => {
+    const d = sortByCountDesc(
+      toDistribution(
+        INTENT_LABELS,
+        [
+          { label: "question", count: 2 },
+          { label: "complaint", count: 2 },
+          { label: "other", count: 3 },
+        ],
+        4,
+      ),
+    );
+    expect(d).toHaveLength(INTENT_LABELS.length);
+    expect(d.slice(0, 3).map((x) => x.label)).toEqual(["other", "complaint", "question"]);
+    expect(d[3]?.label).toBe("praise");
+  });
+
+  it("topics: real labels ranked, max 12, `other` bucket last with its distinct count", () => {
+    const d = toTopicsDistribution(
+      TOPIC_LABELS,
+      [
+        { label: "venue", count: 5 },
+        { label: "ticket", count: 5 },
+      ],
+      2,
+      8,
+    );
+    expect(d.map((x) => x.label)).toEqual([
+      "ticket",
+      "venue",
+      ...TOPIC_LABELS.filter((l) => l !== "other" && l !== "ticket" && l !== "venue"),
+      "other",
+    ]);
+    expect(d.at(-1)).toEqual({ label: "other", count: 2, share: 0.25 });
+    expect(d.filter((x) => x.label === "other")).toHaveLength(1);
+  });
+
+  it("topics: cuts to top 12 when the taxonomy grows", () => {
+    const labels = Array.from({ length: 14 }, (_, i) => `t${i}`);
+    const d = toTopicsDistribution(
+      labels,
+      labels.map((label, i) => ({ label, count: i })),
+      3,
+      20,
+    );
+    expect(d).toHaveLength(13);
+    expect(d[0]?.label).toBe("t13");
+    expect(d.at(-1)?.label).toBe("other");
+  });
+
+  it("sentiment timeseries interval: hour up to 48h, day beyond (§3.1)", () => {
+    const from = new Date("2026-10-01T00:00:00Z");
+    expect(bucketInterval({ from, to: new Date(from.getTime() + 48 * 3600e3) })).toBe("hour");
+    expect(bucketInterval({ from, to: new Date(from.getTime() + 48 * 3600e3 + 1) })).toBe("day");
+  });
+});

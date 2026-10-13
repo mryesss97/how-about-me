@@ -18,3 +18,10 @@ Design: see docs/02-architecture/02-backend-design.md §3 and the related pipeli
 - `GET projects/:projectId/analytics/mentions-timeseries` — `analytics-timeseries.controller.ts` → `analytics-timeseries.service.ts` (`chooseInterval`, `alignSeries`) → `analytics-timeseries.repository.ts` (raw SQL).
 - `bucketSeriesCte(range, interval, tz)` in `analytics-filters.ts` — CTE `buckets` for zero-fill; join counts on `bucketExpr` of the same base time column.
 - `AnalyticsTimeseriesService.sentimentTimeseries(scope, interval?)` — exported for `/analytics/sentiment` (T-093).
+
+## Distributions (T-093)
+
+- `GET …/analytics/{sentiment,safety,intents,topics}` — `analytics-distributions.{controller,service,repository}.ts`, pure helpers in `distributions.ts`.
+- Denominators: sentiment/safety = sum of label counts; intents/topics = posts with ≥ 1 label (`intentAnalyzed`/`topicAnalyzed`), computed in the same SQL snapshot.
+- Topics: top 12 real labels + `other` bucket (DISTINCT posts tagged `other` or outside the top). Intent/topic overrides are not applied yet (T-142).
+- Sentiment includes `timeseries` from `AnalyticsTimeseriesService.sentimentTimeseries` (T-092; hour ≤ 48 h, else day, zero-filled).
