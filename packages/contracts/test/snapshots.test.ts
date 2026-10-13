@@ -16,6 +16,7 @@ import {
   OVERRIDE_FIELDS,
   QUERY_TYPES,
   QueryShareResponseSchema,
+  ReviewQueuePageSchema,
   SyncJobSchema,
   SystemStatusResponseSchema,
   TopicSentimentResponseSchema,
@@ -35,6 +36,7 @@ const cases: [string, z.ZodType][] = [
   ["query-share", QueryShareResponseSchema],
   ["topic-sentiment", TopicSentimentResponseSchema],
   ["analysis-settings", AnalysisSettingsSchema],
+  ["review-queue-page", ReviewQueuePageSchema],
 ];
 
 describe("doc example fixtures", () => {

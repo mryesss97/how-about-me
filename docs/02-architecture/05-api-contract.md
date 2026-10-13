@@ -297,7 +297,7 @@ Query: `from,to,timezone,queryIds[],q,relevance[] (default relevant),sentiment[]
 - `q` (NFC, whitespace-collapsed): full-text `websearch_to_tsquery('simple', q)` on `search_vector` (no stemming/unaccent: "gia ve" ≠ "giá vé"); terms < 3 characters or without letters/digits use case-insensitive substring `ILIKE` with `%`/`_` taken literally.
 - `count=true` → `totalCount` of the whole filtered set (ignores cursor), equal to the dashboard number for the same filters. Bounded by a 1.5 s `statement_timeout`; on timeout `totalCount` is omitted.
 - `matchedQueries` includes matches of soft-deleted queries and `excludedByTerms=true` matches. `analysis.status` = latest run status (`pending` when no run exists); labels stay those of the current analysis while a re-run is pending. `errorCode` only when `status=failed`.
-- `reviewStatus` (P1) is accepted and ignored until review state exists.
+- `reviewStatus[]` (P1, #115): `reviewed` = BR-040 predicate (`reviewed_at` ≥ latest run `created_at`), `unreviewed` = its negation; empty or both values = no filter. Applies to the list and `totalCount`; bulk re-analyze and export ignore it.
 
 ### `GET /projects/:projectId/mentions/:id`
 
@@ -327,6 +327,24 @@ Adds: `ownerId, shortcode, mediaUrl, altText, linkAttachmentUrl, quotedPostId, r
 - Throttle: 5 successful exports per minute per user across all projects (NFR-017), DB-backed (per-user advisory lock + count of `mentions.exported` audit rows in 60 s); exceeded → `429 RATE_LIMITED`, header `Retry-After`, `details.retryAfterSeconds`. 413/429 do not consume quota.
 - Audit `mentions.exported` (`entity_type=monitoring_project`, metadata `{ format:"csv", filters, rowCount }`, no post ids/text), written before streaming, only on success.
 - A failure mid-stream (headers already sent) aborts the connection; the client sees a network error and must discard the partial file. The audit row (and its throttle token) was already written before streaming.
+
+### Reviews (P1, FR-195, T-144)
+
+| Method & path                                     | Role                      | Request                                                                                                                                       | Response              |
+| ------------------------------------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| `GET /projects/:projectId/reviews`                | any member                | `reason?=uncertain\|low_confidence\|failed`, `status=unreviewed\|reviewed` (default `unreviewed`), `cursor`, `limit=25 (≤100)`, `count=false` | `200 ReviewQueuePage` |
+| `POST /projects/:projectId/reviews/mark-reviewed` | admin, analyst (`@Roles`) | `{ postIds: uuid[1..50] }`                                                                                                                    | `200 { marked }`      |
+
+- Scope: posts of the project with ≥ 1 non-excluded match (BR-007) and effective relevance ≠ `irrelevant` (BR-016, BR-025; unanalysed posts kept). No date filter.
+- Reasons (a post may have several; `reasons[]` ordered `failed, uncertain, low_confidence`; "all" = union, one row per post, BR-002):
+  - `uncertain` — effective relevance is `uncertain` (an override to `relevant` removes it from this tab).
+  - `low_confidence` — AI `overall_model_confidence` < the `medium` band of the policy the current analysis' run was analysed with (`analysis_settings` row matching `analysis_runs.safety_policy_version`; none → v1 bands; doc 08 §8, BR-021). Overrides do not clear it.
+  - `failed` — latest run status `failed`.
+- Reviewed (BR-040): `reviewed_at` ≥ `created_at` of the latest run (or no run). A run created after the review (re-analysis, retry) re-opens the item while it still has a reason. No "unmark" in v1.
+- Item: `id, platform, platformPostId, username, permalink, publishedAt, text, reasons, analysis { status (pending when no run), relevance, sentiment (effective), overallConfidence, confidenceBand (run policy bands), errorCode (only when failed), hasOverride }, reviewedAt, reviewedBy (UserRef|null)`.
+- Sort `published_at DESC, id DESC`, keyset cursor (UTC µs key, sort id `review_newest`); malformed/tampered → `400 VALIDATION_ERROR`.
+- `count=true` → `counts { all, uncertain, lowConfidence, failed }` for the requested `status` plus `totalCount` of the requested tab; 1.5 s `statement_timeout`, omitted on timeout.
+- Mark reviewed sets `reviewed_at` = DB `now()` (never earlier than the latest run's `created_at`, so clock drift cannot leave a fresh review stale) and `reviewed_by` = caller; idempotent (re-mark refreshes); ids of other projects are skipped silently (`marked` counts updated rows). Audit `review.marked` (`entity_type=monitoring_project`, metadata `{ count, postIds }`) in the same transaction, skipped when `marked=0`. Errors: 400 `VALIDATION_ERROR`, 403 `FORBIDDEN_ROLE` (viewer) / `FORBIDDEN_PROJECT`.
 
 ## 8. Sync jobs
 

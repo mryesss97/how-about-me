@@ -2,13 +2,14 @@
  * Mentions list SQL builders (T-095) — docs/02-architecture/05-api-contract.md §7.
  * Starts from the analytics base set `B` so drill-down counts match (metric-definitions §6).
  */
-import type { MentionSort, MentionsListQuery } from "@how-about-me/contracts";
+import type { MentionSort, MentionsListQuery, ReviewStatus } from "@how-about-me/contracts";
 import { Prisma } from "@prisma/client";
 import { AppError } from "../../common/errors/app.error";
 import { type SortCursor, decodeSortCursor } from "../../common/pagination/cursor";
 import { isUtcMicrosKey, utcMicrosKeySql } from "../../common/pagination/created-at-keyset";
 import { resolveRange } from "../../common/time/range";
 import { type AnalyticsScope, buildBaseSetCte } from "../analytics/analytics-filters";
+import { reviewStatusPredicate } from "../reviews/review-state.sql";
 
 export type SortKey = { expr: string; dir: "asc" | "desc"; cast: "timestamptz" | "numeric" | "int" };
 
@@ -127,9 +128,9 @@ export function textSearchPredicate(raw: string | undefined): Prisma.Sql {
   return Prisma.sql`AND p.text ILIKE ${`%${escapeLike(q)}%`} ESCAPE '\\'`;
 }
 
-/** Shared FROM/WHERE for page and count: base set B + optional text search. */
-export function mentionsFromWhere(q: string | undefined): Prisma.Sql {
-  return Prisma.sql`FROM base b JOIN social_posts p ON p.id = b.post_id WHERE true ${textSearchPredicate(q)}`;
+/** Shared FROM/WHERE for page and count: base set B + optional text search + optional review state (BR-040). */
+export function mentionsFromWhere(q: string | undefined, reviewStatus: readonly ReviewStatus[] = []): Prisma.Sql {
+  return Prisma.sql`FROM base b JOIN social_posts p ON p.id = b.post_id WHERE true ${textSearchPredicate(q)} ${reviewStatusPredicate(reviewStatus)}`;
 }
 
 export function withMentionsBase(scope: AnalyticsScope, body: Prisma.Sql): Prisma.Sql {
@@ -143,14 +144,16 @@ export type MentionsScope = {
   cursor: string | undefined;
   limit: number;
   count: boolean;
+  /** BR-040 (#115): list + totalCount only; bulk re-analyze and export ignore it. */
+  reviewStatus: ReviewStatus[];
 };
 
 export type FilterScope = { scope: AnalyticsScope; q: string | undefined; sort: MentionSort };
 
 /**
  * Default range = last 7×24h like analytics (api-contract §6, BR-028: absolute UTC instants).
- * `reviewStatus` (P1) is accepted and ignored until review state exists (E11). Shared by list and bulk
- * re-analyze (T-145) so `matched` equals the list `totalCount` for the same filters.
+ * `reviewStatus` is dropped here (bulk re-analyze and export ignore it); the list applies it on top (#115, BR-040).
+ * Shared by list and bulk re-analyze (T-145) so `matched` equals the list `totalCount` for the same filters.
  */
 export function resolveFilterScope(
   query: Omit<MentionsListQuery, "cursor" | "limit" | "count">,
@@ -167,6 +170,6 @@ export function resolveMentionsScope(
   projectId: string,
   now: Date = new Date(),
 ): MentionsScope {
-  const { cursor, limit, count, ...rest } = query;
-  return { ...resolveFilterScope(rest, projectId, now), cursor, limit, count };
+  const { cursor, limit, count, reviewStatus, ...rest } = query;
+  return { ...resolveFilterScope({ ...rest, reviewStatus }, projectId, now), cursor, limit, count, reviewStatus };
 }

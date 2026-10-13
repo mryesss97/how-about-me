@@ -23,6 +23,7 @@ import {
   TopicLabelSchema,
 } from "./enums.js";
 import { AnalysisFiltersBaseSchema } from "./filters.js";
+import { ReviewStatusSchema } from "./reviews.js";
 
 export const MENTION_SORTS = ["newest", "oldest", "safety_desc", "confidence_asc", "relevance_desc"] as const;
 export const MentionSortSchema = z.enum(MENTION_SORTS);
@@ -31,7 +32,7 @@ export type MentionSort = z.infer<typeof MentionSortSchema>;
 /** List filters without pagination — shared by list, bulk reanalyze and export. */
 const MentionsFiltersBaseSchema = AnalysisFiltersBaseSchema.extend({
   q: z.string().trim().max(200).optional(),
-  reviewStatus: csvArray(z.enum(["reviewed", "unreviewed"])).default([]),
+  reviewStatus: csvArray(ReviewStatusSchema).default([]),
   sort: MentionSortSchema.default("newest"),
 });
 

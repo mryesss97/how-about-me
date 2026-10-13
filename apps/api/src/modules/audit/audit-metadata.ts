@@ -21,6 +21,7 @@ export const AUDIT_ACTIONS = [
   "analysis.retry_requested",
   "override.created",
   "override.revoked",
+  "review.marked",
   "mentions.exported",
   "analysis_settings.updated",
   "data.purged",

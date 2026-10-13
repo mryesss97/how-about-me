@@ -117,33 +117,34 @@ Index: `(project_id, enabled, next_run_at) WHERE deleted_at IS NULL`.
 
 ### 4.7 `social_posts`
 
-| Column                            | Type                                                            | Notes                             |
-| --------------------------------- | --------------------------------------------------------------- | --------------------------------- |
-| id                                | uuid PK                                                         |                                   |
-| project_id                        | uuid FK NN                                                      |                                   |
-| platform                          | platform NN                                                     |                                   |
-| platform_post_id                  | text NN                                                         |                                   |
-| username                          | text                                                            |                                   |
-| owner_id                          | text                                                            |                                   |
-| text                              | text                                                            | normalised NFC                    |
-| permalink                         | text                                                            |                                   |
-| shortcode                         | text                                                            |                                   |
-| media_type                        | text                                                            |                                   |
-| media_url / thumbnail_url         | text                                                            | URLs only                         |
-| alt_text                          | text                                                            |                                   |
-| link_attachment_url               | text                                                            |                                   |
-| is_quote_post / has_replies       | boolean                                                         |                                   |
-| quoted_post_id / reposted_post_id | text                                                            |                                   |
-| published_at                      | timestamptz NN                                                  |                                   |
-| content_hash                      | text NN                                                         | BR-003                            |
-| revision                          | int NN default 1                                                |                                   |
-| raw_data                          | jsonb                                                           | requested fields only             |
-| raw_truncated                     | boolean NN default false                                        |                                   |
-| current_analysis_id               | uuid FK → post_analyses.id (deferrable)                         | latest completed                  |
-| latest_run_status                 | analysis_status                                                 | denormalised for filters/coverage |
-| search_vector                     | tsvector GENERATED (`to_tsvector('simple', coalesce(text,''))`) | GIN                               |
-| first_seen_at / last_seen_at      | timestamptz NN                                                  |                                   |
-| created_at / updated_at           |                                                                 |                                   |
+| Column                            | Type                                                            | Notes                               |
+| --------------------------------- | --------------------------------------------------------------- | ----------------------------------- |
+| id                                | uuid PK                                                         |                                     |
+| project_id                        | uuid FK NN                                                      |                                     |
+| platform                          | platform NN                                                     |                                     |
+| platform_post_id                  | text NN                                                         |                                     |
+| username                          | text                                                            |                                     |
+| owner_id                          | text                                                            |                                     |
+| text                              | text                                                            | normalised NFC                      |
+| permalink                         | text                                                            |                                     |
+| shortcode                         | text                                                            |                                     |
+| media_type                        | text                                                            |                                     |
+| media_url / thumbnail_url         | text                                                            | URLs only                           |
+| alt_text                          | text                                                            |                                     |
+| link_attachment_url               | text                                                            |                                     |
+| is_quote_post / has_replies       | boolean                                                         |                                     |
+| quoted_post_id / reposted_post_id | text                                                            |                                     |
+| published_at                      | timestamptz NN                                                  |                                     |
+| content_hash                      | text NN                                                         | BR-003                              |
+| revision                          | int NN default 1                                                |                                     |
+| raw_data                          | jsonb                                                           | requested fields only               |
+| raw_truncated                     | boolean NN default false                                        |                                     |
+| current_analysis_id               | uuid FK → post_analyses.id (deferrable)                         | latest completed                    |
+| latest_run_status                 | analysis_status                                                 | denormalised for filters/coverage   |
+| reviewed_at / reviewed_by         | timestamptz / uuid (no FK)                                      | review queue marker (T-144, BR-040) |
+| search_vector                     | tsvector GENERATED (`to_tsvector('simple', coalesce(text,''))`) | GIN                                 |
+| first_seen_at / last_seen_at      | timestamptz NN                                                  |                                     |
+| created_at / updated_at           |                                                                 |                                     |
 
 Unique `(platform, platform_post_id)`. Indexes: `(project_id, published_at DESC)`, `(project_id, first_seen_at DESC)`, `(project_id, latest_run_status)`, `(project_id, current_analysis_id)`, GIN `search_vector`.
 

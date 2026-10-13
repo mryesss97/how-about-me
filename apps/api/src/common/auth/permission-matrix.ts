@@ -68,6 +68,15 @@ export const PERMISSION_MATRIX: readonly PermissionEntry[] = [
     viewer: "deny",
     status: "implemented",
   },
+  { method: "GET", path: `${P}/reviews`, ...ALL, status: "implemented" },
+  {
+    method: "POST",
+    path: `${P}/reviews/mark-reviewed`,
+    admin: "allow",
+    analyst: "allow",
+    viewer: "deny",
+    status: "implemented",
+  },
   {
     method: "GET",
     path: `${P}/mentions/export.csv`,

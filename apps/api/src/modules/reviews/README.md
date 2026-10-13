@@ -11,3 +11,12 @@ Analyst overrides — T-142 (FR-191/192/193, BR-025). Contract: docs/02-architec
 - Audit `override.created` `{ field, before, after, reason }`, `override.revoked` `{ field, before }` (FR-200, no post text).
 - Reads: `effective_post_analysis` / `effective_post_intents` / `effective_post_topics` views (doc 04 §5);
   `OverridesRepository.listForPost` feeds mention detail `overrides[]`.
+
+Review queue — T-144 (FR-195, BR-040). Contract: docs/02-architecture/05-api-contract.md §7 "Reviews".
+
+- `GET /projects/:projectId/reviews` (any member) — `reason?`, `status=unreviewed|reviewed`, keyset cursor, `count=true` → tab `counts`.
+  Reasons: `uncertain` (effective relevance), `low_confidence` (AI overall < medium band of the run's policy), `failed` (latest run).
+  Scope: BR-007 matches, effective relevance ≠ irrelevant (BR-016). SQL in `review-queue.repository.ts`.
+- `POST …/reviews/mark-reviewed` (admin · analyst) `{ postIds ≤ 50 }` → `{ marked }`; sets `social_posts.reviewed_at/by`;
+  other-project ids skipped; audit `review.marked` `{ count, postIds }` (skipped when 0).
+- BR-040: reviewed while `reviewed_at` ≥ latest run `created_at` (`review-state.sql.ts`, also used by mentions `reviewStatus[]`).

@@ -1,0 +1,28 @@
+{
+  "items": [
+    {
+      "id": "6f1c2b9e-1d2a-4c8e-9b7a-1f2e3d4c5b6a",
+      "platform": "threads",
+      "platformPostId": "18000000000000001",
+      "username": "minh.tran",
+      "permalink": "https://www.threads.net/@minh.tran/post/C0abc",
+      "publishedAt": "2026-10-12T03:15:00Z",
+      "text": "Không biết app này có ổn không",
+      "reasons": ["uncertain", "low_confidence"],
+      "analysis": {
+        "status": "completed",
+        "relevance": "uncertain",
+        "sentiment": "neutral",
+        "overallConfidence": 0.42,
+        "confidenceBand": "low",
+        "errorCode": null,
+        "hasOverride": false
+      },
+      "reviewedAt": null,
+      "reviewedBy": null
+    }
+  ],
+  "nextCursor": null,
+  "totalCount": 1,
+  "counts": { "all": 1, "uncertain": 1, "lowConfidence": 1, "failed": 0 }
+}
