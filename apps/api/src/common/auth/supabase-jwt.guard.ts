@@ -20,8 +20,9 @@ export class SupabaseJwtGuard implements CanActivate {
     const req = ctx.switchToHttp().getRequest<AuthedRequest>();
     const header = req.headers["authorization"];
     const raw = Array.isArray(header) ? header[0] : header;
-    if (!raw?.startsWith("Bearer ")) throw new AppError("AUTH_MISSING_TOKEN", "Missing bearer token");
-    const verified = await this.jwt.verify(raw.slice(7).trim());
+    const token = raw ? /^Bearer\s+(.+)$/i.exec(raw.trim())?.[1]?.trim() : undefined;
+    if (!token) throw new AppError("AUTH_MISSING_TOKEN", "Missing bearer token");
+    const verified = await this.jwt.verify(token);
     req.user = await this.profiles.ensureProfile(verified);
     return true;
   }
