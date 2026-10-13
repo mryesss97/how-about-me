@@ -34,3 +34,7 @@ export const IntentDistributionChart = dynamic(
   () => import("./intent-distribution-chart").then((m) => m.IntentDistributionChart),
   { ssr: false, loading },
 );
+export const LanguageDistributionChart = dynamic(
+  () => import("./language-distribution-chart").then((m) => m.LanguageDistributionChart),
+  { ssr: false, loading },
+);

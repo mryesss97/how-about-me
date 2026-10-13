@@ -216,6 +216,8 @@ All four distribution endpoints (T-093): every label is returned even with count
 
 ### `GET …/analytics/languages` (P1) → same shape
 
+FR-143 (T-148). `denominator` = `COUNT(DISTINCT post_id)` of base-set posts with `language_code IS NOT NULL` (posts without analysis are excluded; `unknown` is an assigned value and is counted). Codes outside the taxonomy (`vi,en,ko,ja,th,zh,other,unknown`) are folded into `other`. All 8 codes returned (count 0 included), sorted by count desc, ties in taxonomy order; shares sum to 100 % (single-label), `null` when `denominator` = 0. Roles admin / analyst / viewer; filters as for the other distribution endpoints (incl. `language[]`).
+
 ### `GET …/analytics/topic-sentiment` (P1) → `{ rows:[{topic, positive, neutral, negative, total, negativeShare}] }`
 
 ### `GET …/analytics/query-share` (P1) → `{ denominator, distribution:[{queryId, displayName, count, share}] , note:"overlapping" }`

@@ -10,6 +10,7 @@ const tabs = [
   { href: "/settings/project", label: "Project" },
   { href: "/settings/members", label: "Members" },
   { href: "/settings/integrations", label: "Integrations" },
+  { href: "/settings/analysis", label: "Analysis" },
 ];
 
 /** Settings tabs filtered by role (FR-018, TC-AUTH-014). UX only — the server enforces. */

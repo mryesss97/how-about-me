@@ -8,6 +8,7 @@ import { useFilters } from "@/lib/filters/use-filters";
 import { QueryState } from "@/features/shared/query-state";
 import {
   useIntentsDistribution,
+  useLanguagesDistribution,
   useMentionsTimeseries,
   useOverview,
   useSafetyDistribution,
@@ -16,6 +17,7 @@ import {
 } from "./api";
 import {
   IntentDistributionChart,
+  LanguageDistributionChart,
   MentionsOverTimeChart,
   SafetyDistributionChart,
   SentimentDistributionChart,
@@ -34,7 +36,8 @@ function toQueryError(err: unknown) {
 }
 
 /**
- * /overview body: filters → banners → KPI cards (T-099) → charts (T-100). Safety chart slot is T-101.
+ * /overview body: filters → banners → KPI cards (T-099) → charts (T-100). Safety chart slot is T-101;
+ * P1 row starts with the language donut (T-148).
  * Each chart has its own query state so one failing chart never blanks the page.
  */
 export function OverviewView() {
@@ -49,6 +52,7 @@ export function OverviewView() {
   const safety = useSafetyDistribution(project?.id, apiParams);
   const topics = useTopicsDistribution(project?.id, apiParams);
   const intents = useIntentsDistribution(project?.id, apiParams);
+  const languages = useLanguagesDistribution(project?.id, apiParams);
 
   return (
     <div className="flex flex-col gap-6">
@@ -112,6 +116,13 @@ export function OverviewView() {
           isLoading={!project || intents.isLoading}
           error={toQueryError(intents.error)}
           onRetry={() => void intents.refetch()}
+        />
+        <LanguageDistributionChart
+          className="lg:col-span-4"
+          data={languages.data}
+          isLoading={!project || languages.isLoading}
+          error={toQueryError(languages.error)}
+          onRetry={() => void languages.refetch()}
         />
       </div>
     </div>

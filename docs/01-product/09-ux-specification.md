@@ -122,6 +122,13 @@ Chart details (T-101, decided 2026-10-13 on #88):
   - Click row → opens detail slide-out (route `/mentions/[id]` also works full-page).
 - Keyboard: `↑/↓` move focus, `Enter` opens detail, `Esc` closes.
 - Empty states per 2.3.
+- Implementation notes (T-103, decisions 2026-10-13 on #90):
+  - Header count comes from `count=true` on the first page only. If the API omits `totalCount` (count timed out), the header shows "N+ mentions loaded" while more pages exist, or the exact "N mentions" once the last page is loaded.
+  - Rows are de-duplicated by `id` across pages. "Load more" and infinite scroll share the same request; a failed further page shows an inline error with Retry and keeps the loaded rows. If the API rejects the cursor (`400 VALIDATION_ERROR` on `cursor`, e.g. a cursor from before a deploy, #195), the list starts over from the first page instead of showing an error.
+  - With a relative preset, the resolved range is pinned when the page loads or a filter changes, so a new minute never resets the loaded pages.
+  - Matched-query chips whose exclude terms matched (`excludedByTerms`) are hidden in the list (FR-059, TC-MEN-021); detail (T-104) shows them as "excluded".
+  - `Esc` in the search box clears it. On rows, `Esc` does nothing until the slide-out exists (T-104).
+  - Sync-failed / analysis-pending banners reuse the Overview coverage for the same range (FR-159). Re-analyze is not on the row; it belongs to detail (T-104).
 
 ### 3.4 Mention Detail (`/mentions/[id]`) — P0
 
@@ -156,6 +163,11 @@ Tabs: **Overview** · **Sync jobs** · **Analysis failures** · **Audit log** (a
 - **Members** (admin): table (name/email, role select, added, remove with confirm); "Invite member" dialog (email, role, default Viewer; `409 MEMBER_EXISTS` shown under the email field). Guard on last admin: the sole admin's role select and Remove are disabled as a hint, and a `409 LAST_ADMIN` reverts the role select and shows an error.
 - **Integrations** (admin write): Threads card — status, account, scopes, expiry; "Update token" (password-style input, never prefilled), "Verify connection", "Disconnect". Analyst sees a read-only card without controls; Viewer does not see the tab (deep link → Forbidden).
 - **Analysis** (P1): confidence bands, safety thresholds table, current versions, "Create new policy version" with optional bulk re-analysis.
+  - Tab visible to every role; analyst/viewer see a read-only form (inputs disabled, no submit). The API enforces admin-only PATCH (FR-015).
+  - Header: `policyVersion` (+ "Default" badge; v1 shows "Default policy (taxonomy defaults)"), created time (relative, absolute on hover, project timezone) and author; a small line "{n} posts were analysed with an older policy." when `outdatedCount > 0`.
+  - Inputs accept 0.01–1 in steps of 0.01. An empty threshold cell means `null` (level not applied). BR-018 / BR-021 are re-checked on every change; errors show under the cell (client checks and server `VALIDATION_ERROR` paths alike).
+  - "Create new policy version" is disabled until something changes; the PATCH carries only the changed parts (bands as a full pair, thresholds per changed category). Success toasts "Created safety-policy-vN".
+  - After a save with `outdatedCount > 0` a dialog asks "{n} posts were analysed with an older policy. Re-analyse them now?" with "Later". "Re-analyse" stays disabled (tooltip "Bulk re-analysis is not available yet (T-145)") until bulk re-analysis ships (#116).
 
 ### 3.8 Reviews (`/reviews`) — P1
 

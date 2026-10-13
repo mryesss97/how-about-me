@@ -2,6 +2,7 @@
 
 import {
   IntentsDistributionResponseSchema,
+  LanguagesDistributionResponseSchema,
   OverviewResponseSchema,
   SafetyDistributionResponseSchema,
   SentimentResponseSchema,
@@ -54,6 +55,7 @@ const DISTRIBUTIONS = {
   safety: SafetyDistributionResponseSchema,
   intents: IntentsDistributionResponseSchema,
   topics: TopicsDistributionResponseSchema,
+  languages: LanguagesDistributionResponseSchema,
 } as const;
 
 function useDistribution<K extends keyof typeof DISTRIBUTIONS>(
@@ -83,3 +85,7 @@ export const useIntentsDistribution = (pid: string | null | undefined, params: R
 /** GET /projects/:projectId/analytics/topics (FR-138) — top 12 + "other". */
 export const useTopicsDistribution = (pid: string | null | undefined, params: Record<string, string>) =>
   useDistribution("topics", pid, params);
+
+/** GET /projects/:projectId/analytics/languages (FR-143) — all 8 codes, count desc. */
+export const useLanguagesDistribution = (pid: string | null | undefined, params: Record<string, string>) =>
+  useDistribution("languages", pid, params);

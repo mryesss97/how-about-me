@@ -1,0 +1,66 @@
+"use client";
+
+import { MentionsPageSchema, type MentionListItem, type MentionsPage } from "@how-about-me/contracts";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo } from "react";
+import { ApiError, apiFetch } from "@/lib/api/client";
+import { qk, staleTimes } from "@/lib/query/keys";
+
+export const MENTIONS_PAGE_SIZE = 25;
+
+/**
+ * GET /projects/:pid/mentions (FR-150..153). The cursor is opaque and lives in `pageParam` only — never in the
+ * query key or the URL — so changing a filter resets the list. `count=true` only on the first page.
+ */
+export function useMentionsList(pid: string | null | undefined, params: Record<string, string>) {
+  const qc = useQueryClient();
+  const queryKey = useMemo(() => qk.mentions(pid ?? "", params), [pid, params]);
+  const query = useInfiniteQuery({
+    queryKey,
+    initialPageParam: null as string | null,
+    queryFn: async ({ pageParam }) =>
+      MentionsPageSchema.parse(
+        await apiFetch<unknown>(`/projects/${pid}/mentions`, {
+          params: {
+            ...params,
+            limit: String(MENTIONS_PAGE_SIZE),
+            ...(pageParam ? { cursor: pageParam } : { count: "true" }),
+          },
+        }),
+      ),
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    staleTime: staleTimes.mentions,
+    enabled: !!pid,
+  });
+  const { fetchNextPage: fetchNext } = query;
+  /**
+   * The API rejects a stale or tampered cursor with 400 VALIDATION_ERROR on `cursor` (#195, e.g. a cursor issued
+   * before a deploy). Load more then starts over from the first page instead of showing an error.
+   */
+  const fetchNextPage = useCallback(async () => {
+    const res = await fetchNext();
+    if (res.isFetchNextPageError && isRejectedCursor(res.error)) await qc.resetQueries({ queryKey, exact: true });
+    return res;
+  }, [fetchNext, qc, queryKey]);
+  return { ...query, fetchNextPage };
+}
+
+/** 400 VALIDATION_ERROR whose details point at `cursor` (`{ path }` or `{ issues: [{ path }] }`). */
+export function isRejectedCursor(err: unknown): boolean {
+  if (!(err instanceof ApiError) || err.status !== 400 || err.code !== "VALIDATION_ERROR") return false;
+  const d = err.details as { path?: unknown; issues?: { path?: unknown }[] } | undefined;
+  return d?.path === "cursor" || (Array.isArray(d?.issues) && d.issues.some((i) => i?.path === "cursor"));
+}
+
+/** Rows can shift into the next page when new data lands between requests — keep the first occurrence (TC-MEN-003). */
+export function flattenUnique(pages: readonly MentionsPage[]): MentionListItem[] {
+  const seen = new Set<string>();
+  const out: MentionListItem[] = [];
+  for (const page of pages)
+    for (const item of page.items) {
+      if (seen.has(item.id)) continue;
+      seen.add(item.id);
+      out.push(item);
+    }
+  return out;
+}

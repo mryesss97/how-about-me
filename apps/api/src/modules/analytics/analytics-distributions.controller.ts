@@ -4,6 +4,7 @@ import {
   type AnalyticsQuery,
   AnalyticsQuerySchema,
   type IntentsDistributionResponse,
+  type LanguagesDistributionResponse,
   type SafetyDistributionResponse,
   type SentimentResponse,
   type TopicsDistributionResponse,
@@ -12,7 +13,7 @@ import { Roles } from "../../common/auth/roles.decorator";
 import { zod } from "../../common/pipes/zod-validation.pipe";
 import { AnalyticsDistributionsService } from "./analytics-distributions.service";
 
-/** docs/02-architecture/05-api-contract.md §6 — FR-136…FR-140. Read-only, every project role. */
+/** docs/02-architecture/05-api-contract.md §6 — FR-136…FR-140, FR-143. Read-only, every project role. */
 @ApiTags("analytics")
 @ApiBearerAuth()
 @Controller("projects/:projectId/analytics")
@@ -53,5 +54,14 @@ export class AnalyticsDistributionsController {
     @Query(zod(AnalyticsQuerySchema)) query: AnalyticsQuery,
   ): Promise<TopicsDistributionResponse> {
     return this.svc.topics(projectId, query);
+  }
+
+  @Get("languages")
+  @Roles("admin", "analyst", "viewer")
+  languages(
+    @Param("projectId", ParseUUIDPipe) projectId: string,
+    @Query(zod(AnalyticsQuerySchema)) query: AnalyticsQuery,
+  ): Promise<LanguagesDistributionResponse> {
+    return this.svc.languages(projectId, query);
   }
 }
