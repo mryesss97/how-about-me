@@ -1,1 +1,14 @@
-Feature folder — see docs/02-architecture/03-frontend-design.md §1 and the T-### tasks for this epic in docs/03-delivery/02-work-breakdown.md.
+# features/mentions — Mentions Explorer (UX §3.3)
+
+Feature folder — see docs/02-architecture/03-frontend-design.md §1.
+
+| File                                 | Purpose                                                                                                                                                                                                                          |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `api.ts`                             | `useMentionsList(pid, apiParams)` — `useInfiniteQuery` over `GET /projects/:pid/mentions`, `limit=25`, `count=true` on page 1 only, opaque cursor kept in `pageParam`. `flattenUnique(pages)` dedupes rows by `id` (TC-MEN-003). |
+| `highlight.ts`, `highlight-text.tsx` | Case-insensitive, NFC-normalised search highlight rendered as React text nodes only (FR-158, TC-MEN-016).                                                                                                                        |
+| `mention-row.tsx`                    | Card row: user, time (tz tooltip), matched-query chips (excluded ones hidden, TC-MEN-021), text preview, badges (≤2 intents/topics), https-only external link (FR-157).                                                          |
+| `mentions-list.tsx`                  | States (skeleton / error with requestId / empty), Load more + infinite scroll, ↑/↓ focus and Enter to open (TC-MEN-020).                                                                                                         |
+| `mentions-toolbar.tsx`               | Total count (when the API omits `totalCount`: "N+ mentions loaded" while more pages exist, exact "N mentions" on the last page), search debounced 400 ms → URL `q`, sort → URL `sort`. Esc in search clears the box.             |
+| `mentions-view.tsx`                  | Wires project, `useFilters("mentions")` pinned by `usePinnedParams` (relative ranges do not re-key the list every minute), sync/pending banners (reuses overview coverage, FR-159), toolbar and list.                            |
+
+Not here yet: detail slide-out and Esc-to-close (T-104), `reviewStatus` filter (Reviews, P1), export (P1).
