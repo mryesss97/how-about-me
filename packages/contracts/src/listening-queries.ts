@@ -7,6 +7,9 @@ import {
   UserRefSchema,
   UuidSchema,
   pageOf,
+  queryBoolean,
+  queryInt,
+  QueuedJobResponseSchema,
 } from "./common.js";
 import { JobStatusSchema, QueryTypeSchema, SearchModeSchema, SearchTypeSchema } from "./enums.js";
 
@@ -50,10 +53,10 @@ export const UpdateListeningQueryBodySchema = QueryMutableFieldsSchema.partial()
 export type UpdateListeningQueryBody = z.infer<typeof UpdateListeningQueryBodySchema>;
 
 export const ListeningQueryListQuerySchema = CursorPaginationQuerySchema.extend({
-  enabled: z.coerce.boolean().optional(),
+  enabled: queryBoolean(),
   type: QueryTypeSchema.optional(),
-  includeDeleted: z.coerce.boolean().default(false),
-  limit: z.coerce.number().int().min(1).max(200).default(50),
+  includeDeleted: queryBoolean().default(false),
+  limit: queryInt(1, 200).default(50),
 });
 
 export const ListeningQuerySchema = z.object({
@@ -91,7 +94,8 @@ export const ListeningQuerySchema = z.object({
 export type ListeningQuery = z.infer<typeof ListeningQuerySchema>;
 export const ListeningQueryPageSchema = pageOf(ListeningQuerySchema);
 
-export const RunQueryResponseSchema = z.object({ jobId: UuidSchema, status: z.literal("queued") });
+/** Alias kept for existing imports. */
+export const RunQueryResponseSchema = QueuedJobResponseSchema;
 export const BackfillBodySchema = z
   .object({ since: IsoDateTimeSchema, until: IsoDateTimeSchema, searchType: SearchTypeSchema.default("RECENT") })
   .refine((b) => new Date(b.until) > new Date(b.since), { message: "until must be after since", path: ["until"] });

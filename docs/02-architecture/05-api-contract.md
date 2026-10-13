@@ -8,19 +8,21 @@
 
 ## 1. Conventions
 
-| Item            | Rule                                                                                                                             |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| Base            | `/api/v1`                                                                                                                        |
-| Content         | `application/json; charset=utf-8`                                                                                                |
-| Auth            | `Authorization: Bearer <Supabase access JWT>`; `/health/*` public                                                                |
-| IDs             | UUID strings; provider ids as strings                                                                                            |
-| Dates           | ISO-8601 with offset (`2026-09-05T01:00:00+07:00`) or `Z`; responses UTC `Z` unless bucketed (then in requested tz)              |
-| Arrays in query | repeat key `sentiment=positive&sentiment=negative` (also accepts comma list)                                                     |
-| Pagination      | cursor: `?cursor=<opaque>&limit=25` → `{ items, nextCursor, totalCount? }`; `count=true` adds `totalCount` (bounded cost)        |
-| Errors          | `{ "error": { "code": "QUERY_DUPLICATE", "message": "…", "requestId": "…", "details"?: {...} } }`                                |
-| Rate limit      | `429 RATE_LIMITED` with `Retry-After`                                                                                            |
-| Request id      | `x-request-id` echoed                                                                                                            |
-| Roles           | see permission matrix [../01-product/02-personas-rbac.md](../01-product/02-personas-rbac.md#3-permission-matrix-server-enforced) |
+| Item              | Rule                                                                                                                             |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Base              | `/api/v1`                                                                                                                        |
+| Content           | `application/json; charset=utf-8`                                                                                                |
+| Auth              | `Authorization: Bearer <Supabase access JWT>`; `/health/*` public                                                                |
+| IDs               | UUID strings; provider ids as strings                                                                                            |
+| Dates             | ISO-8601 with offset (`2026-09-05T01:00:00+07:00`) or `Z`; responses UTC `Z` unless bucketed (then in requested tz)              |
+| Arrays in query   | repeat key `sentiment=positive&sentiment=negative` (also accepts comma list)                                                     |
+| Booleans in query | `true`/`false`/`1`/`0` only; any other value → `400 VALIDATION_ERROR`                                                            |
+| Date range        | `from`/`to` require offset (no date-only); `to > from`; span ≤ 366 days                                                          |
+| Pagination        | cursor: `?cursor=<opaque>&limit=25` → `{ items, nextCursor, totalCount? }`; `count=true` adds `totalCount` (bounded cost)        |
+| Errors            | `{ "error": { "code": "QUERY_DUPLICATE", "message": "…", "requestId": "…", "details"?: {...} } }`                                |
+| Rate limit        | `429 RATE_LIMITED` with `Retry-After`                                                                                            |
+| Request id        | `x-request-id` echoed                                                                                                            |
+| Roles             | see permission matrix [../01-product/02-personas-rbac.md](../01-product/02-personas-rbac.md#3-permission-matrix-server-enforced) |
 
 ## 2. Auth & user
 
@@ -205,7 +207,9 @@ Query: `from,to,timezone,queryIds[],q,relevance[] (default relevant),sentiment[]
       "thumbnailUrl": "…",
       "hasReplies": true,
       "isQuotePost": false,
-      "matchedQueries": [{ "id": "uuid", "displayName": "Eventista", "queryType": "keyword" }],
+      "matchedQueries": [
+        { "id": "uuid", "displayName": "Eventista", "queryType": "keyword", "excludedByTerms": false }
+      ],
       "analysis": {
         "status": "completed",
         "source": "ai",
@@ -244,11 +248,11 @@ Adds: `ownerId, shortcode, mediaUrl, altText, linkAttachmentUrl, quotedPostId, r
 
 ## 8. Sync jobs
 
-| Method & path                | Role   | Notes                                                                       |
-| ---------------------------- | ------ | --------------------------------------------------------------------------- |
-| `GET …/sync-jobs`            | member | `queryId?, status[], trigger[], from, to, cursor, limit`                    |
-| `GET …/sync-jobs/:id`        | member | full counters, window, cursor, error, provider usage                        |
-| `POST …/sync-jobs/:id/retry` | admin  | for `failed`/`partial` → new job resuming from `last_cursor` when available |
+| Method & path                | Role   | Notes                                                                                                         |
+| ---------------------------- | ------ | ------------------------------------------------------------------------------------------------------------- |
+| `GET …/sync-jobs`            | member | `queryId?, status[], trigger[], from, to, cursor, limit`                                                      |
+| `GET …/sync-jobs/:id`        | member | full counters, window, cursor, error, provider usage                                                          |
+| `POST …/sync-jobs/:id/retry` | admin  | for `failed`/`partial` → new job resuming from `last_cursor` when available; `202 { jobId, status:"queued" }` |
 
 Job object:
 
@@ -264,8 +268,10 @@ Job object:
 | Method & path                       | Role   | Notes                                                                    |
 | ----------------------------------- | ------ | ------------------------------------------------------------------------ |
 | `GET …/analysis-runs`               | member | `status[], from, to, cursor` (used by System Status → Analysis failures) |
-| `POST …/analysis-runs/:id/retry`    | admin  | failed → pending                                                         |
-| `POST …/analysis-runs/retry-failed` | admin  | `{ limit ≤ 500 }`                                                        |
+| `POST …/analysis-runs/:id/retry`    | admin  | failed → pending; `202 { runId, status:"pending" }`                      |
+| `POST …/analysis-runs/retry-failed` | admin  | `{ limit ≤ 500 (default 100) }` → `{ enqueued }`                         |
+
+Run object: `{ id, postId, status, trigger, effectiveVersion, attemptCount, errorCode, errorMessage, startedAt, completedAt, createdAt }`.
 
 ## 10. System status
 
@@ -293,6 +299,7 @@ Job object:
     "circuit": { "open": false, "until": null, "reason": null }
   },
   "analysis": {
+    "status": "healthy|degraded|budget_paused",
     "pending": 61,
     "processing": 3,
     "failed24h": 3,
@@ -301,11 +308,11 @@ Job object:
     "versions": {
       "classifierProvider": "openai",
       "classifierModel": "<configured>",
-      "prompt": "classifier-v1",
-      "taxonomy": "taxonomy-v1",
+      "promptVersion": "classifier-v1",
+      "taxonomyVersion": "taxonomy-v1",
       "safetyProvider": "openai",
       "safetyModel": "omni-moderation-latest",
-      "safetyPolicy": "safety-policy-v1"
+      "safetyPolicyVersion": "safety-policy-v1"
     },
     "tokens24h": { "input": 412000, "output": 61000 },
     "estimatedCost24hUsd": 0.83

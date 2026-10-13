@@ -1,0 +1,6 @@
+{
+  "rows": [
+    { "topic": "ticket", "positive": 1, "neutral": 2, "negative": 7, "total": 10, "negativeShare": 0.7 },
+    { "topic": "other", "positive": 0, "neutral": 0, "negative": 0, "total": 0, "negativeShare": null }
+  ]
+}

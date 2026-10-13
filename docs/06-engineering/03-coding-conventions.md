@@ -38,7 +38,8 @@
 ## 4. Contracts (`packages/contracts`)
 
 - One file per resource: `listening-queries.ts`, `mentions.ts`, `analytics.ts`, …; export `XSchema` (Zod) and `type X = z.infer<...>`.
-- Query-param schemas coerce arrays/comma lists; date strings validated as ISO.
+- Query-param schemas coerce arrays/comma lists via `csvArray`; date strings validated as ISO with offset; wrap schemas with `from`/`to` in `withDateRange` (apply after the last `.extend()`, zod v4 forbids extending a refined schema).
+- Query booleans use `queryBoolean()`; never `z.coerce.boolean()` (it turns `"false"` into `true`).
 - Error codes in `errors.ts` as `const`.
 - Breaking change = new major API path; add tests with snapshot fixtures.
 
