@@ -162,7 +162,8 @@ describe("MentionsView (UX §3.3)", () => {
     await act(async () =>
       fireEvent.change(screen.getByLabelText("Sort mentions"), { target: { value: "safety_desc" } }),
     );
-    expect(lastQuery()).toContain("sort=safety_desc");
+    // nuqs flushes URL updates via a timer queue → wait instead of asserting synchronously (#237)
+    await waitFor(() => expect(lastQuery()).toContain("sort=safety_desc"));
     await waitFor(() => expect(nth(listCalls(), -1)[1].params.sort).toBe("safety_desc"));
   });
 
