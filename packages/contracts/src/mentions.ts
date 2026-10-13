@@ -139,6 +139,8 @@ export const MentionDetailSchema = MentionListItemSchema.extend({
       createdAt: IsoDateTimeSchema,
       completedAt: IsoDateTimeSchema.nullable(),
       errorCode: z.string().nullable(),
+      /** Additive (T-096, TC-MEN-012): cost of this run when known. */
+      estimatedCostUsd: z.number().nullable().optional(),
     }),
   ),
 });

@@ -181,3 +181,46 @@ describe("MentionsService.list", () => {
     expect(repo.listPage).not.toHaveBeenCalled();
   });
 });
+
+/** T-096 — FR-154: GET …/mentions/:mentionId. */
+describe("MentionsService.detail", () => {
+  const mk = (row: unknown) => {
+    const repo = {
+      findDetail: jest.fn().mockResolvedValue(row),
+      hydrate: jest
+        .fn()
+        .mockResolvedValue({ matches: new Map(), intents: new Map(), topics: new Map(), errorCodes: new Map() }),
+      listRuns: jest.fn().mockResolvedValue([]),
+    };
+    const svc = new MentionsService(
+      repo as unknown as MentionsRepository,
+      {} as AnalysisService,
+      {} as AuditService,
+      { warn: jest.fn() } as unknown as PinoLogger,
+    );
+    return { svc, repo };
+  };
+
+  it("not found / other project → AppError NOT_FOUND", async () => {
+    const { svc } = mk(null);
+    await expect(svc.detail(PID, MID)).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("unanalysed post → hydrate with empty analysisIds", async () => {
+    const row = {
+      post_id: MID,
+      analysis_id: null,
+      published_at: new Date(),
+      first_seen_at: new Date(),
+      last_seen_at: new Date(),
+      analyzed_at: null,
+      safety_category_scores: null,
+      has_override: false,
+      latest_run_status: null,
+    };
+    const { svc, repo } = mk(row);
+    await svc.detail(PID, MID);
+    expect(repo.hydrate).toHaveBeenCalledWith([MID], []);
+    expect(repo.listRuns).toHaveBeenCalledWith(MID);
+  });
+});
