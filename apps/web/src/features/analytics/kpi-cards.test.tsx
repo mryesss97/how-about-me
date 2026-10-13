@@ -72,4 +72,30 @@ describe("KpiCards (FR-132)", () => {
     rerender(<KpiCards kpis={{ ...base, negativeRate: { ...base.negativeRate, previous: 0.179 } }} />);
     expect(screen.getByText("+2.1 pp")).toBeInTheDocument();
   });
+
+  it("TC-DASH-018 / FR-142: each card links to /mentions with its drill-down filter; severe line has its own link", () => {
+    const hrefFor = (id: string) => `/mentions?kpi=${id}`;
+    const base = overviewFixture().kpis;
+    const kpis = { ...base, safetyRiskRate: { ...base.safetyRiskRate, severeCount: 3 } };
+    render(<KpiCards kpis={kpis} hrefFor={hrefFor} />);
+    for (const [label, id] of [
+      ["Total Relevant Mentions", "mentions"],
+      ["Mention Growth", "growth"],
+      ["Positive Rate", "positive"],
+      ["Negative Rate", "negative"],
+      ["Sensitive + Severe Rate", "safety"],
+      ["Complaint Rate", "complaint"],
+    ]) {
+      expect(screen.getByRole("link", { name: `View mentions: ${label}` })).toHaveAttribute(
+        "href",
+        `/mentions?kpi=${id}`,
+      );
+    }
+    expect(screen.getByRole("link", { name: "3 severe" })).toHaveAttribute("href", "/mentions?kpi=severe");
+  });
+
+  it("without hrefFor, cards are not links", () => {
+    render(<KpiCards kpis={overviewFixture().kpis} />);
+    expect(screen.queryAllByRole("link")).toHaveLength(0);
+  });
 });

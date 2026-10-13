@@ -18,17 +18,32 @@ export type MentionsOverTimeChartProps = {
   error?: QueryStateError | null;
   onRetry?: () => void;
   className?: string;
+  /** FR-142: drill-down href for bucket `index` (null = not drillable). */
+  getBucketHref?: (index: number) => string | null;
+  onNavigate?: (href: string) => void;
 };
 
 /** Mentions over time (FR-135) with a dashed "Previous period" ghost series when compare is on (FR-141, TC-DASH-017). */
-export function MentionsOverTimeChart({ data, isLoading, error, onRetry, className }: MentionsOverTimeChartProps) {
+export function MentionsOverTimeChart({
+  data,
+  isLoading,
+  error,
+  onRetry,
+  className,
+  getBucketHref,
+  onNavigate,
+}: MentionsOverTimeChartProps) {
   const rows = useMemo(() => (data ? toMentionsRows(data) : []), [data]);
   const withPrevious = hasPrevious(rows);
   // Tooltip share denominator = all mentions in the selected range (decision 2026-10-13).
   const total = rows.reduce((sum, r) => sum + r.mentions, 0);
   const ticks = selectEvenlySpacedItems(rows, Math.min(MAX_TICKS, rows.length)).map((r) => r.label);
 
+  // Empty buckets are not drillable, same as zero-count segments.
+  const bucketHref = (i: number) => ((rows[i]?.mentions ?? 0) > 0 ? (getBucketHref?.(i) ?? null) : null);
+  const drillable = !!getBucketHref && !!onNavigate;
   const table = {
+    rowHrefs: rows.map((_, i) => bucketHref(i)),
     columns: withPrevious ? ["Time", "Mentions", "Previous"] : ["Time", "Mentions"],
     rows: rows.map((r) => {
       const cells = [r.label, formatCount(r.mentions)];
@@ -49,7 +64,16 @@ export function MentionsOverTimeChart({ data, isLoading, error, onRetry, classNa
     >
       <div className="h-72 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+          <AreaChart
+            data={rows}
+            margin={{ top: 8, right: 8, bottom: 0, left: -16 }}
+            style={drillable ? { cursor: "pointer" } : undefined}
+            onClick={(state: { activeTooltipIndex?: number | string | null } | null) => {
+              const index = Number(state?.activeTooltipIndex);
+              const href = Number.isInteger(index) ? bucketHref(index) : null;
+              if (href && onNavigate) onNavigate(href);
+            }}
+          >
             <CartesianGrid vertical={false} stroke="currentColor" className="text-utility-neutral-100" />
             <XAxis dataKey="label" ticks={ticks} tickLine={false} axisLine={false} fontSize={12} />
             <YAxis allowDecimals={false} tickLine={false} axisLine={false} fontSize={12} />

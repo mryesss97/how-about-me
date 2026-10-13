@@ -144,12 +144,17 @@ Each metric maps to a mentions filter that returns exactly the counted posts:
 | Metric / segment   | Mentions filters                                     |
 | ------------------ | ---------------------------------------------------- |
 | mentionCount       | `from,to,relevance=relevant` + active global filters |
+| mention growth     | same as mentionCount (current period)                |
 | positive segment   | `+ sentiment=positive`                               |
+| negative segment   | `+ sentiment=negative`                               |
+| sensitive+severe   | `+ safety=sensitive,severe`                          |
 | safety `severe`    | `+ safety=severe`                                    |
 | topic `ticket`     | `+ topic=ticket`                                     |
-| intent `complaint` | `+ intent=complaint`                                 |
+| intent `complaint` | `+ intent=complaint` (also complaint rate)           |
 | timeseries bucket  | `from=bucketStart,to=bucketEnd`                      |
 | previous period    | `from=prevFrom,to=prevTo`                            |
+
+For rates the list returns the numerator posts. Topic `other` is the top-12 remainder and has no filter, so it is not drillable. Language `other` is not drillable until #201 makes `language=other` also match codes outside the taxonomy (today the filter undercounts the slice). FE mapping: `apps/web/src/lib/filters/drill-down.ts` (T-102).
 
 QA reconciles list totals (`totalCount` header from `/mentions?count=true`) against chart numbers.
 
