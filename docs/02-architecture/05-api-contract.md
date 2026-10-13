@@ -109,6 +109,16 @@ Errors: `400 VALIDATION_ERROR`, `409 QUERY_DUPLICATE {details:{existingId}}`.
 | `POST …/listening-queries/:id/run`      | admin      | → `202 { jobId, status:"queued" }` · `409 SYNC_ALREADY_RUNNING {details:{jobId}}`                                                                  |
 | `POST …/listening-queries/:id/backfill` | admin (P1) | body `{ since, until, searchType?: "RECENT"\|"TOP" }` → `202 { jobId, status:"queued" }` · `400 BACKFILL_WINDOW_INVALID`                           |
 
+Behaviour notes (T-042, FR-051…FR-057):
+
+- List order is `createdAt desc, id desc` (keyset cursor); `count=true` adds `totalCount`. `GET :id` also returns soft-deleted queries (with `deletedAt`).
+- Duplicates (BR-006) compare `lower(queryValue)` after `#`-strip, per `(project, platform, queryType)`, active rows only → `409 QUERY_DUPLICATE {details:{existingId}}` (also on concurrent creates).
+- `PATCH` with a `queryValue`/`queryType` key → `400 QUERY_IMMUTABLE_FIELD {details:{fields}}`, whatever the value; other unknown keys are stripped. Empty body → `400 VALIDATION_ERROR`. A body with no real change → `200`, no write, no audit. `PATCH` on a soft-deleted query → `404` (restore first).
+- Scheduling: create with `enabled=true` → `nextRunAt = now`; `enabled=false` → `nextRunAt = null`. Re-enabling, or restoring an enabled query → `nextRunAt = now`. Disabling keeps `nextRunAt` (scheduler skips disabled). Changing `pollIntervalSeconds` does not reschedule the pending run.
+- `DELETE` on an already deleted query → `204` no-op. Soft delete keeps `enabled`, matches, jobs and posts (BR-010). `restore` on a non-deleted query → `200` no-op; `409 QUERY_DUPLICATE` if an active duplicate exists.
+- Audit (BR-034): `query.created|updated|enabled|disabled|deleted|restored`; `query.updated` metadata `{ fields, before, after }`. A PATCH changing `enabled` and other fields writes two rows.
+- Until T-045, `lastJob` is `null` and `matchedPosts` is `{ total: 0, last24h: 0 }` (placeholders).
+
 ## 6. Analytics
 
 Common query params (all optional): `from`, `to` (defaults last 7 d), `timezone` (default project tz), `queryIds[]`, `relevance[]` (default `relevant`), `sentiment[]`, `safety[]`, `intent[]`, `topic[]`, `language[]`, `analysisStatus[]`, `compare=false`, `timeField=published_at`.

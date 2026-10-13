@@ -59,6 +59,18 @@ export const ListeningQueryListQuerySchema = CursorPaginationQuerySchema.extend(
   limit: queryInt(1, 200).default(50),
 });
 
+export type ListeningQueryListQuery = z.infer<typeof ListeningQueryListQuerySchema>;
+
+/** FR-054 / BR-009: fields that can never be changed by PATCH — create a new query instead. */
+export const LISTENING_QUERY_IMMUTABLE_FIELDS = ["queryValue", "queryType"] as const;
+export type ListeningQueryImmutableField = (typeof LISTENING_QUERY_IMMUTABLE_FIELDS)[number];
+
+export const ListeningQueryIdParamSchema = z.object({ projectId: UuidSchema, queryId: UuidSchema });
+
+/** `details` of 409 QUERY_DUPLICATE (FR-053, BR-006). */
+export const QueryDuplicateDetailsSchema = z.object({ existingId: UuidSchema });
+export type QueryDuplicateDetails = z.infer<typeof QueryDuplicateDetailsSchema>;
+
 export const ListeningQuerySchema = z.object({
   id: UuidSchema,
   displayName: z.string(),

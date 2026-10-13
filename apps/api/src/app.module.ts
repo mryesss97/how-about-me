@@ -13,6 +13,7 @@ import { AnalysisModule } from "./modules/analysis/analysis.module";
 import { AuditModule } from "./modules/audit/audit.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { CollectorModule } from "./modules/collector/collector.module";
+import { ListeningQueriesModule } from "./modules/listening-queries/listening-queries.module";
 import { HealthModule } from "./modules/health/health.module";
 import { ProjectsModule } from "./modules/projects/projects.module";
 import { ProvidersModule } from "./modules/providers/providers.module";
@@ -35,7 +36,8 @@ import { SchedulerModule } from "./jobs/scheduler.module";
     AnalysisModule,
     SchedulerModule,
     AuditModule,
-    // M2+: IntegrationsModule, ListeningQueriesModule, SyncJobsModule, SystemStatusModule
+    ListeningQueriesModule,
+    // M2+: IntegrationsModule, SyncJobsModule, SystemStatusModule
     // M4+: MentionsModule, AnalyticsModule · M6: ReviewsModule, ExportModule
   ],
   providers: [

@@ -5,7 +5,7 @@ import { api, createActor, createPost, createProject, createQuery, createTestApp
 
 /**
  * T-014 sample: how to write an API integration spec with factories + actors.
- * TODO(T-042): once listening-query routes exist, add `POST /projects/:id/queries → GET list` over HTTP.
+ * Full listening-query coverage lives in listening-queries.int-spec.ts (T-042).
  */
 describe("Sample: factories + actors (T-014)", () => {
   let app: INestApplication;
@@ -24,6 +24,23 @@ describe("Sample: factories + actors (T-014)", () => {
     const res = await api(app, admin.token).get("/projects");
     expect(res.status).toBe(200);
     expect(res.body.map((p: { id: string; role: string }) => [p.id, p.role])).toEqual([[a.id, "admin"]]);
+  });
+
+  it("POST /projects/:id/listening-queries → GET list returns the new query (T-042)", async () => {
+    const project = await createProject(prisma);
+    const admin = await createActor(prisma, { projectId: project.id, role: "admin" });
+    const path = `/projects/${project.id}/listening-queries`;
+    const created = await api(app, admin.token).post(path, {
+      displayName: "Eventista",
+      queryValue: "#Eventista",
+      queryType: "topic_tag",
+    });
+    expect(created.status).toBe(201);
+    // BR-004/BR-005: leading `#` stripped, topic_tag → TAG.
+    expect(created.body).toMatchObject({ queryValue: "Eventista", searchMode: "TAG" });
+    const list = await api(app, admin.token).get(path);
+    expect(list.status).toBe(200);
+    expect(list.body.items.map((q: { id: string }) => q.id)).toEqual([created.body.id]);
   });
 
   it("createQuery + createPost({ queryId }) creates one match; duplicate (platform, platform_post_id) → P2002", async () => {
