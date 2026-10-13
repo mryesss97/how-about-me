@@ -1,5 +1,5 @@
 import type { SentimentResponse, TimeseriesResponse } from "@how-about-me/contracts";
-import type { SentimentLabel } from "@how-about-me/taxonomy";
+import type { SafetyLevel, SentimentLabel } from "@how-about-me/taxonomy";
 
 /** Pure data helpers for the overview charts (T-100) — kept free of React/Recharts so they are unit-testable. */
 
@@ -76,3 +76,27 @@ export function toSentimentStackRows(
 /** Share with a zero-safe denominator: null → rendered as "—" (BR-032, never NaN). */
 export const shareOf = (count: number, denominator: number): number | null =>
   denominator > 0 ? count / denominator : null;
+
+/** Safety hues match `safetyBadge` (gray / warning / error) — never sentiment colours (BR-017). */
+export const SAFETY_COLORS: Record<SafetyLevel, string> = {
+  safe: "var(--color-utility-neutral-400)",
+  sensitive: "var(--color-utility-yellow-500)",
+  severe: "var(--color-utility-red-500)",
+};
+
+/** `customer_service` → "Customer service". */
+export const humanizeLabel = (v: string) => v.charAt(0).toUpperCase() + v.slice(1).replace(/_/g, " ");
+
+export type BarRow<K extends string = string> = { key: K; name: string; count: number; share: number | null };
+
+/** Keeps API order; `other` is always moved last (FR-138). */
+export function toBarRows<K extends string>(
+  distribution: ReadonlyArray<{ label: K; count: number; share: number | null }>,
+  nameFn: (key: K) => string = humanizeLabel,
+): BarRow<K>[] {
+  const rows = distribution.map((d) => ({ key: d.label, name: nameFn(d.label), count: d.count, share: d.share }));
+  return [...rows.filter((r) => r.key !== "other"), ...rows.filter((r) => r.key === "other")];
+}
+
+/** Sum of shares — above 1 for multi-label dimensions (topics/intents); never normalised. */
+export const sumShares = (rows: readonly BarRow[]) => rows.reduce((s, r) => s + (r.share ?? 0), 0);

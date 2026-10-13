@@ -22,3 +22,15 @@ export const SentimentOverTimeChart = dynamic(
   () => import("./sentiment-over-time-chart").then((m) => m.SentimentOverTimeChart),
   { ssr: false, loading },
 );
+export const SafetyDistributionChart = dynamic(
+  () => import("./safety-distribution-chart").then((m) => m.SafetyDistributionChart),
+  { ssr: false, loading },
+);
+export const TopTopicsChart = dynamic(() => import("./top-topics-chart").then((m) => m.TopTopicsChart), {
+  ssr: false,
+  loading,
+});
+export const IntentDistributionChart = dynamic(
+  () => import("./intent-distribution-chart").then((m) => m.IntentDistributionChart),
+  { ssr: false, loading },
+);

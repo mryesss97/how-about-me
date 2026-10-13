@@ -6,8 +6,22 @@ import { ApiError } from "@/lib/api/client";
 import { DEFAULT_TZ } from "@/lib/filters/parsers";
 import { useFilters } from "@/lib/filters/use-filters";
 import { QueryState } from "@/features/shared/query-state";
-import { useMentionsTimeseries, useOverview, useSentiment } from "./api";
-import { MentionsOverTimeChart, SentimentDistributionChart, SentimentOverTimeChart } from "./charts";
+import {
+  useIntentsDistribution,
+  useMentionsTimeseries,
+  useOverview,
+  useSafetyDistribution,
+  useSentiment,
+  useTopicsDistribution,
+} from "./api";
+import {
+  IntentDistributionChart,
+  MentionsOverTimeChart,
+  SafetyDistributionChart,
+  SentimentDistributionChart,
+  SentimentOverTimeChart,
+  TopTopicsChart,
+} from "./charts";
 import { FilterBar } from "./filter-bar";
 import { KpiCards, KpiCardsSkeleton } from "./kpi-cards";
 import { OverviewBanners } from "./overview-banners";
@@ -32,6 +46,9 @@ export function OverviewView() {
   const timeseries = useMentionsTimeseries(project?.id, apiParams);
   // One request feeds both the donut and the stacked bars.
   const sentiment = useSentiment(project?.id, apiParams);
+  const safety = useSafetyDistribution(project?.id, apiParams);
+  const topics = useTopicsDistribution(project?.id, apiParams);
+  const intents = useIntentsDistribution(project?.id, apiParams);
 
   return (
     <div className="flex flex-col gap-6">
@@ -74,6 +91,27 @@ export function OverviewView() {
           isLoading={!project || sentiment.isLoading}
           error={toQueryError(sentiment.error)}
           onRetry={() => void sentiment.refetch()}
+        />
+        <SafetyDistributionChart
+          className="lg:col-span-6"
+          data={safety.data}
+          isLoading={!project || safety.isLoading}
+          error={toQueryError(safety.error)}
+          onRetry={() => void safety.refetch()}
+        />
+        <TopTopicsChart
+          className="lg:col-span-6"
+          data={topics.data}
+          isLoading={!project || topics.isLoading}
+          error={toQueryError(topics.error)}
+          onRetry={() => void topics.refetch()}
+        />
+        <IntentDistributionChart
+          className="lg:col-span-6"
+          data={intents.data}
+          isLoading={!project || intents.isLoading}
+          error={toQueryError(intents.error)}
+          onRetry={() => void intents.refetch()}
         />
       </div>
     </div>

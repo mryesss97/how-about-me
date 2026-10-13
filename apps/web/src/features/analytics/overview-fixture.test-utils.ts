@@ -1,4 +1,12 @@
-import type { OverviewResponse, SentimentResponse, TimeseriesResponse } from "@how-about-me/contracts";
+import type {
+  IntentsDistributionResponse,
+  OverviewResponse,
+  SafetyDistributionResponse,
+  SentimentResponse,
+  TimeseriesResponse,
+  TopicsDistributionResponse,
+} from "@how-about-me/contracts";
+import { INTENT_LABELS, TOPIC_LABELS } from "@how-about-me/taxonomy";
 
 const rate = (value: number | null, denominator: number, previous?: number | null) => ({
   value,
@@ -66,5 +74,40 @@ export function sentimentFixture(patch: Partial<SentimentResponse> = {}): Sentim
       ],
     },
     ...patch,
+  };
+}
+
+export function safetyFixture(patch: Partial<SafetyDistributionResponse> = {}): SafetyDistributionResponse {
+  return {
+    denominator: 200,
+    distribution: [
+      { label: "safe", count: 170, share: 0.85 },
+      { label: "sensitive", count: 24, share: 0.12 },
+      { label: "severe", count: 6, share: 0.03 },
+    ],
+    ...patch,
+  };
+}
+
+/** 12 topics + "other" (deliberately not last in input); shares sum > 100 % (multi-label). */
+export function topicsFixture(): TopicsDistributionResponse {
+  const named = TOPIC_LABELS.filter((t) => t !== "other");
+  return {
+    denominator: 100,
+    distribution: [
+      { label: "other", count: 5, share: 0.05 },
+      ...named.map((label, i) => ({ label, count: 40 - i, share: (40 - i) / 100 })),
+    ],
+  };
+}
+
+/** All 11 intents, some with count 0; shares sum > 100 %. */
+export function intentsFixture(): IntentsDistributionResponse {
+  return {
+    denominator: 50,
+    distribution: INTENT_LABELS.map((label, i) => {
+      const count = i < 4 ? 30 - i * 5 : 0;
+      return { label, count, share: count / 50 };
+    }),
   };
 }
