@@ -11,6 +11,7 @@ import {
   SafetyLevelSchema,
   SentimentLabelSchema,
 } from "@how-about-me/contracts";
+import { CONFIDENCE_BANDS } from "@how-about-me/taxonomy";
 import { Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
@@ -56,6 +57,9 @@ const MentionPageRowSchema = z.object({
   summary: z.string().nullable(),
   overall_model_confidence: nullableNum,
   has_override: z.boolean(),
+  /** #220 / BR-021: bands of the run's policy (v1 when no settings row). */
+  high_band: num,
+  medium_band: num,
   /** Sort keys as text (k0, k1, …) — collected into `keys` for the cursor. */
   keys: z.array(z.string()),
 });
@@ -77,6 +81,8 @@ const MentionDetailRowSchema = MentionPageRowSchema.extend({
   relevance_explanation: z.string().nullable(),
   safety_category_scores: z.unknown().nullable(),
   safety_flagged: z.boolean().nullable(),
+  /** #220: raw `analysis_settings.safety_thresholds` of the run's policy (null → v1). */
+  safety_thresholds: z.unknown().nullable(),
   classifier_provider: z.string().nullable(),
   classifier_model: z.string().nullable(),
   prompt_version: z.string().nullable(),
@@ -243,8 +249,9 @@ export class MentionsRepository {
                           b.sentiment_label::text AS sentiment_label, b.sentiment_confidence,
                           b.safety_level::text AS safety_level, b.language_code, b.summary,
                           b.overall_model_confidence, COALESCE(b.has_override, false) AS has_override,
+                          bands.high_band, bands.medium_band,
                           ${sortKeySelect(spec)}
-                     ${mentionsFromWhere(q, reviewStatus)} ${keysetPredicate(spec, cursor)}
+                     ${mentionsFromWhere(q, reviewStatus, { withBands: true })} ${keysetPredicate(spec, cursor)}
                      ${orderBy(spec)} LIMIT ${limit + 1}`,
       ),
     );
@@ -271,11 +278,16 @@ export class MentionsRepository {
              r.classifier_provider, r.classifier_model, r.prompt_version, r.taxonomy_version,
              r.safety_provider, r.safety_model, r.safety_policy_version,
              r.input_tokens, r.output_tokens, r.estimated_cost_usd,
-             COALESCE(r.completed_at, pa.created_at) AS analyzed_at
+             COALESCE(r.completed_at, pa.created_at) AS analyzed_at,
+             -- #220 / BR-021, doc 08 §8: bands + thresholds of the policy the run used; no row → v1.
+             COALESCE((s.confidence_bands->>'high')::numeric, ${CONFIDENCE_BANDS.high}::numeric) AS high_band,
+             COALESCE((s.confidence_bands->>'medium')::numeric, ${CONFIDENCE_BANDS.medium}::numeric) AS medium_band,
+             s.safety_thresholds
         FROM social_posts p
         LEFT JOIN effective_post_analysis e ON e.post_id = p.id
         LEFT JOIN post_analyses pa ON pa.id = e.analysis_id
         LEFT JOIN analysis_runs r ON r.id = pa.analysis_run_id
+        LEFT JOIN analysis_settings s ON s.project_id = p.project_id AND s.policy_version = r.safety_policy_version
        WHERE p.id = ${postId}::uuid AND p.project_id = ${projectId}::uuid`);
     const row = rows[0];
     return row ? MentionDetailRowSchema.parse({ ...row, keys: [] }) : null;

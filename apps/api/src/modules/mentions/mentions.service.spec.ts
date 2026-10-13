@@ -112,6 +112,8 @@ const row = (i: number): MentionPageRow => ({
   summary: null,
   overall_model_confidence: 0.9,
   has_override: false,
+  high_band: 0.8,
+  medium_band: 0.6,
   keys: [`2026-10-01T00:00:0${i}.000000Z`],
 });
 
@@ -239,6 +241,8 @@ describe("MentionsService.detail", () => {
       analyzed_at: null,
       safety_category_scores: null,
       has_override: false,
+      high_band: 0.8,
+      medium_band: 0.6,
       latest_run_status: null,
     };
     const { svc, repo, overrides } = mk(row);

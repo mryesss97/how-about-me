@@ -3,6 +3,7 @@
  * Starts from the analytics base set `B` so drill-down counts match (metric-definitions §6).
  */
 import type { MentionSort, MentionsListQuery, ReviewStatus } from "@how-about-me/contracts";
+import { CONFIDENCE_BANDS } from "@how-about-me/taxonomy";
 import { Prisma } from "@prisma/client";
 import { AppError } from "../../common/errors/app.error";
 import { type SortCursor, decodeSortCursor } from "../../common/pagination/cursor";
@@ -129,8 +130,30 @@ export function textSearchPredicate(raw: string | undefined): Prisma.Sql {
 }
 
 /** Shared FROM/WHERE for page and count: base set B + optional text search + optional review state (BR-040). */
-export function mentionsFromWhere(q: string | undefined, reviewStatus: readonly ReviewStatus[] = []): Prisma.Sql {
-  return Prisma.sql`FROM base b JOIN social_posts p ON p.id = b.post_id WHERE true ${textSearchPredicate(q)} ${reviewStatusPredicate(reviewStatus)}`;
+export function mentionsFromWhere(
+  q: string | undefined,
+  reviewStatus: readonly ReviewStatus[] = [],
+  opts: { withBands?: boolean } = {},
+): Prisma.Sql {
+  const bands = opts.withBands ? runPolicyBandsJoin(Prisma.raw("b.analysis_id")) : Prisma.empty;
+  return Prisma.sql`FROM base b JOIN social_posts p ON p.id = b.post_id ${bands} WHERE true ${textSearchPredicate(q)} ${reviewStatusPredicate(reviewStatus)}`;
+}
+
+/**
+ * #220 / BR-021, doc 08 §8: confidence bands of the policy the run that produced the current analysis used
+ * (`analysis_settings` on project + `analysis_runs.safety_policy_version`). No row / missing key → v1 defaults
+ * (bound values). Exposes `bands.high_band`, `bands.medium_band`; exactly one row per post (settings unique on
+ * (project, policy_version)) so the base set is never multiplied (BR-002).
+ */
+export function runPolicyBandsJoin(analysisIdExpr: Prisma.Sql): Prisma.Sql {
+  return Prisma.sql`LEFT JOIN LATERAL (
+    SELECT COALESCE((s.confidence_bands->>'high')::numeric, ${CONFIDENCE_BANDS.high}::numeric) AS high_band,
+           COALESCE((s.confidence_bands->>'medium')::numeric, ${CONFIDENCE_BANDS.medium}::numeric) AS medium_band
+      FROM (SELECT 1) one
+      LEFT JOIN post_analyses bpa ON bpa.id = ${analysisIdExpr}
+      LEFT JOIN analysis_runs br ON br.id = bpa.analysis_run_id
+      LEFT JOIN analysis_settings s ON s.project_id = p.project_id AND s.policy_version = br.safety_policy_version
+  ) bands ON true`;
 }
 
 export function withMentionsBase(scope: AnalyticsScope, body: Prisma.Sql): Prisma.Sql {
