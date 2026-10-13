@@ -5,8 +5,6 @@ import {
   BulkReanalyzeResponseSchema,
   MentionsPageSchema,
   type BulkReanalyzeResponse,
-  type MentionListItem,
-  type MentionsPage,
 } from "@how-about-me/contracts";
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
@@ -60,9 +58,11 @@ export function isRejectedCursor(err: unknown): boolean {
 }
 
 /** Rows can shift into the next page when new data lands between requests — keep the first occurrence (TC-MEN-003). */
-export function flattenUnique(pages: readonly MentionsPage[]): MentionListItem[] {
+export function flattenUnique<P extends { items: readonly { id: string }[] }>(
+  pages: readonly P[],
+): P["items"][number][] {
   const seen = new Set<string>();
-  const out: MentionListItem[] = [];
+  const out: P["items"][number][] = [];
   for (const page of pages)
     for (const item of page.items) {
       if (seen.has(item.id)) continue;

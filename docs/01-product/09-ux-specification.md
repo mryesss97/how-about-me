@@ -192,6 +192,16 @@ Tabs: **Overview** · **Sync jobs** · **Analysis failures** · **Audit log** (a
 
 Queue of `uncertain`, low-confidence, failed items; tabs by reason; row → detail with override form (field, value, reason); "Mark reviewed".
 
+Built in #219 (`apps/web/src/features/reviews`):
+
+- **Tabs** All · Uncertain · Low confidence · Failed, each with a count badge from page 1 `counts`. When the API omits `counts` (count timed out) the badges are hidden — never shown as 0 (BR-032).
+- **URL state:** `?reason=uncertain|low_confidence|failed` (missing/invalid → All), `?status=reviewed` (toggle "Show reviewed"; default unreviewed), `?item=<postId>` (slide-out). Tabs and the toggle replace history; opening a row pushes, so Back closes the slide-out. Changing tab/status clears the selection.
+- **Table:** post (user, time with tz tooltip, 2-line text, override icon), reasons, relevance, sentiment, confidence (`%` + band; a band, not a probability — BR-020), analysis status (+ `errorCode` when failed), and "Reviewed by" when Show reviewed is on. Load more paginates (25 / page).
+- **Mark reviewed (admin, analyst):** checkboxes + "Mark reviewed (N)"; select-all and manual selection are capped at 50 (`MARK_REVIEWED_MAX`, helper "Up to 50 at a time"). Rows disappear optimistically and come back with a toast (incl. Request ID) on error. Not offered under Show reviewed; no "Unmark" in v1. A new analysis run reopens an item (BR-040).
+- **Slide-out:** mention detail with override form (T-143) + "Mark reviewed" for that item (closes on success); "Open full page" → `/mentions/:id`.
+- **Viewer:** read-only — no checkboxes, no Mark reviewed, no override form.
+- **Empty:** "No items need review" (unreviewed) / "No reviewed items".
+
 ## 4. Responsive behaviour
 
 - ≥ 1280 px: full sidebar, 12-col grid.

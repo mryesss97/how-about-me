@@ -1,7 +1,15 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Activity, BarChartSquare02, LogOut01, MessageChatSquare, SearchLg, Settings01 } from "@untitledui/icons";
+import {
+  Activity,
+  BarChartSquare02,
+  CheckDone01,
+  LogOut01,
+  MessageChatSquare,
+  SearchLg,
+  Settings01,
+} from "@untitledui/icons";
 import { Badge } from "@/components/base/badges/badges";
 import { Button } from "@/components/base/buttons/button";
 import { canAccess } from "@/features/auth/route-roles";
@@ -17,6 +25,7 @@ const items: NavItemType[] = [
   { label: "Overview", href: "/overview", icon: BarChartSquare02 },
   { label: "Mentions", href: "/mentions", icon: MessageChatSquare },
   { label: "Listening Queries", href: "/listening-queries", icon: SearchLg },
+  { label: "Reviews", href: "/reviews", icon: CheckDone01 },
   { label: "System Status", href: "/system-status", icon: Activity },
 ];
 const footerItems: NavItemType[] = [{ label: "Settings", href: "/settings/project", icon: Settings01 }];
