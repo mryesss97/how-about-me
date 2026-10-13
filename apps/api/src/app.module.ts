@@ -9,6 +9,7 @@ import { HttpExceptionFilter } from "./common/errors/http-exception.filter";
 import { buildLoggerParams } from "./common/logging/logger.config";
 import { APP_CONFIG, AppConfigModule, type AppConfig } from "./config/config.module";
 import { PrismaModule } from "./database/prisma.module";
+import { AuditModule } from "./modules/audit/audit.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { HealthModule } from "./modules/health/health.module";
 import { ProjectsModule } from "./modules/projects/projects.module";
@@ -27,7 +28,8 @@ import { ProvidersModule } from "./modules/providers/providers.module";
     AuthModule,
     ProjectsModule,
     ProvidersModule,
-    // M2+: IntegrationsModule, ListeningQueriesModule, CollectorModule, SyncJobsModule, AuditModule, SystemStatusModule
+    AuditModule,
+    // M2+: IntegrationsModule, ListeningQueriesModule, CollectorModule, SyncJobsModule, SystemStatusModule
     // M3+: AnalysisModule · M4+: MentionsModule, AnalyticsModule · M6: ReviewsModule, ExportModule
   ],
   providers: [
