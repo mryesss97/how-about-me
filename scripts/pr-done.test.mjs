@@ -25,6 +25,7 @@ import {
   parseSize,
   resolveShotUrl,
   touchesUi,
+  splitTrailer,
   withoutSection,
 } from "./pr-done.mjs";
 
@@ -279,4 +280,23 @@ test("findChrome prefers CHROME_PATH, then Playwright's Chromium, then a system 
   assert.equal(findChrome({ env: {}, bundled: "/pw", exists: has("/pw", system) }), "/pw");
   assert.equal(findChrome({ env: {}, bundled: "/pw", exists: has(system) }), system);
   assert.throws(() => findChrome({ env: {}, bundled: "/pw", exists: () => false }), /playwright install chromium/);
+});
+
+test("splitTrailer moves the attribution out so the Definition of Done placeholder cannot swallow it", () => {
+  const body = [
+    "## Summary",
+    "x",
+    "",
+    DONE_HEADING,
+    "- [ ] placeholder",
+    "",
+    "🤖 Generated with [Claude Code](https://claude.com/claude-code)",
+  ].join("\n");
+  const { text, trailer } = splitTrailer(body);
+  assert.equal(trailer, "🤖 Generated with [Claude Code](https://claude.com/claude-code)");
+  assert.equal(withoutSection(text, DONE_HEADING).trimEnd(), "## Summary\nx");
+});
+
+test("splitTrailer leaves a body without a trailer unchanged", () => {
+  assert.deepEqual(splitTrailer("## Summary\nx"), { text: "## Summary\nx", trailer: "" });
 });

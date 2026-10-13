@@ -35,6 +35,7 @@ import { waitForMerged } from "./lib/merge-state.mjs";
 import { closingIssues, parseTicket, ticketsInBody } from "./lib/ticket.mjs";
 import {
   DONE_HEADING,
+  splitTrailer,
   SHOT_USAGE,
   SHOTS_DIR,
   capture,
@@ -323,12 +324,13 @@ function ship(args) {
   const done = doneSection({ sha, e2e, links, skipped: shots.skipped });
   // A body written from the PR template carries its own Definition of Done
   // placeholder; the section this script writes replaces it.
-  const text = withoutSection(readFileSync(bodyFile, "utf8"), DONE_HEADING).trimEnd();
+  const { text: unsigned, trailer } = splitTrailer(readFileSync(bodyFile, "utf8"));
+  const text = withoutSection(unsigned, DONE_HEADING).trimEnd();
   // The tickets this PR closes, the same keywords `pr:create` checks.
   const cost = costSection(readLedger(), ticketsInBody(text));
   const gitDir = run("git", ["rev-parse", "--git-dir"]).stdout.trim();
   const body = join(gitDir, "pr-body.md");
-  writeFileSync(body, `${text}\n\n${done}\n\n${cost}\n`);
+  writeFileSync(body, `${text}\n\n${done}\n\n${cost}\n${trailer ? `\n${trailer}\n` : ""}`);
   args = withoutOption(withoutOption(args, "--no-shots"), "--body-file");
   args.push("--body-file", body);
   const hasBase = args.some((arg) => arg === "--base" || arg.startsWith("--base="));
