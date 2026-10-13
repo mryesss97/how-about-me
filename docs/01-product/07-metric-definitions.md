@@ -154,7 +154,7 @@ Each metric maps to a mentions filter that returns exactly the counted posts:
 | timeseries bucket  | `from=bucketStart,to=bucketEnd`                      |
 | previous period    | `from=prevFrom,to=prevTo`                            |
 
-For rates the list returns the numerator posts. Topic `other` is the top-12 remainder and has no filter, so it is not drillable. Language `other` is not drillable until #201 makes `language=other` also match codes outside the taxonomy (today the filter undercounts the slice). FE mapping: `apps/web/src/lib/filters/drill-down.ts` (T-102).
+For rates the list returns the numerator posts. Topic `other` is the top-12 remainder and has no filter, so it is not drillable. Language `other` is drillable: `language=other` matches stored `other` plus any non-NULL code outside the taxonomy, the same set the slice counts (#201). FE mapping: `apps/web/src/lib/filters/drill-down.ts` (T-102).
 
 QA reconciles list totals (`totalCount` header from `/mentions?count=true`) against chart numbers.
 

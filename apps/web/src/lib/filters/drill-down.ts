@@ -39,11 +39,11 @@ export type SegmentValue = {
 };
 
 /**
- * Segment → filter. Returns null for aggregated buckets with no matching filter: topic "other" (top-12 rest)
- * and language "other" (#201). Intent "other" is a real label and stays clickable.
+ * Segment → filter. Returns null for topic "other" (top-12 rest, no matching filter). Intent "other" is a real
+ * label; language "other" maps to `language=other`, which the API widens to codes outside the taxonomy (#201).
  */
 export function segmentDrillDown<D extends SegmentDimension>(dim: D, value: SegmentValue[D]): Partial<Filters> | null {
-  if ((dim === "topic" || dim === "language") && value === "other") return null;
+  if (dim === "topic" && value === "other") return null;
   return { [dim]: [value] } as Partial<Filters>;
 }
 

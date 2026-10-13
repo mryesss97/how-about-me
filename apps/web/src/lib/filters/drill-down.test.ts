@@ -40,9 +40,12 @@ describe("segmentDrillDown (FR-142)", () => {
     expect(segmentDrillDown("language", "vi")).toEqual({ language: ["vi"] });
   });
 
-  it("aggregated 'other' for topic/language has no filter → null", () => {
+  it("aggregated topic 'other' has no filter → null", () => {
     expect(segmentDrillDown("topic", "other")).toBeNull();
-    expect(segmentDrillDown("language", "other")).toBeNull();
+  });
+
+  it("language 'other' drills down to language=other (API folds codes outside the taxonomy, #201)", () => {
+    expect(segmentDrillDown("language", "other")).toEqual({ language: ["other"] });
   });
 });
 
