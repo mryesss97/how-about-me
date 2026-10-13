@@ -4,6 +4,7 @@ import {
   IntegrationStatusSchema,
   IntentLabelSchema,
   JobStatusSchema,
+  LanguageCodeSchema,
   SafetyLevelSchema,
   TopicLabelSchema,
 } from "./enums.js";
@@ -103,6 +104,9 @@ export const SafetyDistributionResponseSchema = typedDistribution(SafetyLevelSch
 export const IntentsDistributionResponseSchema = typedDistribution(IntentLabelSchema);
 /** Top 12 topics + "other" bucket. */
 export const TopicsDistributionResponseSchema = typedDistribution(TopicOrOther);
+/** P1 — GET …/analytics/languages (FR-143): all 8 codes, count desc; unknown codes are folded into "other". */
+export const LanguagesDistributionResponseSchema = typedDistribution(LanguageCodeSchema);
+export type LanguagesDistributionResponse = z.infer<typeof LanguagesDistributionResponseSchema>;
 export type SafetyDistributionResponse = z.infer<typeof SafetyDistributionResponseSchema>;
 export type IntentsDistributionResponse = z.infer<typeof IntentsDistributionResponseSchema>;
 export type TopicsDistributionResponse = z.infer<typeof TopicsDistributionResponseSchema>;
