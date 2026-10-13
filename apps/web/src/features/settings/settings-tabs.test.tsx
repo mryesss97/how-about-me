@@ -5,6 +5,7 @@ import { useRole } from "@/features/auth/use-role";
 import { SettingsTabs } from "./settings-tabs";
 
 const apiFetch = vi.fn();
+vi.mock("next/navigation", () => ({ usePathname: () => "/settings/members" }));
 vi.mock("@/lib/api/client", () => ({ apiFetch: (...a: unknown[]) => apiFetch(...a) }));
 
 /** Renders the loaded role so tests can wait for `/me` instead of sleeping. */
@@ -36,5 +37,12 @@ describe("SettingsTabs", () => {
     renderTabs();
     expect(await screen.findByRole("link", { name: "Members" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Integrations" })).toBeInTheDocument();
+  });
+
+  it("marks the tab for the current path as active", async () => {
+    apiFetch.mockResolvedValue(meFixture([projectFixture(P1, "admin")]));
+    renderTabs();
+    expect(await screen.findByRole("link", { name: "Members" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Project" })).not.toHaveAttribute("aria-current");
   });
 });

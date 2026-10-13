@@ -48,6 +48,8 @@ Feature folders never import from each other except via `lib/`. Untitled UI `com
 - App Router; the authenticated shell is a Server Component that reads the Supabase session cookie (`@supabase/ssr`) to redirect unauthenticated users to `/login`.
 - All product data via **TanStack Query** in Client Components (dashboards are highly interactive). Query keys: `['project', pid, 'analytics', 'overview', filters]`, `['project', pid, 'mentions', filters, cursor]`, etc. `staleTime`: overview 30 s, system status 10 s, mentions 15 s (refetch on window focus).
 - Mutations invalidate the minimal key set; optimistic toggles for enable/disable.
+- Mutation pattern (first set in `features/settings/api.ts`, T-036): one `useXxx(pid)` hook per endpoint, body validated with the contract schema before sending, responses parsed with the contract schema. Project PATCH sets `['project', pid]` and invalidates `['me']` (name/timezone/settings live there) plus `['project', pid, 'analytics']` when the timezone changed. Member mutations invalidate `['project', pid, 'members']`, and `['me']` when the caller changed their own membership. `errorMessage(err)` maps `ApiError.code` (`LAST_ADMIN`, `MEMBER_EXISTS`, `FORBIDDEN_*`) to copy; other codes show `message` + `requestId`.
+- Feedback: success → `sonner` toast (single `<Toaster/>` in `app/layout.tsx`); validation and conflict errors stay inline next to the field.
 - No server-side duplication of client queries (avoid double fetch).
 
 ## 3. Authentication in FE
