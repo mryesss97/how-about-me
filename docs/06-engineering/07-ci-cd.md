@@ -2,13 +2,13 @@
 
 ## 1. Workflows (`.github/workflows/`)
 
-| Workflow                | Trigger                                                      | Jobs                                                                                                                                                                             |
-| ----------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ci.yml`                | PR to `develop`/`main`/`release/*`, push to `develop`/`main` | `lint-typecheck` (turbo lint + typecheck), `test` (unit + API integration with Postgres service), `build` (turbo build; FE secret scan), `security` (pnpm audit high+, gitleaks) |
-| `deploy-staging.yml`    | push to `develop`                                            | build API image → deploy to host (staging) → `prisma migrate deploy` → web deploy (Vercel Git integration or CLI) → Playwright smoke                                             |
-| `deploy-production.yml` | tag `v*` on `main`                                           | same with manual approval environment `production`                                                                                                                               |
-| `labels.yml`            | change to `.github/labels.yml`                               | sync labels                                                                                                                                                                      |
-| `nightly.yml`           | schedule 02:00 UTC                                           | Playwright e2e against staging; dependency audit                                                                                                                                 |
+| Workflow                | Trigger                                                      | Jobs                                                                                                                                                                                                                  |
+| ----------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ci.yml`                | PR to `develop`/`main`/`release/*`, push to `develop`/`main` | `lint-typecheck` (turbo lint + typecheck), `test` (unit + API integration with Postgres service), `build` (turbo build; FE secret scan `--build-env`), `security` (`pnpm audit:check` high+ with allowlist, gitleaks) |
+| `deploy-staging.yml`    | push to `develop`                                            | build API image → deploy to host (staging) → `prisma migrate deploy` → web deploy (Vercel Git integration or CLI) → Playwright smoke                                                                                  |
+| `deploy-production.yml` | tag `v*` on `main`                                           | same with manual approval environment `production`                                                                                                                                                                    |
+| `labels.yml`            | change to `.github/labels.yml`                               | sync labels                                                                                                                                                                                                           |
+| `nightly.yml`           | schedule 02:00 UTC                                           | Playwright e2e against staging; dependency audit                                                                                                                                                                      |
 
 Deploy jobs are scaffolded with placeholders for the hosting provider (decision pending — see risk R14); they fail fast with a clear message until secrets are configured.
 
@@ -18,7 +18,7 @@ Deploy jobs are scaffolded with placeholders for the hosting provider (decision 
 
 ## 1.2 `test` job
 
-Steps: install → `prisma generate` → `db:deploy` on the Postgres service → `pnpm test` (unit, all workspaces) → `pnpm test:int` (API integration: Jest + Supertest against the same service, `TEST_DATABASE_URL` from the job env). Integration tests run in CI since 2026-10-13 (#137); before that the job only ran unit tests. Details: [testing strategy §9](../02-architecture/10-testing-strategy.md#9-running-the-api-integration-suite).
+Steps: install → `prisma generate` → `db:deploy` on the Postgres service → migration drift check (`psql` creates `how_about_me_shadow` on the same service, then `pnpm --filter @how-about-me/api db:drift` with `SHADOW_DATABASE_URL`; fails when `prisma/migrations` and `schema.prisma` differ, see [data model](../02-architecture/04-data-model.md)) → `pnpm test:cov` (unit, all workspaces; coverage for `apps/api` and `apps/web`) → `pnpm test:int` (API integration: Jest + Supertest against the same service, `TEST_DATABASE_URL` from the job env). Integration tests run in CI since 2026-10-13 (#137); before that the job only ran unit tests. After the tests, `scripts/coverage-summary.mjs` writes a coverage table (from each `coverage/coverage-summary.json`) to the job step summary and `lcov.info` is uploaded as the `coverage` artifact. No minimum threshold yet (T-003: report only). Details: [testing strategy §9](../02-architecture/10-testing-strategy.md#9-running-the-api-integration-suite).
 
 ## 2. Required checks
 
@@ -38,4 +38,4 @@ pnpm store cache (`actions/setup-node` with `cache: pnpm`), Turborepo remote cac
 
 ## 6. Local parity
 
-`pnpm ci:local` runs the same steps as `ci.yml` (lint, typecheck, test, build) for pre-push confidence. It skips the API integration tests because they need Postgres: run `pnpm db:up && pnpm test:int` separately.
+`pnpm ci:local` runs the same steps as `ci.yml` (lint, typecheck, test, build, `audit:check`) for pre-push confidence. It skips the API integration tests because they need Postgres: run `pnpm db:up && pnpm test:int` separately.

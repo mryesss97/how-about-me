@@ -73,8 +73,12 @@ pino `redact` paths (`REDACT_PATHS` in `apps/api/src/common/logging/logger.confi
 
 ## 9. CI security gates
 
-- `scripts/check-fe-secrets.mjs`: scans `apps/web/.next` output for forbidden patterns (`SERVICE_ROLE`, `sk-`, `THREADS_ACCESS`, `OPENAI_API_KEY`).
-- `pnpm audit --prod --audit-level=high` (allow-list file `.audit-allowlist.json` with justification & expiry).
+- `scripts/check-fe-secrets.mjs` (`pnpm check:fe-secrets --build-env` in the CI `build` job, logic in `scripts/lib/fe-secrets.mjs`):
+  - **Env check.** With `--build-env`, fails if any server-only var is set in the web build env: `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, `THREADS_APP_SECRET`, `THREADS_ACCESS_TOKEN`, `INTEGRATION_ENCRYPTION_KEYS`, `DATABASE_URL`, `DIRECT_URL`. Always fails on a `NEXT_PUBLIC_*` var whose name contains `SERVICE_ROLE|SECRET|OPENAI|TOKEN|PRIVATE|DATABASE`, whose value looks like an OpenAI key (`sk-…`), or whose value is a JWT with `role: service_role`.
+  - **Bundle check.** Scans `apps/web/.next` (excluding cache) for the patterns `SUPABASE_SERVICE_ROLE_KEY`, `service_role`, `sk-…`, `OPENAI_API_KEY`, `THREADS_APP_SECRET`, `THREADS_ACCESS_TOKEN`, `INTEGRATION_ENCRYPTION_KEYS`, `DATABASE_URL`, and for the literal value (≥ 8 chars) of every server-only var present in the env.
+- `pnpm audit:check` (`scripts/audit-check.mjs`): runs `pnpm audit --prod --json` and fails on any high/critical advisory not in `.audit-allowlist.json`, or whose entry has expired. Stale entries only warn.
+  - Entry format: `"GHSA-xxxx": { "package": "…", "reason": "…", "expires": "YYYY-MM-DD" }`. Expiry ≤ 90 days; the reviewer of the PR adding the entry approves it. Prefer fixing (upgrade / `pnpm.overrides`) over allowlisting.
+  - At T-003 all existing high/critical advisories (mainly `next` < 16.3.8 and transitive deps) were allowlisted until 2026-11-14; a follow-up ticket upgrades them.
 - Secret scanning: `gitleaks` action on PRs.
 - Dependabot weekly for npm + GitHub Actions.
 
