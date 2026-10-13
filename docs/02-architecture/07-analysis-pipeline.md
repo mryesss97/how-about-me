@@ -165,6 +165,8 @@ Implementations: `OpenAiModerationProvider` (`omni-moderation-latest`), `OpenAiS
 
 The Zod equivalent lives in `packages/contracts/src/analysis/classifier-output.ts` and is generated into the provider request (`response_format: json_schema, strict: true`). Post-validation rules: `other` exclusive (drop `other` if other labels exist, else keep); dedupe labels; clamp confidences.
 
+Order is **parse → normalize**: `parseClassifierOutput(raw)` runs the strict Zod schema (unknown labels / extra keys rejected, FR-119) and returns `{ ok: false, issues: ["path: message", …] }` (max 10) for the corrective retry / run `error_message`, otherwise `{ ok: true, value }` after `normalizeClassifierOutput`. Dedupe keeps the highest confidence; label order follows the model output; non-finite confidence becomes 0. The exported JSON schema keeps `$schema`; provider adapters may strip it.
+
 ## 5. Prompt v1 (`classifier-v1`) — outline
 
 System: role (social-listening analyst for **1Zone / Eventista**, Vietnamese live-event & ticketing brand), the brand context paragraph (configurable `ANALYSIS_BRAND_CONTEXT`), taxonomy definitions (from `packages/taxonomy` guides), rules: judge intended attitude (sarcasm), multi-label allowed, `other` exclusive, summary in English one sentence, never include reasoning, output strictly as schema. User: matched terms, username (optional), post text delimited. Few-shot: 6 short VI/EN examples covering false-positive `1zone` (time zone), complaint about price, praise for artist, spam scalper, question about ticket sale, sensitive content. Full prompt text is versioned in `apps/api/src/modules/analysis/prompts/classifier-v1.md`; changing it → `classifier-v2`.

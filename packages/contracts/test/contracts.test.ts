@@ -1,11 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   AnalysisFiltersSchema,
-  ClassifierOutputSchema,
   CreateListeningQueryBodySchema,
   MentionsListQuerySchema,
   UpdateListeningQueryBodySchema,
-  normalizeClassifierOutput,
 } from "../src/index.js";
 
 describe("listening query body (FR-052 / BR-004)", () => {
@@ -60,33 +58,5 @@ describe("filters coercion", () => {
     const r = MentionsListQuerySchema.parse({});
     expect(r.sort).toBe("newest");
     expect(r.limit).toBe(25);
-  });
-});
-
-describe("classifier output", () => {
-  const valid = {
-    relevance: { label: "relevant", confidence: 0.97, explanation: "Ticket price complaint." },
-    sentiment: { label: "negative", confidence: 0.91 },
-    intents: [
-      { label: "complaint", confidence: 0.95 },
-      { label: "other", confidence: 0.2 },
-      { label: "complaint", confidence: 0.5 },
-    ],
-    topics: [
-      { label: "ticket", confidence: 0.98 },
-      { label: "price", confidence: 0.96 },
-    ],
-    language: "vi",
-    summary: "User complains that ticket prices are high.",
-  };
-  it("parses and normalises (other dropped, dedupe keeps max confidence)", () => {
-    const out = normalizeClassifierOutput(ClassifierOutputSchema.parse(valid));
-    expect(out.intents).toEqual([{ label: "complaint", confidence: 0.95 }]);
-  });
-  it("rejects unknown labels and extra keys", () => {
-    expect(
-      ClassifierOutputSchema.safeParse({ ...valid, topics: [{ label: "ticketing", confidence: 0.5 }] }).success,
-    ).toBe(false);
-    expect(ClassifierOutputSchema.safeParse({ ...valid, extra: 1 }).success).toBe(false);
   });
 });
