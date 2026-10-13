@@ -16,6 +16,10 @@ Deploy jobs are scaffolded with placeholders for the hosting provider (decision 
 
 `ci.yml` supports `workflow_dispatch` (`gh workflow run ci.yml -R mryesss97/how-about-me --ref <branch>`). The first dispatched run on `main` passed all four jobs (lint-typecheck, test with Postgres service + migrations, build + FE secret scan, security). **Event-triggered runs (push / pull_request) did not start on this repository at scaffold time** although Actions are enabled; the owner is checking repository Actions and billing settings (see the comment on the T-003 issue). Branch protection (T-002) depends on event-triggered checks.
 
+## 1.2 `test` job
+
+Steps: install → `prisma generate` → `db:deploy` on the Postgres service → `pnpm test` (unit, all workspaces) → `pnpm test:int` (API integration: Jest + Supertest against the same service, `TEST_DATABASE_URL` from the job env). Integration tests run in CI since 2026-10-13 (#137); before that the job only ran unit tests. Details: [testing strategy §9](../02-architecture/10-testing-strategy.md#9-running-the-api-integration-suite).
+
 ## 2. Required checks
 
 `ci / lint-typecheck`, `ci / test`, `ci / build` on `develop` and `main`.
@@ -34,4 +38,4 @@ pnpm store cache (`actions/setup-node` with `cache: pnpm`), Turborepo remote cac
 
 ## 6. Local parity
 
-`pnpm ci:local` runs the same steps as `ci.yml` (lint, typecheck, test, build) for pre-push confidence.
+`pnpm ci:local` runs the same steps as `ci.yml` (lint, typecheck, test, build) for pre-push confidence. It skips the API integration tests because they need Postgres: run `pnpm db:up && pnpm test:int` separately.
