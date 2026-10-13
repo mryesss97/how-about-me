@@ -104,6 +104,13 @@ describe("Mentions reanalyze (T-076)", () => {
     expect(res.body.error.code).toBe("ANALYSIS_ALREADY_PENDING");
   });
 
+  it("BR-024: concurrent requests → exactly one 202, the other 409 (never 500)", async () => {
+    const results = await Promise.all([1, 2].map(() => http().post(url(p1, postId)).set(auth("admin"))));
+    expect(results.map((r) => r.status).sort()).toEqual([202, 409]);
+    expect(await prisma.analysisRun.count({ where: { postId } })).toBe(1);
+    expect(await prisma.auditLog.count({ where: { action: "analysis.reanalyze_requested" } })).toBe(1);
+  });
+
   it("TC-MEN-013 / FR-015: viewer → 403 FORBIDDEN_ROLE", async () => {
     const res = await http().post(url(p1, postId)).set(auth("viewer"));
     expect(res.status).toBe(403);
