@@ -3,8 +3,8 @@
 import { useCallback, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { MentionSort } from "@how-about-me/contracts";
-import { useOverview } from "@/features/analytics/api";
-import { OverviewBanners } from "@/features/analytics/overview-banners";
+import { useOverview } from "@/features/shared/use-overview";
+import { OverviewBanners } from "@/features/shared/overview-banners";
 import { useCurrentProject } from "@/features/auth/use-current-project";
 import { useRole } from "@/features/auth/use-role";
 import { useHydrated } from "@/hooks/use-hydrated";

@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { topicsFixture } from "../overview-fixture.test-utils";
+import { topicsFixture } from "@/features/shared/overview-fixture.test-utils";
 import { openTable } from "./table-utils.test-utils";
 import { TopTopicsChart } from "./top-topics-chart";
 

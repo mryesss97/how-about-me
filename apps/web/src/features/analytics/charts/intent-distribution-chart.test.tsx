@@ -1,7 +1,7 @@
 import { INTENT_LABELS } from "@how-about-me/taxonomy";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { intentsFixture } from "../overview-fixture.test-utils";
+import { intentsFixture } from "@/features/shared/overview-fixture.test-utils";
 import { IntentDistributionChart } from "./intent-distribution-chart";
 import { openTable } from "./table-utils.test-utils";
 

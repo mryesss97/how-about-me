@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { timeseriesFixture } from "../overview-fixture.test-utils";
+import { timeseriesFixture } from "@/features/shared/overview-fixture.test-utils";
 import { MentionsOverTimeChart } from "./mentions-over-time-chart";
 import { openTable } from "./table-utils.test-utils";
 

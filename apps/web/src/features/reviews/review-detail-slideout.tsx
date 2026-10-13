@@ -1,8 +1,12 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Button } from "@/components/base/buttons/button";
-import { MentionDetailSlideout } from "@/features/mentions/detail/mention-detail-slideout";
+import { DetailSlideout } from "@/features/shared/detail-slideout";
 import { useMarkReviewed } from "./api";
+
+/** Detail body for one reviewed post; injected by the route (`app/(app)/reviews`) so features stay decoupled (#233). */
+export type RenderReviewDetail = (postId: string) => ReactNode;
 
 /** Review slide-out (#219): mention detail (with override form, T-143) + "Mark reviewed" for one item. */
 export function ReviewDetailSlideout({
@@ -10,20 +14,24 @@ export function ReviewDetailSlideout({
   postId,
   canMark,
   onClose,
+  renderDetail,
 }: {
   pid: string;
   postId: string;
   /** Admin/analyst on the unreviewed queue only. */
   canMark: boolean;
   onClose: () => void;
+  renderDetail: RenderReviewDetail;
 }) {
   const mark = useMarkReviewed(pid);
   return (
-    <MentionDetailSlideout
+    <DetailSlideout
       key={postId}
-      mentionId={postId}
+      title="Mention detail"
+      regionLabel="Mention detail"
       onClose={onClose}
-      fullPageHref={`/mentions/${postId}`}
+      fullPageHref={() => `/mentions/${postId}`}
+      fallbackHref="/mentions"
       actions={
         // Keep the button (disabled) while pending: the optimistic remove drops the row, which flips `canMark`.
         canMark || mark.isPending ? (
@@ -37,6 +45,8 @@ export function ReviewDetailSlideout({
           </Button>
         ) : null
       }
-    />
+    >
+      {renderDetail(postId)}
+    </DetailSlideout>
   );
 }

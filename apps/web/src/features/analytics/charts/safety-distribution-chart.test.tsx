@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { safetyFixture } from "../overview-fixture.test-utils";
+import { safetyFixture } from "@/features/shared/overview-fixture.test-utils";
 import { safetyFill, SafetyDistributionChart } from "./safety-distribution-chart";
 import { openTable } from "./table-utils.test-utils";
 

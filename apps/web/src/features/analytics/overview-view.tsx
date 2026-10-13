@@ -44,7 +44,7 @@ import {
 } from "./charts";
 import { FilterBar } from "./filter-bar";
 import { KpiCards, KpiCardsSkeleton } from "./kpi-cards";
-import { OverviewBanners } from "./overview-banners";
+import { OverviewBanners } from "@/features/shared/overview-banners";
 
 function toQueryError(err: unknown) {
   if (!err) return null;

@@ -3,7 +3,6 @@
 import {
   IntentsDistributionResponseSchema,
   LanguagesDistributionResponseSchema,
-  OverviewResponseSchema,
   QueryShareResponseSchema,
   SafetyDistributionResponseSchema,
   SentimentResponseSchema,
@@ -15,19 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/client";
 import { qk, staleTimes } from "@/lib/query/keys";
 
-/**
- * GET /projects/:projectId/analytics/overview (FR-132..134).
- * `params` must come from `useFilters().apiParams` — memoised with `now` floored to the minute, so the key is stable.
- */
-export function useOverview(pid: string | null | undefined, params: Record<string, string>) {
-  return useQuery({
-    queryKey: qk.overview(pid ?? "", params),
-    queryFn: async () =>
-      OverviewResponseSchema.parse(await apiFetch<unknown>(`/projects/${pid}/analytics/overview`, { params })),
-    staleTime: staleTimes.overview,
-    enabled: !!pid,
-  });
-}
+export { useOverview } from "@/features/shared/use-overview";
 
 /** GET /projects/:projectId/analytics/mentions-timeseries (FR-135; `previous` per bucket when compare is on, FR-141). */
 export function useMentionsTimeseries(pid: string | null | undefined, params: Record<string, string>) {

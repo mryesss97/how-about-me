@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { NuqsTestingAdapter, type UrlUpdateEvent } from "nuqs/adapters/testing";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type * as ClientModule from "@/lib/api/client";
-import { overviewFixture } from "@/features/analytics/overview-fixture.test-utils";
+import { overviewFixture } from "@/features/shared/overview-fixture.test-utils";
 import { flattenUnique, isRejectedCursor } from "./api";
 import { mentionFixture } from "./fixtures.test-utils";
 import { MentionsView } from "./mentions-view";
@@ -26,7 +26,7 @@ vi.mock("@/features/auth/use-role", () => ({ useRole: () => roleState }));
 // Banners use overview data; keep these tests focused on the list.
 let overviewData: unknown;
 const useOverview = vi.fn((_pid: unknown, _params: Record<string, string>) => ({ data: overviewData }));
-vi.mock("@/features/analytics/api", () => ({
+vi.mock("@/features/shared/use-overview", () => ({
   useOverview: (pid: unknown, params: Record<string, string>) => useOverview(pid, params),
 }));
 

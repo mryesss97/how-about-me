@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { sentimentFixture } from "../overview-fixture.test-utils";
+import { sentimentFixture } from "@/features/shared/overview-fixture.test-utils";
 import { SentimentDistributionChart } from "./sentiment-distribution-chart";
 import { openTable } from "./table-utils.test-utils";
 
