@@ -42,6 +42,8 @@ function row(i: number): MentionPageRow {
     summary: null,
     overall_model_confidence: 0.9,
     has_override: false,
+    high_band: 0.8,
+    medium_band: 0.6,
     keys: [],
   };
 }

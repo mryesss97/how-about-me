@@ -3,6 +3,7 @@ import {
   type Override,
   type MentionListItem,
   LanguageCodeSchema,
+  SafetyThresholdsSchema,
   IntentLabelSchema,
   TopicLabelSchema,
 } from "@how-about-me/contracts";
@@ -14,7 +15,8 @@ type Labeled<L> = { label: L; confidence: number | null };
 
 /**
  * Effective analysis row → MentionListItem (api-contract §7, FR-150/FR-156).
- * Sentiment and safety are mapped independently (BR-017); band is not a probability (BR-020, BR-021).
+ * Sentiment and safety are mapped independently (BR-017); band is not a probability (BR-020, BR-021) and uses
+ * the bands of the policy the run was analysed with (#220, doc 08 §8).
  */
 export function toMentionListItem(row: MentionPageRow, h: HydratedMentions): MentionListItem {
   const status = row.latest_run_status ?? "pending";
@@ -53,7 +55,8 @@ export function toMentionListItem(row: MentionPageRow, h: HydratedMentions): Men
       language: language.success ? language.data : row.language_code ? "other" : null,
       summary: row.summary,
       overallConfidence: overall,
-      confidenceBand: overall == null ? null : confidenceBand(overall),
+      confidenceBand:
+        overall == null ? null : confidenceBand(overall, { high: row.high_band, medium: row.medium_band }),
       hasOverride: row.has_override,
       ...(status === "failed" ? { errorCode: h.errorCodes.get(row.post_id) ?? null } : {}),
     },
@@ -65,6 +68,8 @@ function labeled<L>(label: L | null, confidence: number | null): Labeled<L> | nu
 }
 
 const ScoresSchema = z.record(z.string(), z.number());
+/** Pipeline stores `{ scores, triggered }` (doc 07 §6); older fixtures use a flat `{category: score}`. */
+const StoredScoresSchema = z.union([z.object({ scores: ScoresSchema }).transform((v) => v.scores), ScoresSchema]);
 
 /**
  * T-096 / FR-154: list projection + source extras, current analysis details (explanation, category scores,
@@ -80,12 +85,14 @@ export function toMentionDetail(
 ): MentionDetail {
   const item = toMentionListItem(row, h);
   const hasAnalysis = row.analysis_id != null;
-  const parsedScores = ScoresSchema.safeParse(row.safety_category_scores);
+  const parsedScores = StoredScoresSchema.safeParse(row.safety_category_scores);
   const scores = hasAnalysis && parsedScores.success ? parsedScores.data : null;
-  // Assumption: only safety-policy-v1 exists; map by run.safetyPolicyVersion once more versions ship.
+  // #220: thresholds of the policy the run used; missing/invalid row → v1 (never throw on the read path).
+  const thresholds = SafetyThresholdsSchema.safeParse(row.safety_thresholds);
+  const policy = thresholds.success ? thresholds.data : SAFETY_POLICY_V1;
   // Safety is derived from moderation scores only, never from sentiment (BR-017).
   const triggered = scores
-    ? mapSafetyLevel({ categoryScores: scores, flagged: row.safety_flagged ?? false }, SAFETY_POLICY_V1).triggered
+    ? mapSafetyLevel({ categoryScores: scores, flagged: row.safety_flagged ?? false }, policy).triggered
     : null;
   return {
     ...item,

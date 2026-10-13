@@ -1,4 +1,5 @@
 import { MentionDetailSchema, MentionListItemSchema } from "@how-about-me/contracts";
+import { SAFETY_POLICY_V1 } from "@how-about-me/taxonomy";
 import { toMentionDetail, toMentionListItem } from "./mentions.mapper";
 import type { HydratedMentions, MentionDetailRow, MentionPageRow, MentionRunRow } from "./mentions.repository";
 
@@ -27,6 +28,8 @@ const base: MentionPageRow = {
   summary: null,
   overall_model_confidence: 0.8,
   has_override: false,
+  high_band: 0.8,
+  medium_band: 0.6,
   keys: [],
 };
 const empty: HydratedMentions = { matches: new Map(), intents: new Map(), topics: new Map(), errorCodes: new Map() };
@@ -68,6 +71,20 @@ describe("toMentionListItem", () => {
     [0.59, "low"],
   ])("BR-021: overall %p → band %p", (c, band) => {
     expect(map({ overall_model_confidence: c }).analysis.confidenceBand).toBe(band);
+  });
+
+  it.each([
+    [0.65, "low"],
+    [0.75, "medium"],
+    [0.9, "high"],
+  ])("#220 / BR-021: run policy bands {high:0.9, medium:0.7}, overall %p → %p", (c, band) => {
+    const item = map({ overall_model_confidence: c, high_band: 0.9, medium_band: 0.7 });
+    expect(item.analysis.confidenceBand).toBe(band);
+  });
+
+  it("#220 / BR-021: overall null → band null even with run policy bands", () => {
+    const item = map({ overall_model_confidence: null, high_band: 0.9, medium_band: 0.7 });
+    expect(item.analysis.confidenceBand).toBeNull();
   });
 
   it("FR-156: errorCode only when failed", () => {
@@ -120,6 +137,7 @@ const detailBase: MentionDetailRow = {
   relevance_explanation: "why",
   safety_category_scores: { harassment: 0.6, "self-harm/intent": 0.5, hate: 0.1 },
   safety_flagged: false,
+  safety_thresholds: null,
   classifier_provider: "openai",
   classifier_model: "m",
   prompt_version: "p1",
@@ -185,6 +203,21 @@ describe("toMentionDetail", () => {
       { category: "self-harm/intent", score: 0.5, level: "severe" },
     ]);
     expect(d.analysis.sentiment?.label).toBe("negative");
+  });
+
+  it("#220: stored pipeline shape { scores, triggered } is read as scores", () => {
+    const scores = { harassment: 0.6, "self-harm/intent": 0.5, hate: 0.1 };
+    const d = detail({ safety_category_scores: { scores, triggered: [] } });
+    expect(d.analysis.safetyCategoryScores).toEqual(scores);
+    expect(d.analysis.safetyTriggered).toHaveLength(2);
+  });
+
+  it("#220 / BR-017: triggered uses the run policy thresholds; invalid thresholds → v1", () => {
+    const thresholds = Object.fromEntries(
+      Object.keys(SAFETY_POLICY_V1).map((k) => [k, { sensitive: 0.95, severe: 0.99 }]),
+    );
+    expect(detail({ safety_thresholds: thresholds }).analysis.safetyTriggered).toEqual([]);
+    expect(detail({ safety_thresholds: { bogus: 1 } }).analysis.safetyTriggered).toHaveLength(2);
   });
 
   it("invalid scores JSON → scores and triggered null", () => {
