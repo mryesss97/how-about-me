@@ -91,7 +91,8 @@ Layout (12-col grid, 24 px gap):
 3. **Mentions over time** (span 8) + **Sentiment distribution** donut (span 4).
 4. **Sentiment over time** stacked bars (span 6) + **Safety distribution** horizontal bars (span 6).
 5. **Top topics** horizontal bar (span 6) + **Intent distribution** horizontal bar (span 6).
-6. P1 row: Language donut · Topic × sentiment heatmap · Negative-topic contributors.
+6. P1 row: Language donut · Keyword share (horizontal bars) · Topic × sentiment heatmap · Negative-topic contributors.
+   - Keyword share (T-150): one bar per query in "count · share"; overlap note always shown (a mention counts once under each matched query); table ends with a "Distinct mentions" row, no Total; click → `/mentions?queryIds=<id>`.
 
 Interactions: click a KPI → `/mentions` with filters; click a bar/segment → `/mentions` with `+dimension=value`; hover shows count, share, denominator; chart legend toggles series; "View as table" on each chart. Compare toggle draws ghost series/values.
 

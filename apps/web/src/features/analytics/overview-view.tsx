@@ -7,7 +7,13 @@ import { useRole } from "@/features/auth/use-role";
 import { ApiError } from "@/lib/api/client";
 import { DEFAULT_TZ } from "@/lib/filters/parsers";
 import { toMentionsHref } from "@/lib/filters/api-params";
-import { bucketDrillDown, type DrillKpiId, kpiDrillDown, segmentDrillDown } from "@/lib/filters/drill-down";
+import {
+  bucketDrillDown,
+  type DrillKpiId,
+  kpiDrillDown,
+  queryDrillDown,
+  segmentDrillDown,
+} from "@/lib/filters/drill-down";
 import type { Filters } from "@/lib/filters/schema";
 import { useFilters } from "@/lib/filters/use-filters";
 import { QueryState } from "@/features/shared/query-state";
@@ -17,6 +23,7 @@ import {
   useMentionsTimeseries,
   useOverview,
   useSafetyDistribution,
+  useQueryShare,
   useSentiment,
   useTopicsDistribution,
 } from "./api";
@@ -24,6 +31,7 @@ import {
   IntentDistributionChart,
   LanguageDistributionChart,
   MentionsOverTimeChart,
+  QueryShareChart,
   SafetyDistributionChart,
   SentimentDistributionChart,
   SentimentOverTimeChart,
@@ -42,7 +50,7 @@ function toQueryError(err: unknown) {
 
 /**
  * /overview body: filters → banners → KPI cards (T-099) → charts (T-100). Safety chart slot is T-101;
- * P1 row starts with the language donut (T-148).
+ * P1 row: language donut (T-148), keyword share (T-150).
  * Each chart has its own query state so one failing chart never blanks the page.
  */
 export function OverviewView() {
@@ -59,6 +67,7 @@ export function OverviewView() {
   const topics = useTopicsDistribution(project?.id, apiParams);
   const intents = useIntentsDistribution(project?.id, apiParams);
   const languages = useLanguagesDistribution(project?.id, apiParams);
+  const queryShare = useQueryShare(project?.id, apiParams);
 
   // FR-142 drill-down: pin the exact range sent to analytics (not a fresh "now"), so the list matches the counts.
   const queriedTo = apiParams.to;
@@ -159,6 +168,15 @@ export function OverviewView() {
           isLoading={!project || languages.isLoading}
           error={toQueryError(languages.error)}
           onRetry={() => void languages.refetch()}
+        />
+        <QueryShareChart
+          getHref={(id) => href(queryDrillDown(id))}
+          onNavigate={navigate}
+          className="lg:col-span-4"
+          data={queryShare.data}
+          isLoading={!project || queryShare.isLoading}
+          error={toQueryError(queryShare.error)}
+          onRetry={() => void queryShare.refetch()}
         />
       </div>
     </div>

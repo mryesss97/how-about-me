@@ -4,6 +4,7 @@ import {
   IntentsDistributionResponseSchema,
   LanguagesDistributionResponseSchema,
   OverviewResponseSchema,
+  QueryShareResponseSchema,
   SafetyDistributionResponseSchema,
   SentimentResponseSchema,
   TimeseriesResponseSchema,
@@ -56,6 +57,7 @@ const DISTRIBUTIONS = {
   intents: IntentsDistributionResponseSchema,
   topics: TopicsDistributionResponseSchema,
   languages: LanguagesDistributionResponseSchema,
+  "query-share": QueryShareResponseSchema,
 } as const;
 
 function useDistribution<K extends keyof typeof DISTRIBUTIONS>(
@@ -89,3 +91,7 @@ export const useTopicsDistribution = (pid: string | null | undefined, params: Re
 /** GET /projects/:projectId/analytics/languages (FR-143) — all 8 codes, count desc. */
 export const useLanguagesDistribution = (pid: string | null | undefined, params: Record<string, string>) =>
   useDistribution("languages", pid, params);
+
+/** GET /projects/:projectId/analytics/query-share (FR-145) — distinct mentions per query; counts overlap. */
+export const useQueryShare = (pid: string | null | undefined, params: Record<string, string>) =>
+  useDistribution("query-share", pid, params);

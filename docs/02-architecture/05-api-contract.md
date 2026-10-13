@@ -222,6 +222,14 @@ FR-143 (T-148). `denominator` = `COUNT(DISTINCT post_id)` of base-set posts with
 
 ### `GET …/analytics/query-share` (P1) → `{ denominator, distribution:[{queryId, displayName, count, share}] , note:"overlapping" }`
 
+Keyword share (FR-145, T-150). Roles admin/analyst/viewer; same analytics params as the other widgets.
+
+- `denominator` = `COUNT(DISTINCT post_id)` of the base set `B` (equals `overview.kpis.mentionCount.value` for the same filters, FR-147).
+- `count` per query = distinct posts in `B` with a match for that query where `excluded_by_terms=false`; with `queryIds` the per-query join is limited to those ids.
+- `share = count / denominator`, not normalised (a post counts once per matched query, so shares may sum past 100 %); `null` when `denominator = 0` (FR-140).
+- Query list: without `queryIds` every non-deleted query of the project (incl. disabled, count 0) plus soft-deleted queries only when `count > 0` (BR-010); with `queryIds` exactly those queries of the project (ids of other projects are ignored).
+- Sorted `count DESC, displayName ASC, queryId ASC`. No cap.
+
 ## 7. Mentions
 
 ### `GET /projects/:projectId/mentions`

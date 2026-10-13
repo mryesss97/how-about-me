@@ -38,3 +38,7 @@ export const LanguageDistributionChart = dynamic(
   () => import("./language-distribution-chart").then((m) => m.LanguageDistributionChart),
   { ssr: false, loading },
 );
+export const QueryShareChart = dynamic(() => import("./query-share-chart").then((m) => m.QueryShareChart), {
+  ssr: false,
+  loading,
+});
