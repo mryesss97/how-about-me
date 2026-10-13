@@ -18,7 +18,7 @@ export function AnalysisSettingsPanel({
   timeZone?: string;
 }) {
   const q = useAnalysisSettings(pid);
-  const [prompt, setPrompt] = useState<number | null>(null);
+  const [prompt, setPrompt] = useState<{ outdatedCount: number; version: string } | null>(null);
   return (
     <QueryState isLoading={q.isLoading} error={q.error} onRetry={() => void q.refetch()}>
       {/* key: reset the draft when the project or the policy version changes */}
@@ -29,10 +29,24 @@ export function AnalysisSettingsPanel({
           settings={q.data}
           canEdit={canEdit}
           timeZone={timeZone}
-          onSaved={(s) => s.outdatedCount > 0 && setPrompt(s.outdatedCount)}
+          onSaved={(s) => {
+            // BR-023: stale the version that was effective before this save (captured from the pre-save render).
+            const prev = q.data?.effectiveVersion;
+            if (canEdit && prev && s.outdatedCount > 0 && s.effectiveVersion !== prev)
+              setPrompt({ outdatedCount: s.outdatedCount, version: prev });
+          }}
         />
       ) : null}
-      <ReanalysisPromptDialog isOpen={prompt !== null} outdatedCount={prompt ?? 0} onClose={() => setPrompt(null)} />
+      {canEdit && prompt ? (
+        <ReanalysisPromptDialog
+          key={prompt.version}
+          pid={pid}
+          version={prompt.version}
+          isOpen
+          outdatedCount={prompt.outdatedCount}
+          onClose={() => setPrompt(null)}
+        />
+      ) : null}
     </QueryState>
   );
 }

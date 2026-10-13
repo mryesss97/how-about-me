@@ -2,12 +2,16 @@
 
 import {
   AnalysisSettingsSchema,
+  MarkStaleQuerySchema,
+  MarkStaleResponseSchema,
+  type MarkStaleResponse,
   UpdateAnalysisSettingsBodySchema,
   type AnalysisSettings,
   type UpdateAnalysisSettingsBody,
 } from "@how-about-me/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/api/client";
+import { z } from "zod";
+import { ApiError, apiFetch } from "@/lib/api/client";
 import { qk } from "@/lib/query/keys";
 
 const path = (pid: string) => `/projects/${pid}/settings/analysis`;
@@ -33,4 +37,35 @@ export function useUpdateAnalysisSettings(pid: string) {
       ),
     onSuccess: (data) => qc.setQueryData(qk.analysisSettings(pid), data),
   });
+}
+
+/**
+ * FR-196 / BR-023: mark results of an older `effectiveVersion` stale and enqueue up to `cap` posts.
+ * Admin only (server enforces `@Roles("admin")`, FR-015). `dryRun` previews counts without changes.
+ */
+export function useMarkStale(pid: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (query: { version: string; dryRun: boolean }): Promise<MarkStaleResponse> => {
+      const q = MarkStaleQuerySchema.parse(query);
+      return MarkStaleResponseSchema.parse(
+        await apiFetch<unknown>(`/projects/${pid}/analysis-runs/mark-stale`, {
+          method: "POST",
+          params: { version: q.version, dryRun: q.dryRun },
+        }),
+      );
+    },
+    onSuccess: (_data, vars) => {
+      if (!vars.dryRun) void qc.invalidateQueries({ queryKey: qk.analysisSettings(pid) });
+    },
+  });
+}
+
+const RetryAfterDetailsSchema = z.object({ retryAfterSeconds: z.number().nonnegative() });
+
+/** Seconds to wait from a `429 RATE_LIMITED` error (`details.retryAfterSeconds`), else null. */
+export function retryAfterSeconds(err: unknown): number | null {
+  if (!(err instanceof ApiError) || err.code !== "RATE_LIMITED") return null;
+  const parsed = RetryAfterDetailsSchema.safeParse(err.details);
+  return parsed.success ? parsed.data.retryAfterSeconds : null;
 }
