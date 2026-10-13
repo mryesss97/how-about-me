@@ -22,24 +22,41 @@ Bốn nguyên tắc:
 3. Lệnh và hook chỉ trả 50 dòng lỗi cuối.
 4. Mỗi lượt chạy agent ghi chi phí theo ticket.
 
-## Pipeline
+## Pipeline (chạy liên tục)
+
+Chủ dự án chốt ngày 2026-10-13 (#140): pipeline chạy liên tục từ `issue:start` tới `issue:finish`, **không dừng chờ review plan hay review QA**. Anh xem plan, báo cáo QA và PR sau khi merge, qua các file `.claude/runs/*` và mô tả PR.
 
 ```
-[issue:start] → [triage] → [plan] → [Human Review ✋] → approve → [code → issue:tidy → review] auto
-   script        Haiku      Opus                                   Opus low   script    Haiku/Opus
-                                                                        ↓
-                                                                 [Human Review ✋]
-                                                                        ↓
-                                              PASS → commit → [issue:ship] → [issue:finish]
-                                              FAIL → fix → re-review          script
+[issue:start] → [triage] → [plan] → [code → issue:tidy → review] → PASS → commit → [issue:ship] → [issue:finish] → ticket tiếp
+   script        Haiku      Opus      Opus low   script   Haiku/Opus            script           script
+                                                              ↓
+                                                    FAIL → [code: sửa blocker] → review (tối đa 2 vòng)
 ```
 
-Chỉ có **2 điểm dừng** cần anh review:
+- Câu hỏi mở trong plan: làm theo đề xuất của researcher, ghi quyết định kèm ngày vào comment của issue, rồi code tiếp.
+- QA FAIL: `pnpm agent code <ticket>` đọc `qa-<ticket>.md` và sửa blocker, rồi `pnpm agent review <ticket>` chạy lại. Sau 2 vòng sửa mà QA vẫn FAIL thì dừng và báo anh.
+- QA PASS mà còn warning: sửa warning rẻ ngay; warning lớn ghi vào mô tả PR hoặc tạo issue follow-up.
 
-1. Researcher xong plan → anh review và approve.
-2. QA xong báo cáo → anh review kết quả.
+### Chạy song song
 
-Từ lúc approve plan tới lúc có báo cáo QA, pipeline chạy liên tục.
+Ticket không bị chặn thì chạy song song, mỗi ticket một agent và một worktree, giữ khoảng 4 ticket cùng lúc. Ticket không bị chặn khi:
+
+- Mọi ticket trong `depends_on` (backlog) đã merge vào `develop`.
+- Không có label `needs: owner-input`, và chủ dự án không ghi "pending".
+- Không đụng cùng file hay cùng module với ticket đang chạy. Ticket cùng khu vực chạy lần lượt.
+
+Ticket nào merge xong thì lấy ticket không bị chặn tiếp theo theo milestone rồi priority. Ticket chạy song song mà merge sau thì cập nhật branch với `develop` trước `issue:ship` nếu PR báo conflict.
+
+### Khi nào dừng hỏi anh
+
+Chỉ dừng khi:
+
+1. Ticket cần input của chủ dự án (`needs: owner-input`, secret, tài khoản, quyết định sản phẩm).
+2. Plan cần đổi contract API hay data model mà docs chưa chốt và không có đề xuất an toàn.
+3. QA vẫn FAIL sau 2 vòng sửa.
+4. `verify` hoặc CI đỏ vì lỗi không thuộc ticket.
+
+Ngoài các trường hợp trên, làm tiếp và báo kết quả theo lô.
 
 ---
 
@@ -188,22 +205,18 @@ pnpm agent plan 45 --hard     # buộc Opus high
 
 Trong session tương tác: `@researcher {mô tả task}` kèm ticket và ràng buộc. Output: `.claude/runs/research-45.md`.
 
-### 2. Review plan
+Câu hỏi mở: ghi quyết định vào comment của issue (`gh issue comment <n>`) rồi chạy tiếp, không chờ.
 
-Anh đọc plan, feedback nếu cần. Khi OK: `Approve plan. Chạy auto.`
-
-### 3. Auto: code → tidy → review
+### 2. Code → tidy → review
 
 1. `pnpm agent code 45`: coder làm theo plan, ghi `.claude/runs/impl-45.md`.
 2. `pnpm issue:tidy`: script format và lint.
 3. `pnpm agent review 45`: QA đọc plan, báo cáo và code thật, script lưu `.claude/runs/qa-45.md`.
 
-### 4. Review báo cáo QA
+### 3. Theo kết quả QA
 
-- **PASS** → chụp ảnh "sau" (`pnpm issue:shot after <name> --url /<route>`), commit, rồi `pnpm issue:ship --title "<subject>" --body-file <file>` (thêm `--no-shots "<lý do>"` khi file UI đổi mà giao diện không đổi).
-- **FAIL** → coder sửa blocker → QA chạy lại.
-
-Sau khi merge: `pnpm issue:finish <PR>`.
+- **PASS** → chụp ảnh "sau" (`pnpm issue:shot after <name> --url /<route>`), commit, `pnpm issue:ship --title "<subject>" --body-file <file>` (thêm `--no-shots "<lý do>"` khi file UI đổi mà giao diện không đổi), rồi `pnpm issue:finish <PR>` ngay.
+- **FAIL** → `pnpm agent code 45` (đọc `qa-45.md`, sửa blocker) → `pnpm issue:tidy` → `pnpm agent review 45`. Tối đa 2 vòng.
 
 Truyền thêm tham số cho `claude` sau `--`, ví dụ `pnpm agent code 45 -- --max-turns 40`.
 

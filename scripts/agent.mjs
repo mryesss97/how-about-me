@@ -222,6 +222,27 @@ function areas() {
   return labels.length ? labels : DEFAULT_AREAS;
 }
 
+/** The QA report of the last review run in this worktree, or `null`. */
+function readQaReport(ticket) {
+  const path = join(RUNS, `qa-${ticket.slug}.md`);
+  return existsSync(path) ? readFileSync(path, "utf8") : null;
+}
+
+/**
+ * The code stage implements the plan, or, after a review that failed, fixes
+ * what the QA report lists. This is the "FAIL → fix → re-review" step of the
+ * continuous loop (.claude/WORKFLOW.md), so it runs without anyone in between.
+ */
+export function codePrompt(ticket, qaReport) {
+  const plan = `.claude/runs/research-${ticket.slug}.md`;
+  const impl = `.claude/runs/impl-${ticket.slug}.md`;
+  const verify = "Run `pnpm verify:quiet`, never the full log.";
+  if (qaReport && /^## Kết quả:\s*FAIL/m.test(qaReport)) {
+    return `QA failed ticket ${ticket.ref}. Fix every blocker in .claude/runs/qa-${ticket.slug}.md, and the warnings that are cheap to fix, keeping to the plan ${plan}. Append what you changed to ${impl} under "## Sửa sau QA". ${verify}`;
+  }
+  return `Implement the approved plan ${plan} for ticket ${ticket.ref}. Write ${impl}. ${verify}`;
+}
+
 function prompt(stage, ticket, issue) {
   const source = `Ticket ${ticket.ref}: ${issue.title}\n\n${issue.body}`;
   switch (stage) {
@@ -237,7 +258,7 @@ function prompt(stage, ticket, issue) {
     case "plan":
       return `Plan ${source}\n\nWrite the plan to .claude/runs/research-${ticket.slug}.md.`;
     case "code":
-      return `Implement the approved plan .claude/runs/research-${ticket.slug}.md for ticket ${ticket.ref}. Write .claude/runs/impl-${ticket.slug}.md. Run \`pnpm verify:quiet\`, never the full log.`;
+      return codePrompt(ticket, readQaReport(ticket));
     case "review":
       // The agent must not write the report: a Haiku run cannot write under
       // .claude/. It returns the report and the script saves it (extractQaReport).
