@@ -15,9 +15,11 @@ set -euo pipefail
 
 zero=0000000000000000000000000000000000000000
 pushed=()
-while read -r _local_ref local_sha _remote_ref _remote_sha; do
+while read -r _local_ref local_sha remote_ref _remote_sha; do
   # A branch deletion pushes no code.
   [ "$local_sha" = "$zero" ] && continue
+  # pr-assets holds PR screenshots only (scripts/pr-done.mjs), no code to verify.
+  [ "$remote_ref" = "refs/heads/pr-assets" ] && continue
   pushed+=("$local_sha")
 done
 [ "${#pushed[@]}" -gt 0 ] || exit 0

@@ -3,7 +3,10 @@
 //
 //   pnpm issue:start <ticket> <type> <summary words…>
 //   pnpm issue:tidy
-//   pnpm issue:ship --title "<subject>" --body-file <file>
+//   pnpm issue:shot <before|after> <name> (--url <url|/path> [--size 1366x768]
+//     [--timeout 30000] [--dark] [--wait-text "<text>"] [--click "<label>"]
+//     [--scroll "<text>"] ... | --file <png>)   (see SHOT_USAGE in pr-done.mjs)
+//   pnpm issue:ship --title "<subject>" --body-file <file> [--no-shots "<reason>"]
 //   pnpm issue:finish <PR>
 //
 // <ticket> is a GitHub issue number (12) or a backlog task id (T-049).
@@ -11,10 +14,12 @@
 // start   fetch, cut a worktree off origin/develop, check the base, copy the
 //         gitignored env files, install.
 // tidy    prettier and eslint --fix on the files this branch changed.
-// ship    run `pnpm test:e2e` when the root declares it, `pnpm verify:quiet`,
-//         push (the pre-push hook reuses the verify result), then
-//         `pnpm pr:create` with the "Definition of Done" section and the agent
-//         cost of the linked tickets added.
+// shot    save a screenshot for the PR: before the change, then after it.
+// ship    check the Definition of Done: `pnpm test:e2e` when the root declares
+//         it, the screenshots, `pnpm verify:quiet`. Then push (the pre-push
+//         hook reuses the verify result), push the screenshots to `pr-assets`
+//         and `pnpm pr:create` with the "Definition of Done" section and the
+//         agent cost of the linked tickets added.
 // finish  squash-merge, close the tickets the PR closes, delete the remote
 //         branch, remove the worktree.
 //
@@ -28,6 +33,20 @@ import { pathToFileURL } from "node:url";
 import { costSection, readLedger } from "./agent.mjs";
 import { waitForMerged } from "./lib/merge-state.mjs";
 import { closingIssues, parseTicket, ticketsInBody } from "./lib/ticket.mjs";
+import {
+  DONE_HEADING,
+  SHOT_USAGE,
+  SHOTS_DIR,
+  capture,
+  clearShots,
+  doneSection,
+  listShots,
+  pairShots,
+  parseShotArgs,
+  touchesUi,
+  uploadShots,
+  withoutSection,
+} from "./pr-done.mjs";
 
 /** Branch prefixes cut off develop (git workflow §1). hotfix and release are not. */
 export const TYPES = ["feature", "fix", "refactor", "perf", "test", "docs", "chore", "spike"];
@@ -36,9 +55,6 @@ const PROTECTED = ["develop", "main"];
 /** Gitignored files a fresh worktree needs, copied from the main checkout. */
 const LOCAL_FILES = [".env", "apps/api/.env", "apps/web/.env.local", ".mcp.json"];
 const LINT = /\.(ts|tsx|js|mjs|cjs)$/;
-/** A branch that changes these files changes the UI and needs screenshots. */
-const UI = /^apps\/web\/src\//;
-export const DONE_HEADING = "## Definition of Done";
 const TAIL = 50;
 
 export function branchName(ticket, type, words) {
@@ -85,19 +101,6 @@ export function lintGroups(files, hasConfig) {
     groups.set(folder, [...(groups.get(folder) ?? []), relative(folder, file)]);
   }
   return groups;
-}
-
-/** The PR body section `issue:ship` adds. `sha` is the commit verify passed on. */
-export function doneSection({ sha, e2e, ui }) {
-  return [
-    DONE_HEADING,
-    "",
-    `- [x] \`pnpm verify\` pass trên \`${sha}\`: prisma generate · format:check · lint · typecheck · unit test · script test.`,
-    e2e ? "- [x] `pnpm test:e2e` pass." : "- [ ] E2E: repo chưa có script `test:e2e` ở root.",
-    ui
-      ? "- [ ] UI: branch đổi `apps/web/src` — đính kèm ảnh trước/sau ở mục Screenshots."
-      : "- [x] UI: branch không đổi `apps/web/src`, không cần ảnh.",
-  ].join("\n");
 }
 
 function fail(message) {
@@ -199,6 +202,28 @@ function withoutOption(args, name) {
   return position === -1 ? args : [...args.slice(0, position), ...args.slice(position + 2)];
 }
 
+async function shot(args) {
+  let parsed;
+  try {
+    parsed = parseShotArgs(args);
+  } catch (error) {
+    fail(`${error.message}\n${SHOT_USAGE}`);
+  }
+  const out = join(SHOTS_DIR, `${parsed.moment}-${parsed.name}.png`);
+  if (parsed.file) {
+    if (!existsSync(parsed.file)) fail(`Không có file ${parsed.file}.`);
+    mkdirSync(SHOTS_DIR, { recursive: true });
+    copyFileSync(parsed.file, out);
+  } else {
+    try {
+      await capture({ ...parsed, out });
+    } catch (error) {
+      fail(`✗ chụp ${parsed.url}: ${error.message.split("\n").slice(0, TAIL).join("\n")}`);
+    }
+  }
+  console.log(`✓ ${out}`);
+}
+
 /** Whether the root package.json declares `test:e2e`. */
 function hasE2e() {
   try {
@@ -235,28 +260,81 @@ function push(branch) {
   fail(`✗ ${label} — ${Math.min(TAIL, lines.length)} dòng cuối:\n${lines.slice(-TAIL).join("\n")}`);
 }
 
+/**
+ * Checks the screenshots before anything is pushed. Returns the pairs to
+ * upload, or the reason there are none. Fails when the branch changes the UI
+ * without a before/after pair and without `--no-shots "<reason>"`.
+ */
+function checkShots(noShots) {
+  const { complete, missing } = pairShots(listShots());
+  if (complete.length > 0) {
+    if (missing.length) fail(`Thiếu screenshot: ${missing.join(", ")}`);
+    return { pairs: complete };
+  }
+  if (noShots) return { skipped: noShots };
+  if (touchesUi(changedFiles())) {
+    fail(
+      [
+        "Branch này đổi UI nhưng chưa có screenshot trước và sau.",
+        "Chụp: pnpm issue:shot before <name> --url /<route> (trên code cũ),",
+        "rồi: pnpm issue:shot after <name> --url /<route> (trên code mới). Dev server: pnpm dev, cổng 3000.",
+        'Màn tải dữ liệu: thêm --wait-text "<chữ>". Đổi theme: chụp thêm cặp --dark.',
+        'Nếu UI không đổi thật, thêm --no-shots "<lý do>".',
+        ...(missing.length ? [`Còn thiếu: ${missing.join(", ")}`] : []),
+      ].join("\n"),
+    );
+  }
+  return { skipped: "Branch không đổi file giao diện nào trong `apps/web/src`." };
+}
+
+/** Pushes the screenshot pairs to `pr-assets`; returns the table rows. */
+function uploadPairs(branch, pairs) {
+  const repo = step("đọc tên repo", "gh", ["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]).trim();
+  const files = pairs.flatMap((pair) => [pair.before, pair.after]);
+  let urls;
+  try {
+    urls = uploadShots(files, branch.replace(/\//g, "-"), repo);
+  } catch (error) {
+    fail(`✗ đẩy screenshot lên pr-assets: ${error.message}`);
+  }
+  console.log(`✓ đẩy ${files.length} screenshot lên pr-assets`);
+  return pairs.map((pair, position) => ({
+    name: pair.name,
+    before: urls[position * 2],
+    after: urls[position * 2 + 1],
+  }));
+}
+
 function ship(args) {
   const branch = run("git", ["rev-parse", "--abbrev-ref", "HEAD"]).stdout.trim();
   if (PROTECTED.includes(branch)) fail(`Không ship từ ${branch}. Chạy pnpm issue:start trước.`);
   if (run("git", ["status", "--porcelain"]).stdout.trim()) fail("Còn thay đổi chưa commit. Commit rồi chạy lại.");
   const bodyFile = optionValue(args, "--body-file");
   if (!bodyFile) fail("Thiếu --body-file <file>.");
+  const noShots = optionValue(args, "--no-shots");
+  if (args.includes("--no-shots") && (!noShots?.trim() || noShots.startsWith("--")))
+    fail('--no-shots cần lý do: --no-shots "<lý do>".');
   const e2e = hasE2e();
   if (e2e) step("E2E · pnpm test:e2e", "pnpm", ["test:e2e"]);
+  const shots = checkShots(noShots);
   push(branch);
   const sha = run("git", ["rev-parse", "--short", "HEAD"]).stdout.trim();
-  const done = doneSection({ sha, e2e, ui: changedFiles().some((file) => UI.test(file)) });
-  const text = readFileSync(bodyFile, "utf8").trimEnd();
+  const links = shots.pairs ? uploadPairs(branch, shots.pairs) : [];
+  const done = doneSection({ sha, e2e, links, skipped: shots.skipped });
+  // A body written from the PR template carries its own Definition of Done
+  // placeholder; the section this script writes replaces it.
+  const text = withoutSection(readFileSync(bodyFile, "utf8"), DONE_HEADING).trimEnd();
   // The tickets this PR closes, the same keywords `pr:create` checks.
   const cost = costSection(readLedger(), ticketsInBody(text));
   const gitDir = run("git", ["rev-parse", "--git-dir"]).stdout.trim();
   const body = join(gitDir, "pr-body.md");
   writeFileSync(body, `${text}\n\n${done}\n\n${cost}\n`);
-  args = withoutOption(args, "--body-file");
+  args = withoutOption(withoutOption(args, "--no-shots"), "--body-file");
   args.push("--body-file", body);
   const hasBase = args.some((arg) => arg === "--base" || arg.startsWith("--base="));
   const pr = step("pr:create", "node", ["scripts/pr-create.mjs", ...(hasBase ? [] : ["--base", "develop"]), ...args]);
   console.log(pr.trim().split("\n").pop());
+  clearShots();
 }
 
 /**
@@ -320,7 +398,7 @@ function finish([pr]) {
 if (import.meta.url === pathToFileURL(resolve(process.argv[1] ?? "")).href) {
   // pnpm forwards a leading `--` as an argument; drop it.
   const [command, ...rest] = process.argv.slice(2).filter((arg, index) => !(index === 1 && arg === "--"));
-  const commands = { start, tidy, ship, finish };
-  if (!commands[command]) fail("Dùng: issue.mjs <start|tidy|ship|finish>");
+  const commands = { start, tidy, shot, ship, finish };
+  if (!commands[command]) fail("Dùng: issue.mjs <start|tidy|shot|ship|finish>");
   await commands[command](rest);
 }

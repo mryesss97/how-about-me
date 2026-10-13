@@ -1,6 +1,8 @@
 # Subagent Workflow — Implementation Pipeline
 
 > Workflow cho **task implementation** (feature, fix, refactor). Port từ `live-stream-admin` ngày 2026-10-13 (repo đó lấy từ 1zone-seatmap).
+>
+> Không port: script Jira/Confluence (`jira.sh`, `confluence.sh`, `atlassian-*`) và dòng `Refs: PROD-XXXX`, agent `docs-writer` cùng `DOCS-WORKFLOW.md`, `docs-bundle`, `drawio-export`, `sync-deploy-branch`. Repo này lấy việc từ GitHub issue và viết docs tay trong `docs/`.
 
 Một loạt yêu cầu chạy theo vòng lặp issue ở [docs/06-engineering/04-git-workflow.md §8](../docs/06-engineering/04-git-workflow.md#8-issue-loop-agent): mỗi yêu cầu một ticket, mỗi ticket một worktree và một PR, merge rồi làm ticket tiếp. Pipeline dưới đây chạy bên trong một ticket.
 
@@ -71,8 +73,9 @@ Trong session tương tác (`@researcher`, `@coder`, `@qa-tester`), subagent dù
 | Tạo branch và worktree, chép file `.env`, `pnpm install` | `pnpm issue:start <ticket> <type> <mô tả ≤ 5 từ>`                     |
 | Prettier và `eslint --fix` các file branch đã đổi        | `pnpm issue:tidy`                                                     |
 | Chạy check, chỉ in lỗi                                   | `pnpm verify:quiet`                                                   |
+| Chụp screenshot trước và sau                             | `pnpm issue:shot <before\|after> <name> --url /<route>`               |
 | Kiểm tra branch, title, target, issue trước khi mở PR    | `pnpm pr:check --base develop --title "<subject>" --body-file <file>` |
-| Verify, push, tạo PR                                     | `pnpm issue:ship --title "<subject>" --body-file <file>`              |
+| Verify, push, đẩy screenshot, tạo PR                     | `pnpm issue:ship --title "<subject>" --body-file <file>`              |
 | Squash-merge, đóng issue, xoá branch, gỡ worktree        | `pnpm issue:finish <PR>`                                              |
 
 Agent vẫn làm việc cần suy nghĩ: đọc ticket, viết plan, viết code, viết commit message, viết mô tả PR.
@@ -82,7 +85,8 @@ Agent vẫn làm việc cần suy nghĩ: đọc ticket, viết plan, viết code
 - `issue:start` chép `.env`, `apps/api/.env`, `apps/web/.env.local`, `.mcp.json` từ checkout chính nếu có. Git không theo dõi các file này.
 - `issue:start` chỉ cắt branch từ `origin/develop`. `release/*` và `hotfix/*` làm tay theo git workflow §2.
 - `issue:ship` dừng nếu còn thay đổi chưa commit, hoặc branch là `develop`/`main`.
-- Mô tả PR theo [.github/PULL_REQUEST_TEMPLATE.md](../.github/PULL_REQUEST_TEMPLATE.md), có `Closes #N`. `issue:ship` thêm mục `## Definition of Done` và `## Chi phí agent`.
+- Mô tả PR theo [.github/PULL_REQUEST_TEMPLATE.md](../.github/PULL_REQUEST_TEMPLATE.md), có `Closes #N`. `issue:ship` thay mục `## Definition of Done` của template bằng mục đã kiểm, và thêm `## Chi phí agent`.
+- `pr:create` từ chối mô tả thiếu mục `## Definition of Done` (trừ `release/*`). Mở PR tay thì điền mục đó trong template.
 
 ## Definition of Done
 
@@ -90,7 +94,40 @@ Agent vẫn làm việc cần suy nghĩ: đọc ticket, viết plan, viết code
 
 1. `pnpm verify` pass: prisma generate · format:check · lint · typecheck · unit test · test script workflow. Hook `pre-push` chạy nó (cùng gitleaks, shellcheck), vì GitHub Actions chưa tự chạy trên push/PR ở repo này.
 2. E2E pass khi root có script `test:e2e`. Hiện chưa có, `issue:ship` ghi rõ.
-3. PR đổi `apps/web/src` cần ảnh trước và sau ở mục Screenshots. Script chưa tự chụp; chụp tay trên dev server cổng `3000`.
+3. PR đổi UI có screenshot trước và sau. `issue:ship` đẩy ảnh lên nhánh orphan `pr-assets` và ghi bảng ảnh vào mục Definition of Done của mô tả PR.
+
+Screenshot:
+
+- Chụp ảnh "trước" ngay sau `issue:start`, trước khi sửa code. Chụp ảnh "sau" khi QA pass. Dev server: `pnpm dev` (web cổng `3000`, API cổng `4000`), hoặc cấu hình `web`/`api` trong [`.claude/launch.json`](launch.json).
+- `--url /<route>` chạy trên `http://localhost:3000`. Worktree chạy web ở cổng khác thì set `SHOT_BASE_URL=http://localhost:<cổng>`, hoặc truyền URL đầy đủ.
+- Ảnh nằm ở `.claude/runs/shots/` (gitignored), tên `before-<name>.png` và `after-<name>.png`. `issue:ship` cần đủ cặp, rồi xoá thư mục sau khi tạo PR.
+- File "UI" là mọi file trong `apps/web/src`, trừ test (`*.test.*`, `*.spec.*`), `__tests__`, `__mocks__` và `.md`. Branch không đổi file nào như vậy thì không cần ảnh; mục Definition of Done ghi lý do.
+- Branch đổi file UI nhưng giao diện không đổi thật (vd. chỉ đổi type): `pnpm issue:ship ... --no-shots "<lý do>"`.
+- Không xoá nhánh `pr-assets`: PR đã merge link ảnh tới đó. Hook `pre-push` bỏ qua nhánh này (chỉ có ảnh, không có code).
+- Script chụp bằng Playwright mà `apps/web` đã cài cho e2e: Chrome ở `CHROME_PATH`, rồi Chromium của Playwright, rồi Google Chrome của máy. Thiếu cả ba thì chạy `pnpm --filter @how-about-me/web exec playwright install chromium`.
+
+| Cờ của `issue:shot`   | Tác dụng                                                                                  |
+| --------------------- | ----------------------------------------------------------------------------------------- |
+| `--url <url\|/path>`  | Trang cần chụp. Bắt buộc, trừ khi dùng `--file`                                           |
+| `--file <png>`        | Lưu một ảnh đã chụp bằng cách khác. Không đi cùng cờ nào khác                             |
+| `--size 390x844`      | Đổi viewport. Mặc định `1366x768`                                                         |
+| `--timeout <ms>`      | Giới hạn cho việc mở trang và cho từng bước. Mặc định 30000, khoảng 1000–300000           |
+| `--wait-text "<chữ>"` | Chờ chữ hiện và nhìn thấy được. Dùng cho màn tải dữ liệu sau khi mở                       |
+| `--click "<nhãn>"`    | Bấm theo thứ tự ưu tiên: nút, rồi link (đúng tên), rồi chữ hiển thị. Sau đó chờ mạng lắng |
+| `--scroll "<chữ>"`    | Cuộn phần tử chứa chữ vào viewport                                                        |
+| `--dark`              | Giả lập `prefers-color-scheme: dark`; script kiểm tra `<html>` có class `dark-mode`       |
+
+- Script chờ trang `load`, rồi chờ mạng lắng thêm tối đa 5 s. Animation luôn tắt (`prefers-reduced-motion: reduce`).
+- `--wait-text`, `--click`, `--scroll` lặp được và chạy theo thứ tự trên dòng lệnh. Một bước lỗi thì lệnh lỗi, nêu bước đó, và không lưu ảnh.
+- `--dark` không đổi tên ảnh. Đặt tên riêng, vd. `before-mentions-dark` và `after-mentions-dark`.
+- Không `--click` nút ghi dữ liệu (Lưu, Xoá, Gửi…) khi dev server trỏ tới dữ liệu thật. Script không chặn được.
+- Script mở một trình duyệt mới, không có phiên đăng nhập. Khi `(app)` có guard đăng nhập (T-032), màn trong đó (vd. `/mentions`) chuyển về `/login`. Màn cần đăng nhập: chụp trên trình duyệt đã đăng nhập, rồi lưu bằng `--file <png>`.
+
+```bash
+pnpm issue:shot before login --url /login --wait-text "Sign in"
+pnpm issue:shot after login-dark --url /login --dark
+pnpm issue:shot after mentions --file ~/Desktop/mentions-after.png   # màn cần đăng nhập
+```
 
 ## Output lỗi ngắn
 
@@ -98,6 +135,7 @@ Agent vẫn làm việc cần suy nghĩ: đọc ticket, viết plan, viết code
 - Một verify chạy một lúc trên mọi worktree (khoá chung trong git dir).
 - `issue:*` in một dòng cho bước pass, 50 dòng cuối cho bước fail.
 - `issue:ship` chạy verify trước khi push và để lại stamp cho commit. Hook `pre-push` dùng lại stamp, nên push mất vài giây.
+- `pnpm agent:test` (một phần của `pnpm verify`) chạy test của script workflow: `agent-workflow` (agent, issue, ticket), `pr-done` (screenshot, Definition of Done, tìm Chrome), `pr-conventions`, `merge-state`, `verify-lock`, `verify-stamp`. Các file nằm cạnh script trong `scripts/`.
 - CI chạy tay (`gh workflow run ci.yml --ref <branch>`): đọc log bằng `gh run view <id> --log-failed | tail -50`. Không đọc cả log.
 
 ## Đo chi phí từng ticket
@@ -127,6 +165,13 @@ pnpm agent triage 45
 
 Output: `.claude/runs/triage-45.json` (type, area, size, `hard`).
 
+Ticket đổi UI thì chụp ảnh "trước" ngay lúc này, trên code cũ:
+
+```bash
+pnpm dev    # terminal khác
+pnpm issue:shot before <name> --url /<route>
+```
+
 ### 1. Lập plan
 
 ```bash
@@ -148,7 +193,7 @@ Anh đọc plan, feedback nếu cần. Khi OK: `Approve plan. Chạy auto.`
 
 ### 4. Review báo cáo QA
 
-- **PASS** → commit, rồi `pnpm issue:ship --title "<subject>" --body-file <file>`.
+- **PASS** → chụp ảnh "sau" (`pnpm issue:shot after <name> --url /<route>`), commit, rồi `pnpm issue:ship --title "<subject>" --body-file <file>` (thêm `--no-shots "<lý do>"` khi file UI đổi mà giao diện không đổi).
 - **FAIL** → coder sửa blocker → QA chạy lại.
 
 Sau khi merge: `pnpm issue:finish <PR>`.

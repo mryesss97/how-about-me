@@ -2,7 +2,7 @@
 # Shared lock so only one `pnpm verify` runs at a time across every
 # worktree of this repo. Sourced by scripts/verify-quiet.sh.
 #
-# Why: several agents push from parallel worktrees. Each `test run starts a
+# Why: several agents push from parallel worktrees. Each `vitest run` starts a
 # worker per core, so three at once push the load average past 100 and
 # CPU-bound tests hit their timeout. Raising the timeout hides that.
 #

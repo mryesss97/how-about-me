@@ -1,6 +1,6 @@
-// Tests for the pure helpers of scripts/agent.mjs, scripts/issue.mjs,
-// scripts/lib/ticket.mjs and scripts/lib/pr-conventions.mjs. No git, no gh,
-// no claude.
+// Tests for the pure helpers of scripts/agent.mjs, scripts/issue.mjs and
+// scripts/lib/ticket.mjs. No git, no gh, no claude. The other script tests
+// sit next to this file (`pnpm agent:test` runs them all).
 //
 //   node --test scripts/agent-workflow.test.mjs
 import assert from "node:assert/strict";
@@ -19,9 +19,7 @@ import {
   SMALL_DIFF_LINES,
   summarize,
 } from "./agent.mjs";
-import { branchName, DONE_HEADING, doneSection, isConnectionDropAfterGreenHook, lintGroups } from "./issue.mjs";
-import { waitForMerged } from "./lib/merge-state.mjs";
-import { conventionProblems } from "./lib/pr-conventions.mjs";
+import { branchName, isConnectionDropAfterGreenHook, lintGroups } from "./issue.mjs";
 import { closingIssues, parseTicket, ticketsInBody } from "./lib/ticket.mjs";
 
 const MAP = { "T-049": { number: 128 } };
@@ -58,6 +56,10 @@ test("closingIssues returns every issue the body closes, in order, once", () => 
   ]);
 });
 
+test("closingIssues ignores Refs: lines", () => {
+  assert.deepEqual(closingIssues("Refs: #93\nSee #94"), []);
+});
+
 test("closingIssues ignores issues of another repository and empty bodies", () => {
   assert.deepEqual(closingIssues("Closes mryesss97/other#5\nCloses #96"), ["96"]);
   assert.deepEqual(closingIssues(""), []);
@@ -76,15 +78,6 @@ test("lintGroups lints a file from the workspace that owns the ESLint config", (
       ["apps/web", ["src/app/page.tsx"]],
     ],
   );
-});
-
-test("doneSection records the verify sha, e2e and the UI rule", () => {
-  const text = doneSection({ sha: "abc1234", e2e: false, ui: true });
-  assert.ok(text.startsWith(DONE_HEADING));
-  assert.match(text, /`pnpm verify` pass trên `abc1234`/);
-  assert.match(text, /- \[ \] E2E/);
-  assert.match(text, /- \[ \] UI: branch đổi `apps\/web\/src`/);
-  assert.match(doneSection({ sha: "x", e2e: true, ui: false }), /- \[x\] UI: branch không đổi/);
 });
 
 test("triage runs on Haiku without an effort level", () => {
@@ -151,27 +144,6 @@ test("branchName rejects a bad type and a long summary", () => {
   assert.throws(() => branchName(ticket, "feat", ["x"]), /feat/);
   assert.throws(() => branchName(ticket, "chore", ["a b c d e f"]), /5 từ/);
   assert.throws(() => branchName(ticket, "chore", []), /Thiếu mô tả/);
-});
-
-test("conventionProblems accepts the branches of the git workflow", () => {
-  const ok = (branch, base = "develop") =>
-    assert.deepEqual(conventionProblems({ branch, title: "feat(api): add x", base }), [], branch);
-  ok("feature/71-collector-window-calculator");
-  ok("fix/143-growth-new-state");
-  ok("spike/12-threads-poc");
-  ok("chore/agent-workflow");
-  ok("docs/7-api-contract");
-  ok("release/v0.1.0", "main");
-  ok("hotfix/v0.1.1", "main");
-  ok("dependabot/npm_and_yarn/x", "main");
-});
-
-test("conventionProblems rejects a bad branch, title and target", () => {
-  assert.match(conventionProblems({ branch: "feature/no-issue", title: "feat: x", base: "develop" })[0], /sai quy ước/);
-  assert.match(conventionProblems({ branch: "fix/1-x", title: "Fix stuff.", base: "develop" })[0], /sai format/);
-  assert.match(conventionProblems({ branch: "fix/1-x", title: "fix: x", base: "main" })[0], /phải PR vào develop/);
-  assert.match(conventionProblems({ branch: "release/v0.1.0", title: "chore: x", base: "develop" })[0], /main/);
-  assert.match(conventionProblems({ branch: "fix/1-x", title: "fix: x" }).at(-1), /Thiếu --base/);
 });
 
 const RUN = {
@@ -247,20 +219,11 @@ test("isConnectionDropAfterGreenHook retries only a drop after a green hook", ()
   const green = "gitleaks: pass\nverify: pass (log: x)\n";
   const drop = "Connection to github.com closed by remote host.\nerror: failed to push some refs";
   assert.equal(isConnectionDropAfterGreenHook(green + drop), true);
+  // The hook failed: the red check stands, no retry.
   assert.equal(isConnectionDropAfterGreenHook("verify: FAIL — 50 dòng cuối\n" + drop), false);
+  // The hook never reached verify: not a green hook.
   assert.equal(isConnectionDropAfterGreenHook(drop), false);
+  // Another push error after a green hook: no retry.
   assert.equal(isConnectionDropAfterGreenHook(green + "! [rejected] non-fast-forward"), false);
   assert.equal(isConnectionDropAfterGreenHook(undefined), false);
-});
-
-test("waitForMerged re-reads until MERGED and stops on a failed read", () => {
-  const states = ["OPEN", "OPEN", "MERGED"];
-  let reads = 0;
-  const pr = waitForMerged(() => ({ state: states[reads++] }), { sleep: () => {} });
-  assert.equal(pr.state, "MERGED");
-  assert.equal(reads, 3);
-  assert.equal(
-    waitForMerged(() => null, { sleep: () => {} }),
-    null,
-  );
 });

@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["turbo", "run", "dev", "--filter=@how-about-me/web"],
+      "port": 3000
+    },
+    {
+      "name": "api",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["turbo", "run", "dev", "--filter=@how-about-me/api"],
+      "port": 4000
+    }
+  ]
+}
