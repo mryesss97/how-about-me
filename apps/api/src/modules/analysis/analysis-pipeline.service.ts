@@ -1,10 +1,12 @@
 import { Inject, Injectable } from "@nestjs/common";
-import type { ClassifierOutput } from "@how-about-me/contracts";
+import { ClassifierOutputSchema, parseClassifierOutput, type ClassifierOutput } from "@how-about-me/contracts";
 import { SAFETY_POLICY_VERSION, TAXONOMY_VERSION } from "@how-about-me/taxonomy";
 import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 import { v7 as uuidv7 } from "uuid";
+import { ProviderError } from "../../common/errors/provider.error";
 import { APP_CONFIG, type AppConfig } from "../../config/config.module";
 import { PrismaService } from "../../database/prisma.service";
+import { AnalysisLockLostError, truncateMessage } from "./analysis-failure-policy";
 import { AnalysisService, type ClaimedRun, type RunUsage, type RunVersions } from "./analysis.service";
 import {
   CONTENT_CLASSIFIER,
@@ -17,6 +19,8 @@ import {
 } from "./providers/interfaces";
 import type { RunProcessor } from "./run-processor";
 import { toSafetyAnalysis, type SafetyAnalysis } from "./safety/safety-mapping";
+
+type RelevanceResult = Awaited<ReturnType<ContentClassifier["relevance"]>>;
 
 /** Outcome of the provider calls for one run, before persistence. */
 type Outcome =
@@ -35,6 +39,30 @@ function conf(n: number): number {
   return Math.round(n * 10_000) / 10_000;
 }
 
+function zodIssues(issues: readonly { path: readonly PropertyKey[]; message: string }[]): string[] {
+  return issues.slice(0, 10).map((i) => `${i.path.map(String).join(".") || "(root)"}: ${i.message}`);
+}
+
+function validateClassify(out: ClassifierOutput & { usage: Usage }): string[] | null {
+  const { usage: _usage, ...rest } = out;
+  const r = parseClassifierOutput(rest);
+  return r.ok ? null : r.issues;
+}
+
+function validateRelevance(out: { relevance: ClassifierOutput["relevance"] }): string[] | null {
+  const r = ClassifierOutputSchema.shape.relevance.safeParse(out.relevance);
+  return r.success ? null : zodIssues(r.error.issues);
+}
+
+function issuesOf(error: ProviderError): string[] {
+  const d: unknown = error.details;
+  if (d && typeof d === "object" && "issues" in d && Array.isArray(d.issues)) {
+    const list = d.issues.filter((x): x is string => typeof x === "string");
+    if (list.length > 0) return list;
+  }
+  return [error.message];
+}
+
 function sumUsage(items: Usage[]): RunUsage {
   return {
     inputTokens: items.reduce((a, u) => a + u.inputTokens, 0),
@@ -48,7 +76,8 @@ function sumUsage(items: Usage[]): RunUsage {
  * load post → revision/empty checks → relevance gate → safety → classify → one transaction that inserts
  * `post_analyses` (+ intents/topics), completes the run with the 7 version fields and moves
  * `social_posts.current_analysis_id` (FR-100, FR-102, FR-103, FR-110, FR-114).
- * Provider errors are rethrown: the worker's catch is the error-policy seam (re-queue now, T-075 later).
+ * Classifier output is validated here too (FR-119) and gets one corrective retry (FR-113, T-075); other
+ * provider errors are rethrown to the worker, which applies `analysis-failure-policy.ts`.
  */
 @Injectable()
 export class AnalysisPipelineService implements RunProcessor {
@@ -107,25 +136,74 @@ export class AnalysisPipelineService implements RunProcessor {
   private async callProviders(input: ClassifierInput, ctx: AnalysisContext): Promise<Outcome> {
     const usage: Usage[] = [];
     if (this.cfg.ANALYSIS_TWO_STEP) {
-      const rel = await this.classifier.relevance(input, ctx);
-      usage.push(rel.usage);
+      const rel = await this.withCorrection<RelevanceResult>(
+        (i) => this.classifier.relevance(i, ctx),
+        validateRelevance,
+        input,
+        ctx,
+        usage,
+      );
       if (rel.relevance.label === "irrelevant") {
         // TC-ANA-005: classify() and moderate() are not called for irrelevant posts.
         return { kind: "irrelevant", relevance: rel.relevance, language: rel.language ?? null, usage };
       }
       const safety = await this.safety.moderate({ text: input.text }, ctx);
-      const { usage: cu, ...output } = await this.classifier.classify({ ...input, languageHint: rel.language }, ctx);
-      usage.push(cu);
+      const { usage: _cu, ...output } = await this.withCorrection(
+        (i) => this.classifier.classify(i, ctx),
+        validateClassify,
+        { ...input, languageHint: rel.language },
+        ctx,
+        usage,
+      );
       return { kind: "full", output, safety: toSafetyAnalysis(safety), usage };
     }
     // Single-step: classify first, gate on its relevance, then moderate (sequential, saves moderation calls).
-    const { usage: cu, ...output } = await this.classifier.classify(input, ctx);
-    usage.push(cu);
+    const { usage: _cu, ...output } = await this.withCorrection(
+      (i) => this.classifier.classify(i, ctx),
+      validateClassify,
+      input,
+      ctx,
+      usage,
+    );
     if (output.relevance.label === "irrelevant") {
       return { kind: "irrelevant", relevance: output.relevance, language: output.language, usage };
     }
     const safety = await this.safety.moderate({ text: input.text }, ctx);
     return { kind: "full", output, safety: toSafetyAnalysis(safety), usage };
+  }
+
+  /**
+   * FR-113 corrective retry: invalid output (pipeline validation or adapter `ANALYSIS_SCHEMA_INVALID`) is retried
+   * once with the issues appended to the prompt; still invalid → `ANALYSIS_SCHEMA_INVALID`. Usage of every
+   * returned output is pushed to `usage`. Issues are `path: message` only, never post text (BR-027).
+   */
+  private async withCorrection<T extends { usage: Usage }>(
+    call: (input: ClassifierInput) => Promise<T>,
+    validate: (out: T) => string[] | null,
+    input: ClassifierInput,
+    ctx: AnalysisContext,
+    usage: Usage[],
+  ): Promise<T> {
+    const attempt = async (i: ClassifierInput): Promise<{ out: T } | { issues: string[] }> => {
+      try {
+        const out = await call(i);
+        usage.push(out.usage);
+        const issues = validate(out);
+        return issues ? { issues } : { out };
+      } catch (e: unknown) {
+        if (e instanceof ProviderError && e.code === "ANALYSIS_SCHEMA_INVALID") return { issues: issuesOf(e) };
+        throw e;
+      }
+    };
+    const first = await attempt(input);
+    if ("out" in first) return first.out;
+    this.logger.warn({ runId: ctx.runId, issues: first.issues }, "classifier output invalid; corrective retry");
+    const second = await attempt({ ...input, correction: { issues: first.issues } });
+    if ("out" in second) return second.out;
+    throw new ProviderError(
+      "ANALYSIS_SCHEMA_INVALID",
+      truncateMessage(`after corrective retry: ${second.issues.join("; ")}`),
+    );
   }
 
   private async persist(run: ClaimedRun, outcome: Outcome): Promise<void> {
@@ -181,7 +259,7 @@ export class AnalysisPipelineService implements RunProcessor {
         skippedReason: outcome.kind === "irrelevant" ? "irrelevant" : undefined,
       });
       // Watchdog took the run back: roll back so no orphan analysis remains.
-      if (!ok) throw new Error("analysis run no longer held by this worker");
+      if (!ok) throw new AnalysisLockLostError(run.id);
       await this.analysis.setCurrentAnalysis(tx, run.postId, run.id, analysisId);
     });
   }

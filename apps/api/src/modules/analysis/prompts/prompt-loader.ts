@@ -58,7 +58,13 @@ export function parsePrompt(version: string, source: string): ClassifierPrompt {
   return { version, system, userTemplate, examples };
 }
 
-/** Builds chat messages: system, few-shot user/assistant pairs, then the real post. */
+/** Runtime-only corrective message (FR-113, doc 07 §5): not part of the frozen prompt file. */
+export const CORRECTION_TEMPLATE =
+  "Your previous response failed validation:\n{{issues}}\nReturn only JSON that matches the schema exactly and use only the labels defined in the taxonomy guide.";
+const CORRECTION_MAX_ISSUES = 10;
+const CORRECTION_MAX_CHARS = 500;
+
+/** Builds chat messages: system, few-shot user/assistant pairs, the real post, then the optional correction. */
 export function renderMessages(prompt: ClassifierPrompt, input: ClassifierInput): ChatMessage[] {
   const system = fill(prompt.system, {
     brand_context: input.brandContext,
@@ -70,6 +76,14 @@ export function renderMessages(prompt: ClassifierPrompt, input: ClassifierInput)
     messages.push({ role: "assistant", content: JSON.stringify(ex.output) });
   }
   messages.push({ role: "user", content: renderUser(prompt.userTemplate, input) });
+  if (input.correction && input.correction.issues.length > 0) {
+    const issues = input.correction.issues
+      .slice(0, CORRECTION_MAX_ISSUES)
+      .map((i) => `- ${i}`)
+      .join("\n")
+      .slice(0, CORRECTION_MAX_CHARS);
+    messages.push({ role: "user", content: fill(CORRECTION_TEMPLATE, { issues }) });
+  }
   return messages;
 }
 
