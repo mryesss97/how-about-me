@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { Platform, Prisma, PrismaClient } from "@prisma/client";
+import { Prisma, type Platform, type PrismaClient } from "@prisma/client";
 import type { AuditService } from "../audit/audit.service";
 
 /**
@@ -10,7 +10,9 @@ import type { AuditService } from "../audit/audit.service";
 export type PurgeScope =
   | { scope: "post"; platform: Platform; platformPostId: string }
   | { scope: "project"; projectId: string; before: Date }
-  | { scope: "sync-jobs"; before: Date; projectId?: string };
+  | { scope: "sync-jobs"; before: Date; projectId?: string }
+  /** Non-current analysis history (T-153, RETENTION_RUNS_DAYS); see `eligibleRunsSql`. */
+  | { scope: "runs"; before: Date; projectId?: string };
 
 export type PostPurgeCounts = {
   posts: number;
@@ -22,7 +24,8 @@ export type PostPurgeCounts = {
   runs: number;
 };
 export type SyncJobPurgeCounts = { syncJobs: number };
-export type PurgeCounts = PostPurgeCounts | SyncJobPurgeCounts;
+export type RunPurgeCounts = { runs: number; analyses: number; intents: number; topics: number };
+export type PurgeCounts = PostPurgeCounts | SyncJobPurgeCounts | RunPurgeCounts;
 
 export const DEFAULT_PURGE_BATCH_SIZE = 1000;
 export const MAX_PURGE_BATCH_SIZE = 5000;
@@ -41,7 +44,57 @@ const emptyPostCounts = (): PostPurgeCounts => ({
   runs: 0,
 });
 
-function postWhere(s: Exclude<PurgeScope, { scope: "sync-jobs" }>): Prisma.SocialPostWhereInput {
+type PostScope = Extract<PurgeScope, { scope: "post" | "project" }>;
+type RunScope = Extract<PurgeScope, { scope: "runs" }>;
+
+/**
+ * Runs eligible for history purge (T-153 decision 3). A run is deleted only when all hold:
+ * (a) created_at < before; (b) status not pending/processing; (c) its analysis (if any) is neither a post's
+ * current_analysis_id nor referenced by any override; (d) the post has a newer run by (created_at, id),
+ * so the latest run per post is always kept. `onlyIds` re-checks a batch inside the delete transaction.
+ */
+function eligibleRunsSql(s: RunScope, opts: { onlyIds?: string[]; limit?: number } = {}): Prisma.Sql {
+  return Prisma.sql`
+    SELECT r.id FROM analysis_runs r
+    WHERE r.created_at < ${s.before}
+      AND r.status::text NOT IN ('pending', 'processing')
+      ${s.projectId ? Prisma.sql`AND r.project_id = ${s.projectId}::uuid` : Prisma.empty}
+      ${opts.onlyIds ? Prisma.sql`AND r.id = ANY(${opts.onlyIds}::uuid[])` : Prisma.empty}
+      AND EXISTS (
+        SELECT 1 FROM analysis_runs n
+        WHERE n.post_id = r.post_id AND (n.created_at, n.id) > (r.created_at, r.id)
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM post_analyses a JOIN social_posts p ON p.current_analysis_id = a.id
+        WHERE a.analysis_run_id = r.id
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM post_analyses a JOIN analysis_overrides o ON o.analysis_id = a.id
+        WHERE a.analysis_run_id = r.id
+      )
+    ${opts.limit ? Prisma.sql`ORDER BY r.id LIMIT ${opts.limit}` : Prisma.empty}`;
+}
+
+async function countRuns(prisma: PrismaClient, s: RunScope): Promise<RunPurgeCounts> {
+  const rows = await prisma.$queryRaw<{ runs: bigint; analyses: bigint; intents: bigint; topics: bigint }[]>(
+    Prisma.sql`
+      WITH e AS (${eligibleRunsSql(s)}),
+           an AS (SELECT a.id FROM post_analyses a JOIN e ON e.id = a.analysis_run_id)
+      SELECT (SELECT count(*) FROM e) AS runs,
+             (SELECT count(*) FROM an) AS analyses,
+             (SELECT count(*) FROM analysis_intents i JOIN an ON an.id = i.analysis_id) AS intents,
+             (SELECT count(*) FROM analysis_topics t JOIN an ON an.id = t.analysis_id) AS topics`,
+  );
+  const r = rows[0];
+  return {
+    runs: Number(r?.runs ?? 0),
+    analyses: Number(r?.analyses ?? 0),
+    intents: Number(r?.intents ?? 0),
+    topics: Number(r?.topics ?? 0),
+  };
+}
+
+function postWhere(s: PostScope): Prisma.SocialPostWhereInput {
   if (s.scope === "post") return { platform: s.platform, platformPostId: s.platformPostId };
   // `before` is exclusive: published_at < before (UTC).
   return { projectId: s.projectId, publishedAt: { lt: s.before } };
@@ -58,6 +111,7 @@ function syncJobWhere(s: Extract<PurgeScope, { scope: "sync-jobs" }>): Prisma.Sy
 /** Dry-run counts per table; must equal what `applyPurge` deletes on unchanged data (T-126 AC). */
 export async function countPurge(prisma: PrismaClient, s: PurgeScope): Promise<PurgeCounts> {
   if (s.scope === "sync-jobs") return { syncJobs: await prisma.syncJob.count({ where: syncJobWhere(s) }) };
+  if (s.scope === "runs") return countRuns(prisma, s);
   const post = postWhere(s);
   const [posts, matches, overrides, intents, topics, analyses, runs] = await Promise.all([
     prisma.socialPost.count({ where: post }),
@@ -108,6 +162,7 @@ export async function applyPurge(
       if (ids.length === 0) break;
       const n = await prisma.$transaction(async (tx) => {
         const { count } = await tx.syncJob.deleteMany({ where: { id: { in: ids } } });
+        if (count === 0) return 0; // rows removed concurrently: nothing to audit (T-153 decision 5)
         await audit.record(
           {
             projectId: s.projectId ?? null,
@@ -124,6 +179,41 @@ export async function applyPurge(
       syncJobs += n;
     }
     return { syncJobs };
+  }
+
+  if (s.scope === "runs") {
+    const total: RunPurgeCounts = { runs: 0, analyses: 0, intents: 0, topics: 0 };
+    for (;;) {
+      const ids = (await prisma.$queryRaw<{ id: string }[]>(eligibleRunsSql(s, { limit: batchSize }))).map((r) => r.id);
+      if (ids.length === 0) break;
+      const c = await prisma.$transaction(async (tx) => {
+        // Re-check eligibility inside the transaction (a run may have become current meanwhile).
+        const ok = (await tx.$queryRaw<{ id: string }[]>(eligibleRunsSql(s, { onlyIds: ids }))).map((r) => r.id);
+        const b: RunPurgeCounts = { runs: 0, analyses: 0, intents: 0, topics: 0 };
+        if (ok.length === 0) return b;
+        const inRuns = { analysisRunId: { in: ok } };
+        b.intents = (await tx.analysisIntent.deleteMany({ where: { analysis: inRuns } })).count;
+        b.topics = (await tx.analysisTopic.deleteMany({ where: { analysis: inRuns } })).count;
+        b.analyses = (await tx.postAnalysis.deleteMany({ where: inRuns })).count;
+        b.runs = (await tx.analysisRun.deleteMany({ where: { id: { in: ok } } })).count;
+        if (b.runs === 0) return b;
+        await audit.record(
+          {
+            projectId: s.projectId ?? null,
+            actorUserId,
+            action: "data.purged",
+            entityType: "analysis_run",
+            metadata: { scope: "runs", count: b.runs, counts: b, before },
+            requestId,
+          },
+          tx,
+        );
+        return b;
+      }, PURGE_TX_OPTIONS);
+      if (c.runs === 0) break; // nothing deletable left in this batch; avoid spinning
+      for (const k of Object.keys(total) as (keyof RunPurgeCounts)[]) total[k] += c[k];
+    }
+    return total;
   }
 
   const total = emptyPostCounts();
@@ -149,6 +239,7 @@ export async function applyPurge(
       c.analyses = (await tx.postAnalysis.deleteMany({ where: inIds })).count;
       c.runs = (await tx.analysisRun.deleteMany({ where: inIds })).count;
       c.posts = (await tx.socialPost.deleteMany({ where: { id: { in: ids } } })).count;
+      if (c.posts === 0) return c; // rows removed concurrently: nothing to audit (T-153 decision 5)
       const projectIds = [...new Set(rows.map((r) => r.projectId))];
       await audit.record(
         {

@@ -53,7 +53,7 @@ pino `redact` paths (`REDACT_PATHS` in `apps/api/src/common/logging/logger.confi
 
 ## 6. Audit log
 
-`AuditService.record({ projectId, actorUserId, action, entityType, entityId, metadata, requestId })` called from services (not controllers). Actions: `project.updated`, `member.added|role_changed|removed`, `integration.updated|verified|disconnected|refresh_failed`, `query.created|updated|enabled|disabled|deleted|restored|run_requested|backfill_requested`, `analysis.reanalyze_requested|bulk_reanalyze_requested|retry_requested`, `override.created|revoked`, `mentions.exported`, `analysis_settings.updated`, `data.purged` (purge CLI, T-126). Immutable (no update/delete endpoints). Retention ≥ 12 months.
+`AuditService.record({ projectId, actorUserId, action, entityType, entityId, metadata, requestId })` called from services (not controllers). Actions: `project.updated`, `member.added|role_changed|removed`, `integration.updated|verified|disconnected|refresh_failed`, `query.created|updated|enabled|disabled|deleted|restored|run_requested|backfill_requested`, `analysis.reanalyze_requested|bulk_reanalyze_requested|retry_requested`, `override.created|revoked`, `mentions.exported`, `analysis_settings.updated`, `data.purged` (purge CLI T-126, scheduled retention job T-153). Immutable (no update/delete endpoints). Retention ≥ 12 months.
 
 Implementation (`apps/api/src/modules/audit/`, T-059):
 

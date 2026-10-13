@@ -6,6 +6,7 @@
  *   --post <platform_post_id> [--platform threads]
  *   --project <uuid> --before YYYY-MM-DD
  *   --sync-jobs --before YYYY-MM-DD [--project <uuid>]
+ *   --runs --before YYYY-MM-DD [--project <uuid>]   (non-current analysis history, T-153)
  * Dry run by default (counts only). `--before` is a UTC date, exclusive (< 00:00:00Z).
  * Only ids and counts are printed — never post text or usernames.
  */
@@ -57,6 +58,7 @@ const argsSchema = z.discriminatedUnion("scope", [
   // Decision 2026-10-13: --before is mandatory, no implicit RETENTION_*_DAYS default.
   z.object({ scope: z.literal("project"), project: z.uuid(), before: utcDate, ...common }),
   z.object({ scope: z.literal("sync-jobs"), project: z.uuid().optional(), before: utcDate, ...common }),
+  z.object({ scope: z.literal("runs"), project: z.uuid().optional(), before: utcDate, ...common }),
 ]);
 
 export class PurgeArgsError extends Error {}
@@ -69,7 +71,7 @@ export function parsePurgeArgs(argv: readonly string[]): PurgeArgs {
     if (a === "--") continue;
     if (!a.startsWith("--")) throw new PurgeArgsError(`unexpected argument "${a}"`);
     const name = a.slice(2);
-    if (name === "apply" || name === "sync-jobs") {
+    if (name === "apply" || name === "sync-jobs" || name === "runs") {
       flags[name] = true;
       continue;
     }
@@ -78,14 +80,19 @@ export function parsePurgeArgs(argv: readonly string[]): PurgeArgs {
     flags[name] = v;
     i++;
   }
-  const known = new Set(["post", "project", "before", "sync-jobs", "apply", "batch-size", "platform", "actor"]);
+  const known = new Set(["post", "project", "before", "sync-jobs", "runs", "apply", "batch-size", "platform", "actor"]);
   const unknown = Object.keys(flags).find((k) => !known.has(k));
   if (unknown) throw new PurgeArgsError(`unknown option --${unknown}`);
 
-  const scopes = [flags.post !== undefined && "post", flags["sync-jobs"] === true && "sync-jobs"].filter(Boolean);
-  if (scopes.length > 1) throw new PurgeArgsError("use exactly one of --post, --project, --sync-jobs");
+  const scopes = [
+    flags.post !== undefined && "post",
+    flags["sync-jobs"] === true && "sync-jobs",
+    flags.runs === true && "runs",
+  ].filter(Boolean);
+  if (scopes.length > 1) throw new PurgeArgsError("use exactly one of --post, --project, --sync-jobs, --runs");
   const scope = scopes[0] ?? (flags.project !== undefined ? "project" : undefined);
-  if (!scope) throw new PurgeArgsError("missing scope: --post <id> | --project <id> --before <date> | --sync-jobs");
+  if (!scope)
+    throw new PurgeArgsError("missing scope: --post <id> | --project <id> --before <date> | --sync-jobs | --runs");
 
   const parsed = argsSchema.safeParse({
     scope,
@@ -106,7 +113,9 @@ export function parsePurgeArgs(argv: readonly string[]): PurgeArgs {
       ? { scope: "post", platform: d.platform, platformPostId: d.post }
       : d.scope === "project"
         ? { scope: "project", projectId: d.project, before: d.before }
-        : { scope: "sync-jobs", before: d.before, ...(d.project ? { projectId: d.project } : {}) };
+        : d.scope === "sync-jobs"
+          ? { scope: "sync-jobs", before: d.before, ...(d.project ? { projectId: d.project } : {}) }
+          : { scope: "runs", before: d.before, ...(d.project ? { projectId: d.project } : {}) };
   return { target, apply: d.apply, batchSize: d.batchSize, actorUserId: d.actor ?? null };
 }
 

@@ -40,7 +40,10 @@ Source of truth: `apps/api/.env.example`, `apps/web/.env.example`. Validated at 
 | `EXPORT_MAX_ROWS`                                              | no         | `10000`                               | P1                                                                                                       |
 | `METRICS_TOKEN`                                                | no         | —                                     | protects `/metrics`                                                                                      |
 | `SWAGGER_ENABLED`                                              | no         | unset → on, off in production         | `true` enables Swagger in production too                                                                 |
-| `RETENTION_*_DAYS`                                             | no         | see retention doc                     |                                                                                                          |
+| `RETENTION_*_DAYS`                                             | no         | see retention doc                     | integer ≥ 1                                                                                              |
+| `RETENTION_JOB_MODE`                                           | no         | `off`                                 | `off` \| `dry-run` \| `apply` — scheduled retention job (T-153); enable with `dry-run` first             |
+| `RETENTION_JOB_CRON`                                           | no         | `0 3 * * 0`                           | retention job schedule; validated at boot                                                                |
+| `RETENTION_JOB_TIMEZONE`                                       | no         | `Asia/Ho_Chi_Minh`                    | schedule timezone only; cutoffs are UTC midnight                                                         |
 
 ## apps/web
 
