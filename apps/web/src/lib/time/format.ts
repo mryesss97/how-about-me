@@ -1,3 +1,4 @@
+import { fromDate } from "@internationalized/date";
 import { env } from "@/lib/env";
 
 /** Absolute time in a timezone (default project/default tz) — ADR-0011. */
@@ -21,8 +22,15 @@ export function formatRelativeOrAbsolute(iso: string | Date, now: Date = new Dat
   return formatDateTime(d, timeZone);
 }
 
+/**
+ * `GMT+7 · Asia/Ho_Chi_Minh`. The offset is computed, not taken from ICU `shortOffset`,
+ * because Node and browsers format it differently (`GMT` vs `GMT+0`) and that breaks hydration.
+ */
 export function tzLabel(timeZone: string, at: Date = new Date()) {
-  const parts = new Intl.DateTimeFormat("en-US", { timeZone, timeZoneName: "shortOffset" }).formatToParts(at);
-  const off = parts.find((p) => p.type === "timeZoneName")?.value ?? "";
+  const offsetMin = Math.round(fromDate(at, timeZone).offset / 60_000);
+  const sign = offsetMin < 0 ? "-" : "+";
+  const abs = Math.abs(offsetMin);
+  const mins = abs % 60;
+  const off = `GMT${sign}${Math.floor(abs / 60)}${mins ? `:${String(mins).padStart(2, "0")}` : ""}`;
   return `${off} · ${timeZone}`;
 }
