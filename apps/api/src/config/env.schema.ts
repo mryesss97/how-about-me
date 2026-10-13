@@ -80,6 +80,7 @@ export const EnvSchema = z
     ANALYSIS_BATCH_SIZE: int(20),
     ANALYSIS_CONCURRENCY: int(3),
     ANALYSIS_MAX_ATTEMPTS: int(3),
+    ANALYSIS_STUCK_MINUTES: int(10),
     ANALYSIS_TWO_STEP: bool.default(false),
     ANALYSIS_SKIP_SUMMARY_FOR_SPAM: bool.default(true),
     ANALYSIS_DAILY_BUDGET_USD: num(5),

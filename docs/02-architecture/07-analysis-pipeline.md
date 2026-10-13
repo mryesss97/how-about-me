@@ -13,13 +13,16 @@
 stateDiagram-v2
     [*] --> pending: enqueue (ingest / content_change / manual / bulk / retry / version_change)
     pending --> processing: worker claims
+    pending --> stale: content changed before claim (FR-078)
     processing --> completed: result persisted
     processing --> skipped: empty text / excluded
     processing --> failed: attempts exhausted / schema invalid
-    processing --> pending: transient error (attempt < max) or stuck > 10 min
+    processing --> pending: transient error or stuck > ANALYSIS_STUCK_MINUTES (attempt < max)
     completed --> stale: newer revision or version change
     failed --> pending: admin retry
 ```
+
+Implemented in `apps/api/src/modules/analysis/analysis-state.ts` (`ANALYSIS_TRANSITIONS`). Every transition in `AnalysisService` is a guarded UPDATE (`WHERE status = <from>`, and `locked_by = <worker>` when leaving `processing`), so a slow worker cannot overwrite a run the watchdog already re-queued. Each transition also updates `social_posts.latest_run_status` when the run is the post's newest. A `processing` run whose content changed is not marked stale; the processor marks it `skipped superseded` (§2).
 
 ## 2. Processing order
 
@@ -185,19 +188,22 @@ The real adapter is `OpenAiModerationProvider` (`apps/api/src/modules/analysis/p
 effective_version = `${classifier.provider}|${classifier.model}|${classifier.promptVersion}|${TAXONOMY_VERSION}|${safety.name}|${safety.model}|${SAFETY_POLICY_VERSION}`
 ```
 
-- Enqueue checks: if a `completed` run exists for `(post_id, source_content_hash, effective_version)` and `trigger ≠ manual` → do not enqueue (`skipped_reason='already_analyzed'` is not stored; nothing created).
+- Enqueue checks: if a `completed` run exists for `(post_id, source_content_hash, effective_version)` and `trigger ∉ {manual, retry}` → do not enqueue (`skipped_reason='already_analyzed'` is not stored; nothing created).
+- `manual` / `retry` skip the completed check but still respect the partial unique (BR-024): an open run blocks them. `AnalysisService.enqueueDetailed` returns `already_open` / `already_analyzed` for FR-115 to map to `ANALYSIS_ALREADY_PENDING`.
 - Version change (deploy with new prompt/model): optional admin action `POST …/analysis-runs/mark-stale?version=<old>` (P1) marks runs stale and bulk enqueues within caps.
 - `post_analyses` are never updated in place.
 
 ## 8. Retries & failures (FR-113)
 
-| Error                          | Action                                                                                                                                              |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| provider 429/5xx/timeout       | backoff 2 s × 2^attempt (cap 30 s), `attempt_count++`, back to `pending` until `ANALYSIS_MAX_ATTEMPTS=3`, then `failed` (`ANALYSIS_PROVIDER_ERROR`) |
-| schema invalid / unknown label | one corrective retry (append validation errors to prompt), then `failed ANALYSIS_SCHEMA_INVALID` with sample stored (truncated)                     |
-| provider auth error            | `failed ANALYSIS_PROVIDER_AUTH`; System Status `analysis.status=degraded`; worker pauses 5 min                                                      |
-| empty text                     | `skipped empty_text`                                                                                                                                |
-| stuck `processing` > 10 min    | re-queued by watchdog on tick                                                                                                                       |
+| Error                                              | Action                                                                                                                                                                                                        |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| provider 429/5xx/timeout                           | backoff 2 s × 2^attempt (cap 30 s), `attempt_count++`, back to `pending` until `ANALYSIS_MAX_ATTEMPTS=3`, then `failed` (`ANALYSIS_PROVIDER_ERROR`)                                                           |
+| schema invalid / unknown label                     | one corrective retry (append validation errors to prompt), then `failed ANALYSIS_SCHEMA_INVALID` with sample stored (truncated)                                                                               |
+| provider auth error                                | `failed ANALYSIS_PROVIDER_AUTH`; System Status `analysis.status=degraded`; worker pauses 5 min                                                                                                                |
+| empty text                                         | `skipped empty_text`                                                                                                                                                                                          |
+| stuck `processing` > `ANALYSIS_STUCK_MINUTES` (10) | watchdog (first step of every worker tick) re-queues to `pending` and clears the lock; if `attempt_count >= ANALYSIS_MAX_ATTEMPTS` → `failed` (`ANALYSIS_PROVIDER_ERROR`, message `stuck_processing_timeout`) |
+
+`attempt_count` is incremented at claim time. In T-070 `requeue` returns the run to `pending` immediately; the backoff above is added with the failure policy (T-074/T-075).
 
 Two retry tiers: inside one job attempt the adapter retries transient errors via `withRetry` (`OPENAI_MAX_RETRIES=2`, base 2 s, cap 30 s, `Retry-After` honoured up to 60 s — longer ends the attempt), so one attempt makes at most 3 HTTP calls and a whole job (3 attempts) at most 9. Non-transient codes are never retried in the adapter.
 
@@ -217,6 +223,7 @@ Relevance gate; skip summary for spam (`ANALYSIS_SKIP_SUMMARY_FOR_SPAM=true`); v
 | `ANALYSIS_BATCH_SIZE`                                          | 20                                      |
 | `ANALYSIS_CONCURRENCY`                                         | 3                                       |
 | `ANALYSIS_MAX_ATTEMPTS`                                        | 3                                       |
+| `ANALYSIS_STUCK_MINUTES`                                       | 10                                      |
 | `ANALYSIS_TWO_STEP`                                            | false                                   |
 | `ANALYSIS_CLASSIFIER_PROVIDER` / `ANALYSIS_CLASSIFIER_MODEL`   | `openai` / _(owner input)_              |
 | `SAFETY_PROVIDER` / `SAFETY_MODEL`                             | `openai` / `omni-moderation-latest`     |

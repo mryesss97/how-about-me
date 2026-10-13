@@ -9,3 +9,10 @@ Design: see docs/02-architecture/02-backend-design.md §3 and the related pipeli
 - `providers/openai-moderation.provider.ts` — real `SafetyProvider` over OpenAI `/v1/moderations` (T-071), HTTP via `providers/openai-http.ts`.
 - `safety/safety-mapping.ts` — `toSafetyAnalysis()` maps a provider result to the persisted safety fields (BR-017, BR-018).
 - Real classifier: T-072.
+
+## Runs (T-070)
+
+- `analysis-state.ts` — state machine (`ANALYSIS_TRANSITIONS`, FR-100).
+- `analysis.service.ts` — `AnalysisService`: enqueue with version dedupe (implements the `ANALYSIS_ENQUEUER` port, BR-023/BR-024/FR-116), `claimBatch` (`FOR UPDATE SKIP LOCKED`, FR-101), guarded transitions `markCompleted` / `markSkipped` / `markFailed` / `requeue`, watchdog `requeueStuck`.
+- `analysis-worker.service.ts` — poll loop; see `../../jobs/README.md`.
+- `run-processor.ts` — `ANALYSIS_RUN_PROCESSOR` port; real pipeline in T-074.
