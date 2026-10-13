@@ -1,7 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import type { PinoLogger } from "nestjs-pino";
-import { encodeCursor } from "../../common/pagination/cursor";
-import { AuditRepository, buildAuditWhere, cursorWhere, toAuditLog } from "./audit.repository";
+import { encodeCreatedAtCursor } from "../../common/pagination/created-at-keyset";
+import { AuditRepository, buildAuditWhereSql, toAuditLog } from "./audit.repository";
 import { AuditService } from "./audit.service";
 import type { PrismaService } from "../../database/prisma.service";
 
@@ -60,30 +60,29 @@ describe("AuditService.record (FR-200)", () => {
 
 /** FR-201: list filters + keyset pagination. */
 describe("AuditRepository (FR-201)", () => {
-  it("builds where with project scope, action, actor, from inclusive / to exclusive", () => {
-    expect(
-      buildAuditWhere(PID, {
-        limit: 25,
-        count: false,
-        action: "query.created",
-        actorUserId: "a",
-        from: "2026-01-01T00:00:00.000Z",
-        to: "2026-01-02T00:00:00.000Z",
-      }),
-    ).toEqual({
-      projectId: PID,
+  it("builds SQL where with project scope, action, actor, from inclusive / to exclusive (#188 keeps ISO strings)", () => {
+    const where = buildAuditWhereSql(PID, {
+      limit: 25,
+      count: false,
       action: "query.created",
       actorUserId: "a",
-      createdAt: { gte: new Date("2026-01-01T00:00:00.000Z"), lt: new Date("2026-01-02T00:00:00.000Z") },
+      from: "2026-01-01T00:00:00.000001Z",
+      to: "2026-01-02T00:00:00.000Z",
     });
-    expect(buildAuditWhere(PID, { limit: 25, count: false })).toEqual({ projectId: PID });
+    expect(where.values).toEqual([
+      PID,
+      "query.created",
+      "a",
+      "2026-01-01T00:00:00.000001Z",
+      "2026-01-02T00:00:00.000Z",
+    ]);
+    expect(where.sql).toContain("created_at >=");
+    expect(where.sql).toContain("created_at <");
+    expect(buildAuditWhereSql(PID, { limit: 25, count: false }).values).toEqual([PID]);
   });
 
-  it("cursorWhere rejects a non-date key", () => {
-    expect(() => cursorWhere({ key: "nope", id: "x" })).toThrow("Invalid cursor");
-  });
-
-  it("returns nextCursor when there are more than limit rows and maps actor null", async () => {
+  it("#188: pages by SQL keys, reorders hydrated rows, cursor carries µs key", async () => {
+    const keys = [0, 1, 2].map((i) => ({ id: `id-${i}`, key: `2026-10-01T00:00:00.12300${9 - i}Z` }));
     const mk = (i: number) => ({
       id: `id-${i}`,
       action: "project.updated",
@@ -91,18 +90,29 @@ describe("AuditRepository (FR-201)", () => {
       entityId: null,
       metadata: null,
       requestId: null,
-      createdAt: new Date(Date.UTC(2026, 0, 3 - i)),
+      createdAt: new Date("2026-10-01T00:00:00.123Z"),
       actor: null,
     });
-    const findMany = jest.fn().mockResolvedValue([mk(0), mk(1), mk(2)]);
-    const count = jest.fn().mockResolvedValue(7);
-    const repo = new AuditRepository({ auditLog: { findMany, count } } as unknown as PrismaService);
+    const $queryRaw = jest
+      .fn()
+      .mockResolvedValueOnce(keys)
+      .mockResolvedValueOnce([{ n: 7 }]);
+    const findMany = jest.fn().mockResolvedValue([mk(1), mk(0)]);
+    const repo = new AuditRepository({ $queryRaw, auditLog: { findMany } } as unknown as PrismaService);
     const page = await repo.list(PID, { limit: 2, count: true });
     expect(page.items.map((i) => i.id)).toEqual(["id-0", "id-1"]);
-    expect(page.nextCursor).toBe(encodeCursor({ key: mk(1).createdAt.toISOString(), id: "id-1" }));
+    expect(page.nextCursor).toBe(encodeCreatedAtCursor({ key: "2026-10-01T00:00:00.123008Z", id: "id-1" }));
     expect(page.totalCount).toBe(7);
     expect(page.items[0]?.actor).toBeNull();
-    expect(findMany.mock.calls[0][0].take).toBe(3);
+    expect(findMany.mock.calls[0][0].where).toEqual({ id: { in: ["id-0", "id-1"] } });
+  });
+
+  it("#188: empty page skips hydration and has no cursor", async () => {
+    const $queryRaw = jest.fn().mockResolvedValueOnce([]);
+    const findMany = jest.fn();
+    const repo = new AuditRepository({ $queryRaw, auditLog: { findMany } } as unknown as PrismaService);
+    expect(await repo.list(PID, { limit: 2, count: false })).toEqual({ items: [], nextCursor: null });
+    expect(findMany).not.toHaveBeenCalled();
   });
 
   it("toAuditLog maps actor and non-object metadata to null", () => {

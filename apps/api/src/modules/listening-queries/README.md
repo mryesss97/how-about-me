@@ -16,3 +16,4 @@ Design: see docs/02-architecture/02-backend-design.md §3 and the related pipeli
 - PATCH on a soft-deleted query → 404; DELETE twice → 204 no-op; restore of an active query → 200 no-op.
 - Re-enable / restore of an enabled query sets `next_run_at = now`. Known MVP gap: if a run is in flight while the query is disabled and re-enabled, `completeRun` overwrites `next_run_at` with `completedAt + interval` (delay ≤ one interval).
 - `lastJob` / `matchedPosts` are placeholders until T-045.
+- List pagination: keyset `(created_at, id) DESC` evaluated in SQL via `common/pagination/created-at-keyset.ts`; cursor = `encodeSortCursor` sort `created_desc` with the µs `created_at` key, so rows inside one millisecond are never skipped (#188).

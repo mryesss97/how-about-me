@@ -24,6 +24,8 @@
 | Request id        | `x-request-id` echoed                                                                                                            |
 | Roles             | see permission matrix [../01-product/02-personas-rbac.md](../01-product/02-personas-rbac.md#3-permission-matrix-server-enforced) |
 
+Cursors are opaque. A malformed, tampered or legacy cursor (one issued before a cursor format change, e.g. #188) returns `400 VALIDATION_ERROR` and the client resets to the first page. Timestamp sort keys inside a cursor keep full `timestamptz` µs precision, so rows created in the same millisecond are never skipped or repeated (#188).
+
 ## 2. Auth & user
 
 ### `GET /me`

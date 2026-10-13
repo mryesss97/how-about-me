@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { INestApplication } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 import { ListeningQuerySchema } from "@how-about-me/contracts";
 import type { PrismaService } from "../../src/database/prisma.service";
 import { QueryClaimRepository } from "../../src/jobs/query-claim.repository";
@@ -258,5 +259,41 @@ describe("Listening queries (T-042)", () => {
     const bad = await get("?cursor=garbage");
     expect(bad.status).toBe(400);
     expect(bad.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("#188 FR-051: keyset keeps µs — queries inside one millisecond page exactly once", async () => {
+    const micros = [5, 1, 7, 3, 3, 0, 6];
+    const ids: string[] = [];
+    for (let i = 0; i < micros.length; i++) ids.push(await create({ ...valid, queryValue: `q${i}` }));
+    for (const [i, id] of ids.entries())
+      await prisma.$executeRaw(
+        Prisma.sql`UPDATE listening_queries SET created_at = timestamptz '2026-10-01T00:00:00.123Z' + make_interval(secs => ${micros[i]}::float8 / 1e6) WHERE id = ${id}::uuid`,
+      );
+    expect((await del(ids[0] as string)).status).toBeLessThan(300);
+    const walk = async (extra: string) => {
+      const seen: string[] = [];
+      let cursor: string | null = null;
+      do {
+        const res = await get(`?limit=2${extra}${cursor ? `&cursor=${cursor}` : ""}`);
+        expect(res.status).toBe(200);
+        seen.push(...res.body.items.map((q: { id: string }) => q.id));
+        cursor = res.body.nextCursor as string | null;
+      } while (cursor);
+      return seen;
+    };
+    const expected = async (withDeleted: boolean) =>
+      (
+        await prisma.$queryRaw<{ id: string }[]>(
+          Prisma.sql`SELECT id::text AS id FROM listening_queries WHERE project_id = ${projectId}::uuid
+            ${withDeleted ? Prisma.empty : Prisma.sql`AND deleted_at IS NULL`} ORDER BY created_at DESC, id DESC`,
+        )
+      ).map((r) => r.id);
+    const active = await walk("");
+    expect(active).toHaveLength(6);
+    expect(new Set(active).size).toBe(6);
+    expect(active).toEqual(await expected(false));
+    const all = await walk("&includeDeleted=true");
+    expect(all).toHaveLength(7);
+    expect(all).toEqual(await expected(true));
   });
 });

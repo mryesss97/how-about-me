@@ -2,8 +2,13 @@ import { Injectable } from "@nestjs/common";
 import { Prisma, type QueryType } from "@prisma/client";
 import type { ListeningQuery, ListeningQueryListQuery } from "@how-about-me/contracts";
 import { findActiveQueryDuplicate } from "../../common/queries/find-active-query-duplicate";
-import { AppError } from "../../common/errors/app.error";
-import { decodeCursor, encodeCursor } from "../../common/pagination/cursor";
+import {
+  countWhere,
+  decodeCreatedAtCursor,
+  encodeCreatedAtCursor,
+  orderByIds,
+  pageKeysByCreatedAt,
+} from "../../common/pagination/created-at-keyset";
 import { PrismaService } from "../../database/prisma.service";
 
 export type ListeningQueryRow = Prisma.ListeningQueryGetPayload<object>;
@@ -47,27 +52,20 @@ export class ListeningQueriesRepository {
     return (tx ?? this.prisma).listeningQuery.update({ where: { id }, data });
   }
 
+  /** FR-051 / #188: keyset `(created_at, id) DESC` in SQL (µs precision), then hydrate by id. */
   async list(projectId: string, q: ListeningQueryListQuery): Promise<ListeningQueryPage> {
-    const where: Prisma.ListeningQueryWhereInput = {
-      projectId,
-      ...(q.includeDeleted ? {} : { deletedAt: null }),
-      ...(q.enabled === undefined ? {} : { enabled: q.enabled }),
-      ...(q.type ? { queryType: q.type } : {}),
-    };
-    const cursor = decodeCursor(q.cursor);
-    const keyset: Prisma.ListeningQueryWhereInput = cursor ? cursorWhere(cursor) : {};
-    const rows = await this.prisma.listeningQuery.findMany({
-      where: { AND: [where, keyset] },
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: q.limit + 1,
-    });
-    const page = rows.slice(0, q.limit);
-    const last = page[page.length - 1];
-    const nextCursor =
-      rows.length > q.limit && last ? encodeCursor({ key: last.createdAt.toISOString(), id: last.id }) : null;
+    const cursor = decodeCreatedAtCursor(q.cursor);
+    const where = buildListeningQueryWhereSql(projectId, q);
+    const keys = await pageKeysByCreatedAt(this.prisma, "listening_queries", where, cursor, q.limit);
+    const pageKeys = keys.slice(0, q.limit);
+    const ids = pageKeys.map((k) => k.id);
+    const rows = ids.length === 0 ? [] : await this.prisma.listeningQuery.findMany({ where: { id: { in: ids } } });
+    const page = orderByIds(ids, rows);
+    const last = pageKeys.at(-1);
+    const nextCursor = keys.length > q.limit && last ? encodeCreatedAtCursor(last) : null;
     const creators = await this.loadCreators(page.map((r) => r.createdBy));
     const result: ListeningQueryPage = { items: page.map((r) => toListeningQuery(r, creators)), nextCursor };
-    if (q.count) result.totalCount = await this.prisma.listeningQuery.count({ where });
+    if (q.count) result.totalCount = await countWhere(this.prisma, "listening_queries", where);
     return result;
   }
 
@@ -92,11 +90,13 @@ export function isUniqueViolation(e: unknown): boolean {
   return e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
 }
 
-/** Keyset on (createdAt desc, id desc). */
-export function cursorWhere(c: { key: string; id: string }): Prisma.ListeningQueryWhereInput {
-  const at = new Date(c.key);
-  if (Number.isNaN(at.getTime())) throw new AppError("VALIDATION_ERROR", "Invalid cursor", { path: "cursor" });
-  return { OR: [{ createdAt: { lt: at } }, { createdAt: at, id: { lt: c.id } }] };
+/** Filters for list: project scope, soft-delete (unless includeDeleted), enabled, type. */
+export function buildListeningQueryWhereSql(projectId: string, q: ListeningQueryListQuery): Prisma.Sql {
+  const parts: Prisma.Sql[] = [Prisma.sql`project_id = ${projectId}::uuid`];
+  if (!q.includeDeleted) parts.push(Prisma.sql`deleted_at IS NULL`);
+  if (q.enabled !== undefined) parts.push(Prisma.sql`enabled = ${q.enabled}`);
+  if (q.type) parts.push(Prisma.sql`query_type::text = ${q.type}`);
+  return Prisma.join(parts, " AND ");
 }
 
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
