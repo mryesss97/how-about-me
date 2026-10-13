@@ -81,7 +81,7 @@ Ngoài các trường hợp trên, làm tiếp và báo kết quả theo lô.
 
 - Script dùng model ID đầy đủ, không dùng alias. Alias có thể trỏ sang model khác (trên CLI 2.1.210, `haiku` chạy `claude-sonnet-5`). Sổ chi phí ghi model đã chạy thật (`ran`).
 - `claude-opus-5-5` cần CLI ≥ 2.1.280. CLI cũ hơn thì script dừng trước khi gọi API. Chạy `claude update`.
-- Diff không tính `pnpm-lock.yaml`.
+- Diff tính cả file mới chưa commit (untracked), không tính `pnpm-lock.yaml`.
 - Triage ghi `hard: true` khi plan cần quyết định thiết kế, contract API hay data model mà docs chưa chốt, hoặc đụng nhiều workspace.
 - Script tắt MCP server và skill (`--strict-mcp-config`, `--disable-slash-commands`). Không stage nào cần chúng. `CLAUDE.md` và file agent vẫn nạp.
 - Stage `review` không ghi file. Haiku chạy `--permission-mode auto` không ghi được vào `.claude/`. Agent trả báo cáo `# Báo cáo QA: ...` ở tin nhắn cuối, script lưu `.claude/runs/qa-<ticket>.md`. Stage không để lại báo cáo thì script exit 1.
