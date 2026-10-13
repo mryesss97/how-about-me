@@ -23,6 +23,8 @@ export const EnvSchema = z
 
     SUPABASE_URL: z.url().optional(),
     SUPABASE_JWKS_URL: z.url().optional(),
+    /** Expected `iss` claim; defaults to `${SUPABASE_URL}/auth/v1` (docs/02-architecture/08-security-secrets.md §2). */
+    SUPABASE_JWT_ISSUER: z.string().optional(),
     SUPABASE_JWT_SECRET: z.string().min(16).optional(),
     SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
     /** Test-only: HS256 secret used by test helpers to mint tokens when SUPABASE_* are absent. */

@@ -19,8 +19,8 @@ The browser holds only: Supabase URL, **anon** key, its own session JWT, API bas
 
 ## 2. Authentication (JWT)
 
-- Supabase issues access tokens (JWT, 1 h) + refresh tokens. API verifies with Supabase JWKS (`SUPABASE_URL/auth/v1/.well-known/jwks.json`, cached 10 min) or `SUPABASE_JWT_SECRET` (HS256 projects). Verify `iss`, `aud=authenticated`, `exp`.
-- `sub` → `user_profiles.id`. Email from claims; profile upsert on first call.
+- Supabase issues access tokens (JWT, 1 h) + refresh tokens. API verifies with Supabase JWKS (`SUPABASE_URL/auth/v1/.well-known/jwks.json`, cached 10 min) or `SUPABASE_JWT_SECRET` (HS256 projects). Verify `iss` (= `${SUPABASE_URL}/auth/v1`, override `SUPABASE_JWT_ISSUER`), `aud=authenticated`, `exp` (clock tolerance 5 s). HS256 fallback is tried only when JWKS verification fails for a reason other than expiry. Tokens with `is_anonymous: true` are rejected (`AUTH_INVALID_TOKEN`). `Authorization` scheme `Bearer` is case-insensitive.
+- `sub` → `user_profiles.id`. Email (lowercased) from claims; profile upsert on first call (concurrent first calls tolerated); invitation placeholders matched by email are re-keyed to `sub`. `last_login_at` is rewritten only when older than 5 minutes.
 - Sign-ups disabled in Supabase dashboard; invitations by Admin (`POST /members`) → optional Supabase invite email via service-role key **server-side only** (`SUPABASE_SERVICE_ROLE_KEY` in API env, never web).
 - No cookies for API auth (Bearer only) → CSRF not applicable to API; the Next.js server uses Supabase cookies solely for redirecting unauthenticated users; state-changing calls go browser → API with Bearer.
 

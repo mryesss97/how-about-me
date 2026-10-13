@@ -38,6 +38,8 @@ pnpm db:migrate       # prisma migrate dev (apps/api)
 pnpm db:seed          # project, admin (SEED_ADMIN_EMAIL), 4 queries
 ```
 
+`db:seed` is idempotent: re-running never duplicates rows and never overwrites project name/timezone/settings edited in the UI, but it forces the `SEED_ADMIN_EMAIL` member back to `admin`.
+
 Reset: `pnpm db:reset`.
 
 The container's init script (`docker/postgres/init/01-test-db.sql`) also creates `how_about_me_test`, the database the API integration tests use. It runs only on a fresh `pgdata` volume; on an older volume create it by hand: `docker exec how-about-me-postgres createdb -U postgres how_about_me_test`.
@@ -50,7 +52,7 @@ macOS: the repo must sit under a path Docker Desktop shares. `/Users` is shared 
 pnpm dev              # turbo: web http://localhost:3000, api http://localhost:4000 (Swagger /api/docs)
 ```
 
-Log in with the Supabase user matching `SEED_ADMIN_EMAIL` (create the user in your Supabase project's Auth dashboard, or use `pnpm --filter api seed:auth-user` when `SUPABASE_SERVICE_ROLE_KEY` is set).
+Log in with the Supabase user matching `SEED_ADMIN_EMAIL` (create the user in your Supabase project's Auth dashboard, or use `pnpm --filter api seed:auth-user` when `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set; it creates a confirmed user with `SEED_ADMIN_PASSWORD` or sends an invite when that is empty, and skips with exit 0 when keys are missing; it reads `apps/api/.env`). Order: `db:seed` → `seed:auth-user` → log in; the placeholder profile is re-keyed to the auth user id on first login.
 
 With `PROVIDERS_MODE=fake` the collector ingests fixtures and the analyzer produces deterministic labels, so the dashboard has data within a minute.
 

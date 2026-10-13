@@ -31,6 +31,7 @@ Sidebar (Untitled UI `sidebar-simple`): Overview · Mentions · Listening Querie
 ### 2.1 Filter bar (shared by Overview & Mentions)
 
 - Sticky under the header. Order: **Time range** (preset segmented control + custom date-range picker + timezone select) · **Queries** (multi-select with `#` rendering for tags) · **Relevance** (default `Relevant`; chips `Relevant`, `Uncertain`, `Irrelevant`) · **Sentiment** · **Safety** · **Intent** · **Topic** · **Language** · **Analysis status** · "Compare with previous period" toggle (Overview only) · "Reset".
+- Default time preset is **7d**. The timezone select lists all IANA zones with `Asia/Ho_Chi_Minh` and `UTC` pinned first. Custom ranges over 366 days show an inline error and are not applied.
 - All filters sync to the URL query string (`nuqs`). Changing a filter refetches all widgets.
 - Applied filters show as removable chips under the bar.
 

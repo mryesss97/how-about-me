@@ -1,51 +1,71 @@
 // Idempotent seed — docs/02-architecture/04-data-model.md §6, FR-019/FR-030/FR-050.
-import { PrismaClient, QueryType, SearchMode, UserRole } from "@prisma/client";
+import { Prisma, PrismaClient, QueryType, UserRole } from "@prisma/client";
 import { v7 as uuidv7 } from "uuid";
+import { normalizeQuery } from "../src/common/queries/normalize-query";
 
-const prisma = new PrismaClient();
-
-const PROJECT = { slug: "1zone-eventista", name: "1Zone / Eventista Social Listening", timezone: "Asia/Ho_Chi_Minh" };
-const QUERIES: { displayName: string; queryValue: string; queryType: QueryType }[] = [
+export const SEED_PROJECT = {
+  slug: "1zone-eventista",
+  name: "1Zone / Eventista Social Listening",
+  timezone: "Asia/Ho_Chi_Minh",
+};
+export const SEED_QUERIES: { displayName: string; queryValue: string; queryType: QueryType }[] = [
   { displayName: "1zone (keyword)", queryValue: "1zone", queryType: QueryType.keyword },
-  { displayName: "#1zone (topic tag)", queryValue: "1zone", queryType: QueryType.topic_tag },
+  // Raw value keeps '#' on purpose: normalizeQuery strips it (BR-004).
+  { displayName: "#1zone (topic tag)", queryValue: "#1zone", queryType: QueryType.topic_tag },
   { displayName: "eventista (keyword)", queryValue: "eventista", queryType: QueryType.keyword },
   { displayName: "#eventista (topic tag)", queryValue: "eventista", queryType: QueryType.topic_tag },
 ];
 
-async function main() {
-  const project = await prisma.monitoringProject.upsert({
-    where: { slug: PROJECT.slug },
-    update: { name: PROJECT.name, timezone: PROJECT.timezone, isActive: true },
-    create: { id: uuidv7(), ...PROJECT, settings: { allowAnalystReanalyze: true, allowViewerExport: false } },
-  });
-  console.log(`project ${project.slug} (${project.id})`);
+export async function runSeed(
+  prisma: PrismaClient,
+  opts: { adminEmail?: string; log?: (m: string) => void } = {},
+): Promise<{ projectId: string; adminUserId?: string }> {
+  const log = opts.log ?? (() => undefined);
 
-  for (const q of QUERIES) {
+  // update: {} — re-running never overwrites admin-edited name/timezone/isActive/settings.
+  const project = await prisma.monitoringProject.upsert({
+    where: { slug: SEED_PROJECT.slug },
+    update: {},
+    create: { id: uuidv7(), ...SEED_PROJECT, settings: { allowAnalystReanalyze: true, allowViewerExport: false } },
+  });
+  log(`project ${project.slug} (${project.id})`);
+
+  for (const q of SEED_QUERIES) {
+    const { queryValue, searchMode } = normalizeQuery(q); // BR-004, BR-005 — before lookup and create
     const existing = await prisma.listeningQuery.findFirst({
       where: {
         projectId: project.id,
         queryType: q.queryType,
-        queryValue: { equals: q.queryValue, mode: "insensitive" },
+        queryValue: { equals: queryValue, mode: "insensitive" },
         deletedAt: null,
       },
     });
     if (existing) {
-      console.log(`query exists: ${q.queryType} ${q.queryValue}`);
+      log(`query exists: ${q.queryType} ${queryValue}`);
       continue;
     }
-    await prisma.listeningQuery.create({
-      data: {
-        id: uuidv7(),
-        projectId: project.id,
-        displayName: q.displayName,
-        queryValue: q.queryValue.replace(/^#+/, ""), // BR-004
-        queryType: q.queryType,
-        searchMode: q.queryType === QueryType.keyword ? SearchMode.KEYWORD : SearchMode.TAG, // BR-005
-        enabled: true,
-        nextRunAt: new Date(),
-      },
-    });
-    console.log(`query created: ${q.queryType} ${q.queryValue}`);
+    try {
+      await prisma.listeningQuery.create({
+        data: {
+          id: uuidv7(),
+          projectId: project.id,
+          displayName: q.displayName,
+          queryValue,
+          queryType: q.queryType,
+          searchMode,
+          enabled: true,
+          nextRunAt: new Date(),
+        },
+      });
+      log(`query created: ${q.queryType} ${queryValue}`);
+    } catch (e) {
+      // BR-006: concurrent seed hit listening_queries_active_unique → treat as existing.
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+        log(`query exists: ${q.queryType} ${queryValue}`);
+        continue;
+      }
+      throw e;
+    }
   }
 
   await prisma.integrationConnection.upsert({
@@ -54,26 +74,38 @@ async function main() {
     create: { id: uuidv7(), projectId: project.id, platform: "threads", status: "disconnected" },
   });
 
-  const adminEmail = process.env.SEED_ADMIN_EMAIL?.toLowerCase().trim();
-  if (adminEmail) {
-    // Placeholder profile keyed by a generated id; reconciled with auth.users.id on first login (email match).
-    const profile =
-      (await prisma.userProfile.findUnique({ where: { email: adminEmail } })) ??
-      (await prisma.userProfile.create({ data: { id: uuidv7(), email: adminEmail, displayName: "Admin" } }));
-    await prisma.projectMember.upsert({
-      where: { projectId_userId: { projectId: project.id, userId: profile.id } },
-      update: { role: UserRole.admin },
-      create: { projectId: project.id, userId: profile.id, role: UserRole.admin, invitedEmail: adminEmail },
-    });
-    console.log(`admin membership ensured for ${adminEmail}`);
-  } else {
-    console.warn("SEED_ADMIN_EMAIL not set — no admin membership seeded.");
+  const adminEmail = opts.adminEmail?.trim().toLowerCase();
+  if (!adminEmail) {
+    log("SEED_ADMIN_EMAIL not set — no admin membership seeded.");
+    return { projectId: project.id };
+  }
+  // Reuse an existing profile (e.g. already logged in, id = auth id); otherwise a placeholder
+  // re-keyed to auth.users.id on first login by UserProfilesService (FR-017/FR-033).
+  const profile =
+    (await prisma.userProfile.findUnique({ where: { email: adminEmail } })) ??
+    (await prisma.userProfile.create({ data: { id: uuidv7(), email: adminEmail, displayName: "Admin" } }));
+  // FR-019: the seeded admin is always forced back to admin on re-run.
+  await prisma.projectMember.upsert({
+    where: { projectId_userId: { projectId: project.id, userId: profile.id } },
+    update: { role: UserRole.admin },
+    create: { projectId: project.id, userId: profile.id, role: UserRole.admin, invitedEmail: adminEmail },
+  });
+  log(`admin membership ensured for ${adminEmail}`);
+  return { projectId: project.id, adminUserId: profile.id };
+}
+
+async function main() {
+  const prisma = new PrismaClient();
+  try {
+    await runSeed(prisma, { adminEmail: process.env.SEED_ADMIN_EMAIL, log: (m) => console.log(m) });
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
-main()
-  .catch((e) => {
+if (require.main === module) {
+  main().catch((e: unknown) => {
     console.error(e);
     process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
+  });
+}
