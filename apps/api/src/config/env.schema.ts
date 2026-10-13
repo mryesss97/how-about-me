@@ -1,3 +1,4 @@
+import { CronTime } from "cron";
 import { z } from "zod";
 
 const bool = z
@@ -88,9 +89,24 @@ export const EnvSchema = z
 
     EXPORT_MAX_ROWS: int(10_000),
     METRICS_TOKEN: z.string().optional(),
-    RETENTION_POSTS_DAYS: int(365),
-    RETENTION_RUNS_DAYS: int(365),
-    RETENTION_SYNC_JOBS_DAYS: int(180),
+    // NFR-054: min(1) so 0/negative never wipes everything.
+    RETENTION_POSTS_DAYS: z.coerce.number().int().min(1).default(365),
+    RETENTION_RUNS_DAYS: z.coerce.number().int().min(1).default(365),
+    RETENTION_SYNC_JOBS_DAYS: z.coerce.number().int().min(1).default(180),
+    // Scheduled retention job (T-153): off by default; owner sets dry-run first, then apply.
+    RETENTION_JOB_MODE: z.enum(["off", "dry-run", "apply"]).default("off"),
+    RETENTION_JOB_CRON: z
+      .string()
+      .default("0 3 * * 0")
+      .refine((v) => {
+        try {
+          new CronTime(v);
+          return true;
+        } catch {
+          return false;
+        }
+      }, "invalid cron expression"),
+    RETENTION_JOB_TIMEZONE: z.string().default("Asia/Ho_Chi_Minh"),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === "production" && env.PROVIDERS_MODE === "real") {

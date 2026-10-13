@@ -17,6 +17,7 @@ import { ListeningQueriesModule } from "./modules/listening-queries/listening-qu
 import { HealthModule } from "./modules/health/health.module";
 import { ProjectsModule } from "./modules/projects/projects.module";
 import { ProvidersModule } from "./modules/providers/providers.module";
+import { RetentionJobModule } from "./jobs/retention-job.module";
 import { SchedulerModule } from "./jobs/scheduler.module";
 
 @Module({
@@ -35,6 +36,7 @@ import { SchedulerModule } from "./jobs/scheduler.module";
     CollectorModule,
     AnalysisModule,
     SchedulerModule,
+    RetentionJobModule,
     AuditModule,
     ListeningQueriesModule,
     // M2+: IntegrationsModule, SyncJobsModule, SystemStatusModule
