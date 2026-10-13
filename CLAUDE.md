@@ -25,9 +25,9 @@ Monorepo for **How About Me**, an internal Threads social-listening product (MVP
 ## Workflow
 
 - Implementation pipeline (feature / fix / refactor): [.claude/WORKFLOW.md](.claude/WORKFLOW.md) — triage → researcher plan → human review → coder → tidy → qa-tester → human review.
-- One ticket, one worktree, one PR (`docs/06-engineering/04-git-workflow.md` §8). Ticket = issue number (`128`) or backlog id (`T-049`).
+- One ticket, one worktree, one PR (`docs/06-engineering/04-git-workflow.md` §8). Ticket = issue number (`128`) or backlog id (`T-049`). Merge when green (push passed `pre-push`) with `pnpm issue:finish <PR>`, then cut the next ticket from the new `develop`.
 - **Script picks the model.** `pnpm agent <stage> <ticket>` chooses model and effort per stage and logs cost to `.claude/runs/agent-costs.jsonl`. Agents never choose their own model.
-- **Script does the fixed steps.** Use `pnpm issue:*` for worktree, format/lint, push and PR; open PRs with `pnpm issue:ship` or `pnpm pr:create`, not `gh pr create`.
+- **Script does the fixed steps.** Use `pnpm issue:start|tidy|shot|ship|finish` for worktree, format/lint, screenshots, push, PR and merge; open PRs with `pnpm issue:ship` or `pnpm pr:create`, not `gh pr create`.
 - **Short error output.** Check with `pnpm verify:quiet`; open the full log only when the tail is not enough.
 
 ## Where to look

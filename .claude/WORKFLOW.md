@@ -6,6 +6,13 @@
 
 Một loạt yêu cầu chạy theo vòng lặp issue ở [docs/06-engineering/04-git-workflow.md §8](../docs/06-engineering/04-git-workflow.md#8-issue-loop-agent): mỗi yêu cầu một ticket, mỗi ticket một worktree và một PR, merge rồi làm ticket tiếp. Pipeline dưới đây chạy bên trong một ticket.
 
+Chủ dự án chốt vòng lặp của live-stream-admin ngày 2026-10-13. Agent làm theo cho mọi loạt yêu cầu, không cần nhắc lại:
+
+- Merge khi xanh: push đã qua hook `pre-push` thì `pnpm issue:finish <PR>`.
+- Ticket tiếp theo cắt từ `develop` mới, chỉ sau khi PR trước đã merge. Không đổi branch trong checkout chính.
+- Ticket đụng cùng file chạy lần lượt. Khu vực khác nhau chạy song song, giữ khoảng 4 agent.
+- Ticket chủ dự án ghi "pending" thì giữ nguyên. Câu hỏi mở chưa có trả lời: làm theo đề xuất đã viết, ghi quyết định kèm ngày vào comment của ticket.
+
 **Ticket** là số GitHub issue (`45`) hoặc task id của backlog (`T-049`). Task id đổi sang số issue qua `docs/03-delivery/issue-map.json`. Mọi lệnh `issue:*` và `agent` nhận cả hai dạng.
 
 Bốn nguyên tắc:

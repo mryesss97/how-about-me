@@ -62,6 +62,18 @@ Rebase feature branches on `develop` before requesting review; no merge commits 
 
 Each request runs as one loop: one issue, one worktree, one PR, merge, then the next issue. Scripts run the fixed steps; the pipeline inside a ticket (triage → plan → code → review, with model choice and cost log) is in [.claude/WORKFLOW.md](../../.claude/WORKFLOW.md).
 
+The owner adopted the live-stream-admin loop on 2026-10-13. Agents follow it for every batch of requests without being reminded:
+
+1. **One request = one ticket.** Read the code and run the app first, so the ticket records facts. If a request is unclear, ask the owner before creating the ticket. Do clear tickets first.
+2. **One ticket = one worktree**, cut from the latest `origin/develop` with `pnpm issue:start`. Never switch branch in the main checkout: other sessions share it.
+3. **One ticket = one PR** that links the ticket. `pnpm issue:tidy`, commit, then `pnpm issue:ship`.
+4. **Merge when green.** Once the push passed the `pre-push` hook (verify), merge with `pnpm issue:finish <PR>`: squash-merge, close the tickets in `Closes #N`, delete the branch, remove the worktree.
+5. **The next ticket starts from the new `develop`.** Create its worktree only after the merge, so each PR starts from the code the previous PR shipped.
+
+Tickets that touch the same files run one after another. Tickets in different areas may run in parallel; keep about 4 agents, because high load makes the tests in `pre-push` time out.
+
+Tickets the owner marks "pending" stay untouched. For an open question the owner has not answered, follow the agent's written proposal and record the decision, with the date, in a ticket comment.
+
 | Step                                                                                                                          | Command                                                                          |
 | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | Worktree `../how-about-me-<issue>` on `<type>/<issue>-<slug>` from `origin/develop`, copy env files, install                  | `pnpm issue:start <issue\|T-###> <type> <summary ≤ 5 words>`                     |
