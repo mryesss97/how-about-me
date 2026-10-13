@@ -82,6 +82,7 @@ exports[`contract surface > error codes and HTTP map 1`] = `
   "INTEGRATION_NOT_CONFIGURED": 409,
   "INTERNAL": 500,
   "LAST_ADMIN": 409,
+  "MEMBER_EXISTS": 409,
   "NOT_FOUND": 404,
   "QUERY_DUPLICATE": 409,
   "QUERY_IMMUTABLE_FIELD": 400,
