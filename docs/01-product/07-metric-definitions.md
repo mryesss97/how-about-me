@@ -121,7 +121,9 @@ prevFrom = from − len
 prevTo   = from
 ```
 
-Boundaries computed in the selected timezone, then converted to UTC for SQL. DST does not apply to `Asia/Ho_Chi_Minh` but the implementation must be generic (use `date-fns-tz` / Postgres `AT TIME ZONE`).
+Boundaries computed in the selected timezone, then converted to UTC for SQL. DST does not apply to `Asia/Ho_Chi_Minh` but the implementation must be generic (`@date-fns/tz` + `date-fns` in the API, Postgres `AT TIME ZONE` in SQL).
+
+Rule (`apps/api/src/common/time/range.ts` `previousPeriodInTz`): when both `from` and `to` fall exactly on local midnight in the selected timezone, step back by the same number of **calendar days** (DST-safe, so `prevFrom` is also a local midnight); otherwise step back by `len` in milliseconds. For `Asia/Ho_Chi_Minh` and `UTC` both give the same result.
 
 ## 6. Drill-down equivalence
 
