@@ -2,6 +2,7 @@ import { Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Query, Req } fro
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import {
   MentionsListQuerySchema,
+  type MentionDetail,
   type MentionsListQuery,
   type MentionsPage,
   type ReanalyzeResponse,
@@ -26,6 +27,18 @@ export class MentionsController {
     @Query(zod(MentionsListQuerySchema)) query: MentionsListQuery,
   ): Promise<MentionsPage> {
     return this.mentions.list(projectId, query);
+  }
+
+  /**
+   * FR-154 — read for all project roles. Keep static GET routes (e.g. `export.csv`) declared ABOVE this one,
+   * otherwise `:mentionId` shadows them (Nest matches in declaration order).
+   */
+  @Get(":mentionId")
+  detail(
+    @Param("projectId", ParseUUIDPipe) projectId: string,
+    @Param("mentionId", ParseUUIDPipe) mentionId: string,
+  ): Promise<MentionDetail> {
+    return this.mentions.detail(projectId, mentionId);
   }
 
   @Post(":mentionId/reanalyze")

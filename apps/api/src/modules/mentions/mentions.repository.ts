@@ -1,5 +1,7 @@
 import {
+  type AnalysisStatus,
   AnalysisStatusSchema,
+  type AnalysisTrigger,
   type MentionListItem,
   type MentionSort,
   PlatformSchema,
@@ -57,6 +59,50 @@ const MentionPageRowSchema = z.object({
   keys: z.array(z.string()),
 });
 export type MentionPageRow = z.infer<typeof MentionPageRowSchema>;
+
+/** Detail row (T-096): list columns + source extras + current analysis/run fields (no base-set filter). */
+const MentionDetailRowSchema = MentionPageRowSchema.extend({
+  owner_id: z.string().nullable(),
+  shortcode: z.string().nullable(),
+  media_url: z.string().nullable(),
+  alt_text: z.string().nullable(),
+  link_attachment_url: z.string().nullable(),
+  quoted_post_id: z.string().nullable(),
+  reposted_post_id: z.string().nullable(),
+  first_seen_at: z.date(),
+  last_seen_at: z.date(),
+  revision: z.number().int(),
+  content_hash: z.string(),
+  relevance_explanation: z.string().nullable(),
+  safety_category_scores: z.unknown().nullable(),
+  safety_flagged: z.boolean().nullable(),
+  classifier_provider: z.string().nullable(),
+  classifier_model: z.string().nullable(),
+  prompt_version: z.string().nullable(),
+  taxonomy_version: z.string().nullable(),
+  safety_provider: z.string().nullable(),
+  safety_model: z.string().nullable(),
+  safety_policy_version: z.string().nullable(),
+  input_tokens: z.number().int().nullable(),
+  output_tokens: z.number().int().nullable(),
+  estimated_cost_usd: nullableNum,
+  analyzed_at: z.date().nullable(),
+});
+export type MentionDetailRow = z.infer<typeof MentionDetailRowSchema>;
+
+/** Max runs returned in mention detail (newest first, BR-003). */
+export const MENTION_DETAIL_RUNS_LIMIT = 50;
+
+export type MentionRunRow = {
+  id: string;
+  status: AnalysisStatus;
+  trigger: AnalysisTrigger;
+  effectiveVersion: string;
+  createdAt: Date;
+  completedAt: Date | null;
+  errorCode: string | null;
+  estimatedCostUsd: number | null;
+};
 
 type LabelConf = { label: string; confidence: number | null };
 export type HydratedMentions = {
@@ -151,6 +197,59 @@ export class MentionsRepository {
       ),
     );
     return rows.map((r) => MentionPageRowSchema.parse({ ...r, keys: spec.map((_k, i) => r[`k${i}`]) }));
+  }
+
+  /**
+   * T-096 / FR-154: one post of the project with its effective analysis (BR-025) and the run that produced the
+   * current AI analysis. No base-set filter: irrelevant / unanalysed posts are still readable. Scoped by project →
+   * another project's post is indistinguishable from a missing one (404).
+   */
+  async findDetail(projectId: string, postId: string): Promise<MentionDetailRow | null> {
+    const rows = await this.prisma.$queryRaw<Record<string, unknown>[]>(Prisma.sql`
+      SELECT p.id::text AS post_id, p.platform::text AS platform, p.platform_post_id, p.username, p.permalink,
+             p.published_at, p.text, p.media_type, p.thumbnail_url, p.has_replies, p.is_quote_post,
+             p.owner_id, p.shortcode, p.media_url, p.alt_text, p.link_attachment_url, p.quoted_post_id,
+             p.reposted_post_id, p.first_seen_at, p.last_seen_at, p.revision, p.content_hash,
+             e.latest_run_status::text AS latest_run_status, e.analysis_id::text AS analysis_id,
+             e.relevance_label::text AS relevance_label, e.relevance_confidence,
+             e.sentiment_label::text AS sentiment_label, e.sentiment_confidence,
+             e.safety_level::text AS safety_level, e.language_code, e.summary,
+             e.overall_model_confidence, COALESCE(e.has_override, false) AS has_override,
+             pa.relevance_explanation, pa.safety_category_scores, pa.safety_flagged,
+             r.classifier_provider, r.classifier_model, r.prompt_version, r.taxonomy_version,
+             r.safety_provider, r.safety_model, r.safety_policy_version,
+             r.input_tokens, r.output_tokens, r.estimated_cost_usd,
+             COALESCE(r.completed_at, pa.created_at) AS analyzed_at
+        FROM social_posts p
+        LEFT JOIN effective_post_analysis e ON e.post_id = p.id
+        LEFT JOIN post_analyses pa ON pa.id = e.analysis_id
+        LEFT JOIN analysis_runs r ON r.id = pa.analysis_run_id
+       WHERE p.id = ${postId}::uuid AND p.project_id = ${projectId}::uuid`);
+    const row = rows[0];
+    return row ? MentionDetailRowSchema.parse({ ...row, keys: [] }) : null;
+  }
+
+  /** BR-003: run history (append-only), newest first, capped at MENTION_DETAIL_RUNS_LIMIT. */
+  async listRuns(postId: string): Promise<MentionRunRow[]> {
+    const runs = await this.prisma.analysisRun.findMany({
+      where: { postId },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: MENTION_DETAIL_RUNS_LIMIT,
+      select: {
+        id: true,
+        status: true,
+        trigger: true,
+        effectiveVersion: true,
+        createdAt: true,
+        completedAt: true,
+        errorCode: true,
+        estimatedCostUsd: true,
+      },
+    });
+    return runs.map((r) => ({
+      ...r,
+      estimatedCostUsd: r.estimatedCostUsd == null ? null : Number(r.estimatedCostUsd.toString()),
+    }));
   }
 
   /** Fixed number of batch queries per page (no N+1). */

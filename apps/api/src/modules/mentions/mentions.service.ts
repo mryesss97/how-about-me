@@ -1,12 +1,12 @@
 import { Injectable } from "@nestjs/common";
-import type { MentionsListQuery, MentionsPage, ReanalyzeResponse } from "@how-about-me/contracts";
+import type { MentionDetail, MentionsListQuery, MentionsPage, ReanalyzeResponse } from "@how-about-me/contracts";
 import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 import { AppError } from "../../common/errors/app.error";
 import { decodeSortCursor, encodeSortCursor } from "../../common/pagination/cursor";
 import { AnalysisService } from "../analysis/analysis.service";
 import { AuditService } from "../audit/audit.service";
 import { MENTION_SORT_SPECS, resolveMentionsScope } from "./mentions-query";
-import { toMentionListItem } from "./mentions.mapper";
+import { toMentionDetail, toMentionListItem } from "./mentions.mapper";
 import { MentionsRepository } from "./mentions.repository";
 
 const alreadyPending = () =>
@@ -48,6 +48,20 @@ export class MentionsService {
       this.logger.warn({ projectId, event: "mentions.count_timeout" }, "mentions count timed out");
     }
     return total == null ? { items, nextCursor } : { items, nextCursor, totalCount: total };
+  }
+
+  /**
+   * T-096 / FR-154: mention detail — source, matches (BR-010), effective analysis (BR-025) with scores and
+   * versions, run history (BR-003). No base-set filter; another project's post → 404.
+   */
+  async detail(projectId: string, mentionId: string): Promise<MentionDetail> {
+    const row = await this.repo.findDetail(projectId, mentionId);
+    if (!row) throw AppError.notFound("Mention");
+    const [hydrated, runs] = await Promise.all([
+      this.repo.hydrate([row.post_id], row.analysis_id ? [row.analysis_id] : []),
+      this.repo.listRuns(row.post_id),
+    ]);
+    return toMentionDetail(row, hydrated, runs);
   }
 
   /**

@@ -42,7 +42,7 @@ export const PERMISSION_MATRIX: readonly PermissionEntry[] = [
   { method: "GET", path: `${P}/analytics/overview`, ...ALL, status: "implemented" },
   { method: "GET", path: `${P}/analytics/mentions-timeseries`, ...ALL, status: "implemented" },
   { method: "GET", path: `${P}/mentions`, ...ALL, status: "implemented" },
-  { method: "GET", path: `${P}/mentions/:mentionId`, ...ALL, status: "planned" },
+  { method: "GET", path: `${P}/mentions/:mentionId`, ...ALL, status: "implemented" },
   {
     method: "POST",
     path: `${P}/mentions/:mentionId/reanalyze`,
