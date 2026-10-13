@@ -25,3 +25,14 @@ test("moderate only passes; stale entry warns", () => {
   assert.equal(r.ok, true);
   assert.equal(r.warnings.length, 1);
 });
+
+test("real .audit-allowlist.json entries have package, reason and YYYY-MM-DD expiry", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const list = JSON.parse(await readFile(new URL("../.audit-allowlist.json", import.meta.url), "utf8"));
+  for (const [id, entry] of Object.entries(list)) {
+    if (id.startsWith("_")) continue;
+    assert.ok(typeof entry.package === "string" && entry.package.length > 0, `${id} package`);
+    assert.ok(typeof entry.reason === "string" && entry.reason.trim().length > 0, `${id} reason`);
+    assert.match(entry.expires, /^\d{4}-\d{2}-\d{2}$/, `${id} expires`);
+  }
+});

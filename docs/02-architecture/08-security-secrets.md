@@ -84,7 +84,7 @@ Implementation (`apps/api/src/modules/audit/`, T-059):
   - **Bundle check.** Scans `apps/web/.next` (excluding cache) for the patterns `SUPABASE_SERVICE_ROLE_KEY`, `service_role`, `sk-…`, `OPENAI_API_KEY`, `THREADS_APP_SECRET`, `THREADS_ACCESS_TOKEN`, `INTEGRATION_ENCRYPTION_KEYS`, `DATABASE_URL`, and for the literal value (≥ 8 chars) of every server-only var present in the env.
 - `pnpm audit:check` (`scripts/audit-check.mjs`): runs `pnpm audit --prod --json` and fails on any high/critical advisory not in `.audit-allowlist.json`, or whose entry has expired. Stale entries only warn.
   - Entry format: `"GHSA-xxxx": { "package": "…", "reason": "…", "expires": "YYYY-MM-DD" }`. Expiry ≤ 90 days; the reviewer of the PR adding the entry approves it. Prefer fixing (upgrade / `pnpm.overrides`) over allowlisting.
-  - At T-003 all existing high/critical advisories (mainly `next` < 16.3.8 and transitive deps) were allowlisted until 2026-11-14; a follow-up ticket upgrades them.
+  - At T-003 all existing high/critical advisories were allowlisted until 2026-11-14. #149 (2026-10-13) fixed them by upgrading `next` to 16.3.8 and adding `pnpm.overrides` (see `07-ci-cd.md` §1.3). Only `braces` GHSA-vfj7-8cjw-p6xm remains allowlisted (no upstream patch, ESLint tooling only), expiring 2027-01-11.
 - Secret scanning: `gitleaks` action on PRs (full history, `fetch-depth: 0`) and in the `pre-push` hook. A false positive (e.g. a test fixture) goes into `.gitleaksignore` by fingerprint with a comment; a real secret is rotated, never ignored.
 - Dependabot weekly for npm + GitHub Actions.
 
