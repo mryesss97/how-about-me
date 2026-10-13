@@ -48,7 +48,7 @@ Encryption: AES-256-GCM, random 12-byte IV per record, AAD = `connection_id`, `k
 
 ## 5. Redaction & logging
 
-pino `redact` paths: `req.headers.authorization`, `*.accessToken`, `*.access_token`, `*.token`, `*.apiKey`, `*.api_key`, `*.secret`, `*.password`, `*.serviceRoleKey`. Provider error bodies logged truncated to 500 chars after redaction. Audit metadata built from allow-listed fields only.
+pino `redact` paths (`REDACT_PATHS` in `apps/api/src/common/logging/logger.config.ts`, censor `[REDACTED]`): `req.headers.authorization`, `req.headers.cookie`, `req.headers["x-api-key"]`, `res.headers["set-cookie"]`, `err.config.headers.authorization`, `*.authorization`, `*.Authorization`, `*.headers.authorization`, `*.*.headers.authorization`, `*.accessToken`, `*.access_token`, `*.refreshToken`, `*.refresh_token`, `*.token`, `*.apiKey`, `*.api_key`, `*.secret`, `*.client_secret`, `*.clientSecret`, `*.appSecret`, `*.privateKey`, `*.password`, `*.serviceRoleKey`, `*.ciphertext`. pino wildcards match one level only, so never log raw provider objects — sanitize first. Provider error bodies logged truncated to 500 chars after redaction. Audit metadata built from allow-listed fields only.
 
 ## 6. Audit log
 

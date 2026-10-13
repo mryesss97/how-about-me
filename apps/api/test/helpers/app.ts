@@ -1,12 +1,21 @@
-import type { INestApplication } from "@nestjs/common";
-import { Test } from "@nestjs/testing";
+import type { INestApplication, ModuleMetadata } from "@nestjs/common";
+import { Test, type TestingModuleBuilder } from "@nestjs/testing";
 import { AppModule } from "../../src/app.module";
+import { APP_CONFIG, type AppConfig } from "../../src/config/config.module";
 import { PrismaService } from "../../src/database/prisma.service";
+import { configureApp } from "../../src/main";
 
-export async function createTestApp(): Promise<{ app: INestApplication; prisma: PrismaService }> {
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+export async function createTestApp(
+  opts: {
+    imports?: NonNullable<ModuleMetadata["imports"]>;
+    customize?: (builder: TestingModuleBuilder) => TestingModuleBuilder;
+  } = {},
+): Promise<{ app: INestApplication; prisma: PrismaService }> {
+  const { customize } = opts;
+  const builder = Test.createTestingModule({ imports: [AppModule, ...(opts.imports ?? [])] });
+  const moduleRef = await (customize ? customize(builder) : builder).compile();
   const app = moduleRef.createNestApplication({ logger: false });
-  app.setGlobalPrefix("api/v1", { exclude: ["health/live", "health/ready", "metrics"] });
+  configureApp(app, app.get<AppConfig>(APP_CONFIG));
   await app.init();
   return { app, prisma: app.get(PrismaService) };
 }

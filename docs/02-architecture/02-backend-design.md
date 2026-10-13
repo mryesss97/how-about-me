@@ -81,19 +81,26 @@ apps/api/src/
 
 ## 4. Request lifecycle
 
-1. `RequestIdMiddleware` sets `x-request-id` (uuid v7) → pino child logger.
+1. pino-http `genReqId` (`common/logging/request-id.ts`) reuses the client `x-request-id` only if it matches `^[A-Za-z0-9._:-]{1,128}$`, otherwise generates a uuid v7; the id is echoed in the `x-request-id` response header, bound to `req.log` as `request_id` and used as `requestId` in error envelopes.
 2. `SupabaseJwtGuard` (global, except `@Public()`): verifies token, loads/creates profile, attaches `req.user`.
 3. `ProjectRoleGuard` (on `/projects/:projectId/**`): loads membership, checks `@Roles()`; caches membership per request.
 4. `ZodValidationPipe` validates params/query/body with schemas from `@how-about-me/contracts`.
 5. Service executes; repository uses Prisma; transactions via `prisma.$transaction` with `isolationLevel` `ReadCommitted` (default) except claiming (`Serializable` not needed thanks to `UPDATE … RETURNING`).
-6. `HttpExceptionFilter` maps `AppError`/Zod errors/unknown to the error envelope; 5xx logs stack, response hides it.
-7. `LoggingInterceptor` logs `method, path, status, duration_ms, user_id, project_id`.
+6. `HttpExceptionFilter` maps `AppError`/Zod errors/unknown to the error envelope; 5xx logs stack, response hides it (see §5).
+7. pino-http autoLogging (no separate interceptor) logs one line per request with `request_id, duration_ms, user_id, project_id, app_role, version` (`customProps` evaluated on response finish; `/health` and `/metrics` skipped).
 
 ## 5. Error model
 
 ```ts
-class AppError extends Error { constructor(public code: ErrorCode, public status: number, message: string, public details?: unknown) }
+class AppError extends Error {
+  constructor(code: ErrorCode, message?: string, details?: unknown, status?: number); /* default ERROR_CODES[code] */
+}
 ```
+
+- Zod failures → `400 VALIDATION_ERROR` with `details.issues: [{ path: "items.0.name", message, code }]`.
+- Nest `HttpException` 4xx keep their message (arrays joined with `"; "`); 401→`AUTH_INVALID_TOKEN`, 403→`FORBIDDEN_ROLE`, 404→`NOT_FOUND`, 429→`RATE_LIMITED`, other 4xx (405/409/413…) → `VALIDATION_ERROR` until dedicated codes exist.
+- Non-`AppError` 5xx: message is always `"Internal server error"`, never a stack. `production`/`staging` add no `details`; `development`/`test` add `details.debug.message`. `AppError` 5xx (e.g. `THREADS_*`) keep their message.
+- Exception: Terminus `/health/ready` 503 body (`{status, info, error, details}`) is passed through unwrapped.
 
 Codes (subset): `VALIDATION_ERROR(400)`, `AUTH_MISSING_TOKEN/INVALID_TOKEN/TOKEN_EXPIRED(401)`, `FORBIDDEN_ROLE/FORBIDDEN_PROJECT(403)`, `NOT_FOUND(404)`, `QUERY_DUPLICATE(409)`, `QUERY_IMMUTABLE_FIELD(400)`, `SYNC_ALREADY_RUNNING(409)`, `LAST_ADMIN(409)`, `THREADS_UNAUTHORIZED/FORBIDDEN/RATE_LIMITED/UPSTREAM_ERROR/TIMEOUT/MALFORMED_RESPONSE(502/503)`, `ANALYSIS_SCHEMA_INVALID(500 internal, stored on run)`, `EXPORT_TOO_LARGE(413)`, `RATE_LIMITED(429)`, `INTERNAL(500)`. Full list lives in `packages/contracts/src/errors.ts`.
 
@@ -130,7 +137,7 @@ Typed with Zod in `config/env.schema.ts`; app fails fast on invalid env. See [..
 
 ## 9. API documentation
 
-`@nestjs/swagger` builds OpenAPI at `/api/docs` (disabled in production unless `SWAGGER_ENABLED=true`). DTO schemas come from Zod via `nestjs-zod`-style `createZodDto` wrappers in `packages/contracts`.
+`@nestjs/swagger` builds OpenAPI at `/api/docs` (`SWAGGER_ENABLED` unset → on outside production, off in production; `SWAGGER_ENABLED=true` enables it anywhere). Generating DTO schemas from Zod (`createZodDto`-style wrappers in `packages/contracts`) is a follow-up ticket; currently only controller metadata is documented.
 
 ## 10. Testing hooks
 
