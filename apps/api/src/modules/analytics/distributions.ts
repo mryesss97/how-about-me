@@ -1,3 +1,5 @@
+import type { TopicSentimentResponse } from "@how-about-me/contracts";
+
 /**
  * Pure helpers for distribution endpoints (T-093) — docs/01-product/07-metric-definitions.md §3.2–3.6.
  */
@@ -43,4 +45,36 @@ export function toTopicsDistribution<L extends string>(
   const real = labels.filter((l) => l !== "other");
   const top = sortByCountDesc(toDistribution(real, topRows, denominator)).slice(0, TOP_TOPICS);
   return [...top, { label: "other", count: otherCount, share: share(otherCount, denominator) }];
+}
+
+export type TopicSentimentCount = { topic: string; sentiment: string; count: number };
+type TopicSentimentRow = TopicSentimentResponse["rows"][number];
+
+/**
+ * FR-144, FR-140 — metric-definitions §4 Topic × sentiment. One row per taxonomy label (0 included); cells are
+ * DISTINCT posts per (topic, sentiment); row total = positive + neutral + negative (= topicSentimentAnalyzed);
+ * negativeShare null when total = 0. Unknown topics/sentiments are ignored. Sorted total desc, ties keep
+ * taxonomy order, `other` (a real label here) last.
+ */
+export function toTopicSentimentRows<L extends TopicSentimentRow["topic"]>(
+  labels: readonly L[],
+  counts: readonly TopicSentimentCount[],
+): TopicSentimentRow[] {
+  const cells = new Map(labels.map((l) => [l as string, { positive: 0, neutral: 0, negative: 0 }]));
+  for (const c of counts) {
+    const cell = cells.get(c.topic);
+    if (cell && (c.sentiment === "positive" || c.sentiment === "neutral" || c.sentiment === "negative")) {
+      cell[c.sentiment] += c.count;
+    }
+  }
+  const rows = labels.map((topic) => {
+    const { positive, neutral, negative } = cells.get(topic) ?? { positive: 0, neutral: 0, negative: 0 };
+    const total = positive + neutral + negative;
+    return { topic, positive, neutral, negative, total, negativeShare: share(negative, total) };
+  });
+  return [...rows].sort((a, b) => {
+    if (a.topic === "other") return 1;
+    if (b.topic === "other") return -1;
+    return b.total - a.total;
+  });
 }
