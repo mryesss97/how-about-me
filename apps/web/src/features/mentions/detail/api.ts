@@ -1,7 +1,10 @@
 "use client";
 
 import {
+  CreateOverrideBodySchema,
   MentionDetailSchema,
+  OverrideSchema,
+  type CreateOverrideBody,
   ReanalyzeResponseSchema,
   type MentionDetail,
   type ProjectSettings,
@@ -72,5 +75,71 @@ export function useReanalyze(pid: string | null | undefined, id: string) {
         description: err instanceof ApiError && err.requestId ? `Request ID: ${err.requestId}` : undefined,
       });
     },
+  });
+}
+
+/** FR-191: admin and analyst may override. UX gating only — the server enforces `@Roles` (FR-015). */
+export const canOverride = (role: UserRole | null) => role === "admin" || role === "analyst";
+
+/** Detail, list and analytics all read effective values (FR-192, BR-025), so all three go stale. */
+function useOverrideRefresh(pid: string | null | undefined, id: string) {
+  const qc = useQueryClient();
+  const p = pid ?? "";
+  return () =>
+    Promise.all([
+      qc.invalidateQueries({ queryKey: qk.mention(p, id) }),
+      qc.invalidateQueries({ queryKey: ["project", p, "mentions"] }),
+      qc.invalidateQueries({ queryKey: ["project", p, "analytics"] }),
+    ]);
+}
+
+function overrideError(fallback: string, refresh: () => Promise<unknown>) {
+  return (err: unknown) => {
+    if (err instanceof ApiError && err.code === "OVERRIDE_CONFLICT") {
+      toast.info("Another override was saved at the same time");
+      void refresh();
+      return;
+    }
+    const msg = err instanceof ApiError ? err.message : fallback;
+    toast.error(msg, {
+      description: err instanceof ApiError && err.requestId ? `Request ID: ${err.requestId}` : undefined,
+    });
+  };
+}
+
+/** POST /projects/:pid/mentions/:mentionId/overrides (FR-191). Server revokes any active override on the same field. */
+export function useCreateOverride(pid: string | null | undefined, id: string) {
+  const refresh = useOverrideRefresh(pid, id);
+  return useMutation({
+    mutationFn: async (body: CreateOverrideBody) => {
+      if (!pid) throw new Error("No project selected");
+      return OverrideSchema.parse(
+        await apiFetch<unknown>(`/projects/${pid}/mentions/${id}/overrides`, {
+          method: "POST",
+          body: JSON.stringify(CreateOverrideBodySchema.parse(body)),
+        }),
+      );
+    },
+    onSuccess: () => {
+      toast.success("Override saved");
+      void refresh();
+    },
+    onError: overrideError("Could not save override", refresh),
+  });
+}
+
+/** DELETE /projects/:pid/mentions/:mentionId/overrides/:overrideId (FR-193: history is kept). */
+export function useRevokeOverride(pid: string | null | undefined, id: string) {
+  const refresh = useOverrideRefresh(pid, id);
+  return useMutation({
+    mutationFn: async (overrideId: string) => {
+      if (!pid) throw new Error("No project selected");
+      await apiFetch<unknown>(`/projects/${pid}/mentions/${id}/overrides/${overrideId}`, { method: "DELETE" });
+    },
+    onSuccess: () => {
+      toast.success("Override revoked");
+      void refresh();
+    },
+    onError: overrideError("Could not revoke override", refresh),
   });
 }

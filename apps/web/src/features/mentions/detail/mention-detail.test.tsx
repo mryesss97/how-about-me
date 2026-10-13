@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type * as ClientModule from "@/lib/api/client";
 import { ApiError } from "@/lib/api/client";
-import { detailFixture } from "./fixtures.test-utils";
+import { detailFixture, overrideFixture } from "./fixtures.test-utils";
 import { MentionDetail } from "./mention-detail";
 
 const PID = "11111111-1111-4111-8111-111111111111";
@@ -145,5 +145,74 @@ describe("Operations (FR-155, TC-MEN-013, TC-MEN-019)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Copy permalink" }));
     await waitFor(() => expect(writeText).toHaveBeenCalledWith("https://www.threads.net/@alice/post/42"));
     expect(screen.getByRole("link", { name: /Open on Threads/ })).toHaveAttribute("rel", "noopener noreferrer");
+  });
+});
+
+describe("Override (FR-191, FR-193, FR-015)", () => {
+  const ov = overrideFixture();
+
+  it("viewer sees neither Override nor Revoke", async () => {
+    role = "viewer";
+    apiFetch.mockResolvedValue(detailFixture({ ...m, overrides: [ov] }));
+    setup();
+    await screen.findByText("Copy post ID");
+    expect(screen.queryByRole("button", { name: "Override" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Revoke" })).toBeNull();
+  });
+
+  it("analyst: Override → POST overrides → toast (TC-REV-001)", async () => {
+    role = "analyst";
+    apiFetch.mockImplementation((_p: string, init?: { method?: string }) =>
+      Promise.resolve(init?.method === "POST" ? ov : m),
+    );
+    setup();
+    fireEvent.click(await screen.findByRole("button", { name: "Override" }));
+    const dialog = await screen.findByRole("dialog");
+    const [, value] = dialog.querySelectorAll("select");
+    fireEvent.change(value, { target: { value: "neutral" } });
+    fireEvent.change(dialog.querySelector("textarea") as HTMLElement, { target: { value: "Sarcasm" } });
+    fireEvent.click(screen.getByRole("button", { name: /Save override/ }));
+    await waitFor(() =>
+      expect(apiFetch).toHaveBeenCalledWith(`/projects/${PID}/mentions/${m.id}/overrides`, {
+        method: "POST",
+        body: JSON.stringify({ field: "sentiment", value: "neutral", reason: "Sarcasm" }),
+      }),
+    );
+    expect(toast.success).toHaveBeenCalledWith("Override saved");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("409 OVERRIDE_CONFLICT → info toast and refetch", async () => {
+    role = "analyst";
+    apiFetch.mockImplementation((_p: string, init?: { method?: string }) =>
+      init?.method === "POST"
+        ? Promise.reject(new ApiError(409, "OVERRIDE_CONFLICT", "conflict", "req-3"))
+        : Promise.resolve(m),
+    );
+    setup();
+    fireEvent.click(await screen.findByRole("button", { name: "Override" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.change(dialog.querySelectorAll("select")[1], { target: { value: "neutral" } });
+    fireEvent.change(dialog.querySelector("textarea") as HTMLElement, { target: { value: "x" } });
+    const before = getCalls();
+    fireEvent.click(screen.getByRole("button", { name: /Save override/ }));
+    await waitFor(() => expect(toast.info).toHaveBeenCalledWith("Another override was saved at the same time"));
+    await waitFor(() => expect(getCalls()).toBeGreaterThan(before));
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it("admin: Revoke → confirm → DELETE (FR-193)", async () => {
+    apiFetch.mockImplementation((_p: string, init?: { method?: string }) =>
+      Promise.resolve(init?.method === "DELETE" ? undefined : detailFixture({ ...m, overrides: [ov] })),
+    );
+    setup();
+    fireEvent.click(await screen.findByRole("button", { name: "Revoke" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Revoke override" }));
+    await waitFor(() =>
+      expect(apiFetch).toHaveBeenCalledWith(`/projects/${PID}/mentions/${m.id}/overrides/${ov.id}`, {
+        method: "DELETE",
+      }),
+    );
+    expect(toast.success).toHaveBeenCalledWith("Override revoked");
   });
 });

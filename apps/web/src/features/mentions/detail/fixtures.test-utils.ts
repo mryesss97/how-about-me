@@ -1,4 +1,4 @@
-import type { MentionDetail } from "@how-about-me/contracts";
+import type { MentionDetail, Override } from "@how-about-me/contracts";
 import { mentionFixture, uuid } from "../fixtures.test-utils";
 
 type Over = Partial<Omit<MentionDetail, "analysis">> & { analysis?: Partial<MentionDetail["analysis"]> };
@@ -35,3 +35,19 @@ export function detailFixture(over: Over = {}): MentionDetail {
 }
 
 export { uuid };
+
+/** One analyst override; default is TC-REV-001 (sentiment negative → neutral, with reason). */
+export function overrideFixture(over: Partial<Override> = {}): Override {
+  return {
+    id: uuid(900),
+    field: "sentiment",
+    previousValue: "negative",
+    value: "neutral",
+    reason: "Sarcasm, not a complaint",
+    reviewedBy: { id: uuid(901), displayName: "Ana Analyst" },
+    createdAt: "2026-10-13T05:00:00.000Z",
+    revokedAt: null,
+    revokedBy: null,
+    ...over,
+  };
+}
