@@ -228,7 +228,7 @@ LEFT JOIN analysis_overrides o_saf ON o_saf.post_id = p.id AND o_saf.field='safe
 
 ## 7. Sizing & retention
 
-Plan single-digit KB per post incl. analysis + indexes; measure `average_storage_bytes_per_post` monthly. Retention & purge in [../05-operations/04-data-retention-purge.md](../05-operations/04-data-retention-purge.md).
+Plan single-digit KB per post incl. analysis + indexes; measure `average_storage_bytes_per_post` monthly. Measured at 100k posts / 120k analyses (T-097): 264 MB total, ≈ 2.6 KB per post incl. analysis rows and indexes; the current index set meets NFR-001…003 with no additions — [12-performance-report.md](12-performance-report.md). Retention & purge in [../05-operations/04-data-retention-purge.md](../05-operations/04-data-retention-purge.md).
 
 ## 8. Migration policy
 

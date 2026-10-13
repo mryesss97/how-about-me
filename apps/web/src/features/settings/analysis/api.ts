@@ -10,8 +10,7 @@ import {
   type UpdateAnalysisSettingsBody,
 } from "@how-about-me/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { z } from "zod";
-import { ApiError, apiFetch } from "@/lib/api/client";
+import { apiFetch } from "@/lib/api/client";
 import { qk } from "@/lib/query/keys";
 
 const path = (pid: string) => `/projects/${pid}/settings/analysis`;
@@ -61,11 +60,5 @@ export function useMarkStale(pid: string) {
   });
 }
 
-const RetryAfterDetailsSchema = z.object({ retryAfterSeconds: z.number().nonnegative() });
-
-/** Seconds to wait from a `429 RATE_LIMITED` error (`details.retryAfterSeconds`), else null. */
-export function retryAfterSeconds(err: unknown): number | null {
-  if (!(err instanceof ApiError) || err.code !== "RATE_LIMITED") return null;
-  const parsed = RetryAfterDetailsSchema.safeParse(err.details);
-  return parsed.success ? parsed.data.retryAfterSeconds : null;
-}
+// Moved to lib/api/rate-limit (T-146); re-exported for existing imports.
+export { retryAfterSeconds } from "@/lib/api/rate-limit";

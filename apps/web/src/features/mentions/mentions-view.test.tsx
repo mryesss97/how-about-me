@@ -67,6 +67,18 @@ beforeEach(() => {
 
 describe("MentionsView (UX §3.3)", () => {
   it.each([
+    ["admin", true],
+    ["analyst", false],
+    ["viewer", false],
+  ] as const)("T-146 / FR-196: %s sees bulk Re-analyze → %s", async (role, visible) => {
+    roleState = { role, settings: { allowViewerExport: true } };
+    apiFetch.mockResolvedValueOnce(page(1, null, 1));
+    setup();
+    await waitFor(() => expect(screen.getAllByTestId("mention-row")).toHaveLength(1));
+    expect(screen.queryByRole("button", { name: /re-analyze/i }) !== null).toBe(visible);
+  });
+
+  it.each([
     ["admin", false, true],
     ["viewer", false, false],
     ["viewer", true, true],

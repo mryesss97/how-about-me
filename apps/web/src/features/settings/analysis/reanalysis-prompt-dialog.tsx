@@ -6,16 +6,10 @@ import { toast } from "sonner";
 import { Button } from "@/components/base/buttons/button";
 import { ApiError } from "@/lib/api/client";
 import { SettingsDialog } from "../settings-dialog";
-import { retryAfterSeconds, useMarkStale } from "./api";
+import { retryAfterSeconds, waitText } from "@/lib/api/rate-limit";
+import { useMarkStale } from "./api";
 
 const fmt = (n: number) => n.toLocaleString("en-US");
-
-function waitText(seconds: number | null): string {
-  if (seconds === null) return "later";
-  if (seconds < 60) return `${Math.max(1, Math.ceil(seconds))} seconds`;
-  const m = Math.ceil(seconds / 60);
-  return m === 1 ? "1 minute" : `${m} minutes`;
-}
 
 function errorText(err: unknown): string {
   if (err instanceof ApiError && err.code === "RATE_LIMITED")
