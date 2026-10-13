@@ -81,13 +81,15 @@ Unit tests for logic, integration test for persistence/HTTP behaviour, manual QC
 
 ## 9. Running the API integration suite
 
-| Where | Command                                                                              | Database                                                                                                      |
-| ----- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| Local | `pnpm db:up` then `pnpm test:int`                                                    | `how_about_me_test` in Docker Postgres (created by `docker/postgres/init`); override with `TEST_DATABASE_URL` |
-| CI    | `ci.yml` job `test`, step `API integration tests` (`pnpm test:int`) after unit tests | Postgres service container                                                                                    |
+| Where | Command                                                                              | Database                                                                                                     |
+| ----- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| Local | `pnpm db:up` then `pnpm test:int` (or `pnpm test:int:quiet`)                         | `how_about_me_test_<hash>` per worktree in Docker Postgres (auto-created); override with `TEST_DATABASE_URL` |
+| CI    | `ci.yml` job `test`, step `API integration tests` (`pnpm test:int`) after unit tests | Postgres service container                                                                                   |
 
 - `pnpm test:int` runs the Turborepo task `test:int` (`dependsOn: ^build`, never cached), so `packages/contracts` and `packages/taxonomy` are built before Jest resolves them. It is not part of `pnpm verify` or the `pre-push` hook because it needs Postgres.
 - `test/global-setup.ts` applies migrations to the test database; `test/setup-after-env.ts` sets `PROVIDERS_MODE=fake` and the test JWT secret. Suites run `--runInBand` and reset tables with `resetDb()`.
+- **One test DB per worktree (#189).** Without `TEST_DATABASE_URL`, `test/helpers/test-db.ts` derives `how_about_me_test_<sha1(git toplevel)[0:8]>`; `prisma migrate deploy` creates it. Parallel worktrees therefore never `TRUNCATE` each other's data. Global setup prints the DB name (never the URL). Always run `--runInBand`: suites share one DB and `resetDb()`.
+- **Keeping logs (#189).** `pnpm test:int:quiet` writes `$(git rev-parse --git-dir)/test-int.log`, prints one line on pass and the last `TEST_INT_TAIL` (50) lines on failure. Every failure is also kept as `test-int-<UTC>.log` (newest 5) so a flaky run's log survives a passing rerun.
 - **ESM-only dependencies.** Jest 30 runs tests in a CommonJS module registry. `jose` (Supabase JWT verification) ships ESM only, so `require("jose")` from the compiled `AppModule` fails with `Must use import to load ES Module`. `apps/api/jest.config.ts` lets `ts-jest` compile `jose` to CJS (`transformIgnorePatterns` allow-list plus a `.js` transform, target `es2022`). Production is unaffected: `nest build` emits CJS and Node 24 loads `jose` through native `require(esm)`.
 - Decision (2026-10-13, #137). Rejected alternative: run Jest with `--experimental-vm-modules` and raise `engines.node` to `>=24.9`. Jest only takes its `require(esm)` path when both hold (verified: Node 24.4.1 fails even with the flag; 24.21.0 passes). It relies on an experimental Node API, prints an `ExperimentalWarning`, needs `NODE_OPTIONS` plumbing per platform, and forces every developer onto 24.9+. The transform works on any Node 24.x with stock Jest. Cost: tests exercise a CJS-compiled copy of `jose` (module syntax only, no down-levelling). Revisit if `jose` adds top-level `await` (it cannot compile to CJS) or when Jest's ESM support is stable.
 - New ESM-only dependency imported by API code: add its name to the `transformIgnorePatterns` allow-list.
@@ -128,3 +130,12 @@ Conventions:
 - Each test starts from `resetDb()`; never rely on seed data.
 - Do not set generated columns (`social_posts.search_vector`).
 - A new business table must be added to the `resetDb()` TRUNCATE list.
+
+Writing stable integration tests (#189):
+
+- Call the API through `createTestApp` + `api(app, …)`. `createTestApp` already listens on `127.0.0.1:<ephemeral>`; never create your own `listen(0)` / `request(rawServer)` — on macOS a `::` listener can share a port with another process bound to `127.0.0.1` and requests land in the wrong process.
+- Do not compare the Node clock with Postgres `now()` (the Docker VM clock may drift). Seed timestamps from `SELECT now()` or from fixed values; before claiming rows due "now", use `waitForDbTime(prisma, at)`.
+- Do not hold a lock with `pg_sleep`; release it from a gate once the code under test has returned.
+- Concurrent `prisma.$transaction` calls in one test need `{ maxWait: 10_000 }` (default 2 s fails on a loaded machine with P2028).
+- Assert ordering only with `ORDER BY` plus a tie-break column.
+- Do not rely on shell env: `setup-after-env.ts` forces `APP_ROLE=api` and `PROVIDERS_MODE=fake`.

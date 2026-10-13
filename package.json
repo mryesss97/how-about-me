@@ -16,6 +16,7 @@
     "test": "turbo run test",
     "test:cov": "turbo run test:cov",
     "test:int": "turbo run test:int",
+    "test:int:quiet": "bash scripts/test-int-quiet.sh",
     "clean": "turbo run clean && rm -rf node_modules/.cache .turbo",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
