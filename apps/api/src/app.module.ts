@@ -4,6 +4,7 @@ import { ScheduleModule } from "@nestjs/schedule";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { LoggerModule } from "nestjs-pino";
 import { AuthCommonModule } from "./common/auth/auth-common.module";
+import { CryptoModule } from "./common/crypto/crypto.module";
 import { HttpExceptionFilter } from "./common/errors/http-exception.filter";
 import { buildLoggerParams } from "./common/logging/logger.config";
 import { APP_CONFIG, AppConfigModule, type AppConfig } from "./config/config.module";
@@ -20,6 +21,7 @@ import { ProjectsModule } from "./modules/projects/projects.module";
     ScheduleModule.forRoot(),
     PrismaModule,
     AuthCommonModule,
+    CryptoModule,
     HealthModule,
     AuthModule,
     ProjectsModule,
