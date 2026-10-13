@@ -45,7 +45,7 @@ describe("buildBaseSetCte", () => {
     expect(sql).toContain("e.relevance_label = ANY(?::relevance_label[])");
     expect(sql).not.toContain("m.query_id");
     expect(sql).not.toContain("sentiment_label = ANY");
-    expect(sql).not.toContain("analysis_intents");
+    expect(sql).not.toContain("effective_post_intents");
   });
 
   it("queryIds produce ANY(uuid[]) inside the EXISTS (no JOIN → distinct posts)", () => {
@@ -72,8 +72,8 @@ describe("buildBaseSetCte", () => {
     );
     const sql = norm(s);
     for (const v of ["negative", "severe", "complaint", "payment", "'vi'", "completed"]) expect(sql).not.toContain(v);
-    expect(sql).toContain("analysis_intents i");
-    expect(sql).toContain("analysis_topics t");
+    expect(sql).toContain("effective_post_intents i");
+    expect(sql).toContain("effective_post_topics t");
     expect(sql).toContain("e.latest_run_status = ANY(?::analysis_status[])");
     expect(s.values).toEqual(expect.arrayContaining([["negative"], ["severe"], ["vi"]]));
   });

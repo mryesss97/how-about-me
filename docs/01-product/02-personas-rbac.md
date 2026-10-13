@@ -61,7 +61,7 @@ Legend: ✅ allowed · ❌ denied · ⚙️ allowed when project setting enables
 | Re-analyze a single mention                           | `POST …/mentions/:id/reanalyze`                               | ✅    | ⚙️ `allowAnalystReanalyze` | ❌                     |
 | Bulk re-analyze (P1)                                  | `POST …/mentions/reanalyze`                                   | ✅    | ❌                         | ❌                     |
 | Mark stale by version (P1)                            | `POST …/analysis-runs/mark-stale`                             | ✅    | ❌                         | ❌                     |
-| Add / revoke analyst override (P1)                    | `POST/DELETE …/mentions/:id/overrides`                        | ✅    | ✅                         | ❌                     |
+| Add / revoke analyst override (P1)                    | `POST/DELETE …/mentions/:id/overrides[/:oid]`                 | ✅    | ✅                         | ❌                     |
 | Export CSV (P1)                                       | `GET …/mentions/export.csv`                                   | ✅    | ✅                         | ⚙️ `allowViewerExport` |
 | View sync jobs                                        | `GET …/sync-jobs`                                             | ✅    | ✅                         | ✅                     |
 | View system status                                    | `GET …/system-status`                                         | ✅    | ✅                         | ✅                     |

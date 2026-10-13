@@ -11,7 +11,7 @@
 - **Range** `[from, to)` in the selected timezone (default project timezone). `from` inclusive, `to` exclusive.
 - **Time field** used for bucketing and range membership: `social_posts.published_at` (post time on Threads), **not** `first_seen_at`. Rationale: analysts reason about when people posted. `first_seen_at` is available as an alternative `timeField=first_seen_at` for ingestion-lag analysis (P1).
 - **Base set** `B` = mentions in range where effective relevance ∈ selected relevance filter (default `{relevant}`) and other selected filters match (query, language, …), and `excluded_by_terms=false` for at least one matched query in the filter.
-- **Effective analysis** = `effective_post_analysis` view (override > latest completed run). Pending/failed posts have no effective labels.
+- **Effective analysis** = `effective_post_analysis` view (override > latest completed run). Intents/topics: `effective_post_intents|topics` views (an active override replaces the AI label set, T-142). Pending/failed posts have no AI labels (only analyst overrides, if any).
 - **Distinctness** — project-wide numbers use `COUNT(DISTINCT post_id)`. Per-query breakdowns count a post once per matched query.
 - All rates are returned as decimals in `[0,1]` with the denominator; UI formats as %.
 

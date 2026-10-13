@@ -119,7 +119,7 @@ const MatchRowSchema = z.object({
   query_type: QueryTypeSchema,
   excluded_by_terms: z.boolean(),
 });
-const LabelRowSchema = z.object({ analysis_id: z.string(), label: z.string(), confidence: nullableNum });
+const LabelRowSchema = z.object({ post_id: z.string(), label: z.string(), confidence: nullableNum });
 const ErrorRowSchema = z.object({ post_id: z.string(), error_code: z.string().nullable() });
 const CountRowSchema = z.object({ n: num });
 
@@ -300,16 +300,17 @@ export class MentionsRepository {
     }));
   }
 
-  /** Fixed number of batch queries per page (no N+1). */
-  async hydrate(postIds: string[], analysisIds: string[]): Promise<HydratedMentions> {
+  /**
+   * Fixed number of batch queries per page (no N+1). Intents/topics are the effective labels per post
+   * (`effective_post_intents|topics`, override > AI — BR-025, T-142), keyed by post id.
+   */
+  async hydrate(postIds: string[]): Promise<HydratedMentions> {
     if (postIds.length === 0)
       return { matches: new Map(), intents: new Map(), topics: new Map(), errorCodes: new Map() };
-    const labels = (table: "analysis_intents" | "analysis_topics"): Promise<unknown[]> =>
-      analysisIds.length === 0
-        ? Promise.resolve([])
-        : this.prisma.$queryRaw<unknown[]>(Prisma.sql`
-            SELECT analysis_id::text AS analysis_id, label::text AS label, confidence FROM ${Prisma.raw(table)}
-             WHERE analysis_id = ANY(${analysisIds}::uuid[]) ORDER BY confidence DESC NULLS LAST, label`);
+    const labels = (view: "effective_post_intents" | "effective_post_topics"): Promise<unknown[]> =>
+      this.prisma.$queryRaw<unknown[]>(Prisma.sql`
+        SELECT post_id::text AS post_id, label, confidence FROM ${Prisma.raw(view)}
+         WHERE post_id = ANY(${postIds}::uuid[]) ORDER BY confidence DESC NULLS LAST, label`);
     const [matches, intents, topics, errors] = await Promise.all([
       // BR-010: soft-deleted queries still shown; excluded matches shown as chips (TC-MEN-021).
       this.prisma.$queryRaw<unknown[]>(Prisma.sql`
@@ -318,8 +319,8 @@ export class MentionsRepository {
           FROM post_query_matches m JOIN listening_queries q ON q.id = m.query_id
          WHERE m.post_id = ANY(${postIds}::uuid[])
          ORDER BY m.first_matched_at, m.query_id`),
-      labels("analysis_intents"),
-      labels("analysis_topics"),
+      labels("effective_post_intents"),
+      labels("effective_post_topics"),
       // FR-156: latest run's error code (used only when status=failed).
       this.prisma.$queryRaw<unknown[]>(Prisma.sql`
         SELECT DISTINCT ON (post_id) post_id::text AS post_id, error_code FROM analysis_runs
@@ -341,12 +342,12 @@ export class MentionsRepository {
       ),
       intents: group(
         intents.map((r) => LabelRowSchema.parse(r)),
-        (r) => r.analysis_id,
+        (r) => r.post_id,
         label,
       ),
       topics: group(
         topics.map((r) => LabelRowSchema.parse(r)),
-        (r) => r.analysis_id,
+        (r) => r.post_id,
         label,
       ),
       errorCodes: new Map(e.map((r) => [r.post_id, r.error_code])),

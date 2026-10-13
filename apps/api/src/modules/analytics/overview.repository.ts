@@ -70,9 +70,9 @@ export class OverviewRepository {
           COUNT(DISTINCT post_id) FILTER (WHERE safety_level IN ('sensitive','severe'))::int AS "safetyRisk",
           COUNT(DISTINCT post_id) FILTER (WHERE safety_level = 'severe')::int AS "severe",
           COUNT(DISTINCT post_id) FILTER (WHERE EXISTS (
-            SELECT 1 FROM analysis_intents i WHERE i.analysis_id = base.analysis_id))::int AS "intentAnalyzed",
+            SELECT 1 FROM effective_post_intents i WHERE i.post_id = base.post_id))::int AS "intentAnalyzed",
           COUNT(DISTINCT post_id) FILTER (WHERE EXISTS (
-            SELECT 1 FROM analysis_intents i WHERE i.analysis_id = base.analysis_id AND i.label = 'complaint'))::int AS "complaint"
+            SELECT 1 FROM effective_post_intents i WHERE i.post_id = base.post_id AND i.label = 'complaint'))::int AS "complaint"
         FROM base`,
       ),
     );

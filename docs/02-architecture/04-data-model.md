@@ -174,7 +174,7 @@ Indexes: `(post_id)`, `(project_id, relevance_label)`, `(project_id, sentiment_l
 ### 4.13 `analysis_overrides` (P1)
 
 | id uuid PK · post_id FK NN · project_id FK NN · analysis_id FK · field override_field NN · previous_value jsonb · override_value jsonb NN · reason text · reviewed_by uuid NN · created_at NN · revoked_at · revoked_by |
-Partial unique: `(post_id, field) WHERE revoked_at IS NULL`.
+Partial unique: `(post_id, field) WHERE revoked_at IS NULL`. `override_value = { "value": <label | label[]> }`; `previous_value = { "value": … }` = AI value of `analysis_id` (the post's `current_analysis_id` when the override was created), NULL when unanalysed. Revoke sets `revoked_at/revoked_by`, never deletes (FR-193). Written by ReviewsModule (T-142).
 
 ### 4.14 `audit_logs`
 
@@ -196,14 +196,16 @@ Raw tables remain the source of truth; refreshed incrementally per day.
 
 ```sql
 CREATE VIEW effective_post_analysis AS
-SELECT p.id AS post_id, p.project_id, p.published_at, p.latest_run_status,
+SELECT p.id AS post_id, p.project_id, p.published_at, p.first_seen_at, p.latest_run_status,
        COALESCE((o_rel.override_value->>'value')::relevance_label, a.relevance_label) AS relevance_label,
        a.relevance_confidence,
        COALESCE((o_sen.override_value->>'value')::sentiment_label, a.sentiment_label) AS sentiment_label,
        a.sentiment_confidence,
        COALESCE((o_saf.override_value->>'value')::safety_level, a.safety_level) AS safety_level,
        a.language_code, a.summary, a.overall_model_confidence, a.id AS analysis_id,
-       (o_rel.id IS NOT NULL OR o_sen.id IS NOT NULL OR o_saf.id IS NOT NULL) AS has_override
+       (o_rel.id IS NOT NULL OR o_sen.id IS NOT NULL OR o_saf.id IS NOT NULL
+        OR EXISTS (SELECT 1 FROM analysis_overrides o WHERE o.post_id = p.id
+                   AND o.field IN ('intents','topics') AND o.revoked_at IS NULL)) AS has_override
 FROM social_posts p
 LEFT JOIN post_analyses a ON a.id = p.current_analysis_id
 LEFT JOIN analysis_overrides o_rel ON o_rel.post_id = p.id AND o_rel.field='relevance' AND o_rel.revoked_at IS NULL
@@ -211,13 +213,15 @@ LEFT JOIN analysis_overrides o_sen ON o_sen.post_id = p.id AND o_sen.field='sent
 LEFT JOIN analysis_overrides o_saf ON o_saf.post_id = p.id AND o_saf.field='safety_level' AND o_saf.revoked_at IS NULL;
 ```
 
-Intent/topic overrides are resolved by `effective_post_labels(kind)` function (P1) or in service code; MVP without overrides reads `analysis_intents/topics` joined on `current_analysis_id`.
+### `effective_post_intents` / `effective_post_topics` (T-142)
+
+`(post_id, label text, confidence numeric(5,4) NULL, source 'ai'|'analyst')`. AI labels of `current_analysis_id` when the post has no active override for that field, `UNION ALL` the labels of the active override (`jsonb_array_elements_text(override_value->'value')`, `confidence NULL`) — an override replaces the whole label set (doc 07 §10). Join on `post_id`; used by analytics base-set filters, overview `intentAnalyzed/complaint`, intent/topic distributions, mention list/detail labels. Views instead of a function so the planner can push the `post_id` join down (migration `20261014120000_effective_labels`).
 
 ## 6. Prisma mapping notes
 
 - Use `@@map`/`@map` for snake_case tables/columns; enums declared in Prisma.
 - Partial unique indexes, generated `tsvector`, the view, and the deferrable FK are raw SQL in `prisma/migrations/20260905120100_init_extras/migration.sql`; `FOR UPDATE SKIP LOCKED` claims are raw SQL in repositories.
-- **Known Prisma limitation (verified T-007, Prisma 6.19 / PG16):** Migrate cannot model everything in `init_extras`. Ignored by Prisma (no drift): partial unique indexes `listening_queries_active_unique`, `analysis_runs_open_unique`, `analysis_overrides_active_unique`, the `DEFERRABLE` FK on `current_analysis_id`, and the `effective_post_analysis` view. Declared in `schema.prisma` so diffing stays clean: `social_posts_search_vector_idx` (`@@index([searchVector], type: Gin, map: ...)`) and the generated `search_vector` column (`@default(dbgenerated("to_tsvector('simple'::regconfig, COALESCE(text, ''::text))"))`; without these Prisma proposes `DROP INDEX "social_posts_search_vector_idx"` and `ALTER COLUMN "search_vector" DROP DEFAULT`). Check: `pnpm --filter @how-about-me/api db:drift` (needs `SHADOW_DATABASE_URL`) must print an empty migration / exit 0. If a generated migration still contains a `DROP` of any object above, delete those lines before committing (checklist in the PR template for `apps/api/prisma/**`). Never edit an applied migration file (checksum mismatch on `migrate deploy`); fix forward with a new migration. Integration coverage: `apps/api/test/integration/schema-baseline.int-spec.ts`.
+- **Known Prisma limitation (verified T-007, Prisma 6.19 / PG16):** Migrate cannot model everything in `init_extras`. Ignored by Prisma (no drift): partial unique indexes `listening_queries_active_unique`, `analysis_runs_open_unique`, `analysis_overrides_active_unique`, the `DEFERRABLE` FK on `current_analysis_id`, and the views `effective_post_analysis`, `effective_post_intents`, `effective_post_topics`. Declared in `schema.prisma` so diffing stays clean: `social_posts_search_vector_idx` (`@@index([searchVector], type: Gin, map: ...)`) and the generated `search_vector` column (`@default(dbgenerated("to_tsvector('simple'::regconfig, COALESCE(text, ''::text))"))`; without these Prisma proposes `DROP INDEX "social_posts_search_vector_idx"` and `ALTER COLUMN "search_vector" DROP DEFAULT`). Check: `pnpm --filter @how-about-me/api db:drift` (needs `SHADOW_DATABASE_URL`) must print an empty migration / exit 0. If a generated migration still contains a `DROP` of any object above, delete those lines before committing (checklist in the PR template for `apps/api/prisma/**`). Never edit an applied migration file (checksum mismatch on `migrate deploy`); fix forward with a new migration. Integration coverage: `apps/api/test/integration/schema-baseline.int-spec.ts`.
 - `current_analysis_id` FK is `DEFERRABLE INITIALLY DEFERRED` to allow insert-then-point in one transaction.
 - `prisma/seed.ts`: project, admin membership (from `SEED_ADMIN_EMAIL`), 4 queries, integration connection placeholder (`disconnected`). Idempotent keys: project `slug` (existing project not updated); query `(project, query_type, lower(query_value))` among non-deleted rows (exact `lower() = lower()`, not ILIKE, so `_`/`%` are literal; shared helper `findActiveQueryDuplicate`), value normalized first (BR-004/BR-005), P2002 treated as existing (BR-006); integration `(project, platform)`; membership `(project, user)` with role forced to `admin`.
 

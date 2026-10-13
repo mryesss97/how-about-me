@@ -1,5 +1,6 @@
 import {
   type MentionDetail,
+  type Override,
   type MentionListItem,
   LanguageCodeSchema,
   IntentLabelSchema,
@@ -19,11 +20,11 @@ export function toMentionListItem(row: MentionPageRow, h: HydratedMentions): Men
   const status = row.latest_run_status ?? "pending";
   const overall = row.overall_model_confidence;
   const language = LanguageCodeSchema.safeParse(row.language_code);
-  const intents = (row.analysis_id ? (h.intents.get(row.analysis_id) ?? []) : []).flatMap((i) => {
+  const intents = (h.intents.get(row.post_id) ?? []).flatMap((i) => {
     const l = IntentLabelSchema.safeParse(i.label);
     return l.success ? [{ label: l.data, confidence: i.confidence }] : [];
   });
-  const topics = (row.analysis_id ? (h.topics.get(row.analysis_id) ?? []) : []).flatMap((t) => {
+  const topics = (h.topics.get(row.post_id) ?? []).flatMap((t) => {
     const l = TopicLabelSchema.safeParse(t.label);
     return l.success ? [{ label: l.data, confidence: t.confidence }] : [];
   });
@@ -67,10 +68,16 @@ const ScoresSchema = z.record(z.string(), z.number());
 
 /**
  * T-096 / FR-154: list projection + source extras, current analysis details (explanation, category scores,
- * versions, tokens/cost of the run that produced the current analysis) and run history (BR-003).
+ * versions, tokens/cost of the run that produced the current analysis), run history (BR-003) and override
+ * history incl. revoked ones (FR-193, T-142).
  * Labels come from the effective view (BR-025); explanation/scores stay those of the AI analysis.
  */
-export function toMentionDetail(row: MentionDetailRow, h: HydratedMentions, runs: MentionRunRow[]): MentionDetail {
+export function toMentionDetail(
+  row: MentionDetailRow,
+  h: HydratedMentions,
+  runs: MentionRunRow[],
+  overrides: Override[] = [],
+): MentionDetail {
   const item = toMentionListItem(row, h);
   const hasAnalysis = row.analysis_id != null;
   const parsedScores = ScoresSchema.safeParse(row.safety_category_scores);
@@ -123,5 +130,6 @@ export function toMentionDetail(row: MentionDetailRow, h: HydratedMentions, runs
       errorCode: r.errorCode,
       estimatedCostUsd: r.estimatedCostUsd,
     })),
+    overrides,
   };
 }

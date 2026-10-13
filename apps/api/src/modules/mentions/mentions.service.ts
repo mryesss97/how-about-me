@@ -15,6 +15,8 @@ import { BULK_TX_TIMEOUT_MS } from "../analysis/analysis-runs.service";
 import { AnalysisService } from "../analysis/analysis.service";
 import { BULK_REANALYZE_AUDIT_ACTION, BulkReanalyzeThrottle } from "../analysis/bulk-reanalyze-throttle";
 import { AuditService } from "../audit/audit.service";
+import { toOverrideDto } from "../reviews/overrides.mapper";
+import { OverridesRepository } from "../reviews/overrides.repository";
 import { decodeMentionCursor, resolveFilterScope, resolveMentionsScope } from "./mentions-query";
 import { toMentionDetail, toMentionListItem } from "./mentions.mapper";
 import { MentionsRepository } from "./mentions.repository";
@@ -32,6 +34,7 @@ export class MentionsService {
     @InjectPinoLogger(MentionsService.name) private readonly logger: PinoLogger,
     private readonly throttle: BulkReanalyzeThrottle,
     @Inject(APP_CONFIG) private readonly cfg: AppConfig,
+    private readonly overrides: OverridesRepository,
   ) {}
 
   /**
@@ -49,10 +52,7 @@ export class MentionsService {
     const last = page[page.length - 1];
     const nextCursor =
       rows.length > s.limit && last ? encodeSortCursor({ sort: s.sort, keys: last.keys, id: last.post_id }) : null;
-    const hydrated = await this.repo.hydrate(
-      page.map((r) => r.post_id),
-      page.flatMap((r) => (r.analysis_id ? [r.analysis_id] : [])),
-    );
+    const hydrated = await this.repo.hydrate(page.map((r) => r.post_id));
     const items = page.map((r) => toMentionListItem(r, hydrated));
     if (total === null) {
       // No q / post text in logs (FR-200).
@@ -63,16 +63,17 @@ export class MentionsService {
 
   /**
    * T-096 / FR-154: mention detail — source, matches (BR-010), effective analysis (BR-025) with scores and
-   * versions, run history (BR-003). No base-set filter; another project's post → 404.
+   * versions, run history (BR-003), override history (FR-193). No base-set filter; another project's post → 404.
    */
   async detail(projectId: string, mentionId: string): Promise<MentionDetail> {
     const row = await this.repo.findDetail(projectId, mentionId);
     if (!row) throw AppError.notFound("Mention");
-    const [hydrated, runs] = await Promise.all([
-      this.repo.hydrate([row.post_id], row.analysis_id ? [row.analysis_id] : []),
+    const [hydrated, runs, overrides] = await Promise.all([
+      this.repo.hydrate([row.post_id]),
       this.repo.listRuns(row.post_id),
+      this.overrides.listForPost(row.post_id),
     ]);
-    return toMentionDetail(row, hydrated, runs);
+    return toMentionDetail(row, hydrated, runs, overrides.map(toOverrideDto));
   }
 
   /**
