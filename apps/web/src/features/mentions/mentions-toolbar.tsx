@@ -2,7 +2,7 @@
 
 import type { MentionSort } from "@how-about-me/contracts";
 import { SearchLg } from "@untitledui/icons";
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { NativeSelect } from "@/components/base/select/select-native";
 import { formatCount } from "@/lib/format/number";
 
@@ -30,6 +30,8 @@ type Props = {
   hasMore: boolean;
   /** False when the first page failed: the error state speaks for itself, no count and no skeleton. */
   showCount?: boolean;
+  /** Extra header actions (T-147 Export CSV), shown next to sort. */
+  actions?: ReactNode;
 };
 
 export function MentionsCount({
@@ -52,7 +54,7 @@ export function MentionsCount({
 }
 
 /** Search (debounced, URL `q`) + sort (URL `sort`) + total — UX §3.3, FR-153/FR-161. */
-export function MentionsToolbar({ q, sort, onSearch, onSort, total, loaded, hasMore, showCount }: Props) {
+export function MentionsToolbar({ q, sort, onSearch, onSort, total, loaded, hasMore, showCount, actions }: Props) {
   const [text, setText] = useState(q ?? "");
   const lastSent = useRef(q ?? "");
 
@@ -102,6 +104,7 @@ export function MentionsToolbar({ q, sort, onSearch, onSort, total, loaded, hasM
             if (isSort(e.target.value)) onSort(e.target.value);
           }}
         />
+        {actions}
       </div>
     </div>
   );

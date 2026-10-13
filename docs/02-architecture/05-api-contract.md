@@ -222,6 +222,14 @@ FR-143 (T-148). `denominator` = `COUNT(DISTINCT post_id)` of base-set posts with
 
 ### `GET …/analytics/query-share` (P1) → `{ denominator, distribution:[{queryId, displayName, count, share}] , note:"overlapping" }`
 
+Keyword share (FR-145, T-150). Roles admin/analyst/viewer; same analytics params as the other widgets.
+
+- `denominator` = `COUNT(DISTINCT post_id)` of the base set `B` (equals `overview.kpis.mentionCount.value` for the same filters, FR-147).
+- `count` per query = distinct posts in `B` with a match for that query where `excluded_by_terms=false`; with `queryIds` the per-query join is limited to those ids.
+- `share = count / denominator`, not normalised (a post counts once per matched query, so shares may sum past 100 %); `null` when `denominator = 0` (FR-140).
+- Query list: without `queryIds` every non-deleted query of the project (incl. disabled, count 0) plus soft-deleted queries only when `count > 0` (BR-010); with `queryIds` exactly those queries of the project (ids of other projects are ignored).
+- Sorted `count DESC, displayName ASC, queryId ASC`. No cap.
+
 ## 7. Mentions
 
 ### `GET /projects/:projectId/mentions`
@@ -299,6 +307,15 @@ Adds: `ownerId, shortcode, mediaUrl, altText, linkAttachmentUrl, quotedPostId, r
 **Single re-analyze (T-076, FR-115/FR-116).** No body. Creates a new run with `trigger=manual` (force: bypasses the completed-run dedupe; earlier runs are kept, BR-003). `404 NOT_FOUND` when the mention does not exist or belongs to another project. `409 ANALYSIS_ALREADY_PENDING` when the post has **any** `pending|processing` run (any content hash or effective version); the partial unique index (BR-024) still decides concurrent requests and the loser also gets 409. Writes audit `analysis.reanalyze_requested` (`entity_type=social_post`, metadata `{ runId, effectiveVersion }`, no post text) in the same transaction.
 
 **Bulk re-analyze (T-145, FR-196).** Admin only. Body = list filters (same base set as `GET …/mentions`: default last 7×24h, `relevance=[relevant]` BR-016; `reviewStatus` ignored) + `dryRun` (default `false`). Always `200 { matched, enqueued, cap }`. `matched` = DISTINCT posts matching the filters + `q` (equals the list `totalCount` for the same filters). `cap = ANALYSIS_BULK_MAX`. `dryRun=true` only counts: no enqueue, no audit, does not consume the throttle. Otherwise picks up to `cap` posts in `sort` order that have no `pending|processing` run and no `completed` run for the same `(content_hash, current effective_version)` (BR-024, not a force trigger), creates runs `trigger=bulk` (old runs kept, BR-003), and writes audit `analysis.bulk_reanalyze_requested` (`entity_type=monitoring_project`, metadata `{ scope:"filters", filters, counts:{ matched, enqueued, cap }, effectiveVersion }`, no post ids/text) in the same transaction — also when `enqueued=0`. Throttle: one real call per 5 min per project, shared with `mark-stale` (§9), DB-backed (project row lock + last audit row); exceeded → `429 RATE_LIMITED` with header `Retry-After` and `details.retryAfterSeconds`.
+
+**Export (T-147, FR-180/181).** `GET …/mentions/export.csv` — admin, analyst; viewer only when `allowViewerExport` (FR-032, enforced server-side). Query = list filters (`MentionsExportQuerySchema`: same base set B, `q` and `sort` as `GET …/mentions`; default last 7×24h, `relevance=[relevant]` BR-016; one row per post BR-002; no `cursor/limit/count`; `reviewStatus` ignored). Check order: 401/403 → 400 → 429 → 413 → 200.
+
+- `200`: `Content-Type: text/csv; charset=utf-8`, `Content-Disposition: attachment; filename="mentions-YYYYMMDD-HHmm.csv"` (local time in the request `timezone`, default `Asia/Ho_Chi_Minh`), `Cache-Control: no-store`. Body = UTF-8 BOM + header row + rows, CRLF, RFC 4180 quoting. Cells of `username`, `text`, `summary`, `matched_queries` starting with `= + - @ \t \r` get a leading `'` (CSV formula injection guard). Rows are in list `sort` order; 0 rows → BOM + header.
+- Columns (in order): `post_id` (internal UUID), `platform_post_id`, `permalink`, `username`, `text`, `published_at`, `matched_queries` (display names of non-excluded matches incl. soft-deleted queries, BR-007/BR-010), `relevance`, `sentiment`, `safety`, `intents`, `topics`, `language`, `summary`, `analyzed_at` (= `COALESCE(run.completed_at, analysis.created_at)`). Labels are effective values (override > AI, BR-025). Timestamps UTC ISO 8601; multi-values joined with `"; "`; null → empty cell.
+- `413 EXPORT_TOO_LARGE { details: { cap } }` (`cap = EXPORT_MAX_ROWS`) when the filtered set has more than `cap` rows — returned as a JSON envelope before any byte is streamed (no truncated file).
+- Throttle: 5 successful exports per minute per user across all projects (NFR-017), DB-backed (per-user advisory lock + count of `mentions.exported` audit rows in 60 s); exceeded → `429 RATE_LIMITED`, header `Retry-After`, `details.retryAfterSeconds`. 413/429 do not consume quota.
+- Audit `mentions.exported` (`entity_type=monitoring_project`, metadata `{ format:"csv", filters, rowCount }`, no post ids/text), written before streaming, only on success.
+- A failure mid-stream (headers already sent) aborts the connection; the client sees a network error and must discard the partial file. The audit row (and its throttle token) was already written before streaming.
 
 ## 8. Sync jobs
 

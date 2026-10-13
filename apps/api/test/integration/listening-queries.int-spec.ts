@@ -4,7 +4,17 @@ import { Prisma } from "@prisma/client";
 import { ListeningQuerySchema } from "@how-about-me/contracts";
 import type { PrismaService } from "../../src/database/prisma.service";
 import { QueryClaimRepository } from "../../src/jobs/query-claim.repository";
-import { addMember, api, createPost, createProject, createTestApp, createUser, mintTestJwt, resetDb } from "../helpers";
+import {
+  addMember,
+  api,
+  createPost,
+  createProject,
+  createTestApp,
+  createUser,
+  mintTestJwt,
+  resetDb,
+  waitForDbTime,
+} from "../helpers";
 
 /** T-042: listening queries CRUD — FR-051…FR-057, BR-004…BR-010, BR-034; TC-LQ-002…012. */
 describe("Listening queries (T-042)", () => {
@@ -29,7 +39,12 @@ describe("Listening queries (T-042)", () => {
     expect(res.status).toBe(201);
     return res.body.id as string;
   };
-  const near = (iso: string | null) => Math.abs(new Date(iso ?? 0).getTime() - Date.now()) < 5000;
+  // #189: bounded by a t0 taken before the request instead of a fixed tolerance that breaks under load.
+  let t0 = Date.now();
+  const near = (iso: string | null) => {
+    const t = new Date(iso ?? 0).getTime();
+    return t >= t0 - 1000 && t <= Date.now() + 1000;
+  };
   const auditOf = (entityId: string) =>
     prisma.auditLog.findMany({ where: { entityId }, orderBy: [{ createdAt: "asc" }, { id: "asc" }] });
   const claimedIds = async () => (await claim.claimDueQueries(`w-${randomUUID()}`, 50, 15)).map((q) => q.id);
@@ -39,6 +54,7 @@ describe("Listening queries (T-042)", () => {
     claim = new QueryClaimRepository(prisma);
   });
   beforeEach(async () => {
+    t0 = Date.now();
     await resetDb(prisma);
     projectId = (await createProject(prisma)).id;
     otherProjectId = (await createProject(prisma)).id;
@@ -166,10 +182,12 @@ describe("Listening queries (T-042)", () => {
   it("TC-LQ-010: re-enable → nextRunAt≈now, audit query.enabled, claimable (FR-055)", async () => {
     const id = await create({ ...valid, enabled: false });
     await prisma.listeningQuery.update({ where: { id }, data: { nextRunAt: new Date(Date.now() + 86_400_000) } });
+    t0 = Date.now();
     const res = await patch(id, { enabled: true });
     expect(res.status).toBe(200);
     expect(near(res.body.nextRunAt)).toBe(true);
     expect((await auditOf(id)).map((l) => l.action)).toEqual(["query.created", "query.enabled"]);
+    await waitForDbTime(prisma, new Date(res.body.nextRunAt as string));
     expect(await claimedIds()).toContain(id);
   });
 
@@ -197,11 +215,13 @@ describe("Listening queries (T-042)", () => {
     const id = await create();
     await del(id);
     await prisma.listeningQuery.update({ where: { id }, data: { nextRunAt: new Date(Date.now() + 86_400_000) } });
+    t0 = Date.now();
     const res = await restore(id);
     expect(res.status).toBe(200);
     expect(res.body.deletedAt).toBeNull();
     expect(near(res.body.nextRunAt)).toBe(true);
     expect((await get("")).body.items.map((q: { id: string }) => q.id)).toContain(id);
+    await waitForDbTime(prisma, new Date(res.body.nextRunAt as string));
     expect(await claimedIds()).toContain(id);
     expect((await auditOf(id)).map((l) => l.action)).toEqual(["query.created", "query.deleted", "query.restored"]);
 

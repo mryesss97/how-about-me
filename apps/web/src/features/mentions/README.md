@@ -21,4 +21,6 @@ Feature folder — see docs/02-architecture/03-frontend-design.md §1.
 - `operations-toolbar.tsx`, `use-copy.ts` — Re-analyze with confirm, copy post ID / permalink (toast), Open on Threads.
 - `mention-detail-slideout.tsx` — rendered by the intercepting route `app/(app)/mentions/@detail/(.)[id]`; Esc/close → `router.back()` (fallback push to `/mentions?<filters>`), focus returns to the row. "Open full page" is a plain `<a>` to leave the intercept.
 
-Not here yet: `reviewStatus` filter (Reviews, P1), export (P1).
+- `export-button.tsx` — `canExport(role, settings)` (UX only, BR-033), `useExportMentions` (`apiDownload` of `…/mentions/export.csv` with the pinned list params, saves the blob), `ExportButton` in the toolbar `actions` slot; toasts for 413/429/403 (T-147). The view renders it only after hydration (`useHydrated`, `src/hooks/use-hydrated.ts`): `/me` may already be cached when the Suspense boundary hydrates, so rendering it during hydration would mismatch the server HTML.
+
+Not here yet: `reviewStatus` filter (Reviews, P1).

@@ -58,14 +58,15 @@ With `PROVIDERS_MODE=fake` the collector ingests fixtures and the analyzer produ
 
 ## 5. Useful scripts
 
-| Command                                                     | What                                                                                                      |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build` | all workspaces via Turborepo                                                                              |
-| `pnpm test:int`                                             | API integration tests: builds `packages/*`, then Jest + Supertest on Docker Postgres (`pnpm db:up` first) |
-| `pnpm --filter @how-about-me/web e2e`                       | Playwright                                                                                                |
-| `pnpm db:studio`                                            | Prisma Studio                                                                                             |
-| `pnpm issues:sync`                                          | create/update GitHub issues from `docs/03-delivery/backlog.json` (needs `gh auth`)                        |
-| `npx untitledui@latest add <component> --dir apps/web`      | add an Untitled UI component                                                                              |
+| Command                                                     | What                                                                                                                                         |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build` | all workspaces via Turborepo                                                                                                                 |
+| `pnpm test:int`                                             | API integration tests: builds `packages/*`, then Jest + Supertest on Docker Postgres (`pnpm db:up` first)                                    |
+| `pnpm test:int:quiet`                                       | Same, log in `.git/worktrees/<name>/test-int.log`; one line on pass, last 50 lines on fail; failures kept as `test-int-<UTC>.log` (5 newest) |
+| `pnpm --filter @how-about-me/web e2e`                       | Playwright                                                                                                                                   |
+| `pnpm db:studio`                                            | Prisma Studio                                                                                                                                |
+| `pnpm issues:sync`                                          | create/update GitHub issues from `docs/03-delivery/backlog.json` (needs `gh auth`)                                                           |
+| `npx untitledui@latest add <component> --dir apps/web`      | add an Untitled UI component                                                                                                                 |
 
 ## 6. Troubleshooting
 
@@ -73,5 +74,6 @@ With `PROVIDERS_MODE=fake` the collector ingests fixtures and the analyzer produ
 - Port in use → `PORT=4001 pnpm --filter @how-about-me/api dev`.
 - `pnpm db:up` → `Mounts denied … is not shared from the host` → add the repo's parent folder to Docker Desktop File sharing (see §3).
 - `test:int` → `Cannot find module '@how-about-me/contracts'` → run it from the root (`pnpm test:int`) so Turborepo builds `packages/*` first, or `pnpm build` once.
+- `test:int` fails once, then passes on rerun → check the kept `test-int-<UTC>.log` from `pnpm test:int:quiet`. Each worktree uses its own DB `how_about_me_test_<hash>` (#189); drop stale ones with `docker compose exec postgres psql -U postgres -c 'DROP DATABASE how_about_me_test_<hash>'` (list them with `\l`).
 - `test:int` → `Must use import to load ES Module: …/jose/…` → the Jest config compiles `jose` to CJS; if you see this, a new ESM-only dependency needs adding to `transformIgnorePatterns` in `apps/api/jest.config.ts` (see [testing strategy §9](../02-architecture/10-testing-strategy.md#9-running-the-api-integration-suite)).
 - Husky hook fails on commit message → follow [04-git-workflow.md §4](04-git-workflow.md#4-commit-messages-conventional-commits).

@@ -104,7 +104,11 @@ describe("IngestionService (T-051)", () => {
       revision: 1,
       trigger: "ingest" as const,
     };
-    const created = await Promise.all([1, 2, 3].map(() => prisma.$transaction((tx) => enq.enqueue(tx, input))));
+    // #189: default maxWait (2 s) is too tight when the pool opens new connections on a loaded machine (P2028);
+    // this test checks the BR-024 invariant, not latency.
+    const created = await Promise.all(
+      [1, 2, 3].map(() => prisma.$transaction((tx) => enq.enqueue(tx, input), { maxWait: 10_000 })),
+    );
     expect(created.filter(Boolean)).toHaveLength(1);
     expect(await prisma.analysisRun.count()).toBe(1);
   });

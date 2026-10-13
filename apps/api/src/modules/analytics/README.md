@@ -26,3 +26,8 @@ Design: see docs/02-architecture/02-backend-design.md §3 and the related pipeli
 - Languages (T-148): denominator = posts with `language_code IS NOT NULL`; foreign codes fold into `other`; 8 codes, count desc.
 - Topics: top 12 real labels + `other` bucket (DISTINCT posts tagged `other` or outside the top). Intent/topic counts read the effective labels (`effective_post_intents|topics` views, override > AI, BR-025 — T-142).
 - Sentiment includes `timeseries` from `AnalyticsTimeseriesService.sentimentTimeseries` (T-092; hour ≤ 48 h, else day, zero-filled).
+
+## Keyword share (T-150)
+
+- `GET …/analytics/query-share` — `analytics-query-share.{controller,service,repository}.ts`, pure helper `query-share.ts`.
+- Denominator = distinct posts in `B`; per-query counts only non-excluded matches (overlap allowed, `note: "overlapping"`). Soft-deleted queries listed only with counts (BR-010).

@@ -1,11 +1,27 @@
-import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Query, Req } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Header,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+  Req,
+  StreamableFile,
+} from "@nestjs/common";
+import { Writable } from "node:stream";
+import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import {
   BulkReanalyzeBodySchema,
+  MentionsExportQuerySchema,
   MentionsListQuerySchema,
   type BulkReanalyzeBody,
   type BulkReanalyzeResponse,
   type MentionDetail,
+  type MentionsExportQuery,
   type MentionsListQuery,
   type MentionsPage,
   type ReanalyzeResponse,
@@ -14,6 +30,7 @@ import { type AuthedRequest, type AuthUser, CurrentUser } from "../../common/aut
 import { AllowRoleWhenSetting } from "../../common/auth/project-setting-gate.decorator";
 import { Roles } from "../../common/auth/roles.decorator";
 import { zod } from "../../common/pipes/zod-validation.pipe";
+import { ExportService } from "../export/export.service";
 import { MentionsService } from "./mentions.service";
 
 /** docs/02-architecture/05-api-contract.md §7 — FR-115, FR-015. */
@@ -21,7 +38,11 @@ import { MentionsService } from "./mentions.service";
 @ApiBearerAuth()
 @Controller("projects/:projectId/mentions")
 export class MentionsController {
-  constructor(private readonly mentions: MentionsService) {}
+  constructor(
+    private readonly mentions: MentionsService,
+    private readonly exporter: ExportService,
+    @InjectPinoLogger(MentionsController.name) private readonly logger: PinoLogger,
+  ) {}
 
   /** FR-150/152/153/161 — read for all project roles (no @Roles; ProjectRoleGuard enforces membership). */
   @Get()
@@ -30,6 +51,34 @@ export class MentionsController {
     @Query(zod(MentionsListQuerySchema)) query: MentionsListQuery,
   ): Promise<MentionsPage> {
     return this.mentions.list(projectId, query);
+  }
+
+  /**
+   * T-147 / FR-180/181: CSV export of the filtered list. Viewer only when `allowViewerExport` (FR-032), enforced
+   * server-side (FR-015). Declared ABOVE `:mentionId` so it is not shadowed. Errors before streaming stay JSON
+   * envelopes (content type is set via StreamableFile, not @Header); a mid-stream failure destroys the socket.
+   */
+  @Get("export.csv")
+  @Header("Cache-Control", "no-store")
+  @Roles("admin", "analyst", "viewer")
+  @AllowRoleWhenSetting("viewer", "allowViewerExport")
+  async exportCsv(
+    @Param("projectId", ParseUUIDPipe) projectId: string,
+    @Query(zod(MentionsExportQuerySchema)) query: MentionsExportQuery,
+    @CurrentUser() user: AuthUser,
+    @Req() req: AuthedRequest,
+  ): Promise<StreamableFile> {
+    const out = await this.exporter.exportMentionsCsv(projectId, query, user.id, req.id ?? null);
+    return new StreamableFile(out.stream, {
+      type: "text/csv; charset=utf-8",
+      disposition: `attachment; filename="${out.filename}"`,
+    }).setErrorHandler((err, res) => {
+      this.logger.warn({ projectId, event: "mentions.export_stream_failed", err: err.name }, "export stream failed");
+      // Headers (200) are already sent → cannot send an envelope; cut the connection (Express ServerResponse).
+      const r: unknown = res;
+      if (r instanceof Writable) r.destroy(err);
+      else if (!res.destroyed) res.end();
+    });
   }
 
   /**

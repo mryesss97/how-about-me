@@ -53,7 +53,7 @@ pino `redact` paths (`REDACT_PATHS` in `apps/api/src/common/logging/logger.confi
 
 ## 6. Audit log
 
-`AuditService.record({ projectId, actorUserId, action, entityType, entityId, metadata, requestId })` called from services (not controllers). Actions: `project.updated`, `member.added|role_changed|removed`, `integration.updated|verified|disconnected|refresh_failed`, `query.created|updated|enabled|disabled|deleted|restored|run_requested|backfill_requested`, `analysis.reanalyze_requested|bulk_reanalyze_requested|retry_requested` (bulk metadata `{ scope: filters|version_change, filters, counts, effectiveVersion }`, T-145), `override.created|revoked` (`entity_type=analysis_override`; metadata created `{ field, before, after, reason }`, revoked `{ field, before }`, T-142), `mentions.exported`, `analysis_settings.updated` (metadata `{ changes, effectiveVersion }`, T-151), `data.purged` (purge CLI T-126, scheduled retention job T-153). Immutable (no update/delete endpoints). Retention ≥ 12 months.
+`AuditService.record({ projectId, actorUserId, action, entityType, entityId, metadata, requestId })` called from services (not controllers). Actions: `project.updated`, `member.added|role_changed|removed`, `integration.updated|verified|disconnected|refresh_failed`, `query.created|updated|enabled|disabled|deleted|restored|run_requested|backfill_requested`, `analysis.reanalyze_requested|bulk_reanalyze_requested|retry_requested` (bulk metadata `{ scope: filters|version_change, filters, counts, effectiveVersion }`, T-145), `override.created|revoked` (`entity_type=analysis_override`; metadata created `{ field, before, after, reason }`, revoked `{ field, before }`, T-142), `mentions.exported` (metadata `{ format, filters, rowCount }`, T-147), `analysis_settings.updated` (metadata `{ changes, effectiveVersion }`, T-151), `data.purged` (purge CLI T-126, scheduled retention job T-153). Immutable (no update/delete endpoints). Retention ≥ 12 months.
 
 Implementation (`apps/api/src/modules/audit/`, T-059):
 
@@ -65,7 +65,7 @@ Implementation (`apps/api/src/modules/audit/`, T-059):
 - HTTPS everywhere (host-terminated). HSTS at host.
 - `helmet()` defaults; `CORS_ORIGINS` allow-list (exact origins); credentials not needed.
 - Body limit 1 MB; query array limits (≤ 50 values).
-- Throttling (`@nestjs/throttler`): global 300 req/min/user; `run` 10/min/project; bulk re-analysis 1/5 min/project (T-145: DB-backed, not `@nestjs/throttler` — locks the project row and checks the last `analysis.bulk_reanalyze_requested` audit row, so it holds across instances and `dryRun` is not counted; shared by bulk re-analyze and mark-stale; `429` + `Retry-After`); export 5/min/user; verify 5/min/project.
+- Throttling (`@nestjs/throttler`): global 300 req/min/user; `run` 10/min/project; bulk re-analysis 1/5 min/project (T-145: DB-backed, not `@nestjs/throttler` — locks the project row and checks the last `analysis.bulk_reanalyze_requested` audit row, so it holds across instances and `dryRun` is not counted; shared by bulk re-analyze and mark-stale; `429` + `Retry-After`); export 5/min/user (T-147: DB-backed like T-145 — per-user advisory lock + count of `mentions.exported` audit rows in the last 60 s across all projects; 413/429 not counted); verify 5/min/project.
 - Zod validation on all inputs; enums strict; `q` max 200 chars; UUID params validated.
 - Output: post text delivered as JSON string; FE renders text nodes only; links rendered with `rel="noopener noreferrer"`.
 - Swagger disabled in production by default.

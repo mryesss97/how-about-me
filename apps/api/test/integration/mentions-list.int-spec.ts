@@ -107,6 +107,7 @@ describe("Mentions list (T-095)", () => {
           sourceRevision: 1,
           effectiveVersion: "v1",
           completedAt: at,
+          createdAt: at,
         },
       });
       await prisma.postAnalysis.create({
@@ -142,7 +143,8 @@ describe("Mentions list (T-095)", () => {
           sourceRevision: 1,
           effectiveVersion: "v2",
           errorCode: opts.errorCode ?? null,
-          createdAt: new Date(Date.now() + 1000),
+          // Newer than the completed run without relying on the Node clock vs DB now() (#189).
+          createdAt: new Date(at.getTime() + 1000),
         },
       });
       await prisma.socialPost.update({ where: { id: post.id }, data: { latestRunStatus: opts.runStatus } });
@@ -419,14 +421,25 @@ describe("Mentions list (T-095)", () => {
     repo.countTimeoutMs = 100;
     let locked!: () => void;
     const isLocked = new Promise<void>((r) => (locked = r));
+    let release!: () => void;
+    const released = new Promise<void>((r) => (release = r));
+    // #189: release the lock only once repo.count has returned (gate, not pg_sleep) — deterministic under load.
+    const original = repo.count.bind(repo);
+    const spy = jest.spyOn(repo, "count").mockImplementation(async (...args) => {
+      try {
+        return await original(...args);
+      } finally {
+        release();
+      }
+    });
     // Hold an exclusive lock so the count waits past its statement_timeout (Postgres 57014).
     const locker = prisma.$transaction(
       async (tx) => {
         await tx.$executeRaw`LOCK TABLE social_posts IN ACCESS EXCLUSIVE MODE`;
         locked();
-        await tx.$executeRaw`SELECT pg_sleep(0.6)`;
+        await Promise.race([released, new Promise((r) => setTimeout(r, 20_000))]);
       },
-      { timeout: 10_000 },
+      { timeout: 25_000 },
     );
     try {
       await isLocked;
@@ -434,7 +447,9 @@ describe("Mentions list (T-095)", () => {
       expect(res.body).not.toHaveProperty("totalCount");
       expect(res.body.items).toHaveLength(1);
     } finally {
+      release();
       await locker;
+      spy.mockRestore();
       repo.countTimeoutMs = prev;
     }
   });

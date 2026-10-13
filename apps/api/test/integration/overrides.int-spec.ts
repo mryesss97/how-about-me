@@ -334,6 +334,31 @@ describe("Analysis overrides (T-142)", () => {
     await expect(prisma.analysisOverride.create({ data: row(randomUUID()) })).rejects.toMatchObject({ code: "P2002" });
   });
 
+  it("T-147 export: CSV rows carry effective intents and sentiment (BR-025)", async () => {
+    const mid = await seedPost({ sentiment: "negative", intents: ["praise"] });
+    await post(mid, { field: "intents", value: ["complaint"] }).expect(201);
+    await post(mid, { field: "sentiment", value: "neutral" }).expect(201);
+    const res = await api(app, analyst.token)
+      .get(`${base()}/mentions/export.csv?${range}&intent=complaint`)
+      .buffer(true)
+      .parse((r, cb) => {
+        let s = "";
+        r.setEncoding("utf8");
+        r.on("data", (c: string) => (s += c));
+        r.on("end", () => cb(null, s));
+      });
+    expect(res.status).toBe(200);
+    const lines = String(res.body)
+      .replace(/^\uFEFF/, "")
+      .trim()
+      .split(/\r?\n/);
+    expect(lines).toHaveLength(2);
+    const header = lines[0]?.split(",") ?? [];
+    const cells = lines[1]?.split(",") ?? [];
+    expect(cells[header.indexOf("intents")]).toBe("complaint");
+    expect(cells[header.indexOf("sentiment")]).toBe("neutral");
+  });
+
   it("views: effective_post_intents/topics exist; has_override true with only an intents override", async () => {
     const mid = await seedPost({ intents: ["praise"] });
     await post(mid, { field: "intents", value: [] }).expect(201);

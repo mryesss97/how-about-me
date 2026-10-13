@@ -48,6 +48,14 @@ export function segmentDrillDown<D extends SegmentDimension>(dim: D, value: Segm
 }
 
 /**
+ * Keyword share bar (FR-145, T-150) → `queryIds=[id]`. Replaces any global `queryIds`, so the list is exactly the
+ * posts with a non-excluded match for that query within the other filters (doc 07 §6).
+ */
+export function queryDrillDown(queryId: string): Partial<Filters> {
+  return { queryIds: [queryId] };
+}
+
+/**
  * Bucket i → `[start_i, start_{i+1})`, last bucket ends at `range.to`, clamped to the queried range
  * (`/mentions` is `from` inclusive, `to` exclusive like analytics). Uses the next bucket's start rather than
  * +1h/+1d so tz-aligned buckets stay exact.
