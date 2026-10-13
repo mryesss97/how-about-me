@@ -100,3 +100,4 @@ React Aria primitives; every icon-only button has `aria-label`; charts have tabl
 ## 10. Testing
 
 Vitest + Testing Library for `lib/` and feature components (badge mapping, filter ↔ URL, drill-down href, KPI formatting incl. `New` state). Playwright smoke: login → overview → filter → open mention → role restrictions, against `PROVIDERS_MODE=fake` API.
+Auth fixtures (`auth.setup.ts`, `asRole` in `e2e/fixtures.ts`) and how to run: `10-testing-strategy.md` §4.
