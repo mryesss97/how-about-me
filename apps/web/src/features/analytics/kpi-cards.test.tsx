@@ -1,3 +1,4 @@
+import { OverviewResponseSchema } from "@how-about-me/contracts";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { KpiCards } from "./kpi-cards";
@@ -43,6 +44,18 @@ describe("KpiCards (FR-132)", () => {
     );
     expect(screen.getByText("New")).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/∞|NaN|Infinity/);
+  });
+
+  it("#211 / FR-133: growthPct is percent — 105 vs 40 shows +162.5%, not +16250%", () => {
+    // Payload as the API sends it (overview.math growth(105, 40)), parsed by the shared contract like api.ts does.
+    const base = overviewFixture();
+    const payload = OverviewResponseSchema.parse({
+      ...base,
+      kpis: { ...base.kpis, mentionCount: { value: 105, previous: 40, growthPct: 162.5, growthState: "up" } },
+    });
+    render(<KpiCards kpis={payload.kpis} />);
+    expect(screen.getAllByText("+162.5%").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/16250/)).toBeNull();
   });
 
   it("TC-DASH-008 / BR-032: null rate with denominator 0 shows — with tooltip, not 0%", async () => {

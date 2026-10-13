@@ -30,9 +30,11 @@ Denominator shown in tooltip: "distinct posts published in range with relevance 
 ```text
 previous = mentionCount over previous equal-length window
 growth   = (current − previous) / previous
-if previous = 0 → mentionGrowthPct = null, growthState = "new" (UI shows "New")
+if previous = 0 → kpis.mentionCount.growthPct = null, growthState = "new" (UI shows "New")
 if previous > 0 → growthState = "up" | "down" | "flat" (|growth| < 0.005 → flat)
 ```
+
+Wire unit (#211): `kpis.mentionCount.growthPct = round(growth × 100, 1)` — already a percent (`162.5` = +162.5 %); the UI must not multiply it again. The flat threshold applies to the ratio (`|growth| < 0.005`, i.e. 0.5 %). Rates (§2) are ratios 0..1 and the UI multiplies by 100 once.
 
 ### 1.3 Positive Rate
 

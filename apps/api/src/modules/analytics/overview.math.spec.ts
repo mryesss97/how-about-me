@@ -14,6 +14,8 @@ describe("overview.math (T-091)", () => {
   it("growth: percentage rounded to 1 decimal (2481 vs 2043 → 21.4 up)", () => {
     expect(growth(2481, 2043)).toEqual({ growthPct: 21.4, growthState: "up" });
     expect(growth(50, 100)).toEqual({ growthPct: -50, growthState: "down" });
+    // #211: wire unit is percent (105 vs 40 → 162.5, not 1.625)
+    expect(growth(105, 40)).toEqual({ growthPct: 162.5, growthState: "up" });
   });
 
   it("growth: flat below 0.5% and not at the boundary", () => {

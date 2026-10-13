@@ -45,8 +45,3 @@ export const confidenceMarker: Record<ConfidenceBand, { label: string; show: boo
 export function formatRate(value: number | null, digits = 1): string {
   return value == null ? "—" : `${(value * 100).toFixed(digits)}%`;
 }
-export function formatGrowth(growthPct: number | null, state: "up" | "down" | "flat" | "new"): string {
-  if (state === "new" || growthPct == null) return "New";
-  const sign = growthPct > 0 ? "+" : "";
-  return `${sign}${growthPct.toFixed(1)}%`;
-}

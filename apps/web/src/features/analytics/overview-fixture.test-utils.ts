@@ -34,7 +34,7 @@ export function overviewFixture(patch: Partial<OverviewResponse> = {}): Overview
       collectorStatus: "healthy",
     },
     kpis: {
-      mentionCount: { value: 2410, previous: 2000, growthPct: 0.205, growthState: "up" },
+      mentionCount: { value: 2410, previous: 2000, growthPct: 20.5, growthState: "up" },
       positiveRate: rate(0.3, 2410),
       negativeRate: rate(0.2, 2410),
       safetyRiskRate: { ...rate(0.05, 2410), severeCount: 0 },
