@@ -1,4 +1,4 @@
-import type { OverviewResponse } from "@how-about-me/contracts";
+import type { OverviewResponse, SentimentResponse, TimeseriesResponse } from "@how-about-me/contracts";
 
 const rate = (value: number | null, denominator: number, previous?: number | null) => ({
   value,
@@ -31,6 +31,39 @@ export function overviewFixture(patch: Partial<OverviewResponse> = {}): Overview
       negativeRate: rate(0.2, 2410),
       safetyRiskRate: { ...rate(0.05, 2410), severeCount: 0 },
       complaintRate: rate(0.1, 2000),
+    },
+    ...patch,
+  };
+}
+
+/** 7 daily buckets, zero-filled (TC-DASH-012); pass `withPrevious` for compare (TC-DASH-017). */
+export function timeseriesFixture(withPrevious = false): TimeseriesResponse {
+  const counts = [5, 0, 0, 12, 0, 3, 0];
+  return {
+    interval: "day",
+    timezone: "Asia/Ho_Chi_Minh",
+    data: counts.map((mentions, i) => ({
+      time: new Date(Date.UTC(2026, 9, 5, 17) + i * 86_400_000).toISOString(),
+      mentions,
+      ...(withPrevious ? { previous: i } : {}),
+    })),
+  };
+}
+
+export function sentimentFixture(patch: Partial<SentimentResponse> = {}): SentimentResponse {
+  return {
+    denominator: 100,
+    distribution: [
+      { label: "positive", count: 30, share: 0.3 },
+      { label: "neutral", count: 50, share: 0.5 },
+      { label: "negative", count: 20, share: 0.2 },
+    ],
+    timeseries: {
+      interval: "day",
+      data: [
+        { time: "2026-10-05T17:00:00.000Z", positive: 10, neutral: 20, negative: 5 },
+        { time: "2026-10-06T17:00:00.000Z", positive: 20, neutral: 30, negative: 15 },
+      ],
     },
     ...patch,
   };

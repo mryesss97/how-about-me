@@ -3,25 +3,35 @@
 import { useCurrentProject } from "@/features/auth/use-current-project";
 import { useRole } from "@/features/auth/use-role";
 import { ApiError } from "@/lib/api/client";
+import { DEFAULT_TZ } from "@/lib/filters/parsers";
 import { useFilters } from "@/lib/filters/use-filters";
 import { QueryState } from "@/features/shared/query-state";
-import { useOverview } from "./api";
+import { useMentionsTimeseries, useOverview, useSentiment } from "./api";
+import { MentionsOverTimeChart, SentimentDistributionChart, SentimentOverTimeChart } from "./charts";
 import { FilterBar } from "./filter-bar";
 import { KpiCards, KpiCardsSkeleton } from "./kpi-cards";
 import { OverviewBanners } from "./overview-banners";
 
-/** /overview body: filters → banners → KPI cards (T-099). Charts come with T-100/T-101. */
+function toQueryError(err: unknown) {
+  if (!err) return null;
+  return err instanceof ApiError
+    ? { code: err.code, message: err.message, requestId: err.requestId }
+    : { message: "Unexpected response from the server." };
+}
+
+/**
+ * /overview body: filters → banners → KPI cards (T-099) → charts (T-100). Safety chart slot is T-101.
+ * Each chart has its own query state so one failing chart never blanks the page.
+ */
 export function OverviewView() {
   const { project } = useCurrentProject();
   const { role } = useRole();
   const { apiParams } = useFilters("analytics");
   const query = useOverview(project?.id, apiParams);
-  const err = query.error;
-  const error = err
-    ? err instanceof ApiError
-      ? { code: err.code, message: err.message, requestId: err.requestId }
-      : { message: "Unexpected response from the server." }
-    : null;
+  const error = toQueryError(query.error);
+  const timeseries = useMentionsTimeseries(project?.id, apiParams);
+  // One request feeds both the donut and the stacked bars.
+  const sentiment = useSentiment(project?.id, apiParams);
 
   return (
     <div className="flex flex-col gap-6">
@@ -42,6 +52,30 @@ export function OverviewView() {
           </div>
         ) : null}
       </QueryState>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+        <MentionsOverTimeChart
+          className="lg:col-span-8"
+          data={timeseries.data}
+          isLoading={!project || timeseries.isLoading}
+          error={toQueryError(timeseries.error)}
+          onRetry={() => void timeseries.refetch()}
+        />
+        <SentimentDistributionChart
+          className="lg:col-span-4"
+          data={sentiment.data}
+          isLoading={!project || sentiment.isLoading}
+          error={toQueryError(sentiment.error)}
+          onRetry={() => void sentiment.refetch()}
+        />
+        <SentimentOverTimeChart
+          className="lg:col-span-6"
+          data={sentiment.data}
+          timezone={apiParams.timezone ?? DEFAULT_TZ}
+          isLoading={!project || sentiment.isLoading}
+          error={toQueryError(sentiment.error)}
+          onRetry={() => void sentiment.refetch()}
+        />
+      </div>
     </div>
   );
 }
