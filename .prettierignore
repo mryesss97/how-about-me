@@ -9,3 +9,4 @@ apps/web/src/components/**
 apps/web/src/styles/**
 apps/api/prisma/migrations/**
 CHANGELOG.md
+.claude/worktrees/

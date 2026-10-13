@@ -25,7 +25,9 @@ const files = [];
 (function walk(d) {
   for (const f of readdirSync(d)) {
     const p = join(d, f);
-    if (p.includes(`${join(".next", "cache")}`)) continue;
+    // cache and the `next dev` output are not what ships; `next dev` bundles
+    // supabase-js unminified, whose source names `service_role`.
+    if (p.includes(join(".next", "cache")) || p.includes(join(".next", "dev"))) continue;
     statSync(p).isDirectory() ? walk(p) : /\.(js|json|html|txt)$/.test(f) && files.push(p);
   }
 })(outDir);
