@@ -1,0 +1,318 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`contract surface > enums 1`] = `
+{
+  "ANALYSIS_STATUSES": [
+    "pending",
+    "processing",
+    "completed",
+    "failed",
+    "skipped",
+    "stale",
+  ],
+  "ANALYSIS_TRIGGERS": [
+    "ingest",
+    "content_change",
+    "manual",
+    "bulk",
+    "retry",
+    "version_change",
+  ],
+  "INTEGRATION_STATUSES": [
+    "disconnected",
+    "connected",
+    "expired",
+    "permission_error",
+    "error",
+  ],
+  "JOB_STATUSES": [
+    "queued",
+    "running",
+    "success",
+    "partial",
+    "failed",
+    "cancelled",
+  ],
+  "JOB_TRIGGERS": [
+    "scheduled",
+    "manual",
+    "backfill",
+    "retry",
+  ],
+  "MENTION_SORTS": [
+    "newest",
+    "oldest",
+    "safety_desc",
+    "confidence_asc",
+    "relevance_desc",
+  ],
+  "OVERRIDE_FIELDS": [
+    "relevance",
+    "sentiment",
+    "safety_level",
+    "intents",
+    "topics",
+  ],
+  "QUERY_TYPES": [
+    "keyword",
+    "topic_tag",
+  ],
+  "USER_ROLES": [
+    "admin",
+    "analyst",
+    "viewer",
+  ],
+}
+`;
+
+exports[`contract surface > error codes and HTTP map 1`] = `
+{
+  "ANALYSIS_ALREADY_PENDING": 409,
+  "AUTH_INVALID_TOKEN": 401,
+  "AUTH_MISSING_TOKEN": 401,
+  "AUTH_TOKEN_EXPIRED": 401,
+  "BACKFILL_WINDOW_INVALID": 400,
+  "EXPORT_TOO_LARGE": 413,
+  "FORBIDDEN_PROJECT": 403,
+  "FORBIDDEN_ROLE": 403,
+  "INTEGRATION_NOT_CONFIGURED": 409,
+  "INTERNAL": 500,
+  "LAST_ADMIN": 409,
+  "NOT_FOUND": 404,
+  "QUERY_DUPLICATE": 409,
+  "QUERY_IMMUTABLE_FIELD": 400,
+  "RATE_LIMITED": 429,
+  "SYNC_ALREADY_RUNNING": 409,
+  "THREADS_FORBIDDEN": 502,
+  "THREADS_MALFORMED_RESPONSE": 502,
+  "THREADS_RATE_LIMITED": 503,
+  "THREADS_TIMEOUT": 503,
+  "THREADS_UNAUTHORIZED": 502,
+  "THREADS_UPSTREAM_ERROR": 502,
+  "VALIDATION_ERROR": 400,
+}
+`;
+
+exports[`doc example fixtures > audit-page parses 1`] = `
+{
+  "items": [
+    {
+      "action": "query.create",
+      "actor": {
+        "displayName": "Admin",
+        "email": "admin@example.com",
+        "id": "11111111-1111-4111-8111-111111111111",
+      },
+      "createdAt": "2026-09-04T13:20:00Z",
+      "entityId": "11111111-1111-4111-8111-111111111111",
+      "entityType": "listening_query",
+      "id": "11111111-1111-4111-8111-111111111111",
+      "metadata": {
+        "queryValue": "Eventista",
+      },
+      "requestId": "req-1",
+    },
+  ],
+  "nextCursor": null,
+}
+`;
+
+exports[`doc example fixtures > health-ready parses 1`] = `
+{
+  "checks": {
+    "classifier": "up",
+    "database": "up",
+    "threads": "unknown",
+  },
+  "status": "ok",
+}
+`;
+
+exports[`doc example fixtures > mentions-page parses 1`] = `
+{
+  "items": [
+    {
+      "analysis": {
+        "confidenceBand": "high",
+        "hasOverride": false,
+        "intents": [
+          {
+            "confidence": 0.95,
+            "label": "complaint",
+          },
+        ],
+        "language": "vi",
+        "overallConfidence": 0.91,
+        "relevance": {
+          "confidence": 0.97,
+          "label": "relevant",
+        },
+        "safety": {
+          "level": "safe",
+        },
+        "sentiment": {
+          "confidence": 0.91,
+          "label": "negative",
+        },
+        "source": "ai",
+        "status": "completed",
+        "summary": "User complains that ticket prices are high.",
+        "topics": [
+          {
+            "confidence": 0.98,
+            "label": "ticket",
+          },
+          {
+            "confidence": 0.96,
+            "label": "price",
+          },
+        ],
+      },
+      "hasReplies": true,
+      "id": "11111111-1111-4111-8111-111111111111",
+      "isQuotePost": false,
+      "matchedQueries": [
+        {
+          "displayName": "Eventista",
+          "excludedByTerms": false,
+          "id": "11111111-1111-4111-8111-111111111111",
+          "queryType": "keyword",
+        },
+      ],
+      "mediaType": "IMAGE",
+      "permalink": "https://www.threads.net/@fan_abc/post/C1",
+      "platform": "threads",
+      "platformPostId": "1789",
+      "publishedAt": "2026-09-04T13:20:00Z",
+      "text": "Vé đắt quá",
+      "thumbnailUrl": null,
+      "username": "fan_abc",
+    },
+  ],
+  "nextCursor": "eyJ",
+  "totalCount": 2481,
+}
+`;
+
+exports[`doc example fixtures > query-share parses 1`] = `
+{
+  "denominator": 100,
+  "distribution": [
+    {
+      "count": 60,
+      "displayName": "Eventista",
+      "queryId": "11111111-1111-4111-8111-111111111111",
+      "share": 0.6,
+    },
+  ],
+  "note": "overlapping",
+}
+`;
+
+exports[`doc example fixtures > sync-job parses 1`] = `
+{
+  "completedAt": "2026-09-04T13:20:00Z",
+  "createdAt": "2026-09-04T13:20:00Z",
+  "error": {
+    "code": "THREADS_RATE_LIMITED",
+    "message": "Rate limited",
+  },
+  "id": "11111111-1111-4111-8111-111111111111",
+  "lastCursor": "abc",
+  "pagesFetched": 3,
+  "providerRequests": 3,
+  "queryId": "11111111-1111-4111-8111-111111111111",
+  "rateLimitEvents": 1,
+  "recordsDuplicated": 100,
+  "recordsExcluded": 2,
+  "recordsFetched": 120,
+  "recordsInserted": 15,
+  "recordsInvalid": 4,
+  "recordsUpdated": 1,
+  "searchMode": "KEYWORD",
+  "searchType": "RECENT",
+  "startedAt": "2026-09-04T13:20:00Z",
+  "status": "partial",
+  "trigger": "scheduled",
+  "windowSince": "2026-09-04T13:20:00Z",
+  "windowUntil": "2026-09-04T13:20:00Z",
+}
+`;
+
+exports[`doc example fixtures > system-status parses 1`] = `
+{
+  "analysis": {
+    "analysisLagSeconds": 85,
+    "completed24h": 812,
+    "estimatedCost24hUsd": 0.83,
+    "failed24h": 3,
+    "pending": 61,
+    "processing": 3,
+    "status": "healthy",
+    "tokens24h": {
+      "input": 412000,
+      "output": 61000,
+    },
+    "versions": {
+      "classifierModel": "gpt-x",
+      "classifierProvider": "openai",
+      "promptVersion": "classifier-v1",
+      "safetyModel": "omni-moderation-latest",
+      "safetyPolicyVersion": "safety-policy-v1",
+      "safetyProvider": "openai",
+      "taxonomyVersion": "taxonomy-v1",
+    },
+  },
+  "collector": {
+    "activeQueries": 4,
+    "circuit": {
+      "open": false,
+      "reason": null,
+      "until": null,
+    },
+    "collectionLagSeconds": 420,
+    "failedJobs24h": 0,
+    "jobsInProgress": 1,
+    "lastGlobalSyncAt": "2026-09-04T13:20:00Z",
+    "partialJobs24h": 1,
+    "status": "healthy",
+    "successRate24h": 0.97,
+  },
+  "database": {
+    "approxAnalyses": 131200,
+    "approxPosts": 128400,
+    "lastMigration": "20260910_init",
+  },
+  "generatedAt": "2026-09-04T13:20:00Z",
+  "threads": {
+    "accountIdentifier": "eventista.official",
+    "lastError": null,
+    "lastSuccessAt": "2026-09-04T13:20:00Z",
+    "status": "connected",
+    "tokenExpiresAt": "2026-09-04T13:20:00Z",
+  },
+}
+`;
+
+exports[`doc example fixtures > topic-sentiment parses 1`] = `
+{
+  "rows": [
+    {
+      "negative": 7,
+      "negativeShare": 0.7,
+      "neutral": 2,
+      "positive": 1,
+      "topic": "ticket",
+      "total": 10,
+    },
+    {
+      "negative": 0,
+      "negativeShare": null,
+      "neutral": 0,
+      "positive": 0,
+      "topic": "other",
+      "total": 0,
+    },
+  ],
+}
+`;

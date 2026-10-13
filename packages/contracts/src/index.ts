@@ -7,6 +7,7 @@ export * from "./listening-queries.js";
 export * from "./filters.js";
 export * from "./analytics.js";
 export * from "./mentions.js";
+export * from "./analysis-runs.js";
 export * from "./sync-jobs.js";
 export * from "./system-status.js";
 export * from "./audit.js";

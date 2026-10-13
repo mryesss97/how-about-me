@@ -47,3 +47,13 @@ export const HealthResponseSchema = z.object({
   checks: z.record(z.string(), z.enum(["up", "down", "unknown"])).optional(),
   version: z.string().optional(),
 });
+
+const HealthCheck = z.enum(["up", "down", "unknown"]);
+export const HealthLiveResponseSchema = z.object({ status: z.literal("ok") });
+/** Only `database` affects the HTTP status (§12). */
+export const HealthReadyResponseSchema = z.object({
+  status: z.enum(["ok", "degraded", "error"]),
+  checks: z.object({ database: HealthCheck, threads: HealthCheck, classifier: HealthCheck }),
+  version: z.string().optional(),
+});
+export type HealthReadyResponse = z.infer<typeof HealthReadyResponseSchema>;

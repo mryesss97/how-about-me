@@ -26,6 +26,7 @@ export const ProjectSchema = z.object({
   updatedAt: IsoDateTimeSchema,
 });
 export type Project = z.infer<typeof ProjectSchema>;
+export const ProjectListResponseSchema = z.array(ProjectSchema);
 
 export const UpdateProjectBodySchema = z
   .object({
@@ -58,3 +59,4 @@ export const MemberSchema = z.object({
 export type Member = z.infer<typeof MemberSchema>;
 export const AddMemberBodySchema = z.object({ email: z.email(), role: UserRoleSchema });
 export const UpdateMemberBodySchema = z.object({ role: UserRoleSchema });
+export const MemberListResponseSchema = z.array(MemberSchema);

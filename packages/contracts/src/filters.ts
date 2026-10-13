@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { csvArray, IanaTimezoneSchema, IsoDateTimeSchema, UuidSchema } from "./common.js";
+import { csvArray, IanaTimezoneSchema, IsoDateTimeSchema, queryBoolean, UuidSchema, withDateRange } from "./common.js";
 import {
   AnalysisStatusSchema,
   IntentLabelSchema,
@@ -10,8 +10,9 @@ import {
   TopicLabelSchema,
 } from "./enums.js";
 
-/** Shared analytics/mentions filters — docs/02-architecture/05-api-contract.md §6–§7. Default relevance = relevant (BR-016). */
-export const AnalysisFiltersSchema = z.object({
+/** Shared analytics/mentions filters — docs/02-architecture/05-api-contract.md §6–§7. Default relevance = relevant (BR-016).
+ * Unrefined base so resources can `.extend()` it; wrap the final schema with `withDateRange`. */
+export const AnalysisFiltersBaseSchema = z.object({
   from: IsoDateTimeSchema.optional(),
   to: IsoDateTimeSchema.optional(),
   timezone: IanaTimezoneSchema.optional(),
@@ -25,9 +26,14 @@ export const AnalysisFiltersSchema = z.object({
   analysisStatus: csvArray(AnalysisStatusSchema).default([]),
   timeField: z.enum(["published_at", "first_seen_at"]).default("published_at"),
 });
+export const AnalysisFiltersSchema = withDateRange(AnalysisFiltersBaseSchema);
 export type AnalysisFilters = z.infer<typeof AnalysisFiltersSchema>;
 
-export const AnalyticsQuerySchema = AnalysisFiltersSchema.extend({ compare: z.coerce.boolean().default(false) });
+export const AnalyticsQueryBaseSchema = AnalysisFiltersBaseSchema.extend({ compare: queryBoolean().default(false) });
+export const AnalyticsQuerySchema = withDateRange(AnalyticsQueryBaseSchema);
 export type AnalyticsQuery = z.infer<typeof AnalyticsQuerySchema>;
 
-export const MAX_RANGE_DAYS = 366;
+export const TimeseriesQuerySchema = withDateRange(
+  AnalyticsQueryBaseSchema.extend({ interval: z.enum(["hour", "day"]).optional() }),
+);
+export type TimeseriesQuery = z.infer<typeof TimeseriesQuerySchema>;

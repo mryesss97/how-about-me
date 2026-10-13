@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { IsoDateTimeSchema } from "./common.js";
-import { IntegrationStatusSchema, JobStatusSchema } from "./enums.js";
+import {
+  IntegrationStatusSchema,
+  IntentLabelSchema,
+  JobStatusSchema,
+  SafetyLevelSchema,
+  TopicLabelSchema,
+} from "./enums.js";
 
 const Rate = z.object({
   value: z.number().min(0).max(1).nullable(),
@@ -85,3 +91,45 @@ export const SentimentResponseSchema = DistributionResponseSchema.extend({
     .optional(),
 });
 export type SentimentResponse = z.infer<typeof SentimentResponseSchema>;
+
+const typedDistribution = <T extends z.ZodTypeAny>(label: T) =>
+  z.object({
+    denominator: z.number().int(),
+    distribution: z.array(DistributionItemSchema.extend({ label })),
+  });
+const TopicOrOther = z.union([TopicLabelSchema, z.literal("other")]);
+
+export const SafetyDistributionResponseSchema = typedDistribution(SafetyLevelSchema);
+export const IntentsDistributionResponseSchema = typedDistribution(IntentLabelSchema);
+/** Top 12 topics + "other" bucket. */
+export const TopicsDistributionResponseSchema = typedDistribution(TopicOrOther);
+
+/** P1 — GET …/analytics/topic-sentiment. */
+export const TopicSentimentResponseSchema = z.object({
+  rows: z.array(
+    z.object({
+      topic: TopicOrOther,
+      positive: z.number().int(),
+      neutral: z.number().int(),
+      negative: z.number().int(),
+      total: z.number().int(),
+      negativeShare: z.number().min(0).max(1).nullable(),
+    }),
+  ),
+});
+export type TopicSentimentResponse = z.infer<typeof TopicSentimentResponseSchema>;
+
+/** P1 — GET …/analytics/query-share. Shares overlap (one post may match several queries). */
+export const QueryShareResponseSchema = z.object({
+  denominator: z.number().int(),
+  distribution: z.array(
+    z.object({
+      queryId: z.uuid(),
+      displayName: z.string(),
+      count: z.number().int(),
+      share: z.number().min(0).max(1).nullable(),
+    }),
+  ),
+  note: z.literal("overlapping"),
+});
+export type QueryShareResponse = z.infer<typeof QueryShareResponseSchema>;

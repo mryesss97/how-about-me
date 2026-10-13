@@ -1,11 +1,20 @@
 import { z } from "zod";
-import { CursorPaginationQuerySchema, IsoDateTimeSchema, UuidSchema, pageOf } from "./common.js";
+import {
+  csvArray,
+  CursorPaginationQuerySchema,
+  IsoDateTimeSchema,
+  UserRefSchema,
+  UuidSchema,
+  pageOf,
+  withDateRange,
+} from "./common.js";
 import {
   AnalysisStatusSchema,
   AnalysisTriggerSchema,
   ConfidenceBandSchema,
   IntentLabelSchema,
   LanguageCodeSchema,
+  OverrideFieldSchema,
   PlatformSchema,
   QueryTypeSchema,
   RelevanceLabelSchema,
@@ -13,17 +22,26 @@ import {
   SentimentLabelSchema,
   TopicLabelSchema,
 } from "./enums.js";
-import { AnalysisFiltersSchema } from "./filters.js";
+import { AnalysisFiltersBaseSchema } from "./filters.js";
 
 export const MENTION_SORTS = ["newest", "oldest", "safety_desc", "confidence_asc", "relevance_desc"] as const;
 export const MentionSortSchema = z.enum(MENTION_SORTS);
 
-export const MentionsListQuerySchema = AnalysisFiltersSchema.extend({
+/** List filters without pagination — shared by list, bulk reanalyze and export. */
+const MentionsFiltersBaseSchema = AnalysisFiltersBaseSchema.extend({
   q: z.string().trim().max(200).optional(),
-  reviewStatus: z.enum(["reviewed", "unreviewed"]).optional(),
+  reviewStatus: csvArray(z.enum(["reviewed", "unreviewed"])).default([]),
   sort: MentionSortSchema.default("newest"),
-}).extend(CursorPaginationQuerySchema.shape);
+});
+
+export const MentionsListQuerySchema = withDateRange(
+  MentionsFiltersBaseSchema.extend(CursorPaginationQuerySchema.shape),
+);
 export type MentionsListQuery = z.infer<typeof MentionsListQuerySchema>;
+
+/** `GET …/mentions/export.csv` (P1): list filters, no cursor/limit/count. */
+export const MentionsExportQuerySchema = withDateRange(MentionsFiltersBaseSchema);
+export type MentionsExportQuery = z.infer<typeof MentionsExportQuerySchema>;
 
 const Labeled = <T extends z.ZodTypeAny>(label: T) =>
   z.object({ label, confidence: z.number().min(0).max(1).nullable() });
@@ -74,6 +92,18 @@ export const AnalysisVersionsSchema = z.object({
   safetyPolicyVersion: z.string().nullable(),
 });
 
+export const OverrideSchema = z.object({
+  id: UuidSchema,
+  field: OverrideFieldSchema,
+  previousValue: z.unknown(),
+  value: z.unknown(),
+  reason: z.string().nullable(),
+  reviewedBy: UserRefSchema.nullable(),
+  createdAt: IsoDateTimeSchema,
+  revokedAt: IsoDateTimeSchema.nullable(),
+});
+export type Override = z.infer<typeof OverrideSchema>;
+
 export const MentionDetailSchema = MentionListItemSchema.extend({
   ownerId: z.string().nullable(),
   shortcode: z.string().nullable(),
@@ -97,6 +127,7 @@ export const MentionDetailSchema = MentionListItemSchema.extend({
     tokens: z.object({ input: z.number().int().nullable(), output: z.number().int().nullable() }).nullable(),
     estimatedCostUsd: z.number().nullable(),
   }),
+  overrides: z.array(OverrideSchema).optional(),
   runs: z.array(
     z.object({
       id: UuidSchema,
@@ -112,3 +143,25 @@ export const MentionDetailSchema = MentionListItemSchema.extend({
 export type MentionDetail = z.infer<typeof MentionDetailSchema>;
 
 export const ReanalyzeResponseSchema = z.object({ runId: UuidSchema, status: z.literal("pending") });
+
+/** POST …/mentions/reanalyze (P1): list filters + dryRun. */
+export const BulkReanalyzeBodySchema = withDateRange(
+  MentionsFiltersBaseSchema.extend({ dryRun: z.boolean().default(false) }),
+);
+export type BulkReanalyzeBody = z.infer<typeof BulkReanalyzeBodySchema>;
+export const BulkReanalyzeResponseSchema = z.object({
+  matched: z.number().int().nonnegative(),
+  enqueued: z.number().int().nonnegative(),
+  cap: z.number().int().nonnegative(),
+});
+
+/** Override value per field — docs/02-architecture/04-data-model.md §4.13. */
+const OverrideReason = z.string().trim().max(500).optional();
+export const CreateOverrideBodySchema = z.discriminatedUnion("field", [
+  z.object({ field: z.literal("relevance"), value: RelevanceLabelSchema, reason: OverrideReason }),
+  z.object({ field: z.literal("sentiment"), value: SentimentLabelSchema, reason: OverrideReason }),
+  z.object({ field: z.literal("safety_level"), value: SafetyLevelSchema, reason: OverrideReason }),
+  z.object({ field: z.literal("intents"), value: z.array(IntentLabelSchema).max(20), reason: OverrideReason }),
+  z.object({ field: z.literal("topics"), value: z.array(TopicLabelSchema).max(20), reason: OverrideReason }),
+]);
+export type CreateOverrideBody = z.infer<typeof CreateOverrideBodySchema>;

@@ -1,5 +1,13 @@
 import { z } from "zod";
-import { csvArray, CursorPaginationQuerySchema, IsoDateTimeSchema, UuidSchema, pageOf } from "./common.js";
+import {
+  csvArray,
+  CursorPaginationQuerySchema,
+  IsoDateTimeSchema,
+  QueuedJobResponseSchema,
+  UuidSchema,
+  pageOf,
+  withDateRange,
+} from "./common.js";
 import { JobStatusSchema, JobTriggerSchema, SearchModeSchema, SearchTypeSchema } from "./enums.js";
 
 export const SyncJobSchema = z.object({
@@ -28,11 +36,17 @@ export const SyncJobSchema = z.object({
 });
 export type SyncJob = z.infer<typeof SyncJobSchema>;
 
-export const SyncJobsListQuerySchema = CursorPaginationQuerySchema.extend({
-  queryId: UuidSchema.optional(),
-  status: csvArray(JobStatusSchema).default([]),
-  trigger: csvArray(JobTriggerSchema).default([]),
-  from: IsoDateTimeSchema.optional(),
-  to: IsoDateTimeSchema.optional(),
-});
+export const SyncJobsListQuerySchema = withDateRange(
+  CursorPaginationQuerySchema.extend({
+    queryId: UuidSchema.optional(),
+    status: csvArray(JobStatusSchema).default([]),
+    trigger: csvArray(JobTriggerSchema).default([]),
+    from: IsoDateTimeSchema.optional(),
+    to: IsoDateTimeSchema.optional(),
+  }),
+);
 export const SyncJobsPageSchema = pageOf(SyncJobSchema);
+/** `GET …/sync-jobs/:id` returns the full job object. */
+export const SyncJobDetailSchema = SyncJobSchema;
+/** `POST …/sync-jobs/:id/retry` → 202. */
+export const RetrySyncJobResponseSchema = QueuedJobResponseSchema;

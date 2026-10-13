@@ -38,3 +38,9 @@ export const ApiErrorEnvelopeSchema = z.object({
   }),
 });
 export type ApiErrorEnvelope = z.infer<typeof ApiErrorEnvelopeSchema>;
+
+/** `details` of VALIDATION_ERROR (§13) — mirrors apps/api http-exception.filter. */
+export const ValidationErrorDetailsSchema = z.object({
+  issues: z.array(z.object({ path: z.string(), message: z.string(), code: z.string() })),
+});
+export type ValidationErrorDetails = z.infer<typeof ValidationErrorDetailsSchema>;
