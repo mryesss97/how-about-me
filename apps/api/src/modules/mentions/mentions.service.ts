@@ -45,8 +45,8 @@ export class MentionsService {
     const s = resolveMentionsScope(query, projectId, now);
     const cursor = decodeMentionCursor(s.cursor, s.sort);
     const [rows, total] = await Promise.all([
-      this.repo.listPage(s.scope, s.q, s.sort, cursor, s.limit),
-      s.count ? this.repo.count(s.scope, s.q) : Promise.resolve(undefined),
+      this.repo.listPage(s.scope, s.q, s.sort, cursor, s.limit, undefined, s.reviewStatus),
+      s.count ? this.repo.count(s.scope, s.q, s.reviewStatus) : Promise.resolve(undefined),
     ]);
     const page = rows.slice(0, s.limit);
     const last = page[page.length - 1];

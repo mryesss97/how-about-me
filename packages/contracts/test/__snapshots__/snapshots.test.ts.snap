@@ -298,6 +298,45 @@ exports[`doc example fixtures > query-share parses 1`] = `
 }
 `;
 
+exports[`doc example fixtures > review-queue-page parses 1`] = `
+{
+  "counts": {
+    "all": 1,
+    "failed": 0,
+    "lowConfidence": 1,
+    "uncertain": 1,
+  },
+  "items": [
+    {
+      "analysis": {
+        "confidenceBand": "low",
+        "errorCode": null,
+        "hasOverride": false,
+        "overallConfidence": 0.42,
+        "relevance": "uncertain",
+        "sentiment": "neutral",
+        "status": "completed",
+      },
+      "id": "6f1c2b9e-1d2a-4c8e-9b7a-1f2e3d4c5b6a",
+      "permalink": "https://www.threads.net/@minh.tran/post/C0abc",
+      "platform": "threads",
+      "platformPostId": "18000000000000001",
+      "publishedAt": "2026-10-12T03:15:00Z",
+      "reasons": [
+        "uncertain",
+        "low_confidence",
+      ],
+      "reviewedAt": null,
+      "reviewedBy": null,
+      "text": "Không biết app này có ổn không",
+      "username": "minh.tran",
+    },
+  ],
+  "nextCursor": null,
+  "totalCount": 1,
+}
+`;
+
 exports[`doc example fixtures > sync-job parses 1`] = `
 {
   "completedAt": "2026-09-04T13:20:00Z",
