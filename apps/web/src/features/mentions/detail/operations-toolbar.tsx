@@ -5,7 +5,7 @@ import { Copy01, LinkExternal01, RefreshCw01, UserCheck01 } from "@untitledui/ic
 import { useState } from "react";
 import { Button } from "@/components/base/buttons/button";
 import { RequireRole } from "@/features/auth/require-role";
-import { SettingsDialog } from "@/features/settings/settings-dialog";
+import { SettingsDialog } from "@/features/shared/settings-dialog";
 import { safePermalink } from "../mention-row";
 import { isInFlight } from "./api";
 import { OverrideDialog } from "./override-form";

@@ -8,7 +8,7 @@ import { NativeSelect } from "@/components/base/select/select-native";
 import { formatDateTime } from "@/lib/time/format";
 import { errorMessage, useRemoveMember, useUpdateMemberRole } from "./api";
 import { ROLE_OPTIONS } from "./invite-member-dialog";
-import { SettingsDialog } from "./settings-dialog";
+import { SettingsDialog } from "@/features/shared/settings-dialog";
 
 const LAST_ADMIN_HINT = "Project must keep at least one admin.";
 
