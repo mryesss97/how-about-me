@@ -27,6 +27,6 @@ const config: Config = {
   ],
   collectCoverageFrom: ["src/modules/**/*.service.ts", "src/common/**/*.ts", "!src/**/*.spec.ts"],
   coverageDirectory: "coverage",
-  coverageReporters: ["text", "lcov"],
+  coverageReporters: ["text", "lcov", "json-summary"],
 };
 export default config;

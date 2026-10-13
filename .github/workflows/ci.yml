@@ -52,12 +52,22 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @how-about-me/api prisma:generate
       - run: pnpm --filter @how-about-me/api db:deploy
-      - run: pnpm test
+      # Migrations vs schema.prisma must not drift (04-data-model, T-007). Shadow DB lives on the same service.
+      - name: Prisma migration drift
+        env:
+          SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/how_about_me_shadow?schema=public
+        run: |
+          psql "postgresql://postgres:postgres@localhost:5432/postgres" -c "CREATE DATABASE how_about_me_shadow"
+          pnpm --filter @how-about-me/api db:drift
+      - run: pnpm test:cov
       - name: API integration tests
         run: pnpm test:int
+      - name: Coverage summary
+        if: always()
+        run: node scripts/coverage-summary.mjs
       - uses: actions/upload-artifact@v4
         if: always()
-        with: { name: coverage, path: "**/coverage/**/lcov.info", if-no-files-found: ignore }
+        with: { name: coverage, path: "**/coverage/**/lcov.info", if-no-files-found: warn }
 
   build:
     name: build
@@ -74,7 +84,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @how-about-me/api prisma:generate
       - run: pnpm build
-      - run: pnpm check:fe-secrets
+      # --build-env: fail if any server-only secret is present in the web build env (08-security-secrets §9).
+      - run: pnpm check:fe-secrets --build-env
 
   security:
     name: security
@@ -86,8 +97,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version-file: .nvmrc, cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - name: pnpm audit (high+)
-        run: pnpm audit --prod --audit-level=high || (echo "::warning::audit findings — review .audit-allowlist.json" && exit 0)
+      - name: pnpm audit (high+, allowlist)
+        run: pnpm audit:check
       - name: gitleaks
         uses: gitleaks/gitleaks-action@v2
         env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }

@@ -10,6 +10,7 @@
     "lint": "echo skip",
     "typecheck": "echo skip",
     "test": "echo skip",
+    "test:cov": "echo skip",
     "build": "echo skip",
     "clean": "echo skip"
   }
