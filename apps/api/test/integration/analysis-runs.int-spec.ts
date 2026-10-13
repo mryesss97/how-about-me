@@ -287,4 +287,81 @@ describe("Analysis runs (T-070)", () => {
       );
     });
   });
+
+  describe("stale marking (T-078: FR-078, FR-100, BR-003, BR-023)", () => {
+    const OLD = "old|model|v0";
+
+    it("BR-023 / FR-100: markVersionStale stales only pending/completed runs of the old version", async () => {
+      await seedRuns(5);
+      const runs = await prisma.analysisRun.findMany({ orderBy: { id: "asc" } });
+      const statuses = ["completed", "pending", "processing", "failed"] as const;
+      for (const [i, st] of statuses.entries()) {
+        const r = runs[i];
+        if (!r) throw new Error("seed");
+        await prisma.analysisRun.update({ where: { id: r.id }, data: { status: st, effectiveVersion: OLD } });
+      }
+      const current = runs[4];
+      if (!current) throw new Error("seed");
+      await prisma.analysisRun.update({ where: { id: current.id }, data: { status: "completed" } });
+
+      // Project filter: another project matches nothing.
+      expect(await svc.markVersionStale(OLD, { projectId: uuidv7() })).toEqual({ marked: 0 });
+      expect(await svc.markVersionStale(OLD, { projectId })).toEqual({ marked: 2 });
+
+      const byId = async (id: string) => prisma.analysisRun.findUniqueOrThrow({ where: { id } });
+      const got = await Promise.all(runs.map((r) => byId(r.id)));
+      expect(got.map((r) => r.status)).toEqual(["stale", "stale", "processing", "failed", "completed"]);
+      const latest = async (postId: string) =>
+        (await prisma.socialPost.findUniqueOrThrow({ where: { id: postId } })).latestRunStatus;
+      expect(await latest(got[0]?.postId ?? "")).toBe("stale");
+      expect(await latest(got[1]?.postId ?? "")).toBe("stale");
+    });
+
+    it("BR-023: markVersionStale refuses the current effective_version and changes nothing", async () => {
+      await seedRuns(1);
+      await prisma.analysisRun.updateMany({ data: { status: "completed" } });
+      await expect(svc.markVersionStale(svc.effectiveVersion)).rejects.toThrow(/current effective_version/);
+      expect(await prisma.analysisRun.count({ where: { status: "completed" } })).toBe(1);
+    });
+
+    it("FR-078 / BR-003: markCurrentStale skips processing runs and runs of the same hash, returns the count", async () => {
+      await seedRuns(3);
+      const [a, b, c] = await prisma.analysisRun.findMany({ orderBy: { id: "asc" } });
+      if (!a || !b || !c) throw new Error("seed");
+      await prisma.analysisRun.update({ where: { id: a.id }, data: { status: "completed" } });
+      await prisma.analysisRun.update({ where: { id: b.id }, data: { status: "processing" } });
+      await prisma.analysisRun.update({ where: { id: c.id }, data: { status: "completed" } });
+
+      expect(await prisma.$transaction((tx) => svc.markCurrentStale(tx, a.postId, "new-hash"))).toBe(1);
+      expect(await prisma.$transaction((tx) => svc.markCurrentStale(tx, b.postId, "new-hash"))).toBe(0);
+      expect(await prisma.$transaction((tx) => svc.markCurrentStale(tx, c.postId, c.sourceContentHash))).toBe(0);
+
+      const st = async (id: string) => (await prisma.analysisRun.findUniqueOrThrow({ where: { id } })).status;
+      expect([await st(a.id), await st(b.id), await st(c.id)]).toEqual(["stale", "processing", "completed"]);
+    });
+
+    it("TC-ANA-024 / FR-078: edit → old run stale → worker completes the new run", async () => {
+      const w: AnalysisWorkerService = worker({
+        process: async (run) => void (await svc.markCompleted(run.id, w.workerId)),
+      });
+      await ingest.ingestPage(q, [post("edit", "1zone v1")]);
+      await w.tick();
+      const [first] = await prisma.analysisRun.findMany();
+      expect(first?.status).toBe("completed");
+
+      await ingest.ingestPage(q, [post("edit", "1zone v2 edited")]);
+      const runs = await prisma.analysisRun.findMany({ orderBy: { id: "asc" } });
+      expect(runs.map((r) => r.status)).toEqual(["stale", "pending"]);
+      const p = await prisma.socialPost.findFirstOrThrow();
+      expect(p).toMatchObject({ revision: 2, latestRunStatus: "pending" });
+
+      await w.tick();
+      const after = await prisma.analysisRun.findMany({ orderBy: { id: "asc" } });
+      expect(after.map((r) => r.status)).toEqual(["stale", "completed"]);
+      expect((await prisma.socialPost.findFirstOrThrow()).latestRunStatus).toBe("completed");
+    });
+
+    // Depends on #67 (T-074): the persist step that updates social_posts.current_analysis_id.
+    it.todo("TC-ANA-024: current_analysis_id points to the new analysis after the re-run (#67)");
+  });
 });

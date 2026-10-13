@@ -190,7 +190,7 @@ effective_version = `${classifier.provider}|${classifier.model}|${classifier.pro
 
 - Enqueue checks: if a `completed` run exists for `(post_id, source_content_hash, effective_version)` and `trigger ∉ {manual, retry}` → do not enqueue (`skipped_reason='already_analyzed'` is not stored; nothing created).
 - `manual` / `retry` skip the completed check but still respect the partial unique (BR-024): an open run blocks them. `AnalysisService.enqueueDetailed` returns `already_open` / `already_analyzed` for FR-115 to map to `ANALYSIS_ALREADY_PENDING`.
-- Version change (deploy with new prompt/model): optional admin action `POST …/analysis-runs/mark-stale?version=<old>` (P1) marks runs stale and bulk enqueues within caps.
+- Version change (deploy with new prompt/model): optional admin action `POST …/analysis-runs/mark-stale?version=<old>` (P1) marks runs stale and bulk enqueues within caps. The service helper `AnalysisService.markVersionStale(oldVersion, { projectId? })` exists (T-078): `pending`/`completed` runs of the old version → `stale` (never `processing`/`failed`/`skipped`), syncs `latest_run_status`, refuses the current version, and does not re-enqueue.
 - `post_analyses` are never updated in place.
 
 ## 8. Retries & failures (FR-113)

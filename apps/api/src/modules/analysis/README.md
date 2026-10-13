@@ -14,5 +14,6 @@ Design: see docs/02-architecture/02-backend-design.md §3 and the related pipeli
 
 - `analysis-state.ts` — state machine (`ANALYSIS_TRANSITIONS`, FR-100).
 - `analysis.service.ts` — `AnalysisService`: enqueue with version dedupe (implements the `ANALYSIS_ENQUEUER` port, BR-023/BR-024/FR-116), `claimBatch` (`FOR UPDATE SKIP LOCKED`, FR-101), guarded transitions `markCompleted` / `markSkipped` / `markFailed` / `requeue`, watchdog `requeueStuck`.
+- `markCurrentStale` (content change, FR-078) and `markVersionStale(oldVersion, { projectId? })` (version change helper, T-078; endpoint/bulk enqueue are P1).
 - `analysis-worker.service.ts` — poll loop; see `../../jobs/README.md`.
 - `run-processor.ts` — `ANALYSIS_RUN_PROCESSOR` port; real pipeline in T-074.
