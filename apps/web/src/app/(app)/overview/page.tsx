@@ -1,18 +1,17 @@
 import { Suspense } from "react";
-import { FilterBar } from "@/features/analytics/filter-bar";
-import { PagePlaceholder } from "@/features/shared/page-placeholder";
+import { OverviewView } from "@/features/analytics/overview-view";
 export const metadata = { title: "Overview" };
+/** docs/01-product/09-ux-specification.md §3.2. Charts (T-100/T-101) and compare/drill-down (T-102) follow. */
 export default function OverviewPage() {
   return (
-    <PagePlaceholder
-      title="Overview"
-      description="KPI cards, six core charts, previous-period comparison and drill-down to mentions (docs/01-product/09-ux-specification.md §3.2)."
-      tasks={["T-099 KPI cards & banners", "T-100 / T-101 charts", "T-102 compare & drill-down"]}
-    >
-      {/* nuqs reads search params on the client, so the bar needs a Suspense boundary. Query options come with the listening-queries hook. */}
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 lg:px-8">
+      <header className="flex flex-col gap-1">
+        <h1 className="text-display-xs font-semibold text-primary">Overview</h1>
+      </header>
+      {/* nuqs reads search params on the client, so the view needs a Suspense boundary. */}
       <Suspense fallback={null}>
-        <FilterBar showCompare queryOptions={[]} />
+        <OverviewView />
       </Suspense>
-    </PagePlaceholder>
+    </div>
   );
 }
