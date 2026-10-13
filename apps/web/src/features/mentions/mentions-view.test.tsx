@@ -21,7 +21,8 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams("preset=7d"),
 }));
 vi.mock("@/features/auth/use-current-project", () => ({ useCurrentProject: () => ({ project: { id: PID } }) }));
-vi.mock("@/features/auth/use-role", () => ({ useRole: () => ({ role: "analyst" }) }));
+let roleState: { role: string; settings: { allowViewerExport: boolean } | null } = { role: "analyst", settings: null };
+vi.mock("@/features/auth/use-role", () => ({ useRole: () => roleState }));
 // Banners use overview data; keep these tests focused on the list.
 let overviewData: unknown;
 const useOverview = vi.fn((_pid: unknown, _params: Record<string, string>) => ({ data: overviewData }));
@@ -57,6 +58,7 @@ function setup(search = "") {
 }
 
 beforeEach(() => {
+  roleState = { role: "analyst", settings: null };
   apiFetch.mockReset();
   push.mockReset();
   useOverview.mockClear();
@@ -64,6 +66,18 @@ beforeEach(() => {
 });
 
 describe("MentionsView (UX §3.3)", () => {
+  it.each([
+    ["admin", false, true],
+    ["viewer", false, false],
+    ["viewer", true, true],
+  ] as const)("T-147 / FR-032: %s (allowViewerExport=%s) sees Export CSV → %s", async (role, allow, visible) => {
+    roleState = { role, settings: { allowViewerExport: allow } };
+    apiFetch.mockResolvedValueOnce(page(1, null, 1));
+    setup();
+    await waitFor(() => expect(screen.getAllByTestId("mention-row")).toHaveLength(1));
+    expect(screen.queryByRole("button", { name: /export csv/i }) !== null).toBe(visible);
+  });
+
   it("TC-MEN-001 / BR-016: first page has 25 rows, count=true, relevance=relevant, sort=newest, total shown", async () => {
     apiFetch.mockResolvedValueOnce(page(25, "c1", 1234));
     setup();

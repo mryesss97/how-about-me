@@ -54,11 +54,21 @@ export async function apiFetch<T>(
   });
 
   if (res.status === 204) return undefined as T;
-  const body: unknown = await res.json().catch(() => null);
-  if (res.ok) return body as T;
+  if (res.ok) return (await res.json().catch(() => null)) as T;
 
+  const err = await toApiError(res);
+  if (res.status === 401 && err.code === "AUTH_TOKEN_EXPIRED" && retryOn401 && onTokenExpired) {
+    const refreshed = await onTokenExpired();
+    if (refreshed) return apiFetch<T>(path, { ...init, retryOn401: false });
+  }
+  throw err;
+}
+
+/** Parses the API error envelope of a non-2xx response. */
+export async function toApiError(res: Response): Promise<ApiError> {
+  const body: unknown = await res.json().catch(() => null);
   const parsed = ApiErrorEnvelopeSchema.safeParse(body);
-  const err = parsed.success
+  return parsed.success
     ? new ApiError(
         res.status,
         parsed.data.error.code,
@@ -67,11 +77,32 @@ export async function apiFetch<T>(
         parsed.data.error.details,
       )
     : new ApiError(res.status, "UNKNOWN", res.statusText);
-  if (res.status === 401 && err.code === "AUTH_TOKEN_EXPIRED" && retryOn401 && onTokenExpired) {
-    const refreshed = await onTokenExpired();
-    if (refreshed) return apiFetch<T>(path, { ...init, retryOn401: false });
+}
+
+const FILENAME_RE = /filename="([^"]+)"/;
+
+/** File download (T-147 CSV export): same auth + error envelope + one 401 refresh as `apiFetch`. */
+export async function apiDownload(
+  path: string,
+  opts: { params?: QueryParams; retryOn401?: boolean } = {},
+): Promise<{ blob: Blob; filename: string | null }> {
+  const { params, retryOn401 = true } = opts;
+  const token = await getAccessToken();
+  const res = await fetch(`${env.NEXT_PUBLIC_API_BASE_URL}${path}${toSearchParams(params)}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  }).catch((e: unknown) => {
+    throw new ApiError(0, "NETWORK_ERROR", e instanceof Error ? e.message : "Network error");
+  });
+  if (!res.ok) {
+    const err = await toApiError(res);
+    if (res.status === 401 && err.code === "AUTH_TOKEN_EXPIRED" && retryOn401 && onTokenExpired) {
+      const refreshed = await onTokenExpired();
+      if (refreshed) return apiDownload(path, { ...opts, retryOn401: false });
+    }
+    throw err;
   }
-  throw err;
+  const filename = FILENAME_RE.exec(res.headers.get("content-disposition") ?? "")?.[1] ?? null;
+  return { blob: await res.blob(), filename };
 }
 
 let onTokenExpired: (() => Promise<boolean>) | null = null;

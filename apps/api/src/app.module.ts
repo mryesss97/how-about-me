@@ -44,7 +44,7 @@ import { SchedulerModule } from "./jobs/scheduler.module";
     MentionsModule,
     AnalyticsModule,
     // M2+: IntegrationsModule, SyncJobsModule, SystemStatusModule
-    // M6: ReviewsModule, ExportModule
+    // M6: ReviewsModule (T-147 export lives in MentionsModule: route must precede `:mentionId`)
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

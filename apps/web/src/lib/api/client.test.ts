@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, apiFetch, setAccessTokenGetter, setTokenExpiredHandler, toSearchParams } from "./client";
+import {
+  ApiError,
+  apiDownload,
+  apiFetch,
+  setAccessTokenGetter,
+  setTokenExpiredHandler,
+  toSearchParams,
+} from "./client";
 
 describe("toSearchParams", () => {
   it("repeats array keys and skips empty values", () => {
@@ -67,5 +74,52 @@ describe("apiFetch auth (FR-011, TC-AUTH-008)", () => {
     setTokenExpiredHandler(handler);
     await expect(apiFetch("/me")).rejects.toMatchObject({ code: "AUTH_INVALID_TOKEN" });
     expect(handler).not.toHaveBeenCalled();
+  });
+});
+
+describe("apiDownload (T-147)", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    setTokenExpiredHandler(null);
+    setAccessTokenGetter(() => null);
+  });
+
+  it("returns blob + filename from Content-Disposition", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response("\uFEFFpost_id\r\n", {
+        status: 200,
+        headers: { "content-disposition": 'attachment; filename="mentions-20261014-0030.csv"' },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    setAccessTokenGetter(() => "tok");
+    const out = await apiDownload("/x.csv", { params: { relevance: ["relevant"] } });
+    expect(out.filename).toBe("mentions-20261014-0030.csv");
+    expect(await out.blob.text()).toContain("post_id");
+    expect(fetchMock.mock.calls[0]?.[0]).toContain("/x.csv?relevance=relevant");
+  });
+
+  it("maps the error envelope to ApiError with details", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          json(413, { error: { code: "EXPORT_TOO_LARGE", message: "m", requestId: "r", details: { cap: 10000 } } }),
+        ),
+    );
+    await expect(apiDownload("/x.csv")).rejects.toMatchObject({ code: "EXPORT_TOO_LARGE", details: { cap: 10000 } });
+  });
+
+  it("refreshes once on AUTH_TOKEN_EXPIRED", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(json(401, err("AUTH_TOKEN_EXPIRED")))
+      .mockResolvedValueOnce(new Response("a", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    setTokenExpiredHandler(async () => true);
+    const out = await apiDownload("/x.csv");
+    expect(out.filename).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

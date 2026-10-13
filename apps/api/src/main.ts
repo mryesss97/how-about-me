@@ -16,7 +16,7 @@ export function configureApp(app: INestApplication, cfg: AppConfig) {
     origin: cfg.CORS_ORIGINS.split(",").map((s) => s.trim()),
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Authorization", "Content-Type", "x-request-id"],
-    exposedHeaders: ["x-request-id"],
+    exposedHeaders: ["x-request-id", "content-disposition"],
   });
   app.enableShutdownHooks();
 
