@@ -7,7 +7,8 @@ import { FakeThreadsProvider } from "../integrations/threads/fake-threads.provid
 import { SOCIAL_DISCOVERY_PROVIDER } from "../integrations/threads/social-discovery.provider";
 import { loadEnv } from "../../config/env.schema";
 import { OpenAiModerationProvider } from "../analysis/providers/openai-moderation.provider";
-import { createSafetyProvider, ProvidersModule } from "./providers.module";
+import { OpenAiStructuredClassifier } from "../analysis/providers/openai-structured.classifier";
+import { createContentClassifier, createSafetyProvider, ProvidersModule } from "./providers.module";
 
 /** Minimum env `loadEnv()` needs; no DB connection is opened by this module. */
 const BASE_ENV = { DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/unused?schema=public" };
@@ -74,6 +75,53 @@ describe("ProvidersModule (PROVIDERS_MODE wiring, FR-112, FR-047)", () => {
 
     it("keeps the fake in fake mode", () => {
       expect(createSafetyProvider(cfg({ PROVIDERS_MODE: "fake" }))).toBeInstanceOf(FakeSafetyProvider);
+    });
+  });
+
+  describe("createContentClassifier (T-072)", () => {
+    const cfg = (env: Record<string, string>) => loadEnv({ NODE_ENV: "test", ...BASE_ENV, ...env });
+    const fakeCfg = cfg({ PROVIDERS_MODE: "fake" });
+
+    it("builds the OpenAI structured classifier in real mode with key and model", () => {
+      const c = createContentClassifier({
+        ...fakeCfg,
+        PROVIDERS_MODE: "real",
+        OPENAI_API_KEY: "sk-test",
+        ANALYSIS_CLASSIFIER_MODEL: "m-test",
+      });
+      expect(c).toBeInstanceOf(OpenAiStructuredClassifier);
+      expect(c.model).toBe("m-test");
+      expect(c.promptVersion).toBe("classifier-v1");
+    });
+
+    it("fails fast without the model or the key in real mode", () => {
+      expect(() =>
+        createContentClassifier({
+          ...fakeCfg,
+          PROVIDERS_MODE: "real",
+          OPENAI_API_KEY: "sk-test",
+          ANALYSIS_CLASSIFIER_MODEL: "",
+        }),
+      ).toThrow(/ANALYSIS_CLASSIFIER_MODEL/);
+      expect(() =>
+        createContentClassifier({ ...fakeCfg, PROVIDERS_MODE: "real", ANALYSIS_CLASSIFIER_MODEL: "m-test" }),
+      ).toThrow(/OPENAI_API_KEY/);
+    });
+
+    it("rejects an unknown ANALYSIS_CLASSIFIER_PROVIDER", () => {
+      expect(() =>
+        createContentClassifier({
+          ...fakeCfg,
+          PROVIDERS_MODE: "real",
+          OPENAI_API_KEY: "k",
+          ANALYSIS_CLASSIFIER_MODEL: "m",
+          ANALYSIS_CLASSIFIER_PROVIDER: "acme",
+        }),
+      ).toThrow(/Unsupported ANALYSIS_CLASSIFIER_PROVIDER/);
+    });
+
+    it("keeps the fake in fake mode", () => {
+      expect(createContentClassifier(fakeCfg)).toBeInstanceOf(FakeContentClassifier);
     });
   });
 });

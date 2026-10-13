@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { ProviderError } from "../../../common/errors/provider.error";
 import { withRetry, type RetryPolicy } from "../../../common/retry";
+import { ADAPTER_RETRY } from "./adapter-retry";
 import type { AnalysisContext, SafetyProvider, SafetyProviderResult } from "./interfaces";
 import { postOpenAiJson, type FetchFn } from "./openai-http";
 
@@ -34,9 +35,6 @@ const ModerationResponseSchema = z.object({
     )
     .min(1),
 });
-
-/** Doc 07 §8: base 2 s, cap 30 s; a Retry-After above 60 s is left to the job-level backoff. */
-const ADAPTER_RETRY: Partial<RetryPolicy> = { baseDelayMs: 2_000, maxDelayMs: 30_000, maxRetryAfterMs: 60_000 };
 
 export class OpenAiModerationProvider implements SafetyProvider {
   readonly name = "openai";

@@ -1,0 +1,22 @@
+{
+  "id": "chatcmpl-fixture-lang-ko",
+  "object": "chat.completion",
+  "created": 1760313600,
+  "model": "gpt-fixture-2026-01-01",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"relevance\": {\"label\": \"relevant\", \"confidence\": 0.85, \"explanation\": \"Korean fan asks about a 1Zone show.\"}, \"sentiment\": {\"label\": \"positive\", \"confidence\": 0.9}, \"intents\": [{\"label\": \"question\", \"confidence\": 0.8}], \"topics\": [{\"label\": \"event\", \"confidence\": 0.8}], \"language\": \"ko\", \"summary\": \"A Korean fan is excited about the 1Zone show.\"}",
+        "refusal": null
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 1200,
+    "completion_tokens": 80,
+    "total_tokens": 1280
+  }
+}

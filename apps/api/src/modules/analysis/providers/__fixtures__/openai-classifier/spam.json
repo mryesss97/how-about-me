@@ -1,0 +1,22 @@
+{
+  "id": "chatcmpl-fixture-spam",
+  "object": "chat.completion",
+  "created": 1760313600,
+  "model": "gpt-fixture-2026-01-01",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"relevance\": {\"label\": \"relevant\", \"confidence\": 0.7, \"explanation\": \"Scalper ad reselling 1Zone tickets.\"}, \"sentiment\": {\"label\": \"neutral\", \"confidence\": 0.9}, \"intents\": [{\"label\": \"spam\", \"confidence\": 0.92}], \"topics\": [{\"label\": \"ticket\", \"confidence\": 0.85}], \"language\": \"vi\", \"summary\": \"A reseller advertises cheap 1Zone tickets.\"}",
+        "refusal": null
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 1200,
+    "completion_tokens": 80,
+    "total_tokens": 1280
+  }
+}
