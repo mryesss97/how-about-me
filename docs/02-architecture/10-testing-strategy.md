@@ -64,8 +64,21 @@
 
 ## 7. Test data & environments
 
-Local: Docker Postgres (`docker compose up db`) + `PROVIDERS_MODE=fake`. CI: Postgres service container. Staging: real Supabase + real providers with small budget; QC runs manual test cases there. Production: smoke only (read-only).
+Local: Docker Postgres (`pnpm db:up`) + `PROVIDERS_MODE=fake`. CI: Postgres service container. Staging: real Supabase + real providers with small budget; QC runs manual test cases there. Production: smoke only (read-only).
 
 ## 8. Definition of "tested" for a story
 
 Unit tests for logic, integration test for persistence/HTTP behaviour, manual QC test cases executed on staging and linked in the issue, analytics reconciliation for any metric change.
+
+## 9. Running the API integration suite
+
+| Where | Command                                                                              | Database                                                                                                      |
+| ----- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| Local | `pnpm db:up` then `pnpm test:int`                                                    | `how_about_me_test` in Docker Postgres (created by `docker/postgres/init`); override with `TEST_DATABASE_URL` |
+| CI    | `ci.yml` job `test`, step `API integration tests` (`pnpm test:int`) after unit tests | Postgres service container                                                                                    |
+
+- `pnpm test:int` runs the Turborepo task `test:int` (`dependsOn: ^build`, never cached), so `packages/contracts` and `packages/taxonomy` are built before Jest resolves them. It is not part of `pnpm verify` or the `pre-push` hook because it needs Postgres.
+- `test/global-setup.ts` applies migrations to the test database; `test/setup-after-env.ts` sets `PROVIDERS_MODE=fake` and the test JWT secret. Suites run `--runInBand` and reset tables with `resetDb()`.
+- **ESM-only dependencies.** Jest 30 runs tests in a CommonJS module registry. `jose` (Supabase JWT verification) ships ESM only, so `require("jose")` from the compiled `AppModule` fails with `Must use import to load ES Module`. `apps/api/jest.config.ts` lets `ts-jest` compile `jose` to CJS (`transformIgnorePatterns` allow-list plus a `.js` transform, target `es2022`). Production is unaffected: `nest build` emits CJS and Node 24 loads `jose` through native `require(esm)`.
+- Decision (2026-10-13, #137). Rejected alternative: run Jest with `--experimental-vm-modules` and raise `engines.node` to `>=24.9`. Jest only takes its `require(esm)` path when both hold (verified: Node 24.4.1 fails even with the flag; 24.21.0 passes). It relies on an experimental Node API, prints an `ExperimentalWarning`, needs `NODE_OPTIONS` plumbing per platform, and forces every developer onto 24.9+. The transform works on any Node 24.x with stock Jest. Cost: tests exercise a CJS-compiled copy of `jose` (module syntax only, no down-levelling). Revisit if `jose` adds top-level `await` (it cannot compile to CJS) or when Jest's ESM support is stable.
+- New ESM-only dependency imported by API code: add its name to the `transformIgnorePatterns` allow-list.
