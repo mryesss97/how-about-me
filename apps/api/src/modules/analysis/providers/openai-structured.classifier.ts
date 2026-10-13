@@ -5,7 +5,12 @@ import {
   parseClassifierOutput,
   type ClassifierOutput,
 } from "@how-about-me/contracts";
-import { DEFAULT_PROMPT_VERSION, effectiveRelevance } from "@how-about-me/taxonomy";
+import {
+  CONFIDENCE_BANDS,
+  DEFAULT_PROMPT_VERSION,
+  effectiveRelevance,
+  type ConfidenceBands,
+} from "@how-about-me/taxonomy";
 import { ProviderError } from "../../../common/errors/provider.error";
 import { withRetry, type RetryPolicy } from "../../../common/retry";
 import { loadPrompt, renderMessages, type ClassifierPrompt } from "../prompts/prompt-loader";
@@ -126,7 +131,10 @@ export class OpenAiStructuredClassifier implements ContentClassifier {
     const parsed = RelevanceOutputSchema.safeParse(content);
     if (!parsed.success) throw schemaInvalid(parsed.error.issues);
     return {
-      relevance: banded({ ...parsed.data.relevance, explanation: parsed.data.relevance.explanation.trim() }),
+      relevance: banded(
+        { ...parsed.data.relevance, explanation: parsed.data.relevance.explanation.trim() },
+        input.confidenceBands,
+      ),
       language: parsed.data.language,
       usage,
     };
@@ -140,7 +148,7 @@ export class OpenAiStructuredClassifier implements ContentClassifier {
       throw new ProviderError("ANALYSIS_SCHEMA_INVALID", `Classifier output invalid: ${parsed.issues.join("; ")}`, {
         details: { issues: parsed.issues },
       });
-    const out = { ...parsed.value, relevance: banded(parsed.value.relevance) };
+    const out = { ...parsed.value, relevance: banded(parsed.value.relevance, input.confidenceBands) };
     // FR-110: no summary for irrelevant posts, nor for spam when configured.
     const dropSummary =
       out.relevance.label === "irrelevant" ||
@@ -193,9 +201,12 @@ export class OpenAiStructuredClassifier implements ContentClassifier {
   }
 }
 
-/** BR-021: a low-confidence relevance call is treated as `uncertain` before it is persisted. */
-function banded(relevance: ClassifierOutput["relevance"]): ClassifierOutput["relevance"] {
-  return { ...relevance, label: effectiveRelevance(relevance.label, relevance.confidence) };
+/** BR-021: a low-confidence relevance call is treated as `uncertain` before it is persisted (project bands, FR-190). */
+function banded(
+  relevance: ClassifierOutput["relevance"],
+  bands: ConfidenceBands = CONFIDENCE_BANDS,
+): ClassifierOutput["relevance"] {
+  return { ...relevance, label: effectiveRelevance(relevance.label, relevance.confidence, bands) };
 }
 
 function schemaInvalid(issues: z.core.$ZodIssue[]): ProviderError {

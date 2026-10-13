@@ -16,7 +16,7 @@ Design: see docs/02-architecture/02-backend-design.md §3 and the related pipeli
 
 - `analysis-state.ts` — state machine (`ANALYSIS_TRANSITIONS`, FR-100).
 - `analysis.service.ts` — `AnalysisService`: enqueue with version dedupe (implements the `ANALYSIS_ENQUEUER` port, BR-023/BR-024/FR-116), `claimBatch` (`FOR UPDATE SKIP LOCKED`, FR-101), guarded transitions `markCompleted` / `markSkipped` / `markFailed` / `requeue`, watchdog `requeueStuck`.
-- `markCurrentStale` (content change, FR-078) and `markVersionStale(oldVersion, { projectId? })` (version change helper, T-078; endpoint/bulk enqueue are P1).
+- `markCurrentStale` (content change, FR-078) and `markVersionStale(oldVersion, { projectId? })` (version change helper, T-078; endpoint/bulk enqueue are P1). Refuses a version that is current for the given project, or for any project when `projectId` is omitted (T-151).
 - `analysis-worker.service.ts` — poll loop; see `../../jobs/README.md`.
 - `run-processor.ts` — `ANALYSIS_RUN_PROCESSOR` port; real pipeline in T-074.
 
@@ -29,3 +29,12 @@ Design: see docs/02-architecture/02-backend-design.md §3 and the related pipeli
 - `analysis-failure-policy.ts` — `decideFailure` (retry / fail / fail_and_pause), `backoffMs`, `AnalysisLockLostError` (doc 07 §8, FR-113).
 - `analysis-pause.service.ts` — `AnalysisPauseService.getState()`: daily budget (UTC) and provider-auth pause, read from the DB (doc 07 §9). Port for System Status (T-077).
 - Tests: `analysis-failure-policy.spec.ts`, `analysis-worker.service.spec.ts`, `test/integration/analysis-failures.int-spec.ts`.
+
+## Analysis settings (T-151, FR-190)
+
+- `settings/analysis-settings.controller.ts` — `GET /projects/:projectId/settings/analysis` (any member), `PATCH` (`@Roles("admin")`). Contract: doc 05 "Analysis settings".
+- `settings/analysis-settings.service.ts` — merges the body into the active policy, re-validates, and on change appends `safety-policy-v{n}` + audits `analysis_settings.updated` in one transaction (project row locked). No-op → no row, no audit. Never stales/enqueues (re-analysis is T-145).
+- `settings/analysis-settings.repository.ts` — append-only `analysis_settings` access (no update/delete), `countOutdated`.
+- `settings/analysis-policy.ts` — pure `toAnalysisPolicy` / `mergePolicy` / `diffPolicy`.
+- `settings/analysis-policy.service.ts` — `AnalysisPolicyService.active(projectId)` (DB) and `byPolicyVersion(projectId, version)` (cached, immutable rows); v1 = taxonomy defaults.
+- Effective version is per project: `AnalysisService.effectiveVersionFor(projectId, tx)`; `enqueueDetailed` returns it. The pipeline processes a run with the policy named in its `effective_version` (BR-023), passes bands to the classifier and thresholds to `toSafetyAnalysis`.

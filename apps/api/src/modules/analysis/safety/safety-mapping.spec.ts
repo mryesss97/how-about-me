@@ -72,4 +72,20 @@ describe("toSafetyAnalysis (T-071, BR-018)", () => {
     // @ts-expect-error toSafetyAnalysis takes no sentiment (BR-017)
     toSafetyAnalysis({ flagged: false, categoryScores: {}, categories: {} }, { sentiment: "negative" });
   });
+
+  it("FR-190 / BR-018: a per-project policy v2 is applied and its version recorded", () => {
+    const policy = {
+      policyVersion: "safety-policy-v2",
+      safetyThresholds: { ...SAFETY_POLICY_V1, hate: { sensitive: 0.4, severe: 0.7 } },
+    };
+    const result = { flagged: false, categoryScores: { hate: 0.75 }, categories: {} };
+    expect(toSafetyAnalysis(result, policy)).toMatchObject({
+      safetyLevel: "severe",
+      safetyPolicyVersion: "safety-policy-v2",
+    });
+    expect(toSafetyAnalysis(result)).toMatchObject({
+      safetyLevel: "sensitive",
+      safetyPolicyVersion: "safety-policy-v1",
+    });
+  });
 });

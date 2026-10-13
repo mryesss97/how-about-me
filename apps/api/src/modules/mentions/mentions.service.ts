@@ -82,7 +82,7 @@ export class MentionsService {
           action: "analysis.reanalyze_requested",
           entityType: "social_post",
           entityId: post.id,
-          metadata: { runId: res.runId, effectiveVersion: this.analysis.effectiveVersion },
+          metadata: { runId: res.runId, effectiveVersion: res.effectiveVersion },
           requestId,
         },
         tx,

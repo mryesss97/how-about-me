@@ -93,7 +93,7 @@ Rules: ≥ 1 label; `other` exclusive.
 | medium | 0.60–0.79 | accepted; UI shows a subtle "medium confidence" marker                                          |
 | low    | < 0.60    | relevance → treated as `uncertain`; other dimensions kept but item appears in review queue (P1) |
 
-`overall_model_confidence = min(relevance.confidence, sentiment.confidence)` for list sorting. Bands live in `analysis_settings` (P1 configurable; v1 constants in `packages/taxonomy`).
+`overall_model_confidence = min(relevance.confidence, sentiment.confidence)` for list sorting. Bands live in `analysis_settings` (configurable per project by admins, FR-190 / T-151; v1 constants in `packages/taxonomy` apply when a project has no row). Bands are applied when a run is analysed, so a change only affects new runs or re-analysis.
 
 ## 9. Safety policy v1 (`safety-policy-v1`)
 
@@ -115,13 +115,13 @@ Provider: OpenAI `omni-moderation-latest` → categories with scores in `[0,1]`.
 | `illicit`                | ≥ 0.50              | —                |
 | `illicit/violent`        | ≥ 0.40              | ≥ 0.70           |
 
-Mapping: `severe` if any severe threshold crossed; else `sensitive` if any sensitive threshold crossed or provider `flagged=true`; else `safe`. Thresholds are starting points; QC tunes them against the evaluation set before M3 exit; every change bumps the policy version. Sentiment is never an input to this mapping (BR-017).
+Mapping: `severe` if any severe threshold crossed; else `sensitive` if any sensitive threshold crossed or provider `flagged=true`; else `safe`. Thresholds are starting points; QC tunes them against the evaluation set before M3 exit; every change bumps the policy version. v1 is the default for every project; admins create `safety-policy-v2`, `-v3`, … per project via `PATCH …/settings/analysis` (FR-190). Sentiment is never an input to this mapping (BR-017).
 
 ## 10. Versioning & migration rules
 
 - `taxonomy_version` changes when any label is added/removed/redefined. Old analyses stay valid but are `stale`-eligible for re-analysis.
 - `prompt_version` changes when the prompt text/schema/model instructions change.
-- `safety_policy_version` changes when thresholds or provider mapping change.
+- `safety_policy_version` changes when thresholds, confidence bands or provider mapping change (one shared version for bands and thresholds, numbered per project — FR-190).
 - Effective version key: `classifier_provider|classifier_model|prompt_version|taxonomy_version|safety_provider|safety_model|safety_policy_version`.
 - Unknown labels from the model are rejected (validation), never silently stored.
 

@@ -98,6 +98,89 @@ exports[`contract surface > error codes and HTTP map 1`] = `
 }
 `;
 
+exports[`doc example fixtures > analysis-settings parses 1`] = `
+{
+  "confidenceBands": {
+    "high": 0.8,
+    "medium": 0.6,
+  },
+  "createdAt": "2026-10-13T03:00:00.000Z",
+  "createdBy": {
+    "displayName": "Admin",
+    "email": "admin@example.com",
+    "id": "0199c2a0-0000-7000-8000-000000000001",
+  },
+  "effectiveVersion": "openai|gpt-4.1-mini|classifier-v1|taxonomy-v1|openai-moderation|omni-moderation-latest|safety-policy-v2",
+  "isDefault": false,
+  "outdatedCount": 2,
+  "policyVersion": "safety-policy-v2",
+  "safetyThresholds": {
+    "harassment": {
+      "sensitive": 0.5,
+      "severe": null,
+    },
+    "harassment/threatening": {
+      "sensitive": 0.3,
+      "severe": 0.7,
+    },
+    "hate": {
+      "sensitive": 0.4,
+      "severe": 0.7,
+    },
+    "hate/threatening": {
+      "sensitive": 0.3,
+      "severe": 0.6,
+    },
+    "illicit": {
+      "sensitive": 0.5,
+      "severe": null,
+    },
+    "illicit/violent": {
+      "sensitive": 0.4,
+      "severe": 0.7,
+    },
+    "self-harm": {
+      "sensitive": 0.3,
+      "severe": 0.7,
+    },
+    "self-harm/instructions": {
+      "sensitive": null,
+      "severe": 0.4,
+    },
+    "self-harm/intent": {
+      "sensitive": null,
+      "severe": 0.4,
+    },
+    "sexual": {
+      "sensitive": 0.5,
+      "severe": null,
+    },
+    "sexual/minors": {
+      "sensitive": null,
+      "severe": 0.3,
+    },
+    "violence": {
+      "sensitive": 0.5,
+      "severe": 0.85,
+    },
+    "violence/graphic": {
+      "sensitive": 0.4,
+      "severe": 0.8,
+    },
+  },
+  "version": 2,
+  "versions": {
+    "classifierModel": "gpt-4.1-mini",
+    "classifierProvider": "openai",
+    "promptVersion": "classifier-v1",
+    "safetyModel": "omni-moderation-latest",
+    "safetyPolicyVersion": "safety-policy-v2",
+    "safetyProvider": "openai-moderation",
+    "taxonomyVersion": "taxonomy-v1",
+  },
+}
+`;
+
 exports[`doc example fixtures > audit-page parses 1`] = `
 {
   "items": [

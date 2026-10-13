@@ -77,6 +77,8 @@ export type ClassifierInput = {
   matchedTerms: string[];
   brandContext: string;
   languageHint?: string;
+  correction?: { issues: string[] }; // FR-113 corrective retry
+  confidenceBands?: { high: number; medium: number }; // project policy bands for BR-021 banding; never sent to the model
 };
 export type Usage = { inputTokens: number; outputTokens: number; estimatedCostUsd: number };
 ```
@@ -192,17 +194,21 @@ Corrective retry (FR-113, T-075): on invalid output the pipeline re-sends the sa
 
 The real adapter is `OpenAiModerationProvider` (`apps/api/src/modules/analysis/providers/openai-moderation.provider.ts`, T-071): native `fetch` to `POST {OPENAI_BASE_URL}/moderations` with `{ model: SAFETY_MODEL, input: text }` (only the text is sent). The thin HTTP helper `openai-http.ts` (timeout via `AbortController`, error mapping; reused by T-072) maps 429/5xx/timeout/network → `ANALYSIS_PROVIDER_ERROR` (retryable, `Retry-After` honoured), 401/403 → `ANALYSIS_PROVIDER_AUTH`, other 4xx → `ANALYSIS_PROVIDER_BAD_REQUEST`, invalid JSON/shape → `ANALYSIS_SCHEMA_INVALID`. Error messages carry only the HTTP status and OpenAI's `error.type`/`error.code` (never its free-text `message`, which can quote the input), plus `x-request-id` in `subcode`; the timeout covers the body read too. Scores are clamped to `[0,1]`; `raw` keeps only `{ id, model }` (actual snapshot, for audit). Empty text returns an empty, unflagged result without calling the API (T-074 decides whether to skip). Unknown categories are kept in `scores` but ignored by the policy.
 
-`toSafetyAnalysis(result)` (`apps/api/src/modules/analysis/safety/safety-mapping.ts`) turns a provider result into the persisted fields `safetyFlagged`, `safetyLevel`, `safetyPolicyVersion`, `safetyCategoryScores = { scores, triggered }`; it takes no sentiment input (BR-017). T-074 calls it when writing `post_analyses`.
+`toSafetyAnalysis(result, policy?)` (`apps/api/src/modules/analysis/safety/safety-mapping.ts`) turns a provider result into the persisted fields `safetyFlagged`, `safetyLevel`, `safetyPolicyVersion`, `safetyCategoryScores = { scores, triggered }`; it takes no sentiment input (BR-017). `policy` (`{ safetyThresholds, policyVersion }`) defaults to v1; T-074 passes the run's project policy (FR-190, below). The eval CLI keeps v1.
+
+**Per-project policy (FR-190, T-151).** Admins edit confidence bands and safety thresholds per project (`GET/PATCH …/settings/analysis`, doc 05). Each change appends an `analysis_settings` row `safety-policy-v{n}` (doc 04 §4.16); no row → v1. `AnalysisPolicyService` (`settings/analysis-policy.service.ts`) resolves `active(projectId)` (always read from DB) and `byPolicyVersion(projectId, version)` (cached; rows are immutable). The pipeline loads the policy named by the **run's** `effective_version` (last segment), not the active one, so a run enqueued before a change finishes with the old policy and stamps it; it passes `confidenceBands` to the classifier (banding happens in the adapter) and the thresholds to `toSafetyAnalysis`.
 
 ## 7. Versioning & dedupe (BR-023, BR-024)
 
 ```text
-effective_version = `${classifier.provider}|${classifier.model}|${classifier.promptVersion}|${TAXONOMY_VERSION}|${safety.name}|${safety.model}|${SAFETY_POLICY_VERSION}`
+effective_version = `${classifier.provider}|${classifier.model}|${classifier.promptVersion}|${TAXONOMY_VERSION}|${safety.name}|${safety.model}|${projectPolicyVersion}`
 ```
+
+`projectPolicyVersion` is the project's active `safety-policy-v{n}` (v1 when no `analysis_settings` row), so the key is per project: `AnalysisService.effectiveVersionFor(projectId, tx)` is read once per enqueue inside the caller's transaction and `enqueueDetailed` returns it on success. Provider/model names must not contain `|` (the policy version is parsed from the last segment).
 
 - Enqueue checks: if a `completed` run exists for `(post_id, source_content_hash, effective_version)` and `trigger ∉ {manual, retry}` → do not enqueue (`skipped_reason='already_analyzed'` is not stored; nothing created).
 - `manual` / `retry` skip the completed check but still respect the partial unique (BR-024): an open run blocks them. `AnalysisService.enqueueDetailed` returns `already_open` / `already_analyzed` for FR-115 to map to `ANALYSIS_ALREADY_PENDING`.
-- Version change (deploy with new prompt/model): optional admin action `POST …/analysis-runs/mark-stale?version=<old>` (P1) marks runs stale and bulk enqueues within caps. The service helper `AnalysisService.markVersionStale(oldVersion, { projectId? })` exists (T-078): `pending`/`completed` runs of the old version → `stale` (never `processing`/`failed`/`skipped`), syncs `latest_run_status`, refuses the current version, and does not re-enqueue.
+- Version change (deploy with new prompt/model): optional admin action `POST …/analysis-runs/mark-stale?version=<old>` (P1) marks runs stale and bulk enqueues within caps. The service helper `AnalysisService.markVersionStale(oldVersion, { projectId? })` exists (T-078): `pending`/`completed` runs of the old version → `stale` (never `processing`/`failed`/`skipped`), syncs `latest_run_status`, refuses the current version, and does not re-enqueue. "Current" is per project: with `projectId` it compares with that project's effective version; without it, it refuses any version that is current for some project (including the v1 default).
 - `post_analyses` are never updated in place.
 
 ## 8. Retries & failures (FR-113)

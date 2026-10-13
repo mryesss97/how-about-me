@@ -31,6 +31,7 @@ erDiagram
     social_posts ||--o{ analysis_overrides : overridden
     monitoring_projects ||--o{ audit_logs : logs
     user_profiles ||--o{ audit_logs : acts
+    monitoring_projects ||--o{ analysis_settings : versions
 ```
 
 ## 3. Enums
@@ -178,6 +179,11 @@ Partial unique: `(post_id, field) WHERE revoked_at IS NULL`.
 ### 4.14 `audit_logs`
 
 | id uuid PK · project_id · actor_user_id · action text NN (`query.created`, `integration.updated`, …) · entity_type text · entity_id text · metadata jsonb · request_id text · created_at NN · index `(project_id, created_at DESC)`, `(action)` |
+
+### 4.16 `analysis_settings` (P1, FR-190)
+
+| id uuid PK · project_id FK NN (cascade) · version int NN · policy_version text NN (`safety-policy-v{version}`) · confidence_bands jsonb NN `{high, medium}` · safety_thresholds jsonb NN (every category of doc 08 §9 → `{sensitive, severe}`) · created_by FK user_profiles (set null) · created_at NN · unique `(project_id, version)`, `(project_id, policy_version)` |
+Append-only: one row per policy version, never updated or deleted. Active policy = highest `version`; a project with no row uses v1 (`safety-policy-v1`, constants in `packages/taxonomy`), which is never stored. Rows hold the full merged policy, not a patch. Version numbers are per project.
 
 ### 4.15 `analytics_daily` (P1.5)
 

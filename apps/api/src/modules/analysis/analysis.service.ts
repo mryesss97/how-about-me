@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { v7 as uuidv7 } from "uuid";
 import { APP_CONFIG, type AppConfig } from "../../config/config.module";
 import { PrismaService } from "../../database/prisma.service";
+import { TAXONOMY_VERSION } from "@how-about-me/taxonomy";
 import { computeEffectiveVersion, type AnalysisEnqueuer, type EnqueueInput } from "./analysis-enqueuer";
 import {
   CONTENT_CLASSIFIER,
@@ -11,6 +12,7 @@ import {
   type ContentClassifier,
   type SafetyProvider,
 } from "./providers/interfaces";
+import { AnalysisPolicyService } from "./settings/analysis-policy.service";
 
 /** A run claimed by a worker (`status='processing'`, `locked_by=workerId`). */
 export type ClaimedRun = {
@@ -26,7 +28,8 @@ export type ClaimedRun = {
 };
 
 export type EnqueueResult =
-  { created: true; runId: string } | { created: false; reason: "already_open" | "already_analyzed" };
+  | { created: true; runId: string; effectiveVersion: string }
+  | { created: false; reason: "already_open" | "already_analyzed" };
 
 export type RunUsage = { inputTokens?: number; outputTokens?: number; estimatedCostUsd?: number };
 
@@ -55,16 +58,35 @@ const FORCE_TRIGGERS: readonly AnalysisTrigger[] = ["manual", "retry"];
  */
 @Injectable()
 export class AnalysisService implements AnalysisEnqueuer {
-  readonly effectiveVersion: string;
-
   constructor(
     private readonly prisma: PrismaService,
     @Inject(APP_CONFIG) private readonly cfg: AppConfig,
-    @Inject(CONTENT_CLASSIFIER) classifier: ContentClassifier,
-    @Inject(SAFETY_PROVIDER) safety: SafetyProvider,
-  ) {
-    // BR-023: computed once per process from the bound providers.
-    this.effectiveVersion = computeEffectiveVersion(classifier, safety);
+    @Inject(CONTENT_CLASSIFIER) private readonly classifier: ContentClassifier,
+    @Inject(SAFETY_PROVIDER) private readonly safety: SafetyProvider,
+    private readonly policies: AnalysisPolicyService,
+  ) {}
+
+  /** BR-023 key for a given policy version, from the providers bound in this process. */
+  effectiveVersionOf(safetyPolicyVersion: string): string {
+    return computeEffectiveVersion(this.classifier, this.safety, safetyPolicyVersion);
+  }
+
+  /** BR-023: current effective_version of a project = bound providers + the project's active policy (FR-190). */
+  async effectiveVersionFor(projectId: string, tx?: Db): Promise<string> {
+    return this.effectiveVersionOf((await this.policies.active(projectId, tx)).policyVersion);
+  }
+
+  /** The 7 version fields for a run analysed under `safetyPolicyVersion` (same inputs as effectiveVersionOf). */
+  runVersions(safetyPolicyVersion: string): RunVersions {
+    return {
+      classifierProvider: this.classifier.provider,
+      classifierModel: this.classifier.model,
+      promptVersion: this.classifier.promptVersion,
+      taxonomyVersion: TAXONOMY_VERSION,
+      safetyProvider: this.safety.name,
+      safetyModel: this.safety.model,
+      safetyPolicyVersion,
+    };
   }
 
   async enqueue(tx: Db, input: EnqueueInput): Promise<boolean> {
@@ -74,19 +96,21 @@ export class AnalysisService implements AnalysisEnqueuer {
   /** [*] → pending. Returns why nothing was created so FR-115 can map it to `ANALYSIS_ALREADY_PENDING`. */
   async enqueueDetailed(tx: Db, input: EnqueueInput): Promise<EnqueueResult> {
     const force = FORCE_TRIGGERS.includes(input.trigger);
+    // BR-023: read once per enqueue inside the caller's tx; a policy change only affects runs created after it.
+    const ev = await this.effectiveVersionFor(input.projectId, tx);
     // FR-116: a completed run for the same (post, hash, version) suppresses enqueue unless forced.
     const completedGuard = force
       ? Prisma.empty
       : Prisma.sql`WHERE NOT EXISTS (
           SELECT 1 FROM analysis_runs
           WHERE post_id = ${input.postId}::uuid AND source_content_hash = ${input.contentHash}
-            AND effective_version = ${this.effectiveVersion} AND status = 'completed')`;
+            AND effective_version = ${ev} AND status = 'completed')`;
     // BR-024: the partial unique `analysis_runs_open_unique` blocks a second open run; the predicate
     // must be repeated in ON CONFLICT so Postgres can infer the partial index.
     const rows = await tx.$queryRaw<{ id: string }[]>(Prisma.sql`
       INSERT INTO analysis_runs (id, post_id, project_id, status, trigger, source_content_hash, source_revision, effective_version, requested_by)
       SELECT ${uuidv7()}::uuid, ${input.postId}::uuid, ${input.projectId}::uuid, 'pending'::analysis_status,
-             ${input.trigger}::analysis_trigger, ${input.contentHash}, ${input.revision}, ${this.effectiveVersion},
+             ${input.trigger}::analysis_trigger, ${input.contentHash}, ${input.revision}, ${ev},
              ${input.requestedBy ?? null}::uuid
       ${completedGuard}
       ON CONFLICT (post_id, source_content_hash, effective_version) WHERE status IN ('pending', 'processing')
@@ -99,13 +123,13 @@ export class AnalysisService implements AnalysisEnqueuer {
       const done = await tx.$queryRaw<{ n: number }[]>(Prisma.sql`
         SELECT count(*)::int AS n FROM analysis_runs
         WHERE post_id = ${input.postId}::uuid AND source_content_hash = ${input.contentHash}
-          AND effective_version = ${this.effectiveVersion} AND status IN ('pending', 'processing')`);
+          AND effective_version = ${ev} AND status IN ('pending', 'processing')`);
       return { created: false, reason: (done[0]?.n ?? 0) > 0 ? "already_open" : "already_analyzed" };
     }
     await tx.$executeRaw(
       Prisma.sql`UPDATE social_posts SET latest_run_status = 'pending' WHERE id = ${input.postId}::uuid`,
     );
-    return { created: true, runId: created.id };
+    return { created: true, runId: created.id, effectiveVersion: ev };
   }
 
   /**
@@ -126,14 +150,18 @@ export class AnalysisService implements AnalysisEnqueuer {
   /**
    * Version change helper (doc 07 §7, BR-023, FR-100): pending|completed runs of `oldVersion` → stale.
    * Does not re-enqueue (bulk enqueue within caps and the `mark-stale` endpoint are P1).
-   * Throws when `oldVersion` is the current effective version, so current results are never staled.
+   * Throws when `oldVersion` is a current effective version, so current results are never staled: with
+   * `projectId`, the project's current version; without it, the current version of any project (incl. v1 default).
    */
   async markVersionStale(
     oldVersion: string,
     opts: { projectId?: string } = {},
     tx: Db = this.prisma,
   ): Promise<{ marked: number }> {
-    if (oldVersion === this.effectiveVersion) {
+    const current = opts.projectId
+      ? new Set([await this.effectiveVersionFor(opts.projectId, tx)])
+      : new Set([...(await this.policies.activePolicyVersions())].map((v) => this.effectiveVersionOf(v)));
+    if (current.has(oldVersion)) {
       throw new Error("markVersionStale: refusing to mark the current effective_version stale");
     }
     const projectFilter = opts.projectId ? Prisma.sql`AND project_id = ${opts.projectId}::uuid` : Prisma.empty;

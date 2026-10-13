@@ -21,11 +21,12 @@ function setup(opts: { post?: MentionForReanalyze | null; open?: boolean; create
     transaction: jest.fn((fn: (t: Prisma.TransactionClient) => Promise<unknown>) => fn(tx)),
   };
   const analysis = {
-    effectiveVersion: "v1",
     enqueueDetailed: jest
       .fn()
       .mockResolvedValue(
-        opts.created === false ? { created: false, reason: "already_open" } : { created: true, runId: RUN },
+        opts.created === false
+          ? { created: false, reason: "already_open" }
+          : { created: true, runId: RUN, effectiveVersion: "v1" },
       ),
   };
   const audit = { record: jest.fn().mockResolvedValue(undefined) };

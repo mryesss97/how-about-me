@@ -1,3 +1,9 @@
+import {
+  DEFAULT_ANALYSIS_POLICY,
+  SAFETY_POLICY_V1,
+  TAXONOMY_VERSION,
+  type AnalysisPolicy,
+} from "@how-about-me/taxonomy";
 import type { PinoLogger } from "nestjs-pino";
 import { ProviderError } from "../../common/errors/provider.error";
 import type { AppConfig } from "../../config/config.module";
@@ -5,6 +11,7 @@ import type { PrismaService } from "../../database/prisma.service";
 import { AnalysisLockLostError } from "./analysis-failure-policy";
 import { AnalysisPipelineService } from "./analysis-pipeline.service";
 import type { AnalysisService, ClaimedRun } from "./analysis.service";
+import type { AnalysisPolicyService } from "./settings/analysis-policy.service";
 import { FakeContentClassifier } from "./providers/fake-classifier.provider";
 import { FakeSafetyProvider } from "./providers/fake-safety.provider";
 
@@ -15,9 +22,16 @@ const run: ClaimedRun = {
   trigger: "ingest",
   sourceContentHash: "h",
   sourceRevision: 1,
-  effectiveVersion: "v",
+  effectiveVersion: "fake|fake-classifier|classifier-v1|taxonomy-v1|fake|fake-moderation|safety-policy-v1",
   attemptCount: 1,
   lockedBy: "w1",
+};
+
+const V2_POLICY: AnalysisPolicy = {
+  version: 2,
+  policyVersion: "safety-policy-v2",
+  confidenceBands: { high: 0.9, medium: 0.7 },
+  safetyThresholds: { ...SAFETY_POLICY_V1, hate: { sensitive: 0.4, severe: 0.7 } },
 };
 
 function make(opts: { text?: string | null; revision?: number; twoStep?: boolean; missing?: boolean } = {}) {
@@ -46,6 +60,20 @@ function make(opts: { text?: string | null; revision?: number; twoStep?: boolean
     markSkipped: jest.fn(async () => true),
     markCompleted: jest.fn(async () => true),
     setCurrentAnalysis: jest.fn(async () => true),
+    runVersions: jest.fn((safetyPolicyVersion: string) => ({
+      classifierProvider: "fake",
+      classifierModel: "fake-classifier",
+      promptVersion: "classifier-v1",
+      taxonomyVersion: TAXONOMY_VERSION,
+      safetyProvider: "fake",
+      safetyModel: "fake-moderation",
+      safetyPolicyVersion,
+    })),
+  };
+  const policies = {
+    byPolicyVersion: jest.fn(async (_pid: string, v: string) =>
+      v === V2_POLICY.policyVersion ? V2_POLICY : DEFAULT_ANALYSIS_POLICY,
+    ),
   };
   const classifier = new FakeContentClassifier();
   const safety = new FakeSafetyProvider();
@@ -63,8 +91,9 @@ function make(opts: { text?: string | null; revision?: number; twoStep?: boolean
     safety,
     cfg,
     logger,
+    policies as unknown as AnalysisPolicyService,
   );
-  return { svc, tx, analysis, spies };
+  return { svc, tx, analysis, spies, policies };
 }
 
 describe("AnalysisPipelineService (T-074)", () => {
@@ -210,5 +239,24 @@ describe("AnalysisPipelineService corrective retry (FR-113, FR-119, T-075)", () 
     await expect(m.svc.process(run)).rejects.toMatchObject({ code: "ANALYSIS_SCHEMA_INVALID" });
     expect(m.spies.moderate).toHaveBeenCalledTimes(1);
     expect(m.spies.classify).toHaveBeenCalledTimes(1);
+  });
+
+  it("FR-190 / BR-023: uses the policy recorded in the run's effective_version and stamps it", async () => {
+    const m = make();
+    const v2Run = { ...run, effectiveVersion: run.effectiveVersion.replace("safety-policy-v1", "safety-policy-v2") };
+    await m.svc.process(v2Run);
+    expect(m.policies.byPolicyVersion).toHaveBeenCalledWith(run.projectId, "safety-policy-v2");
+    expect(m.spies.classify.mock.calls[0]?.[0].confidenceBands).toEqual({ high: 0.9, medium: 0.7 });
+    const opts = m.analysis.markCompleted.mock.calls[0] as unknown[];
+    expect(opts[4]).toMatchObject({ versions: { safetyPolicyVersion: "safety-policy-v2" } });
+  });
+
+  it("BR-023: a v1 run stamps safety-policy-v1 with default bands", async () => {
+    const m = make();
+    await m.svc.process(run);
+    expect(m.policies.byPolicyVersion).toHaveBeenCalledWith(run.projectId, "safety-policy-v1");
+    expect(m.spies.classify.mock.calls[0]?.[0].confidenceBands).toEqual({ high: 0.8, medium: 0.6 });
+    const opts = m.analysis.markCompleted.mock.calls[0] as unknown[];
+    expect(opts[4]).toMatchObject({ versions: { safetyPolicyVersion: "safety-policy-v1" } });
   });
 });

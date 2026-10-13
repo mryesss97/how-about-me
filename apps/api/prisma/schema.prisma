@@ -155,6 +155,7 @@ model MonitoringProject {
   overrides       AnalysisOverride[]
   auditLogs       AuditLog[]
   collectorStates CollectorState[]
+  analysisSettings AnalysisSetting[]
 
   @@map("monitoring_projects")
 }
@@ -170,6 +171,7 @@ model UserProfile {
 
   memberships ProjectMember[]
   auditLogs   AuditLog[]
+  analysisSettings AnalysisSetting[]
 
   @@map("user_profiles")
 }
@@ -524,6 +526,27 @@ model AnalysisOverride {
   // Partial unique (post_id, field) WHERE revoked_at IS NULL → raw SQL migration.
   @@index([postId, field])
   @@map("analysis_overrides")
+}
+
+// ───────────────────────── analysis settings ─────────────────────────
+/// Append-only per-project analysis policy versions (FR-190, BR-018, BR-021). Active = highest `version`;
+/// no row → v1 defaults from packages/taxonomy. Rows are never updated or deleted.
+model AnalysisSetting {
+  id               String   @id @db.Uuid
+  projectId        String   @map("project_id") @db.Uuid
+  version          Int
+  policyVersion    String   @map("policy_version")
+  confidenceBands  Json     @map("confidence_bands")
+  safetyThresholds Json     @map("safety_thresholds")
+  createdBy        String?  @map("created_by") @db.Uuid
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  project MonitoringProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator UserProfile?      @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@unique([projectId, version])
+  @@unique([projectId, policyVersion])
+  @@map("analysis_settings")
 }
 
 // ───────────────────────── audit ─────────────────────────
