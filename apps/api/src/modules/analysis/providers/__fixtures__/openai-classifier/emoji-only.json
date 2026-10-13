@@ -1,0 +1,22 @@
+{
+  "id": "chatcmpl-fixture-emoji-only",
+  "object": "chat.completion",
+  "created": 1760313600,
+  "model": "gpt-fixture-2026-01-01",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"relevance\": {\"label\": \"uncertain\", \"confidence\": 0.4, \"explanation\": \"Emoji-only reply.\"}, \"sentiment\": {\"label\": \"positive\", \"confidence\": 0.9}, \"intents\": [{\"label\": \"other\", \"confidence\": 0.5}], \"topics\": [{\"label\": \"other\", \"confidence\": 0.5}], \"language\": \"unknown\", \"summary\": \"\"}",
+        "refusal": null
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 1200,
+    "completion_tokens": 80,
+    "total_tokens": 1280
+  }
+}

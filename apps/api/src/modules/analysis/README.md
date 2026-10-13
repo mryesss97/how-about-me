@@ -8,7 +8,9 @@ Design: see docs/02-architecture/02-backend-design.md §3 and the related pipeli
 - `providers/fake-safety.provider.ts`, `providers/fake-classifier.provider.ts` — offline fakes (`PROVIDERS_MODE=fake`, T-013).
 - `providers/openai-moderation.provider.ts` — real `SafetyProvider` over OpenAI `/v1/moderations` (T-071), HTTP via `providers/openai-http.ts`.
 - `safety/safety-mapping.ts` — `toSafetyAnalysis()` maps a provider result to the persisted safety fields (BR-017, BR-018).
-- Real classifier: T-072.
+- `providers/openai-structured.classifier.ts` — real `ContentClassifier` over OpenAI `/chat/completions` with strict JSON-schema outputs (T-072); fixtures in `providers/__fixtures__/openai-classifier/` (hand-written until T-081).
+- `providers/adapter-retry.ts` — in-adapter retry policy shared by both OpenAI adapters.
+- `prompts/classifier-v1.md` + `prompts/prompt-loader.ts` — versioned prompt (frozen; edit → `classifier-v2`) and its loader/renderer.
 
 ## Runs (T-070)
 

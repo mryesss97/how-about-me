@@ -1,0 +1,22 @@
+{
+  "id": "chatcmpl-fixture-irrelevant-timezone",
+  "object": "chat.completion",
+  "created": 1760313600,
+  "model": "gpt-fixture-2026-01-01",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"relevance\": {\"label\": \"irrelevant\", \"confidence\": 0.95, \"explanation\": \"\\\"1zone\\\" refers to a time zone.\"}, \"sentiment\": {\"label\": \"neutral\", \"confidence\": 0.9}, \"intents\": [{\"label\": \"information\", \"confidence\": 0.8}], \"topics\": [{\"label\": \"other\", \"confidence\": 0.9}], \"language\": \"vi\", \"summary\": \"A meeting time note.\"}",
+        "refusal": null
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 1200,
+    "completion_tokens": 80,
+    "total_tokens": 1280
+  }
+}

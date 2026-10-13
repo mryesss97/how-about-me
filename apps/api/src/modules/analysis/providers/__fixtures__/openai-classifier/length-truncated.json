@@ -1,0 +1,22 @@
+{
+  "id": "chatcmpl-fixture-length-truncated",
+  "object": "chat.completion",
+  "created": 1760313600,
+  "model": "gpt-fixture-2026-01-01",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"relevance\":",
+        "refusal": null
+      },
+      "finish_reason": "length"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 1200,
+    "completion_tokens": 80,
+    "total_tokens": 1280
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "chatcmpl-fixture-relevant-praise",
+  "object": "chat.completion",
+  "created": 1760313600,
+  "model": "gpt-fixture-2026-01-01",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"relevance\": {\"label\": \"relevant\", \"confidence\": 0.93, \"explanation\": \"Praises a 1Zone concert.\"}, \"sentiment\": {\"label\": \"positive\", \"confidence\": 0.9}, \"intents\": [{\"label\": \"praise\", \"confidence\": 0.95}], \"topics\": [{\"label\": \"artist\", \"confidence\": 0.88}, {\"label\": \"performance\", \"confidence\": 0.8}], \"language\": \"vi\", \"summary\": \"The author praises last night's 1Zone concert.\"}",
+        "refusal": null
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 1200,
+    "completion_tokens": 80,
+    "total_tokens": 1280
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "chatcmpl-fixture-uncertain",
+  "object": "chat.completion",
+  "created": 1760313600,
+  "model": "gpt-fixture-2026-01-01",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"relevance\": {\"label\": \"uncertain\", \"confidence\": 0.55, \"explanation\": \"Mentions a zone without clear brand context.\"}, \"sentiment\": {\"label\": \"neutral\", \"confidence\": 0.9}, \"intents\": [{\"label\": \"other\", \"confidence\": 0.6}], \"topics\": [{\"label\": \"other\", \"confidence\": 0.6}], \"language\": \"vi\", \"summary\": \"The author mentions a zone at an unspecified event.\"}",
+        "refusal": null
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 1200,
+    "completion_tokens": 80,
+    "total_tokens": 1280
+  }
+}

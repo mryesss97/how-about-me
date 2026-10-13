@@ -1,0 +1,22 @@
+{
+  "id": "chatcmpl-fixture-multi-label-question-purchase",
+  "object": "chat.completion",
+  "created": 1760313600,
+  "model": "gpt-fixture-2026-01-01",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"relevance\": {\"label\": \"relevant\", \"confidence\": 0.94, \"explanation\": \"Asks about ticket sale timing and price.\"}, \"sentiment\": {\"label\": \"neutral\", \"confidence\": 0.9}, \"intents\": [{\"label\": \"question\", \"confidence\": 0.93}, {\"label\": \"purchase_intent\", \"confidence\": 0.75}, {\"label\": \"other\", \"confidence\": 0.2}], \"topics\": [{\"label\": \"ticket\", \"confidence\": 0.92}, {\"label\": \"price\", \"confidence\": 0.8}], \"language\": \"en\", \"summary\": \"The author asks when tickets go on sale and how much VIP costs.\"}",
+        "refusal": null
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 1200,
+    "completion_tokens": 80,
+    "total_tokens": 1280
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "chatcmpl-fixture-invalid-schema",
+  "object": "chat.completion",
+  "created": 1760313600,
+  "model": "gpt-fixture-2026-01-01",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"relevance\": {\"label\": \"relevant\", \"confidence\": 0.9, \"explanation\": \"x\"}, \"sentiment\": {\"label\": \"positive\", \"confidence\": 0.9}, \"intents\": [{\"label\": \"hype\", \"confidence\": 0.9}], \"topics\": [{\"label\": \"ticket\", \"confidence\": 0.9}], \"language\": \"vi\", \"summary\": \"x\"}",
+        "refusal": null
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 1200,
+    "completion_tokens": 80,
+    "total_tokens": 1280
+  }
+}
