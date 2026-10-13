@@ -54,6 +54,10 @@ Feature folders never import from each other except via `lib/`. Untitled UI `com
 
 - `@supabase/ssr` browser client with **anon key** only (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`).
 - API client injects `Authorization: Bearer <access_token>`; on `401 AUTH_TOKEN_EXPIRED` → `supabase.auth.refreshSession()` once → retry → else redirect `/login?reason=expired`.
+- `src/proxy.ts` (Next 16 proxy): refreshes the Supabase cookie via `getUser()` on every request; unauthenticated non-public paths → `/login?next=<path>`, signed-in `/login` → `/overview`. Any Supabase error counts as signed out.
+- `(app)/layout.tsx` is a second server-side guard (`getUser()`, `force-dynamic`) and mounts `AuthBridge`, which registers the token getter and a **deduped** refresh handler (concurrent 401s share one `refreshSession()`; retry exactly once).
+- Login (`features/auth/login-form.tsx`): generic "Invalid email or password", banner for `reason=expired`, no sign-up link, Google button only when `NEXT_PUBLIC_AUTH_GOOGLE_ENABLED=true` → `/auth/callback` (`exchangeCodeForSession`). `next` is sanitised (`safe-next.ts`: must resolve to a same-origin path via `new URL`, no `//` or `\`, never `/login` or `/auth/*`).
+- Sign out = `supabase.auth.signOut()` + `queryClient.clear()` + `location.replace("/login")` (no history entry with data, TC-AUTH-016).
 - `/me` result cached in `useMe()`; `useRole(projectId)` drives `<RequireRole roles={[...]}>` for UI gating (server remains the authority).
 - CI check: build output must not contain `SUPABASE_SERVICE_ROLE`, `THREADS_`, `OPENAI_` strings (script `scripts/check-fe-secrets.mjs`).
 
