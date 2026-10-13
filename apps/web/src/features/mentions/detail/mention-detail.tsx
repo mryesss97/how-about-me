@@ -8,7 +8,7 @@ import { ApiError } from "@/lib/api/client";
 import { env } from "@/lib/env";
 import { cx } from "@/utils/cx";
 import { AnalysisTabs } from "./analysis-tabs";
-import { canReanalyze, useMentionDetail, useReanalyze } from "./api";
+import { canOverride, canReanalyze, useCreateOverride, useMentionDetail, useReanalyze, useRevokeOverride } from "./api";
 import { OperationsToolbar } from "./operations-toolbar";
 import { OriginalPanel } from "./original-panel";
 import { StatusBanner } from "./status-banner";
@@ -23,6 +23,9 @@ export function MentionDetail({ mentionId, variant }: Props) {
   const tz = project?.timezone ?? env.NEXT_PUBLIC_DEFAULT_TIMEZONE;
   const q = useMentionDetail(pid, mentionId);
   const reanalyze = useReanalyze(pid, mentionId);
+  const createOverride = useCreateOverride(pid, mentionId);
+  const revokeOverride = useRevokeOverride(pid, mentionId);
+  const mayOverride = canOverride(role);
 
   if (q.error instanceof ApiError && q.error.code === "NOT_FOUND")
     return (
@@ -64,11 +67,25 @@ export function MentionDetail({ mentionId, variant }: Props) {
             canReanalyze={canReanalyze(role, settings)}
             onReanalyze={() => reanalyze.mutate()}
             isReanalyzing={reanalyze.isPending}
+            canOverride={mayOverride}
+            onOverride={(body) =>
+              createOverride.mutateAsync(body).then(
+                () => true,
+                () => false,
+              )
+            }
+            isOverriding={createOverride.isPending}
           />
           <div className={cx("grid gap-6", variant === "page" && "lg:grid-cols-2")}>
             <OriginalPanel mention={m} tz={tz} />
             <section aria-label="Analysis">
-              <AnalysisTabs mention={m} tz={tz} />
+              <AnalysisTabs
+                mention={m}
+                tz={tz}
+                canOverride={mayOverride}
+                onRevoke={(oid) => revokeOverride.mutate(oid)}
+                isRevoking={revokeOverride.isPending}
+              />
             </section>
           </div>
         </div>
