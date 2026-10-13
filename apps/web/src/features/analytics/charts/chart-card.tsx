@@ -4,6 +4,7 @@ import Link from "next/link";
 import { type ReactNode, useState } from "react";
 import { ToggleButton as AriaToggleButton } from "react-aria-components";
 import { Table } from "@/components/application/table/table";
+import { ButtonGroup, ButtonGroupItem } from "@/components/base/button-group/button-group";
 import { QueryState, type QueryStateError } from "@/features/shared/query-state";
 import { cx } from "@/utils/cx";
 
@@ -49,6 +50,12 @@ export type ChartCardProps = {
   emptyTitle?: string;
   table: ChartTable;
   className?: string;
+  /** #222: segmented "chart | table" toggle labels instead of the "View as table" button. */
+  viewToggle?: { chart: string; table: string };
+  /** #222: controls shown above the content in both chart and table mode (only when ready). */
+  toolbar?: ReactNode;
+  /** #222: content below the chart/table (only when ready). */
+  footer?: ReactNode;
   children: ReactNode;
 };
 
@@ -67,6 +74,9 @@ export function ChartCard({
   emptyTitle = "No mentions in this range",
   table,
   className,
+  viewToggle,
+  toolbar,
+  footer,
   children,
 }: ChartCardProps) {
   const [asTable, setAsTable] = useState(false);
@@ -79,7 +89,19 @@ export function ChartCard({
           <h3 className="text-md font-semibold text-primary">{title}</h3>
           {description ? <p className="text-sm text-tertiary">{description}</p> : null}
         </div>
-        {ready ? (
+        {ready && viewToggle ? (
+          <ButtonGroup
+            size="sm"
+            aria-label="View"
+            disallowEmptySelection
+            selectedKeys={[asTable ? "table" : "chart"]}
+            onSelectionChange={(keys) => setAsTable(keys.has("table"))}
+            className="shrink-0"
+          >
+            <ButtonGroupItem id="chart">{viewToggle.chart}</ButtonGroupItem>
+            <ButtonGroupItem id="table">{viewToggle.table}</ButtonGroupItem>
+          </ButtonGroup>
+        ) : ready ? (
           <AriaToggleButton
             isSelected={asTable}
             onChange={setAsTable}
@@ -89,6 +111,7 @@ export function ChartCard({
           </AriaToggleButton>
         ) : null}
       </header>
+      {ready && toolbar ? toolbar : null}
       <QueryState
         isLoading={isLoading}
         error={error}
@@ -106,6 +129,7 @@ export function ChartCard({
           children
         )}
       </QueryState>
+      {ready && footer ? footer : null}
     </section>
   );
 }

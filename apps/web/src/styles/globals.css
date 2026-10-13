@@ -67,3 +67,131 @@ input[type="search"]::-webkit-search-cancel-button {
 .recharts-surface path {
   outline: none;
 }
+
+/* Sentiment bubble map (#222): pseudo-3D bubbles. Only transform/opacity animate (compositor-only). */
+@keyframes bubble-in {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes bubble-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.bubble-3d {
+  --bubble-base: var(--color-bg-primary);
+  --bubble-spec: rgb(255 255 255 / 0.85);
+  position: relative;
+  border-radius: 9999px;
+  border: 1.5px solid color-mix(in oklab, var(--bubble-hue) 75%, transparent);
+  background:
+    radial-gradient(circle at 32% 26%, var(--bubble-spec) 0 7%, transparent 14%),
+    radial-gradient(
+      circle at 35% 30%,
+      color-mix(in oklab, var(--bubble-hue) calc(var(--bubble-mix) * 0.4), var(--bubble-base)),
+      color-mix(in oklab, var(--bubble-hue) var(--bubble-mix), var(--bubble-base)) 65%,
+      color-mix(in oklab, var(--bubble-hue) calc(var(--bubble-mix) + 12%), var(--bubble-base)) 100%
+    );
+  box-shadow:
+    inset -6px -8px 16px rgb(0 0 0 / 0.08),
+    inset 4px 6px 12px rgb(255 255 255 / 0.35),
+    0 10px 20px -8px rgb(16 24 40 / 0.25);
+}
+
+/* Dark mode: a softer specular highlight so it reads as gloss, not a white spot. */
+.dark-mode .bubble-3d {
+  --bubble-spec: rgb(255 255 255 / 0.28);
+}
+
+/* Stronger drop shadow on hover via opacity of a pseudo-element (box-shadow itself is never animated). */
+.bubble-3d::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 18px 28px -10px rgb(16 24 40 / 0.35);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.bubble-3d:hover::after,
+.bubble-3d:focus-visible::after,
+.bubble-3d[aria-pressed="true"]::after {
+  opacity: 1;
+}
+
+.bubble-3d:hover,
+.bubble-3d:focus-visible {
+  transform: scale(1.06) translateY(-4px);
+}
+
+.bubble-3d[aria-pressed="true"] {
+  transform: scale(1.1);
+  outline: 3px solid var(--color-utility-sky-500);
+  outline-offset: 3px;
+}
+
+/* Re-layout: position moves by transform; the radius change (filter chips only, ≤ 30 nodes) eases width/height
+   on the same curve so a bubble never jumps size mid-move. Idle float and hover stay transform-only. */
+.bubble-map[data-motion="full"] .bubble-pos {
+  transition:
+    transform 600ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    width 600ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    height 600ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 300ms ease;
+}
+
+.bubble-map[data-motion="full"] .bubble-float {
+  animation: bubble-float 6s ease-in-out infinite;
+  animation-delay: var(--bubble-phase, 0s);
+  will-change: transform;
+}
+
+.bubble-map[data-motion="full"]:hover .bubble-float,
+.bubble-map[data-motion="full"]:focus-within .bubble-float {
+  animation-play-state: paused;
+}
+
+.bubble-map[data-motion="full"] .bubble-3d {
+  transition: transform 200ms ease;
+}
+
+.bubble-map[data-motion="full"][data-entering="true"] .bubble-3d {
+  animation: bubble-in 500ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: var(--bubble-delay, 0ms);
+}
+
+.bubble-map[data-motion="full"] .bubble-3d::after {
+  transition: opacity 200ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bubble-map .bubble-pos,
+  .bubble-map .bubble-float,
+  .bubble-map .bubble-3d,
+  .bubble-map .bubble-3d::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Hovered, focused or selected bubble sits above its neighbours while it lifts/scales. */
+.bubble-map .bubble-pos:has(.bubble-3d:hover, .bubble-3d:focus-visible, .bubble-3d[aria-pressed="true"]) {
+  z-index: 2;
+}
