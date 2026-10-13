@@ -29,12 +29,12 @@ function signed(n: number, digits: number, suffix: string): string {
   return `${abs}${suffix}`;
 }
 
-/** Growth as a decimal (0.125 = +12.5%). `new` → "New" (FR-133). */
+/** Growth already in percent, 1 decimal (21.4 = +21.4%) — API contract 05 §overview, #78. `new` → "New" (FR-133). */
 export function formatGrowth(pct: number | null | undefined, state: GrowthState): string {
   if (state === "new") return "New";
   if (state === "flat") return "0%";
   if (pct == null || !Number.isFinite(pct)) return DASH;
-  return signed(pct * 100, 1, "%");
+  return signed(pct, 1, "%");
 }
 
 export function deltaDirection(diff: number | null | undefined): Direction {
