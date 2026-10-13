@@ -123,6 +123,7 @@ Chart details (T-101, decided 2026-10-13 on #88):
   - Click row → opens detail slide-out (route `/mentions/[id]` also works full-page).
 - Keyboard: `↑/↓` move focus, `Enter` opens detail, `Esc` closes.
 - Empty states per 2.3.
+- Implementation notes (T-147): "Export CSV" button (secondary, sm) next to the sort select, hidden when `!canExport` (admin, analyst; viewer only with `allowViewerExport`). Exports the current filters, search and sort (same pinned params as the visible list). Toasts: success "Export ready"; 413 "Too many mentions to export — Exports are limited to N rows. Narrow the date range or filters."; 429 "Export limit reached. Try again in N seconds."; 403 "You don't have permission to export."; other errors generic + request ID.
 - Implementation notes (T-103, decisions 2026-10-13 on #90):
   - Header count comes from `count=true` on the first page only. If the API omits `totalCount` (count timed out), the header shows "N+ mentions loaded" while more pages exist, or the exact "N mentions" once the last page is loaded.
   - Rows are de-duplicated by `id` across pages. "Load more" and infinite scroll share the same request; a failed further page shows an inline error with Retry and keeps the loaded rows. If the API rejects the cursor (`400 VALIDATION_ERROR` on `cursor`, e.g. a cursor from before a deploy, #195), the list starts over from the first page instead of showing an error.

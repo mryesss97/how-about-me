@@ -7,10 +7,12 @@ import { useOverview } from "@/features/analytics/api";
 import { OverviewBanners } from "@/features/analytics/overview-banners";
 import { useCurrentProject } from "@/features/auth/use-current-project";
 import { useRole } from "@/features/auth/use-role";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { ApiError } from "@/lib/api/client";
 import { useFilters } from "@/lib/filters/use-filters";
 import { flattenUnique, useMentionsList } from "./api";
 import { MentionsList } from "./mentions-list";
+import { canExport, ExportButton } from "./export-button";
 import { MentionsToolbar } from "./mentions-toolbar";
 
 /**
@@ -39,7 +41,8 @@ export function MentionsView() {
   const router = useRouter();
   const search = useSearchParams();
   const { project } = useCurrentProject();
-  const { role } = useRole();
+  const { role, settings } = useRole();
+  const hydrated = useHydrated();
   const { filters, setFilters, apiParams: liveParams } = useFilters("mentions");
   const { apiParams: liveAnalyticsParams } = useFilters("analytics");
   const filtersKey = JSON.stringify(filters);
@@ -80,6 +83,10 @@ export function MentionsView() {
         loaded={items.length}
         hasMore={list.hasNextPage}
         showCount={pagesLoaded || !list.isError}
+        actions={
+          // Same pinned params as the visible list so the CSV matches the shown count (FR-180).
+          hydrated && project && canExport(role, settings) ? <ExportButton pid={project.id} params={apiParams} /> : null
+        }
       />
       <MentionsList
         items={items}

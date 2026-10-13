@@ -74,7 +74,7 @@ export const PERMISSION_MATRIX: readonly PermissionEntry[] = [
     admin: "allow",
     analyst: "allow",
     viewer: { setting: "allowViewerExport" },
-    status: "planned",
+    status: "implemented",
   },
   { method: "GET", path: `${P}/sync-jobs`, ...ALL, status: "planned" },
   { method: "GET", path: `${P}/system-status`, ...ALL, status: "planned" },

@@ -121,6 +121,7 @@ const MatchRowSchema = z.object({
 });
 const LabelRowSchema = z.object({ analysis_id: z.string(), label: z.string(), confidence: nullableNum });
 const ErrorRowSchema = z.object({ post_id: z.string(), error_code: z.string().nullable() });
+const AnalyzedAtRowSchema = z.object({ id: z.string(), analyzed_at: z.date() });
 const CountRowSchema = z.object({ n: num });
 
 function group<T, V>(rows: T[], key: (r: T) => string, val: (r: T) => V): Map<string, V[]> {
@@ -227,9 +228,10 @@ export class MentionsRepository {
     sort: MentionSort,
     cursor: { keys: (string | number)[]; id: string } | null,
     limit: number,
+    db: Prisma.TransactionClient = this.prisma,
   ): Promise<MentionPageRow[]> {
     const spec = MENTION_SORT_SPECS[sort];
-    const rows = await this.prisma.$queryRaw<Record<string, unknown>[]>(
+    const rows = await db.$queryRaw<Record<string, unknown>[]>(
       withMentionsBase(
         scope,
         Prisma.sql`SELECT b.post_id::text AS post_id, p.platform::text AS platform, p.platform_post_id, p.username, p.permalink,
@@ -298,6 +300,16 @@ export class MentionsRepository {
       ...r,
       estimatedCostUsd: r.estimatedCostUsd == null ? null : Number(r.estimatedCostUsd.toString()),
     }));
+  }
+
+  /** T-147: `analyzed_at` of the given analyses = COALESCE(run.completed_at, analysis.created_at) (same as detail). */
+  async analyzedAtByAnalysis(analysisIds: string[]): Promise<Map<string, Date>> {
+    if (analysisIds.length === 0) return new Map();
+    const rows = await this.prisma.$queryRaw<unknown[]>(Prisma.sql`
+      SELECT pa.id::text AS id, COALESCE(r.completed_at, pa.created_at) AS analyzed_at
+        FROM post_analyses pa LEFT JOIN analysis_runs r ON r.id = pa.analysis_run_id
+       WHERE pa.id = ANY(${analysisIds}::uuid[])`);
+    return new Map(rows.map((r) => AnalyzedAtRowSchema.parse(r)).map((r) => [r.id, r.analyzed_at]));
   }
 
   /** Fixed number of batch queries per page (no N+1). */
