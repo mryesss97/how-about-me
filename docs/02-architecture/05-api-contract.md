@@ -167,6 +167,7 @@ Common query params (all optional): `from`, `to` (defaults last 7 d), `timezone`
 ```
 
 `growthPct: null, growthState:"new"` when previous = 0; rates `null` when denominator = 0.
+`growthPct` is a percentage rounded to 1 decimal (`21.4` = +21.4 %); `flat` when |growth| < 0.5 %. `kpis.mentionCount` growth is always computed; `range.previous` and each rate's `previous` are present only when `compare=true`. Any project role (viewer+) may call it. Definitions: metric-definitions §1–§2.
 
 ### `GET …/analytics/mentions-timeseries`
 
@@ -177,6 +178,8 @@ Common query params (all optional): `from`, `to` (defaults last 7 d), `timezone`
   "data": [{ "time": "2026-09-05T01:00:00+07:00", "mentions": 42, "previous": 37 }]
 }
 ```
+
+Query: common analytics query (§6) + `interval=hour|day` (optional). Omitted → `hour` if range ≤ 48 h, else `day`. `day` is always valid; `hour` only when range ≤ 31 days (≤ 744 points), otherwise `400 VALIDATION_ERROR`. Buckets are zero-filled in the requested timezone; the first bucket may be partial when `from` is not on a bucket boundary. `previous` is present only when `compare=true` (aligned by bucket position, metric-definitions §3.1). Roles: admin, analyst, viewer.
 
 ### `GET …/analytics/sentiment`
 
@@ -192,11 +195,22 @@ Common query params (all optional): `from`, `to` (defaults last 7 d), `timezone`
 }
 ```
 
+- `denominator` = `sentimentAnalyzed` (= positive + neutral + negative); labels in fixed taxonomy order.
+- `timeseries`: always returned; `interval` = `hour` when range ≤ 48 h else `day`; buckets are local-time starts in the request timezone, zero-filled over `[from, to)`.
+
 ### `GET …/analytics/safety` → `{ denominator, distribution:[{label:"safe"|"sensitive"|"severe",count,share}] }`
+
+`denominator` = `safetyAnalyzed` (= sum of the three counts); fixed taxonomy order.
 
 ### `GET …/analytics/intents` → `{ denominator, distribution:[{label,count,share}] }` (all labels)
 
+`denominator` = `intentAnalyzed` (posts with ≥ 1 intent). All 11 labels, count 0 included, sorted by count desc (ties keep taxonomy order). Shares may sum > 100 %.
+
 ### `GET …/analytics/topics` → `{ denominator, distribution:[{label,count,share}] }` (top 12 + other)
+
+`denominator` = `topicAnalyzed` (posts with ≥ 1 topic). Real topic labels (taxonomy `other` excluded) sorted by count desc (ties by taxonomy order), at most 12, then one `other` entry = `COUNT(DISTINCT post_id)` of posts tagged `other` or with a label outside the top 12 (distinct, not a sum). Shares may sum > 100 %.
+
+All four distribution endpoints (T-093): every label is returned even with count 0; `share` is `null` when `denominator` = 0; counts are `COUNT(DISTINCT post_id)` over the base set; roles admin / analyst / viewer.
 
 ### `GET …/analytics/languages` (P1) → same shape
 

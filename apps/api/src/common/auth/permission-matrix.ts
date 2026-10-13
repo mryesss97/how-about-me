@@ -39,6 +39,8 @@ export const PERMISSION_MATRIX: readonly PermissionEntry[] = [
   { method: "POST", path: `${P}/listening-queries/:queryId/restore`, ...ADMIN_ONLY, status: "implemented" },
   { method: "POST", path: `${P}/listening-queries/:queryId/run`, ...ADMIN_ONLY, status: "planned" },
   { method: "POST", path: `${P}/listening-queries/:queryId/backfill`, ...ADMIN_ONLY, status: "planned" },
+  { method: "GET", path: `${P}/analytics/overview`, ...ALL, status: "implemented" },
+  { method: "GET", path: `${P}/analytics/mentions-timeseries`, ...ALL, status: "implemented" },
   { method: "GET", path: `${P}/mentions`, ...ALL, status: "implemented" },
   { method: "GET", path: `${P}/mentions/:mentionId`, ...ALL, status: "planned" },
   {
@@ -76,6 +78,10 @@ export const PERMISSION_MATRIX: readonly PermissionEntry[] = [
   },
   { method: "GET", path: `${P}/sync-jobs`, ...ALL, status: "planned" },
   { method: "GET", path: `${P}/system-status`, ...ALL, status: "planned" },
+  { method: "GET", path: `${P}/analytics/sentiment`, ...ALL, status: "implemented" },
+  { method: "GET", path: `${P}/analytics/safety`, ...ALL, status: "implemented" },
+  { method: "GET", path: `${P}/analytics/intents`, ...ALL, status: "implemented" },
+  { method: "GET", path: `${P}/analytics/topics`, ...ALL, status: "implemented" },
   { method: "GET", path: `${P}/audit-logs`, ...ADMIN_ONLY, status: "implemented" },
   { method: "PATCH", path: `${P}/settings/analysis`, ...ADMIN_ONLY, status: "planned" },
 ];

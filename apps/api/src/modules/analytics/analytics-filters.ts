@@ -89,3 +89,21 @@ export function withBase(
 ): Prisma.Sql {
   return Prisma.sql`WITH ${buildBaseSetCte(scope, opts)} ${body}`;
 }
+
+/**
+ * CTE `buckets` — every local-time bucket start (timestamptz) covering [from, to) (FR-135 zero-fill).
+ * Series is stepped on local `timestamp` then converted back, so DST days stay one bucket; the last bucket
+ * contains `to − 1µs`; the first may start before `from` (partial). Same expression as `bucketExpr` → exact join.
+ * DISTINCT: on a spring-forward day the skipped local hour maps to the same instant as the next one.
+ */
+export function bucketSeriesCte(range: Range, interval: keyof typeof BUCKET_UNITS, timezone: string): Prisma.Sql {
+  const unit = Prisma.raw(`'${BUCKET_UNITS[interval]}'`);
+  const step = Prisma.raw(`interval '1 ${BUCKET_UNITS[interval]}'`);
+  return Prisma.sql`buckets AS (
+    SELECT DISTINCT (gs AT TIME ZONE ${timezone}) AS bucket
+      FROM generate_series(
+        date_trunc(${unit}, ${range.from}::timestamptz AT TIME ZONE ${timezone}),
+        date_trunc(${unit}, (${range.to}::timestamptz - interval '1 microsecond') AT TIME ZONE ${timezone}),
+        ${step}) gs
+  )`;
+}

@@ -75,9 +75,18 @@ analyzedMentions = distinct posts in range with a completed effective analysis (
 pendingMentions  = distinct posts in range whose latest run status ∈ {pending, processing}
 failedMentions   = distinct posts in range whose latest run status = failed
 irrelevantMentions = distinct posts in range with relevance = irrelevant   (for transparency)
+uncertainMentions  = distinct posts in range with relevance = uncertain    (for transparency)
 ```
 
-Plus `dataQuality`: `lastSyncStatus` (success/partial/failed/none in last 2 × max poll interval), `integrationStatus`.
+Coverage counts (except `relevantMentions`) ignore relevance, analysis-status and label filters (pending/failed posts have no labels); query and time filters still apply. A post that already has an effective analysis counts as analyzed even while a re-run is pending, so pending/failed count only posts without one.
+
+Plus `dataQuality`: `lastSyncStatus` (success/partial/failed/none in last 2 × max poll interval of enabled queries, default 600 s), `integrationStatus` (Threads connection; no row → `disconnected`), `collectorStatus`:
+
+- `paused` — collector circuit breaker open (`collector_state.circuit_open_until > now`);
+- `degraded` — `lastSyncStatus ∈ {failed, partial}` or Threads integration ≠ `connected`;
+- `healthy` — otherwise.
+
+`kpis.mentionCount.previous/growthPct/growthState` are always returned (growth vs the previous period, §5) even when `compare=false`; rate `previous` values and `range.previous` only when `compare=true`.
 
 ## 3. Charts (P0)
 
@@ -85,6 +94,9 @@ Plus `dataQuality`: `lastSyncStatus` (success/partial/failed/none in last 2 × m
 
 - Bucket: `hour` if range ≤ 48 h, else `day`; computed with `date_trunc(bucket, published_at AT TIME ZONE tz)`.
 - Series: `mentions` = distinct posts per bucket from `B`. Zero-filled. Optional `previous` series aligned by offset when `compare=true`.
+- Bucketing uses the filter's `timeField` (`published_at` default, or `first_seen_at`).
+- Zero-fill: `generate_series` over local time from `date_trunc(bucket, from AT TIME ZONE tz)` to `date_trunc(bucket, (to − 1 µs) AT TIME ZONE tz)`, step 1 bucket, converted back with `AT TIME ZONE tz` and de-duplicated (DST-safe: one bucket per local day/hour; the skipped local hour on a spring-forward day yields no extra bucket). The first bucket may start before `from` (partial); the last bucket is the one containing `to − ε`. `sum(mentions) = |B|`.
+- `previous`: computed on the previous period (§5) with the **same** interval, aligned by bucket position (bucket i ↔ bucket i); missing → 0, extra buckets dropped (only around DST).
 
 ### 3.2 Sentiment distribution
 
@@ -92,7 +104,7 @@ Plus `dataQuality`: `lastSyncStatus` (success/partial/failed/none in last 2 × m
 
 ### 3.3 Sentiment over time
 
-Per bucket: counts for each label; stacked or 100 % stacked in UI (toggle).
+Per bucket: counts for each label (`COUNT(DISTINCT post_id)` from `B`, same buckets and zero-fill as §3.1, no `previous`); stacked or 100 % stacked in UI (toggle).
 
 ### 3.4 Safety distribution
 
@@ -100,11 +112,11 @@ Per bucket: counts for each label; stacked or 100 % stacked in UI (toggle).
 
 ### 3.5 Top topics
 
-For each topic label: `COUNT(DISTINCT post_id)` in `B` with that effective topic. Share = count / `topicAnalyzed` (posts with ≥ 1 topic). Shares may sum > 100 %. Return top 12 sorted desc, plus `other`.
+For each topic label: `COUNT(DISTINCT post_id)` in `B` with that effective topic. Share = count / `topicAnalyzed` (posts with ≥ 1 topic). Shares may sum > 100 %. Return top 12 sorted desc, plus `other`. Ranking covers real labels only (taxonomy label `other` excluded; ties by taxonomy order). The `other` bucket = `COUNT(DISTINCT post_id)` of posts tagged `other` **or** with any label outside the top 12 — a distinct count, never the sum of per-label counts.
 
 ### 3.6 Intent distribution
 
-Same as 3.5 on intents; all labels returned.
+Same as 3.5 on intents (denominator `intentAnalyzed`); all labels returned, count 0 included, sorted by count desc (ties by taxonomy order).
 
 ## 4. Charts (P1)
 
@@ -165,7 +177,7 @@ Range 2026-09-04 00:00 → 2026-09-05 00:00 (+07:00), relevance = relevant.
 | With intents                      | 2 410; complaint 675 → 28.0 %                        |
 | Previous period distinct relevant | 2 043 → growth +21.4 %                               |
 
-`positive + neutral + negative = 2 410 ✓` · `analyzed 2 410 + pending 61 + failed 10 = 2 481 ✓`.
+`positive + neutral + negative = 2 410 ✓` · `analyzed + pending + failed` = all in-range posts with an analysis run (any relevance, §2); it equals `relevantMentions` here only because the example has no irrelevant/uncertain posts.
 
 ## 9. Change control
 

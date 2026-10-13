@@ -1,6 +1,6 @@
 import { parseClassifierOutput } from "@how-about-me/contracts";
 import { DEFAULT_PROMPT_VERSION } from "@how-about-me/taxonomy";
-import { loadPrompt, parsePrompt } from "./prompt-loader";
+import { loadPrompt, parsePrompt, renderMessages } from "./prompt-loader";
 
 describe("prompt-loader (T-072, BR-023)", () => {
   it("loads classifier-v1 with system, user template and 6 valid few-shot examples", () => {
@@ -28,5 +28,15 @@ describe("prompt-loader (T-072, BR-023)", () => {
     const src =
       '## system\ns\n## user\nu\n## examples\n### example\n#### input\n```json\n{"text":"t","matchedTerms":[]}\n```\n#### output\n```json\n{"relevance":1}\n```\n';
     expect(() => parsePrompt("bad", src)).toThrow(/example 1 output invalid/);
+  });
+
+  it("FR-113: correction appends one final user message with the issues; absent → unchanged", () => {
+    const p = loadPrompt("classifier-v1");
+    const input = { text: "t", matchedTerms: [], brandContext: "b" };
+    const base = renderMessages(p, input);
+    const fixed = renderMessages(p, { ...input, correction: { issues: ["intents.0.label: Invalid option"] } });
+    expect(fixed).toHaveLength(base.length + 1);
+    expect(fixed.at(-1)).toMatchObject({ role: "user" });
+    expect(fixed.at(-1)?.content).toContain("- intents.0.label: Invalid option");
   });
 });
