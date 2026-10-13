@@ -35,7 +35,7 @@ System Status `/system-status` · Health `GET /health/ready` · Logs (host) · S
 **Signal:** pending > 500, failed 24 h high, `analysis.status=degraded|budget_paused`.
 
 - `budget_paused`: raise `ANALYSIS_DAILY_BUDGET_USD` (env) or wait until UTC midnight; confirm cost drivers (volume spike? relevance gate off?).
-- Provider auth: rotate `OPENAI_API_KEY`; restart.
+- Provider auth: rotate `OPENAI_API_KEY`; restart. The worker stays paused up to 5 min after the last `ANALYSIS_PROVIDER_AUTH` failure (read from the DB, so a restart does not clear it). Runs already `failed ANALYSIS_PROVIDER_AUTH` need an admin retry (T-077).
 - `ANALYSIS_SCHEMA_INVALID` spike: model drift → inspect sample in run `error_message`; adjust prompt → bump `classifier-vN`; retry failed (`POST …/analysis-runs/retry-failed`).
 - Stuck `processing`: watchdog re-queues after 10 min; if not, check worker liveness.
 

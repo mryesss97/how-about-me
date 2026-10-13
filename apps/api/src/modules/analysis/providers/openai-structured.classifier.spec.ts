@@ -205,6 +205,10 @@ describe("OpenAiStructuredClassifier (T-072, FR-106..110, FR-117)", () => {
       expect(err.code).toBe("ANALYSIS_SCHEMA_INVALID");
       expect(err.message).toContain("intents.0.label");
       expect(err.message).not.toContain(POST_TEXT);
+      // T-075: issues exposed for the corrective retry (FR-113).
+      const issues = (err.details as { issues: string[] }).issues;
+      expect(issues.some((i) => i.startsWith("intents.0.label"))).toBe(true);
+      expect(issues.join(" ")).not.toContain(POST_TEXT);
     });
 
     it.each([

@@ -22,6 +22,8 @@ export type ClassifierInput = {
   matchedTerms: string[];
   brandContext: string;
   languageHint?: string;
+  /** Set only on the corrective retry (FR-113): validation issues (`path: message`) of the previous output. */
+  correction?: { issues: string[] };
 };
 export interface ContentClassifier {
   readonly provider: string;

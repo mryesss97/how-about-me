@@ -5,6 +5,7 @@ import { v7 as uuidv7 } from "uuid";
 import { APP_CONFIG, type AppConfig } from "../../src/config/config.module";
 import { PrismaService } from "../../src/database/prisma.service";
 import { AnalysisPipelineService } from "../../src/modules/analysis/analysis-pipeline.service";
+import { AnalysisPauseService } from "../../src/modules/analysis/analysis-pause.service";
 import { AnalysisWorkerService } from "../../src/modules/analysis/analysis-worker.service";
 import { AnalysisService } from "../../src/modules/analysis/analysis.service";
 import {
@@ -43,6 +44,7 @@ describe("Analysis pipeline (T-074)", () => {
       app.get(SchedulerRegistry),
       app.get<AppConfig>(APP_CONFIG),
       silent,
+      new AnalysisPauseService(prisma, app.get<AppConfig>(APP_CONFIG)),
       app.get(AnalysisPipelineService),
     );
   });
@@ -155,7 +157,14 @@ describe("Analysis pipeline (T-074)", () => {
     const moderate = jest.spyOn(safety, "moderate");
     const cfg = { ...app.get<AppConfig>(APP_CONFIG), ANALYSIS_TWO_STEP: true };
     const pipeline = new AnalysisPipelineService(prisma, svc, classifier, safety, cfg, silent);
-    const twoStep = new AnalysisWorkerService(svc, app.get(SchedulerRegistry), cfg, silent, pipeline);
+    const twoStep = new AnalysisWorkerService(
+      svc,
+      app.get(SchedulerRegistry),
+      cfg,
+      silent,
+      new AnalysisPauseService(prisma, cfg),
+      pipeline,
+    );
     try {
       await ingest.ingestPage(q, [post("t", "1zone: đổi time zone trên điện thoại sao vậy")]);
       await twoStep.tick();

@@ -5,6 +5,7 @@ import { v7 as uuidv7 } from "uuid";
 import { APP_CONFIG, type AppConfig } from "../../src/config/config.module";
 import { PrismaService } from "../../src/database/prisma.service";
 import { AnalysisPipelineService } from "../../src/modules/analysis/analysis-pipeline.service";
+import { AnalysisPauseService } from "../../src/modules/analysis/analysis-pause.service";
 import { AnalysisWorkerService } from "../../src/modules/analysis/analysis-worker.service";
 import { AnalysisService, type ClaimedRun } from "../../src/modules/analysis/analysis.service";
 import {
@@ -64,7 +65,14 @@ describe("Analysis runs (T-070)", () => {
   }
 
   function worker(processor: { process(run: ClaimedRun): Promise<void> }): AnalysisWorkerService {
-    return new AnalysisWorkerService(svc, app.get(SchedulerRegistry), cfg, silent, processor);
+    return new AnalysisWorkerService(
+      svc,
+      app.get(SchedulerRegistry),
+      cfg,
+      silent,
+      app.get(AnalysisPauseService),
+      processor,
+    );
   }
 
   it("TC-ANA-002 / FR-101: two workers claim 50 pending runs without overlap", async () => {
@@ -218,6 +226,39 @@ describe("Analysis runs (T-070)", () => {
       errorCode: "ANALYSIS_PROVIDER_ERROR",
     });
     expect((await prisma.socialPost.findUniqueOrThrow({ where: { id: r.postId } })).latestRunStatus).toBe("failed");
+  });
+
+  it("FR-113 (T-075): requeue stores the short error_message", async () => {
+    await seedRuns(1);
+    const [r] = await svc.claimBatch("w", 1);
+    if (!r) throw new Error("seed");
+    await svc.requeue(r.id, "w", "ANALYSIS_PROVIDER_ERROR", "OpenAI 500");
+    expect(await prisma.analysisRun.findUniqueOrThrow({ where: { id: r.id } })).toMatchObject({
+      status: "pending",
+      errorMessage: "OpenAI 500",
+    });
+  });
+
+  it("doc 07 §8 (T-075): release returns a claimed run to pending without consuming the attempt", async () => {
+    await seedRuns(1);
+    const [r] = await svc.claimBatch("w", 1);
+    if (!r) throw new Error("seed");
+    expect(r.attemptCount).toBe(1);
+    expect(await svc.release(r.id, "other")).toBe(false);
+    expect(await svc.release(r.id, "w")).toBe(true);
+    expect(await prisma.analysisRun.findUniqueOrThrow({ where: { id: r.id } })).toMatchObject({
+      status: "pending",
+      attemptCount: 0,
+      lockedBy: null,
+    });
+  });
+
+  it("doc 07 §9 (T-075): claimBatch({ triggers }) only claims the given triggers", async () => {
+    await seedRuns(2);
+    const all = await prisma.analysisRun.findMany({ orderBy: { createdAt: "asc" } });
+    await prisma.analysisRun.update({ where: { id: all[1]?.id }, data: { trigger: "manual" } });
+    const claimed = await svc.claimBatch("w", 10, { triggers: ["manual"] });
+    expect(claimed.map((c) => c.id)).toEqual([all[1]?.id]);
   });
 
   it("markFailed / markSkipped set terminal state and latest_run_status", async () => {

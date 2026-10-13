@@ -2,6 +2,7 @@ import type { PinoLogger } from "nestjs-pino";
 import { ProviderError } from "../../common/errors/provider.error";
 import type { AppConfig } from "../../config/config.module";
 import type { PrismaService } from "../../database/prisma.service";
+import { AnalysisLockLostError } from "./analysis-failure-policy";
 import { AnalysisPipelineService } from "./analysis-pipeline.service";
 import type { AnalysisService, ClaimedRun } from "./analysis.service";
 import { FakeContentClassifier } from "./providers/fake-classifier.provider";
@@ -54,7 +55,7 @@ function make(opts: { text?: string | null; revision?: number; twoStep?: boolean
     moderate: jest.spyOn(safety, "moderate"),
   };
   const cfg = { ANALYSIS_TWO_STEP: opts.twoStep ?? false, ANALYSIS_BRAND_CONTEXT: "brand" } as AppConfig;
-  const logger = { info: jest.fn() } as unknown as PinoLogger;
+  const logger = { info: jest.fn(), warn: jest.fn() } as unknown as PinoLogger;
   const svc = new AnalysisPipelineService(
     prisma as unknown as PrismaService,
     analysis as unknown as AnalysisService,
@@ -132,14 +133,82 @@ describe("AnalysisPipelineService (T-074)", () => {
   it("watchdog race: markCompleted false → transaction throws, pointer untouched", async () => {
     const m = make();
     m.analysis.markCompleted.mockResolvedValueOnce(false);
-    await expect(m.svc.process(run)).rejects.toThrow(/no longer held/);
+    await expect(m.svc.process(run)).rejects.toBeInstanceOf(AnalysisLockLostError);
     expect(m.analysis.setCurrentAnalysis).not.toHaveBeenCalled();
   });
 
-  it("provider errors (schema invalid / auth) are rethrown to the worker (T-075 seam)", async () => {
+  it("ANALYSIS_PROVIDER_AUTH from classify is rethrown without a corrective retry", async () => {
     const m = make();
-    m.spies.classify.mockRejectedValueOnce(new ProviderError("ANALYSIS_SCHEMA_INVALID", "intents: bad"));
-    await expect(m.svc.process(run)).rejects.toBeInstanceOf(ProviderError);
+    m.spies.classify.mockRejectedValueOnce(new ProviderError("ANALYSIS_PROVIDER_AUTH", "401"));
+    await expect(m.svc.process(run)).rejects.toMatchObject({ code: "ANALYSIS_PROVIDER_AUTH" });
+    expect(m.spies.classify).toHaveBeenCalledTimes(1);
     expect(m.tx.postAnalysis.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("AnalysisPipelineService corrective retry (FR-113, FR-119, T-075)", () => {
+  const usage = { inputTokens: 10, outputTokens: 5, estimatedCostUsd: 0.001 };
+  const valid = {
+    relevance: { label: "relevant" as const, confidence: 0.9, explanation: "x" },
+    sentiment: { label: "positive" as const, confidence: 0.9 },
+    intents: [{ label: "praise" as const, confidence: 0.9 }],
+    topics: [{ label: "ticket" as const, confidence: 0.9 }],
+    language: "vi" as const,
+    summary: "s",
+    usage,
+  };
+  const ticketing = { ...valid, intents: [{ label: "ticketing", confidence: 0.9 }] } as unknown as typeof valid;
+
+  it("TC-ANA-011: unknown intent twice → 2 calls, 2nd carries correction, fails ANALYSIS_SCHEMA_INVALID", async () => {
+    const m = make();
+    m.spies.classify.mockResolvedValue(ticketing);
+    const err: unknown = await m.svc.process(run).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ProviderError);
+    expect(err).toMatchObject({ code: "ANALYSIS_SCHEMA_INVALID" });
+    expect((err as Error).message).not.toContain("1zone concert");
+    expect(m.spies.classify).toHaveBeenCalledTimes(2);
+    const second = m.spies.classify.mock.calls[1]?.[0];
+    expect(second?.correction?.issues.some((i) => i.startsWith("intents"))).toBe(true);
+    expect(m.tx.postAnalysis.create).not.toHaveBeenCalled();
+  });
+
+  it("FR-113: invalid then valid → completes and usage of both calls is summed", async () => {
+    const m = make();
+    m.spies.classify.mockResolvedValueOnce(ticketing).mockResolvedValueOnce(valid);
+    await m.svc.process(run);
+    expect(m.spies.classify).toHaveBeenCalledTimes(2);
+    const u = m.analysis.markCompleted.mock.calls[0] as unknown[];
+    expect(u[2]).toMatchObject({ inputTokens: 20, outputTokens: 10 });
+  });
+
+  it("FR-113: adapter ANALYSIS_SCHEMA_INVALID with details.issues → 2nd call gets those issues", async () => {
+    const m = make();
+    m.spies.classify
+      .mockRejectedValueOnce(
+        new ProviderError("ANALYSIS_SCHEMA_INVALID", "m", { details: { issues: ["topics: bad"] } }),
+      )
+      .mockResolvedValueOnce(valid);
+    await m.svc.process(run);
+    expect(m.spies.classify.mock.calls[1]?.[0].correction).toEqual({ issues: ["topics: bad"] });
+  });
+
+  it("FR-113: two-step relevance() invalid → corrective retry", async () => {
+    const m = make({ twoStep: true });
+    m.spies.relevance
+      .mockResolvedValueOnce({ relevance: { label: "maybe", confidence: 0.9, explanation: "x" }, usage } as never)
+      .mockResolvedValueOnce({ relevance: valid.relevance, language: "vi", usage });
+    m.spies.classify.mockResolvedValueOnce(valid);
+    await m.svc.process(run);
+    expect(m.spies.relevance).toHaveBeenCalledTimes(2);
+    expect(m.spies.relevance.mock.calls[1]?.[0].correction?.issues[0]).toMatch(/^label/);
+  });
+
+  it("Q5: moderation ANALYSIS_SCHEMA_INVALID is rethrown without retry", async () => {
+    const m = make();
+    m.spies.classify.mockResolvedValueOnce(valid);
+    m.spies.moderate.mockRejectedValueOnce(new ProviderError("ANALYSIS_SCHEMA_INVALID", "shape"));
+    await expect(m.svc.process(run)).rejects.toMatchObject({ code: "ANALYSIS_SCHEMA_INVALID" });
+    expect(m.spies.moderate).toHaveBeenCalledTimes(1);
+    expect(m.spies.classify).toHaveBeenCalledTimes(1);
   });
 });

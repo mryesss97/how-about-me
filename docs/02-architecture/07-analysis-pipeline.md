@@ -16,8 +16,8 @@ stateDiagram-v2
     pending --> stale: content changed before claim (FR-078)
     processing --> completed: result persisted
     processing --> skipped: empty text / excluded
-    processing --> failed: attempts exhausted / schema invalid
-    processing --> pending: transient error or stuck > ANALYSIS_STUCK_MINUTES (attempt < max)
+    processing --> failed: attempts exhausted / schema invalid after corrective retry / provider auth / bad request
+    processing --> pending: transient error or stuck > ANALYSIS_STUCK_MINUTES (attempt < max) / released on auth pause (attempt not counted)
     completed --> stale: newer revision or version change
     failed --> pending: admin retry
 ```
@@ -184,6 +184,8 @@ Order is **parse → normalize**: `parseClassifierOutput(raw)` runs the strict Z
 
 System: role (social-listening analyst for **1Zone / Eventista**, Vietnamese live-event & ticketing brand), the brand context paragraph (configurable `ANALYSIS_BRAND_CONTEXT`), taxonomy definitions (from `packages/taxonomy` guides), rules: judge intended attitude (sarcasm), multi-label allowed, `other` exclusive, summary in English one sentence, never include reasoning, output strictly as schema. User: matched terms, username (optional), post text delimited. Few-shot: 6 short VI/EN examples covering false-positive `1zone` (time zone), complaint about price, praise for artist, spam scalper, question about ticket sale, sensitive content. Full prompt text is versioned in `apps/api/src/modules/analysis/prompts/classifier-v1.md`; changing it → `classifier-v2`. File format: sections `## system`, `## user`, `## examples` (each `### example` with `#### input` / `#### output` JSON blocks); placeholders `{{brand_context}}`, `{{taxonomy_guide}}` (rendered from `renderTaxonomyGuide()` at runtime), `{{matched_terms}}`, `{{username}}`, `{{language_hint}}`, `{{text}}`. `prompts/prompt-loader.ts` parses the file once, validates every example output with `parseClassifierOutput` (boot fails on a broken prompt), and renders messages as system → example user/assistant pairs → the real post inside `<post>…</post>` (a `<post>`/`</post>` in the text is escaped; the system prompt says delimited text is data). Rules in v1: summary `""` for irrelevant/empty/emoji-only, emoji-only → `language: unknown`.
 
+Corrective retry (FR-113, T-075): on invalid output the pipeline re-sends the same messages plus one final `user` message (`CORRECTION_TEMPLATE` in `prompt-loader.ts`) listing the validation issues (≤ 10 lines, ≤ 500 chars). It is added at runtime only: `classifier-v1.md` and `prompt_version` do not change.
+
 ## 6. Safety policy mapping
 
 `packages/taxonomy/src/safety-policy.ts` exports thresholds (doc 08 §9) and `mapSafetyLevel({ categoryScores, flagged }): { level, policyVersion, triggered }`. Unit tests cover boundaries; `triggered` is stored inside `safety_category_scores` JSONB as `{ scores, triggered }`.
@@ -210,16 +212,26 @@ effective_version = `${classifier.provider}|${classifier.model}|${classifier.pro
 | provider 429/5xx/timeout                           | backoff 2 s × 2^attempt (cap 30 s), `attempt_count++`, back to `pending` until `ANALYSIS_MAX_ATTEMPTS=3`, then `failed` (`ANALYSIS_PROVIDER_ERROR`)                                                           |
 | schema invalid / unknown label                     | one corrective retry (append validation errors to prompt), then `failed ANALYSIS_SCHEMA_INVALID` with sample stored (truncated)                                                                               |
 | provider auth error                                | `failed ANALYSIS_PROVIDER_AUTH`; System Status `analysis.status=degraded`; worker pauses 5 min                                                                                                                |
+| provider bad request (other 4xx)                   | `failed ANALYSIS_PROVIDER_BAD_REQUEST` immediately                                                                                                                                                            |
+| non-provider error (DB, bug)                       | retried like a transient error with `error_code=INTERNAL`, `error_message=unexpected_processor_error` (original message never stored)                                                                         |
 | empty text                                         | `skipped empty_text`                                                                                                                                                                                          |
 | stuck `processing` > `ANALYSIS_STUCK_MINUTES` (10) | watchdog (first step of every worker tick) re-queues to `pending` and clears the lock; if `attempt_count >= ANALYSIS_MAX_ATTEMPTS` → `failed` (`ANALYSIS_PROVIDER_ERROR`, message `stuck_processing_timeout`) |
 
-`attempt_count` is incremented at claim time. In T-070 `requeue` returns the run to `pending` immediately; the backoff above is added with the failure policy (T-075). T-074 does not retry: provider errors (including `ANALYSIS_SCHEMA_INVALID` and `ANALYSIS_PROVIDER_AUTH`) are rethrown by the pipeline and the worker's `catch` re-queues the run; the corrective retry and auth pause land in that catch with T-075.
+`attempt_count` is incremented at claim time. Implementation (T-075): `analysis-failure-policy.ts` (`decideFailure`, `backoffMs`) is applied in the worker's `catch`.
+
+- Backoff: the worker sleeps **inside its slot** (run stays `processing`) for `min(30 s, max(2 s × 2^attempt, Retry-After))`, then `requeue` sets `pending` (or `failed` at `ANALYSIS_MAX_ATTEMPTS`) with `error_code`/`error_message`. No sleep on the last attempt. No `next_attempt_at` column; with the defaults the longest wait is 8 s. On shutdown the sleep ends early so the run is requeued before the process exits.
+- Corrective retry: done by `AnalysisPipelineService` inside the same attempt, for `relevance()` and `classify()` (not for moderation, whose `ANALYSIS_SCHEMA_INVALID` fails directly). The pipeline also validates the classifier output itself (FR-119). Issues come from the pipeline validation or the adapter's `details.issues`. Still invalid → `failed ANALYSIS_SCHEMA_INVALID`; `error_message` = `after corrective retry: <path: message; …>` (≤ 500 chars, never post text or raw output, BR-027). Usage of a call whose adapter threw is not recorded (follow-up).
+- Auth pause: `fail_and_pause` marks the run failed; the worker stops claiming for 5 min and releases the other runs of its batch back to `pending` without counting the attempt (`AnalysisService.release`). The pause is also derived from the DB (latest `failed ANALYSIS_PROVIDER_AUTH` `completed_at` + 5 min) so every instance — and a restarted one — pauses.
+- Lock lost (`AnalysisLockLostError`, watchdog took the run): only logged, no requeue/fail.
+- A run that completes after earlier failed attempts keeps the last `error_code` as a diagnostic trace.
 
 Two retry tiers: inside one job attempt the adapter retries transient errors via `withRetry` (`OPENAI_MAX_RETRIES=2`, base 2 s, cap 30 s, `Retry-After` honoured up to 60 s — longer ends the attempt), so one attempt makes at most 3 HTTP calls and a whole job (3 attempts) at most 9. Non-transient codes are never retried in the adapter.
 
 ## 9. Cost controls
 
-Relevance gate; skip summary for spam (`ANALYSIS_SKIP_SUMMARY_FOR_SPAM=true`); version dedupe; `ANALYSIS_DAILY_BUDGET_USD` soft cap → when exceeded, worker pauses non-manual runs and System Status shows `analysis.status=budget_paused` (admin can raise/resume). Token counts from provider usage; cost = tokens × configured price table (`ANALYSIS_PRICE_INPUT_PER_1M`, `ANALYSIS_PRICE_OUTPUT_PER_1M`).
+Relevance gate; skip summary for spam (`ANALYSIS_SKIP_SUMMARY_FOR_SPAM=true`); version dedupe; `ANALYSIS_DAILY_BUDGET_USD` soft cap → when exceeded, worker pauses non-manual runs and System Status shows `analysis.status=budget_paused` (admin can raise/resume).
+
+Budget (T-075, `AnalysisPauseService`): spent = SUM `estimated_cost_usd` of runs with `completed_at` since 00:00 **UTC** (a cost guardrail, deliberately not the `Asia/Ho_Chi_Minh` analytics day). Checked every tick with a 30 s cache, so it is a soft cap that may overshoot by about one batch. When exceeded the worker only claims `trigger='manual'` runs (`retry` runs wait too). A limit `≤ 0` disables the cap. Resume: raise the env and restart, or wait until 00:00 UTC. `AnalysisPauseService.getState({ fresh })` returns `{ budget: { limitUsd, spentTodayUsd, exceeded, dayStartUtc, resetsAt }, auth: { lastFailureAt, pausedUntil } }`; T-077 maps `budget.exceeded` → `budget_paused` and an active `auth.pausedUntil` → `degraded`. Token counts from provider usage; cost = tokens × configured price table (`ANALYSIS_PRICE_INPUT_PER_1M`, `ANALYSIS_PRICE_OUTPUT_PER_1M`).
 
 ## 10. Effective analysis & overrides (P1)
 
