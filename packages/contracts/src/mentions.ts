@@ -26,6 +26,7 @@ import { AnalysisFiltersBaseSchema } from "./filters.js";
 
 export const MENTION_SORTS = ["newest", "oldest", "safety_desc", "confidence_asc", "relevance_desc"] as const;
 export const MentionSortSchema = z.enum(MENTION_SORTS);
+export type MentionSort = z.infer<typeof MentionSortSchema>;
 
 /** List filters without pagination — shared by list, bulk reanalyze and export. */
 const MentionsFiltersBaseSchema = AnalysisFiltersBaseSchema.extend({
@@ -81,6 +82,7 @@ export const MentionListItemSchema = z.object({
 });
 export type MentionListItem = z.infer<typeof MentionListItemSchema>;
 export const MentionsPageSchema = pageOf(MentionListItemSchema);
+export type MentionsPage = z.infer<typeof MentionsPageSchema>;
 
 export const AnalysisVersionsSchema = z.object({
   classifierProvider: z.string().nullable(),
