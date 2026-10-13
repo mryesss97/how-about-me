@@ -8,6 +8,7 @@ import type { MentionForReanalyze, MentionsRepository } from "./mentions.reposit
 import { MentionsService } from "./mentions.service";
 import type { AppConfig } from "../../config/config.module";
 import type { BulkReanalyzeThrottle } from "../analysis/bulk-reanalyze-throttle";
+import type { OverridesRepository } from "../reviews/overrides.repository";
 
 const PID = "00000000-0000-7000-8000-000000000001";
 const MID = "00000000-0000-7000-8000-000000000002";
@@ -39,6 +40,7 @@ function setup(opts: { post?: MentionForReanalyze | null; open?: boolean; create
     { warn: jest.fn() } as unknown as PinoLogger,
     { assertAllowed: jest.fn() } as unknown as BulkReanalyzeThrottle,
     { ANALYSIS_BULK_MAX: 2000 } as AppConfig,
+    {} as OverridesRepository,
   );
   return { svc, repo, analysis, audit, tx };
 }
@@ -129,6 +131,7 @@ function listSetup(rows: MentionPageRow[], count: number | null = 7) {
     logger as unknown as PinoLogger,
     {} as BulkReanalyzeThrottle,
     {} as AppConfig,
+    {} as OverridesRepository,
   );
   return { svc, repo, logger };
 }
@@ -208,6 +211,7 @@ describe("MentionsService.detail", () => {
         .mockResolvedValue({ matches: new Map(), intents: new Map(), topics: new Map(), errorCodes: new Map() }),
       listRuns: jest.fn().mockResolvedValue([]),
     };
+    const overrides = { listForPost: jest.fn().mockResolvedValue([]) };
     const svc = new MentionsService(
       repo as unknown as MentionsRepository,
       {} as AnalysisService,
@@ -215,8 +219,9 @@ describe("MentionsService.detail", () => {
       { warn: jest.fn() } as unknown as PinoLogger,
       {} as BulkReanalyzeThrottle,
       {} as AppConfig,
+      overrides as unknown as OverridesRepository,
     );
-    return { svc, repo };
+    return { svc, repo, overrides };
   };
 
   it("not found / other project → AppError NOT_FOUND", async () => {
@@ -224,7 +229,7 @@ describe("MentionsService.detail", () => {
     await expect(svc.detail(PID, MID)).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
-  it("unanalysed post → hydrate with empty analysisIds", async () => {
+  it("unanalysed post → hydrate by post id, runs and override history (FR-193)", async () => {
     const row = {
       post_id: MID,
       analysis_id: null,
@@ -236,9 +241,10 @@ describe("MentionsService.detail", () => {
       has_override: false,
       latest_run_status: null,
     };
-    const { svc, repo } = mk(row);
+    const { svc, repo, overrides } = mk(row);
     await svc.detail(PID, MID);
-    expect(repo.hydrate).toHaveBeenCalledWith([MID], []);
+    expect(repo.hydrate).toHaveBeenCalledWith([MID]);
+    expect(overrides.listForPost).toHaveBeenCalledWith(MID);
     expect(repo.listRuns).toHaveBeenCalledWith(MID);
   });
 });
@@ -268,6 +274,7 @@ describe("MentionsService.bulkReanalyze", () => {
       { warn: jest.fn() } as unknown as PinoLogger,
       throttle as unknown as BulkReanalyzeThrottle,
       { ANALYSIS_BULK_MAX: 3 } as AppConfig,
+      {} as OverridesRepository,
     );
     return { svc, repo, analysis, audit, throttle, tx };
   }

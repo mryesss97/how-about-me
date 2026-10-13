@@ -88,8 +88,8 @@ export function buildBaseSetCte(scope: AnalyticsScope, opts: { ignore?: readonly
        ${anyOf("e.safety_level", pick("safety", f.safety), "safety_level")}
        ${languageFilter(pick("language", f.language))}
        ${anyOf("e.latest_run_status", pick("analysisStatus", f.analysisStatus), "analysis_status")}
-       ${intent.length > 0 ? Prisma.sql`AND EXISTS (SELECT 1 FROM analysis_intents i WHERE i.analysis_id = e.analysis_id AND i.label = ANY(${intent}))` : Prisma.empty}
-       ${topic.length > 0 ? Prisma.sql`AND EXISTS (SELECT 1 FROM analysis_topics t WHERE t.analysis_id = e.analysis_id AND t.label = ANY(${topic}))` : Prisma.empty}
+       ${intent.length > 0 ? Prisma.sql`AND EXISTS (SELECT 1 FROM effective_post_intents i WHERE i.post_id = e.post_id AND i.label = ANY(${intent}))` : Prisma.empty}
+       ${topic.length > 0 ? Prisma.sql`AND EXISTS (SELECT 1 FROM effective_post_topics t WHERE t.post_id = e.post_id AND t.label = ANY(${topic}))` : Prisma.empty}
   )`;
 }
 

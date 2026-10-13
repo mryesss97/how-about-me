@@ -83,11 +83,24 @@ describe("toMentionListItem", () => {
   });
 
   it("code outside taxonomy → other (FR-143, #201); NULL → null; intents/topics come from hydrate", () => {
-    const h = { ...empty, intents: new Map([[AID, [{ label: "complaint", confidence: 0.7 }]]]) };
+    const h = { ...empty, intents: new Map([[POST, [{ label: "complaint", confidence: 0.7 }]]]) };
     const a = map({ language_code: "xx" }, h).analysis;
     expect(a.language).toBe("other");
     expect(map({ language_code: null }).analysis.language).toBeNull();
     expect(a.intents).toEqual([{ label: "complaint", confidence: 0.7 }]);
+  });
+
+  it("BR-025 / T-142: unanalysed post with intents override → effective labels by post id, source=analyst", () => {
+    const h = {
+      ...empty,
+      intents: new Map([[POST, [{ label: "complaint", confidence: null }]]]),
+      topics: new Map([[POST, [{ label: "nope", confidence: null }]]]),
+    };
+    const a = map({ analysis_id: null, has_override: true }, h).analysis;
+    expect(a.intents).toEqual([{ label: "complaint", confidence: null }]);
+    expect(a.topics).toEqual([]);
+    expect(a.source).toBe("analyst");
+    expect(a.hasOverride).toBe(true);
   });
 });
 
@@ -134,6 +147,23 @@ const detail = (over: Partial<MentionDetailRow>, runs: MentionRunRow[] = [run]) 
 
 /** T-096 projection — FR-154, BR-003, BR-017, BR-025; TC-MEN-010/011/012. */
 describe("toMentionDetail", () => {
+  it("FR-193 / T-142: returns override history as given (incl. revoked)", () => {
+    const o = {
+      id: "44444444-4444-4444-8444-444444444444",
+      field: "sentiment" as const,
+      previousValue: "negative",
+      value: "neutral",
+      reason: null,
+      reviewedBy: null,
+      createdAt: "2026-10-02T00:00:00.000Z",
+      revokedAt: "2026-10-03T00:00:00.000Z",
+      revokedBy: null,
+    };
+    const d = MentionDetailSchema.parse(toMentionDetail(detailBase, empty, [], [o]));
+    expect(d.overrides).toEqual([o]);
+    expect(detail({}).overrides).toEqual([]);
+  });
+
   it("TC-MEN-011/012: contract-valid with versions, tokens, cost and runs", () => {
     const d = MentionDetailSchema.parse(detail({}));
     expect(d.analysis.versions?.safetyPolicyVersion).toBe("safety-policy-v1");

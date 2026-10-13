@@ -58,14 +58,14 @@ export class AnalyticsDistributionsRepository {
     );
   }
 
-  /** §3.6 — counts per intent + intentAnalyzed (posts with ≥ 1 intent) in one snapshot. AI labels only until T-142. */
+  /** §3.6 — counts per intent + intentAnalyzed (posts with ≥ 1 intent) in one snapshot. Effective labels (override > AI, BR-025). */
   async intentCounts(scope: AnalyticsScope): Promise<TaggedCounts> {
     const rows = await this.prisma.$queryRaw<LabelCount[]>(
       withBase(
         scope,
         Prisma.sql`, tagged AS (
             SELECT DISTINCT b.post_id, i.label::text AS label
-              FROM base b JOIN analysis_intents i ON i.analysis_id = b.analysis_id)
+              FROM base b JOIN effective_post_intents i ON i.post_id = b.post_id)
           SELECT label, COUNT(*)::int AS count FROM tagged GROUP BY 1
           UNION ALL SELECT ${DENOM}, COUNT(DISTINCT post_id)::int FROM tagged`,
       ),
@@ -75,7 +75,7 @@ export class AnalyticsDistributionsRepository {
 
   /**
    * §3.5 — top real topics (taxonomy `other` excluded, ties by taxonomy order), `other` bucket = DISTINCT posts
-   * tagged `other` or with a non-top label, and topicAnalyzed — one snapshot. AI labels only until T-142.
+   * tagged `other` or with a non-top label, and topicAnalyzed — one snapshot. Effective labels (override > AI, BR-025).
    */
   async topicCounts(scope: AnalyticsScope): Promise<TopicCounts> {
     const order = [...TOPIC_LABELS];
@@ -84,7 +84,7 @@ export class AnalyticsDistributionsRepository {
         scope,
         Prisma.sql`, tagged AS (
             SELECT DISTINCT b.post_id, t.label::text AS label
-              FROM base b JOIN analysis_topics t ON t.analysis_id = b.analysis_id),
+              FROM base b JOIN effective_post_topics t ON t.post_id = b.post_id),
           counts AS (SELECT label, COUNT(*)::int AS n FROM tagged GROUP BY 1),
           top AS (
             SELECT label, n FROM counts WHERE label <> 'other'

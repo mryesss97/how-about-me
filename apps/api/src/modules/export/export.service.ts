@@ -88,10 +88,8 @@ export class ExportService {
         const chunk = rows.slice(i, i + EXPORT_HYDRATE_CHUNK);
         const analysisIds = chunk.flatMap((r) => (r.analysis_id ? [r.analysis_id] : []));
         const [hydrated, analyzedAt] = await Promise.all([
-          this.repo.hydrate(
-            chunk.map((r) => r.post_id),
-            analysisIds,
-          ),
+          // Effective intents/topics per post (override > AI, BR-025 — T-142).
+          this.repo.hydrate(chunk.map((r) => r.post_id)),
           this.repo.analyzedAtByAnalysis(analysisIds),
         ]);
         yield chunk

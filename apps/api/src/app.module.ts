@@ -16,6 +16,7 @@ import { AuthModule } from "./modules/auth/auth.module";
 import { CollectorModule } from "./modules/collector/collector.module";
 import { ListeningQueriesModule } from "./modules/listening-queries/listening-queries.module";
 import { MentionsModule } from "./modules/mentions/mentions.module";
+import { ReviewsModule } from "./modules/reviews/reviews.module";
 import { HealthModule } from "./modules/health/health.module";
 import { ProjectsModule } from "./modules/projects/projects.module";
 import { ProvidersModule } from "./modules/providers/providers.module";
@@ -42,9 +43,10 @@ import { SchedulerModule } from "./jobs/scheduler.module";
     AuditModule,
     ListeningQueriesModule,
     MentionsModule,
+    ReviewsModule,
     AnalyticsModule,
     // M2+: IntegrationsModule, SyncJobsModule, SystemStatusModule
-    // M6: ReviewsModule (T-147 export lives in MentionsModule: route must precede `:mentionId`)
+    // M6: T-147 export lives in MentionsModule (route must precede `:mentionId`)
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

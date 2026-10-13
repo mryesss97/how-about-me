@@ -58,15 +58,15 @@ export const PERMISSION_MATRIX: readonly PermissionEntry[] = [
     admin: "allow",
     analyst: "allow",
     viewer: "deny",
-    status: "planned",
+    status: "implemented",
   },
   {
     method: "DELETE",
-    path: `${P}/mentions/:mentionId/overrides`,
+    path: `${P}/mentions/:mentionId/overrides/:overrideId`,
     admin: "allow",
     analyst: "allow",
     viewer: "deny",
-    status: "planned",
+    status: "implemented",
   },
   {
     method: "GET",

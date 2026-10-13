@@ -103,6 +103,8 @@ export const OverrideSchema = z.object({
   reviewedBy: UserRefSchema.nullable(),
   createdAt: IsoDateTimeSchema,
   revokedAt: IsoDateTimeSchema.nullable(),
+  // T-142 (FR-193): who revoked it; null while active. Additive, optional.
+  revokedBy: UserRefSchema.nullable().optional(),
 });
 export type Override = z.infer<typeof OverrideSchema>;
 

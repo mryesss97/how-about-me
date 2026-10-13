@@ -84,6 +84,7 @@ exports[`contract surface > error codes and HTTP map 1`] = `
   "LAST_ADMIN": 409,
   "MEMBER_EXISTS": 409,
   "NOT_FOUND": 404,
+  "OVERRIDE_CONFLICT": 409,
   "QUERY_DUPLICATE": 409,
   "QUERY_IMMUTABLE_FIELD": 400,
   "RATE_LIMITED": 429,
