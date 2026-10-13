@@ -111,6 +111,8 @@ else → counters.duplicated++
 
 Term filtering (BR-007): `excluded = excludeTerms.some(t => norm(text).includes(norm(t))) || (includeTerms.length && !includeTerms.some(...))`. `records_excluded++` when excluded for this query. Analysis is enqueued only if the post has ≥ 1 non-excluded match.
 
+Implementation notes (T-051, `IngestionService.ingestPage`): one transaction per provider page (timeout 30 s). `RETURNING` of the upsert cannot see the old row, so the previous `content_hash` is read first with `SELECT … FOR UPDATE` in the same transaction; `changed = !inserted && prev_hash ≠ new hash` (when a concurrent job inserted the row after that read, `prev_hash` is null and `changed = revision > 1`, since the upsert bumps `revision` only on a hash change). A repeated `platform_post_id` inside the same page sees the earlier insert and counts as `duplicated`. `project_id`/`first_seen_at` are kept from the first ingest (unique is global; acceptable while MVP has one project). Enqueue goes through the `AnalysisEnqueuer` port (`ANALYSIS_ENQUEUER`, default `SqlAnalysisEnqueuer` until T-070): `INSERT … ON CONFLICT (post_id, source_content_hash, effective_version) WHERE status IN ('pending','processing') DO NOTHING` — the predicate must be repeated so Postgres infers the partial index `analysis_runs_open_unique`. A duplicated post whose matches were all excluded gets its first run (`trigger=ingest`) once a non-excluded match appears, only if it has no run yet.
+
 `raw_data` keeps the requested fields only; if JSON > 32 KB, store the first-level scalar fields and set `raw_truncated=true`.
 
 ## 7. Retry, backoff, circuit (FR-083, FR-084)
