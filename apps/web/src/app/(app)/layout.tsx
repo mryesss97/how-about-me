@@ -1,11 +1,21 @@
+import { redirect } from "next/navigation";
+import { AuthBridge } from "@/features/auth/auth-bridge";
 import { AppSidebar } from "@/features/shared/app-sidebar";
+import { getServerUser } from "@/lib/supabase/server";
 
-/** Authenticated shell. Session guard + redirect to /login is added in T-032 (server-side Supabase cookie check). */
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+// Never serve a cached authenticated shell (TC-AUTH-016).
+export const dynamic = "force-dynamic";
+
+/** Authenticated shell. Server-side session guard (second layer after proxy.ts) — FR-010. */
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  const user = await getServerUser();
+  if (!user) redirect("/login");
   return (
-    <div className="flex min-h-dvh flex-col lg:flex-row">
-      <AppSidebar />
-      <main className="min-w-0 flex-1 bg-primary">{children}</main>
-    </div>
+    <AuthBridge>
+      <div className="flex min-h-dvh flex-col lg:flex-row">
+        <AppSidebar />
+        <main className="min-w-0 flex-1 bg-primary">{children}</main>
+      </div>
+    </AuthBridge>
   );
 }

@@ -75,7 +75,7 @@ Project settings introduced by this matrix (stored on `monitoring_projects.setti
 ## 4. Enforcement rules
 
 1. Every request carries `Authorization: Bearer <Supabase JWT>`; NestJS verifies signature & expiry (see [../02-architecture/08-security-secrets.md](../02-architecture/08-security-secrets.md)).
-2. `ProjectRoleGuard` resolves `(userId, projectId) → role` from `project_members` and checks against the endpoint's `@Roles(...)` decorator. No membership → `403 FORBIDDEN_PROJECT`.
+2. `ProjectRoleGuard` resolves `(userId, projectId) → role` from `project_members` and checks against the endpoint's `@Roles(...)` decorator. No membership → `403 FORBIDDEN_PROJECT` (same response whether or not the project exists). Role not allowed, or a ⚙️ setting disabled for that role → `403 FORBIDDEN_ROLE`.
 3. Read endpoints require membership of any role; write endpoints require the role listed above.
 4. FE uses `/me` to hide controls, **only** as UX. Tests assert the BE denies regardless.
 5. All Admin mutations write an `audit_logs` row (see [../02-architecture/08-security-secrets.md#audit](../02-architecture/08-security-secrets.md#6-audit-log)).

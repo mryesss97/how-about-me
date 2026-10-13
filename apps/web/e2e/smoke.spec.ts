@@ -5,3 +5,8 @@ test("login page renders", async ({ page }) => {
   await page.goto("/login");
   await expect(page.getByRole("heading", { name: /sign in/i })).toBeVisible();
 });
+
+test("unauthenticated visit to /overview lands on /login (FR-010)", async ({ page }) => {
+  await page.goto("/overview");
+  await expect(page).toHaveURL(/\/login/);
+});

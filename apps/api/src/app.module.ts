@@ -10,6 +10,7 @@ import { buildLoggerParams } from "./common/logging/logger.config";
 import { APP_CONFIG, AppConfigModule, type AppConfig } from "./config/config.module";
 import { PrismaModule } from "./database/prisma.module";
 import { AuthModule } from "./modules/auth/auth.module";
+import { CollectorModule } from "./modules/collector/collector.module";
 import { HealthModule } from "./modules/health/health.module";
 import { ProjectsModule } from "./modules/projects/projects.module";
 import { ProvidersModule } from "./modules/providers/providers.module";
@@ -28,8 +29,9 @@ import { SchedulerModule } from "./jobs/scheduler.module";
     AuthModule,
     ProjectsModule,
     ProvidersModule,
+    CollectorModule,
     SchedulerModule,
-    // M2+: IntegrationsModule, ListeningQueriesModule, CollectorModule, SyncJobsModule, AuditModule, SystemStatusModule
+    // M2+: IntegrationsModule, ListeningQueriesModule, SyncJobsModule, AuditModule, SystemStatusModule
     // M3+: AnalysisModule · M4+: MentionsModule, AnalyticsModule · M6: ReviewsModule, ExportModule
   ],
   providers: [
