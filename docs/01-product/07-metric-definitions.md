@@ -120,7 +120,7 @@ Same as 3.5 on intents (denominator `intentAnalyzed`); all labels returned, coun
 
 ## 4. Charts (P1)
 
-- **Language distribution**: distinct posts per `language_code` over posts with a language (`language_code IS NOT NULL`, `unknown` included; posts not yet analysed are excluded). Codes outside the taxonomy count as `other`; all 8 codes are listed, sorted by count desc (ties in taxonomy order).
+- **Language distribution**: distinct posts per `language_code` over posts with a language (`language_code IS NOT NULL`, `unknown` included; posts not yet analysed are excluded). Codes outside the taxonomy count as `other`; all 8 codes are listed, sorted by count desc (ties in taxonomy order). Filter `language=other` matches the same set (stored `other` or any non-NULL code outside the taxonomy) — drill-down equivalence (#201).
 - **Topic × sentiment**: matrix `topic → {positive, neutral, negative}` distinct counts; denominator per row = posts with that topic and a sentiment.
 - **Negative-topic contributors**: topics ranked by `negativeCount` and `negativeShareWithinTopic = negativeCount / topicSentimentAnalyzed`.
 - **Keyword share**: distinct posts per query (overlap allowed); tooltip explains overlap.
@@ -154,7 +154,7 @@ Each metric maps to a mentions filter that returns exactly the counted posts:
 | timeseries bucket  | `from=bucketStart,to=bucketEnd`                      |
 | previous period    | `from=prevFrom,to=prevTo`                            |
 
-For rates the list returns the numerator posts. Topic `other` is the top-12 remainder and has no filter, so it is not drillable. Language `other` is not drillable until #201 makes `language=other` also match codes outside the taxonomy (today the filter undercounts the slice). FE mapping: `apps/web/src/lib/filters/drill-down.ts` (T-102).
+For rates the list returns the numerator posts. Topic `other` is the top-12 remainder and has no filter, so it is not drillable. Language `other` is drillable: `language=other` matches stored `other` plus any non-NULL code outside the taxonomy, the same set the slice counts (#201). FE mapping: `apps/web/src/lib/filters/drill-down.ts` (T-102).
 
 QA reconciles list totals (`totalCount` header from `/mentions?count=true`) against chart numbers.
 

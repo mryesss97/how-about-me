@@ -127,7 +127,7 @@ Behaviour notes (T-042, FR-051…FR-057):
 
 ## 6. Analytics
 
-Common query params (all optional): `from`, `to` (defaults last 7 d), `timezone` (default project tz), `queryIds[]`, `relevance[]` (default `relevant`), `sentiment[]`, `safety[]`, `intent[]`, `topic[]`, `language[]`, `analysisStatus[]`, `compare=false`, `timeField=published_at`.
+Common query params (all optional): `from`, `to` (defaults last 7 d), `timezone` (default project tz), `queryIds[]`, `relevance[]` (default `relevant`), `sentiment[]`, `safety[]`, `intent[]`, `topic[]`, `language[]`, `analysisStatus[]`, `compare=false`, `timeField=published_at`. `language[]=other` matches stored `other` plus any non-NULL code outside the taxonomy (same fold as `/analytics/languages`; applies to the mentions list too, whose `analysis.language` also returns `other` for such codes) — #201.
 
 - Default range = `[now − 7×24h, now)` (same as the web `7d` preset). Only `from` sent → `to = from + 7×24h`; only `to` → `from = to − 7×24h`; the derived range is still checked (`to > from`, ≤ 366 d → `400 VALIDATION_ERROR`).
 - With `queryIds` empty, the base set uses matches of every project query, soft-deleted included (BR-010); matches with `excluded_by_terms=true` never count.

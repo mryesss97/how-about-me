@@ -82,10 +82,11 @@ describe("toMentionListItem", () => {
     expect(a.safety).toEqual({ level: "safe" });
   });
 
-  it("unknown language code → null; intents/topics come from hydrate", () => {
+  it("code outside taxonomy → other (FR-143, #201); NULL → null; intents/topics come from hydrate", () => {
     const h = { ...empty, intents: new Map([[AID, [{ label: "complaint", confidence: 0.7 }]]]) };
     const a = map({ language_code: "xx" }, h).analysis;
-    expect(a.language).toBeNull();
+    expect(a.language).toBe("other");
+    expect(map({ language_code: null }).analysis.language).toBeNull();
     expect(a.intents).toEqual([{ label: "complaint", confidence: 0.7 }]);
   });
 });
