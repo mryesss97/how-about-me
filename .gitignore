@@ -41,3 +41,7 @@ Thumbs.db
 .vercel
 .scratch/
 docs/04-qa/datasets/*.jsonl
+
+# agent workflow (.claude/WORKFLOW.md)
+.claude/runs/
+.claude/settings.local.json

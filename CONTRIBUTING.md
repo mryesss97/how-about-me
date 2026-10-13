@@ -4,7 +4,7 @@
 2. Branch from `develop`: `git switch -c feature/<issue>-<slug> develop` (or `fix/`, `spike/`, `chore/`, `docs/`).
 3. Code per [docs/06-engineering/03-coding-conventions.md](docs/06-engineering/03-coding-conventions.md). Reference business rules in comments (`// BR-007`).
 4. Commit with Conventional Commits (`feat(collector): compute search window (#71)`). Hooks run lint-staged and commitlint.
-5. Run `pnpm ci:local` before pushing.
+5. Run `pnpm verify:quiet` (the `pre-push` hook runs it too; `pnpm ci:local` adds the build). With an AI agent, follow the issue loop in [.claude/WORKFLOW.md](.claude/WORKFLOW.md).
 6. Open a PR to `develop` using the template; link the issue (`Closes #<n>`); attach evidence; update docs in the same PR when behaviour changes.
 7. Address review within a day; squash-merge after ≥ 1 approval and green CI.
 8. Notify the linked QC issue for verification on staging.

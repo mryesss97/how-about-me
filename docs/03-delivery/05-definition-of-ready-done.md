@@ -18,7 +18,7 @@
 - [ ] Docs updated in the same PR (FR/API/data model/runbook as applicable); ADR added for architectural decisions.
 - [ ] Observability: logs/metrics/audit added where the doc requires.
 - [ ] Security: no secrets, validation on inputs, role decorators on mutations.
-- [ ] Feature works on staging with real or fake providers as specified; screenshots/GIF in PR for UI.
+- [ ] Feature works on staging with real or fake providers as specified; screenshots/GIF in PR for UI (before/after via `pnpm issue:shot`; `pnpm issue:ship` adds the table, see [git workflow §8](../06-engineering/04-git-workflow.md#8-issue-loop-agent)).
 - [ ] Issue closed by PR with `Closes #n`; QC issue notified.
 
 ## Definition of Done (QC task)

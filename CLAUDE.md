@@ -8,6 +8,7 @@ Monorepo for **How About Me**, an internal Threads social-listening product (MVP
 
 - `apps/web` Next.js 16 (App Router) + Untitled UI (React Aria, Tailwind v4) + TanStack Query. `apps/api` NestJS 11 + Prisma 6 (Postgres/Supabase). `packages/contracts` Zod DTOs shared by both. `packages/taxonomy` classification labels/policy.
 - `pnpm dev | build | lint | typecheck | test`, `pnpm db:up|migrate|seed`, `pnpm backlog:render`, `pnpm issues:sync`.
+- `pnpm verify:quiet` (one line on pass, last 50 lines on fail), `pnpm issue:start|tidy|ship|finish`, `pnpm agent <triage|plan|code|review|cost> <ticket>`.
 - Untitled UI components live in `apps/web/src/components/**` (vendored, kebab-case files, React Aria imports prefixed `Aria*`). Add more with `npx untitledui@latest add <name> --dir apps/web`. Their upstream agent guide is in `apps/web/UNTITLED_UI_GUIDE.md`.
 
 ## Non-negotiable rules
@@ -20,6 +21,14 @@ Monorepo for **How About Me**, an internal Threads social-listening product (MVP
 - Timestamps in UTC; analytics buckets in the requested timezone (default `Asia/Ho_Chi_Minh`).
 - Prisma types stay in `apps/api`; repositories map to contract DTOs. Raw SQL via `Prisma.sql` tagged templates only.
 - Conventional commits; branches `feature/<issue>-<slug>` from `develop`; PRs reference `Closes #<n>`.
+
+## Workflow
+
+- Implementation pipeline (feature / fix / refactor): [.claude/WORKFLOW.md](.claude/WORKFLOW.md) — triage → researcher plan → human review → coder → tidy → qa-tester → human review.
+- One ticket, one worktree, one PR (`docs/06-engineering/04-git-workflow.md` §8). Ticket = issue number (`128`) or backlog id (`T-049`). Merge when green (push passed `pre-push`) with `pnpm issue:finish <PR>`, then cut the next ticket from the new `develop`.
+- **Script picks the model.** `pnpm agent <stage> <ticket>` chooses model and effort per stage and logs cost to `.claude/runs/agent-costs.jsonl`. Agents never choose their own model.
+- **Script does the fixed steps.** Use `pnpm issue:start|tidy|shot|ship|finish` for worktree, format/lint, screenshots, push, PR and merge; open PRs with `pnpm issue:ship` or `pnpm pr:create`, not `gh pr create`.
+- **Short error output.** Check with `pnpm verify:quiet`; open the full log only when the tail is not enough.
 
 ## Where to look
 
