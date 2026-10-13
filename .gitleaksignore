@@ -1,0 +1,3 @@
+# gitleaks false positives, one fingerprint per line (commit:file:rule:line). Real secrets are rotated, never listed here.
+# T-003: low-entropy test fixture in the first commit of chore/3-ci-hardening, replaced in the follow-up commit.
+393f9dff2f67721edbcc165ab65220cbacc4d88c:scripts/fe-secrets.test.mjs:generic-api-key:30

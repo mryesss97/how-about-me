@@ -79,7 +79,7 @@ pino `redact` paths (`REDACT_PATHS` in `apps/api/src/common/logging/logger.confi
 - `pnpm audit:check` (`scripts/audit-check.mjs`): runs `pnpm audit --prod --json` and fails on any high/critical advisory not in `.audit-allowlist.json`, or whose entry has expired. Stale entries only warn.
   - Entry format: `"GHSA-xxxx": { "package": "…", "reason": "…", "expires": "YYYY-MM-DD" }`. Expiry ≤ 90 days; the reviewer of the PR adding the entry approves it. Prefer fixing (upgrade / `pnpm.overrides`) over allowlisting.
   - At T-003 all existing high/critical advisories (mainly `next` < 16.3.8 and transitive deps) were allowlisted until 2026-11-14; a follow-up ticket upgrades them.
-- Secret scanning: `gitleaks` action on PRs.
+- Secret scanning: `gitleaks` action on PRs (full history, `fetch-depth: 0`) and in the `pre-push` hook. A false positive (e.g. a test fixture) goes into `.gitleaksignore` by fingerprint with a comment; a real secret is rotated, never ignored.
 - Dependabot weekly for npm + GitHub Actions.
 
 ## 10. Security checklist (release gate, mirrors source §8)

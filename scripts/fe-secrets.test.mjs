@@ -27,8 +27,10 @@ test("anon JWT passes, service_role JWT fails", () => {
 });
 
 test("bundle containing a server-only secret value fails", () => {
-  const env = { THREADS_ACCESS_TOKEN: "tok_live_1234567890" };
-  assert.deepEqual(scanText('const a="tok_live_1234567890"', env), ["value of THREADS_ACCESS_TOKEN"]);
+  // Low-entropy placeholder built at runtime so gitleaks does not flag the fixture.
+  const value = "placeholder".repeat(2);
+  const env = { THREADS_ACCESS_TOKEN: value };
+  assert.deepEqual(scanText(`const a="${value}"`, env), ["value of THREADS_ACCESS_TOKEN"]);
   assert.deepEqual(scanText("const a=1", env), []);
 });
 
