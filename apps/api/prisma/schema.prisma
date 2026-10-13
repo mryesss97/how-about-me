@@ -304,6 +304,9 @@ model SocialPost {
 
   currentAnalysisId String?         @map("current_analysis_id") @db.Uuid
   latestRunStatus   AnalysisStatus? @map("latest_run_status")
+  /// Review queue marker (T-144, BR-040): reviewed while reviewed_at >= latest run created_at. No FK (like analysis_overrides.reviewed_by).
+  reviewedAt        DateTime?       @map("reviewed_at") @db.Timestamptz(6)
+  reviewedBy        String?         @map("reviewed_by") @db.Uuid
   /// Generated column + GIN index created in raw SQL (init_extras); dbgenerated default mirrors the expression so `migrate diff` stays empty (T-007, FR-161).
   searchVector      Unsupported("tsvector")? @default(dbgenerated("to_tsvector('simple'::regconfig, COALESCE(text, ''::text))")) @map("search_vector")
 

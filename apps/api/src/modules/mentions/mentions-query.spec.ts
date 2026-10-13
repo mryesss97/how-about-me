@@ -91,14 +91,21 @@ describe("mentions-query", () => {
     expect(s).not.toContain("JOIN post_query_matches");
   });
 
-  it("resolveMentionsScope: default 7×24h range, relevance=relevant (BR-016), reviewStatus ignored", () => {
+  it("resolveMentionsScope: default 7×24h range, relevance=relevant (BR-016), reviewStatus kept out of filters", () => {
     const r = resolveMentionsScope(MentionsListQuerySchema.parse({ reviewStatus: "reviewed" }), PID, now);
     expect(r.scope.range.to).toEqual(now);
     expect(r.scope.range.from).toEqual(new Date("2026-10-06T00:00:00Z"));
     expect(r.scope.filters.relevance).toEqual(["relevant"]);
     expect(r.scope.filters).not.toHaveProperty("reviewStatus");
     expect(r.scope.filters).not.toHaveProperty("q");
-    expect(r).toMatchObject({ sort: "newest", limit: 25, count: false });
+    expect(r).toMatchObject({ sort: "newest", limit: 25, count: false, reviewStatus: ["reviewed"] });
+  });
+
+  it("BR-040 (#115): reviewStatus filter — one value filters, none or both do not", () => {
+    expect(norm(mentionsFromWhere(undefined, ["reviewed"]))).toMatch(/AND \(p\.reviewed_at IS NOT NULL/);
+    expect(norm(mentionsFromWhere(undefined, ["unreviewed"]))).toMatch(/AND NOT \(p\.reviewed_at IS NOT NULL/);
+    expect(norm(mentionsFromWhere(undefined, []))).not.toContain("reviewed_at");
+    expect(norm(mentionsFromWhere(undefined, ["reviewed", "unreviewed"]))).not.toContain("reviewed_at");
   });
 
   it("T-145 resolveFilterScope: bulk body → same scope as list (default range, BR-016), no reviewStatus", () => {

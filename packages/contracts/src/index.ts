@@ -13,3 +13,4 @@ export * from "./system-status.js";
 export * from "./audit.js";
 export * from "./analysis-settings.js";
 export * from "./analysis/classifier-output.js";
+export * from "./reviews.js";

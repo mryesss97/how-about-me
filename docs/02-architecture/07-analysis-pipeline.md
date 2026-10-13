@@ -243,6 +243,8 @@ Budget (T-075, `AnalysisPauseService`): spent = SUM `estimated_cost_usd` of runs
 
 `effective_post_analysis` view (doc 04 §5). Override write: insert `analysis_overrides` (revoke existing active same field), audit; analytics read via view; intents/topics override replaces the label set for that post (views `effective_post_intents|topics`, doc 04 §5). Implemented in `apps/api/src/modules/reviews` (T-142): one transaction with a `social_posts … FOR UPDATE` row lock, `previous_value` = AI value of the current analysis, audit in the same tx. Re-analysis never revokes an override (BR-025: override keeps winning).
 
+Review queue (T-144, FR-195): `low_confidence` compares the AI `overall_model_confidence` with the `medium` band of the policy stamped on the run (`analysis_runs.safety_policy_version` → `analysis_settings`, none → v1), not the active policy (doc 08 §8). A new run after "Mark reviewed" re-opens the item (BR-040). Mentions list `confidenceBand` still uses v1 bands (#220).
+
 ## 11. Configuration
 
 | Env                                                            | Default                                 |

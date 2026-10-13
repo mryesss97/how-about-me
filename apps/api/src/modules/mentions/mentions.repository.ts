@@ -7,6 +7,7 @@ import {
   PlatformSchema,
   QueryTypeSchema,
   RelevanceLabelSchema,
+  type ReviewStatus,
   SafetyLevelSchema,
   SentimentLabelSchema,
 } from "@how-about-me/contracts";
@@ -229,6 +230,7 @@ export class MentionsRepository {
     cursor: { keys: (string | number)[]; id: string } | null,
     limit: number,
     db: Prisma.TransactionClient = this.prisma,
+    reviewStatus: readonly ReviewStatus[] = [],
   ): Promise<MentionPageRow[]> {
     const spec = MENTION_SORT_SPECS[sort];
     const rows = await db.$queryRaw<Record<string, unknown>[]>(
@@ -242,7 +244,7 @@ export class MentionsRepository {
                           b.safety_level::text AS safety_level, b.language_code, b.summary,
                           b.overall_model_confidence, COALESCE(b.has_override, false) AS has_override,
                           ${sortKeySelect(spec)}
-                     ${mentionsFromWhere(q)} ${keysetPredicate(spec, cursor)}
+                     ${mentionsFromWhere(q, reviewStatus)} ${keysetPredicate(spec, cursor)}
                      ${orderBy(spec)} LIMIT ${limit + 1}`,
       ),
     );
@@ -370,12 +372,16 @@ export class MentionsRepository {
    * `count=true`: exact COUNT over the same filtered set (ignores cursor) — drill-down equivalence (metric-defs §6).
    * Bounded by a transaction-local statement_timeout; returns null on timeout.
    */
-  async count(scope: AnalyticsScope, q: string | undefined): Promise<number | null> {
+  async count(
+    scope: AnalyticsScope,
+    q: string | undefined,
+    reviewStatus: readonly ReviewStatus[] = [],
+  ): Promise<number | null> {
     try {
       return await this.prisma.$transaction(async (tx) => {
         await tx.$queryRaw`SELECT set_config('statement_timeout', ${String(this.countTimeoutMs)}, true)`;
         const rows = await tx.$queryRaw<unknown[]>(
-          withMentionsBase(scope, Prisma.sql`SELECT count(*)::int AS n ${mentionsFromWhere(q)}`),
+          withMentionsBase(scope, Prisma.sql`SELECT count(*)::int AS n ${mentionsFromWhere(q, reviewStatus)}`),
         );
         return CountRowSchema.parse(rows[0]).n;
       });
