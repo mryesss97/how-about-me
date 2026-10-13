@@ -1,0 +1,75 @@
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { KpiCards } from "./kpi-cards";
+import { overviewFixture } from "./overview-fixture.test-utils";
+
+/** React Aria opens tooltips on keyboard focus; set keyboard modality first. */
+async function focusTrigger(el: HTMLElement) {
+  fireEvent.keyDown(document.body, { key: "Tab" });
+  await act(async () => el.focus());
+}
+
+describe("KpiCards (FR-132)", () => {
+  it("renders six cards", () => {
+    render(<KpiCards kpis={overviewFixture().kpis} />);
+    expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(6);
+  });
+
+  it("TC-DASH-006 / FR-140: info icon shows definition + denominator; sub-text shows denominator", async () => {
+    render(<KpiCards kpis={overviewFixture().kpis} />);
+    for (const label of [
+      "Total Relevant Mentions",
+      "Mention Growth",
+      "Positive Rate",
+      "Negative Rate",
+      "Sensitive + Severe Rate",
+      "Complaint Rate",
+    ]) {
+      expect(screen.getByRole("button", { name: `About ${label}` })).toBeInTheDocument();
+    }
+    await focusTrigger(screen.getByRole("button", { name: "About Positive Rate" }));
+    const tip = await screen.findByRole("tooltip");
+    expect(within(tip).getByText(/sentiment = positive/)).toBeInTheDocument();
+    expect(
+      within(tip).getByText(/Denominator: relevant mentions with a completed sentiment label/),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("of 2,410 analysed").length).toBeGreaterThan(0);
+  });
+
+  it("TC-DASH-007 / FR-133: growthState new shows New, never ∞ or NaN", () => {
+    const base = overviewFixture().kpis;
+    render(
+      <KpiCards kpis={{ ...base, mentionCount: { value: 12, previous: 0, growthPct: null, growthState: "new" } }} />,
+    );
+    expect(screen.getByText("New")).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/∞|NaN|Infinity/);
+  });
+
+  it("TC-DASH-008 / BR-032: null rate with denominator 0 shows — with tooltip, not 0%", async () => {
+    const base = overviewFixture().kpis;
+    const empty = { value: null, numerator: 0, denominator: 0 };
+    render(<KpiCards kpis={{ ...base, positiveRate: empty, negativeRate: empty }} />);
+    const [first, ...rest] = screen.getAllByRole("button", { name: "No analysed mentions in range" });
+    expect(rest).toHaveLength(1);
+    expect(screen.queryByText("0%")).toBeNull();
+    expect(screen.queryByText("0.0%")).toBeNull();
+    await focusTrigger(first as HTMLElement);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("No analysed mentions in range");
+  });
+
+  it("shows severe count only when > 0 (BR-017: safety is its own card)", () => {
+    const base = overviewFixture().kpis;
+    const { rerender } = render(<KpiCards kpis={base} />);
+    expect(screen.queryByText(/severe$/)).toBeNull();
+    rerender(<KpiCards kpis={{ ...base, safetyRiskRate: { ...base.safetyRiskRate, severeCount: 3 } }} />);
+    expect(screen.getByText("3 severe")).toBeInTheDocument();
+  });
+
+  it("rate delta in pp only when previous is returned (compare on)", () => {
+    const base = overviewFixture().kpis;
+    const { rerender } = render(<KpiCards kpis={base} />);
+    expect(screen.queryByText(/pp$/)).toBeNull();
+    rerender(<KpiCards kpis={{ ...base, negativeRate: { ...base.negativeRate, previous: 0.179 } }} />);
+    expect(screen.getByText("+2.1 pp")).toBeInTheDocument();
+  });
+});

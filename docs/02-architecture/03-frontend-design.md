@@ -35,6 +35,7 @@ apps/web/src/
 │  ├─ query/                     TanStack Query client + key factories
 │  ├─ filters/                   URL state (nuqs) schema shared by overview & mentions
 │  ├─ time/                      timezone formatting (date-fns-tz), presets → ranges
+│  ├─ format/                    number formatting for KPIs (count, rate or "—", growth/"New", pp delta)
 │  └─ semantics/                 badge mappings for sentiment/safety/relevance/status
 ├─ providers/                    theme, router (Untitled UI), query provider
 ├─ hooks/ · utils/               from Untitled UI (+ ours)

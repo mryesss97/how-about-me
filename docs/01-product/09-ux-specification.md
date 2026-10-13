@@ -87,7 +87,7 @@ Centered card: logo, email + password, "Continue with Google" (if enabled), erro
 Layout (12-col grid, 24 px gap):
 
 1. **Banners row** (conditional): integration / sync / pending banners (2.3).
-2. **KPI row**: 6 cards (2 rows × 3 on tablet). Card = label + info icon, big value, delta vs previous (arrow + %, or "New"), sub-text with denominator ("of 2,410 analysed").
+2. **KPI row**: 6 cards (2 rows × 3 on tablet). Card = label + info icon, big value, delta vs previous (arrow + %, or "New"), sub-text with denominator ("of 2,410 analysed"). Mention Growth is its own card ("New" when the previous period had 0). Rate cards show a delta in percentage points ("+2.1 pp") only when Compare is on; delta colour is neutral (arrow only). Banners: `lastSyncStatus` failed/partial → sync-failed banner; `pendingMentions > 0` → pending banner; `integrationStatus ≠ connected` → integration banner (link for admins only).
 3. **Mentions over time** (span 8) + **Sentiment distribution** donut (span 4).
 4. **Sentiment over time** stacked bars (span 6) + **Safety distribution** horizontal bars (span 6).
 5. **Top topics** horizontal bar (span 6) + **Intent distribution** horizontal bar (span 6).
