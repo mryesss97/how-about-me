@@ -82,6 +82,13 @@ describe("buildBaseSetCte", () => {
     expect(norm(buildBaseSetCte(scopeOf({}), { ignore: ["relevance"] }))).not.toContain("relevance_label = ANY");
   });
 
+  it("base exposes confidence/override columns for the mentions list (T-095)", () => {
+    const sql = norm(buildBaseSetCte(scopeOf({})));
+    expect(sql).toContain("e.overall_model_confidence");
+    expect(sql).toContain("e.has_override");
+    expect(sql).toContain("e.relevance_confidence");
+  });
+
   it("withBase prefixes WITH", () => {
     expect(withBase(scopeOf({}), Prisma.sql`SELECT count(*) FROM base`).sql.trimStart()).toMatch(/^WITH base AS/);
   });

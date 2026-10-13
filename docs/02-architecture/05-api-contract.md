@@ -266,6 +266,16 @@ Query: `from,to,timezone,queryIds[],q,relevance[] (default relevant),sentiment[]
 }
 ```
 
+**List (T-095, FR-150/152/153/161).**
+
+- Base set = analytics §6 (metric-definitions §0/§6): default range `[now − 7×24h, now)`, `relevance` default `relevant` (BR-016), ≥1 match with `excluded_by_terms=false` (BR-007), empty `queryIds` includes soft-deleted queries (BR-010), effective analysis incl. active overrides (BR-025). One row per post (BR-002). Posts never analysed have NULL labels and drop out under the default relevance; send `relevance=` (empty) to include them.
+- Sorts (NULLs last, tie-breaker `published_at DESC, post_id`): `newest` = `published_at DESC`; `oldest` = `published_at ASC, post_id ASC`; `safety_desc` = severe > sensitive > safe > none; `confidence_asc` = `overall_model_confidence ASC`; `relevance_desc` = label rank (relevant > uncertain > irrelevant) then `relevance_confidence DESC`.
+- `cursor` is opaque and bound to `sort`; malformed, tampered or other-sort cursor → `400 VALIDATION_ERROR`. `limit` 1–100 (above → 400, no clamping). Clients must reset the cursor when filters change and dedupe by `id` (re-analysis between pages may move a post under label sorts).
+- `q` (NFC, whitespace-collapsed): full-text `websearch_to_tsquery('simple', q)` on `search_vector` (no stemming/unaccent: "gia ve" ≠ "giá vé"); terms < 3 characters or without letters/digits use case-insensitive substring `ILIKE` with `%`/`_` taken literally.
+- `count=true` → `totalCount` of the whole filtered set (ignores cursor), equal to the dashboard number for the same filters. Bounded by a 1.5 s `statement_timeout`; on timeout `totalCount` is omitted.
+- `matchedQueries` includes matches of soft-deleted queries and `excludedByTerms=true` matches. `analysis.status` = latest run status (`pending` when no run exists); labels stay those of the current analysis while a re-run is pending. `errorCode` only when `status=failed`.
+- `reviewStatus` (P1) is accepted and ignored until review state exists.
+
 ### `GET /projects/:projectId/mentions/:id`
 
 Adds: `ownerId, shortcode, mediaUrl, altText, linkAttachmentUrl, quotedPostId, repostedPostId, firstSeenAt, lastSeenAt, revision, contentHash`, `analysis.safety.categoryScores`, `analysis.relevance.explanation`, `analysis.versions {classifierProvider, classifierModel, promptVersion, taxonomyVersion, safetyProvider, safetyModel, safetyPolicyVersion}`, `analysis.analyzedAt`, `analysis.tokens {input, output}, estimatedCostUsd`, `runs:[{id,status,trigger,effectiveVersion,createdAt,completedAt,errorCode}]`, `overrides:[…]` (P1).

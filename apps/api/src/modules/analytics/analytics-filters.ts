@@ -65,7 +65,8 @@ export function buildBaseSetCte(scope: AnalyticsScope, opts: { ignore?: readonly
   const topic = pick("topic", f.topic);
   return Prisma.sql`base AS (
     SELECT e.post_id, e.published_at, e.first_seen_at, e.relevance_label, e.sentiment_label,
-           e.safety_level, e.language_code, e.latest_run_status, e.analysis_id
+           e.safety_level, e.language_code, e.latest_run_status, e.analysis_id,
+           e.relevance_confidence, e.sentiment_confidence, e.overall_model_confidence, e.summary, e.has_override
       FROM effective_post_analysis e
      WHERE e.project_id = ${scope.projectId}::uuid
        AND ${col} >= ${scope.range.from} AND ${col} < ${scope.range.to}
