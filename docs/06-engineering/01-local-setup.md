@@ -42,7 +42,7 @@ pnpm db:seed          # project, admin (SEED_ADMIN_EMAIL), 4 queries
 
 Reset: `pnpm db:reset`.
 
-The API's tsx scripts (`db:seed`, `seed:auth-user`, `eval:classifier`, `purge`, `secrets:rewrap`) read `apps/api/.env` themselves via `tsx --env-file-if-exists=.env`; variables already exported in the shell take precedence.
+The API's tsx scripts (`db:seed`, `seed:auth-user`, `eval:classifier`, `purge`, `secrets:rewrap`, `perf:seed`, `perf:explain`) read `apps/api/.env` themselves via `tsx --env-file-if-exists=.env`; variables already exported in the shell take precedence.
 
 The container's init script (`docker/postgres/init/01-test-db.sql`) also creates `how_about_me_test`, the database the API integration tests use. It runs only on a fresh `pgdata` volume; on an older volume create it by hand: `docker exec how-about-me-postgres createdb -U postgres how_about_me_test`.
 
@@ -60,15 +60,16 @@ With `PROVIDERS_MODE=fake` the collector ingests fixtures and the analyzer produ
 
 ## 5. Useful scripts
 
-| Command                                                     | What                                                                                                                                         |
-| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build` | all workspaces via Turborepo                                                                                                                 |
-| `pnpm test:int`                                             | API integration tests: builds `packages/*`, then Jest + Supertest on Docker Postgres (`pnpm db:up` first)                                    |
-| `pnpm test:int:quiet`                                       | Same, log in `.git/worktrees/<name>/test-int.log`; one line on pass, last 50 lines on fail; failures kept as `test-int-<UTC>.log` (5 newest) |
-| `pnpm --filter @how-about-me/web e2e`                       | Playwright                                                                                                                                   |
-| `pnpm db:studio`                                            | Prisma Studio                                                                                                                                |
-| `pnpm issues:sync`                                          | create/update GitHub issues from `docs/03-delivery/backlog.json` (needs `gh auth`)                                                           |
-| `npx untitledui@latest add <component> --dir apps/web`      | add an Untitled UI component                                                                                                                 |
+| Command                                                                    | What                                                                                                                                                          |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build`                | all workspaces via Turborepo                                                                                                                                  |
+| `pnpm test:int`                                                            | API integration tests: builds `packages/*`, then Jest + Supertest on Docker Postgres (`pnpm db:up` first)                                                     |
+| `pnpm test:int:quiet`                                                      | Same, log in `.git/worktrees/<name>/test-int.log`; one line on pass, last 50 lines on fail; failures kept as `test-int-<UTC>.log` (5 newest)                  |
+| `pnpm --filter @how-about-me/web e2e`                                      | Playwright                                                                                                                                                    |
+| `pnpm --filter @how-about-me/api perf:seed -- --truncate` / `perf:explain` | 100k-post synthetic dataset into `PERF_DATABASE_URL` and query-plan / p95 report — [perf report §6](../02-architecture/12-performance-report.md#6-re-running) |
+| `pnpm db:studio`                                                           | Prisma Studio                                                                                                                                                 |
+| `pnpm issues:sync`                                                         | create/update GitHub issues from `docs/03-delivery/backlog.json` (needs `gh auth`)                                                                            |
+| `npx untitledui@latest add <component> --dir apps/web`                     | add an Untitled UI component                                                                                                                                  |
 
 ## 6. Troubleshooting
 

@@ -62,6 +62,7 @@ docs/
 - [09-observability.md](02-architecture/09-observability.md)
 - [10-testing-strategy.md](02-architecture/10-testing-strategy.md)
 - [11-environments-deployment.md](02-architecture/11-environments-deployment.md)
+- [12-performance-report.md](02-architecture/12-performance-report.md)
 - [adr/](02-architecture/adr/README.md) — Architecture Decision Records
 
 ### 03 — Delivery
