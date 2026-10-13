@@ -4,7 +4,7 @@ import type { Override } from "@how-about-me/contracts";
 import { useState } from "react";
 import { Button } from "@/components/base/buttons/button";
 import { ValueSourceBadge } from "@/features/shared/semantic-badge";
-import { SettingsDialog } from "@/features/settings/settings-dialog";
+import { SettingsDialog } from "@/features/shared/settings-dialog";
 import { formatValue, overrideTooltip } from "./overrides";
 
 type Props = {
