@@ -27,9 +27,10 @@ The browser holds only: Supabase URL, **anon** key, its own session JWT, API bas
 ## 3. Authorization (RBAC)
 
 - `ProjectRoleGuard` + `@Roles('admin')` etc. per [../01-product/02-personas-rbac.md](../01-product/02-personas-rbac.md).
-- Project settings gates (`allowAnalystReanalyze`, `allowViewerExport`) evaluated in the guard for the specific endpoints.
+- Project settings gates (`allowAnalystReanalyze`, `allowViewerExport`) evaluated in the guard for the specific endpoints, declared with `@AllowRoleWhenSetting(role, setting)` next to `@Roles`. Settings are loaded in the same query as membership and parsed with `ProjectSettingsSchema` (malformed JSON → defaults); a blocked gate returns `403 FORBIDDEN_ROLE` naming the setting.
 - Deny by default: controllers without `@Roles` under `/projects/:projectId` require membership; controllers outside (`/me`) require a valid JWT.
-- Tests: role matrix table-driven tests for every mutating route (TC-AUTH).
+- `apps/api/src/common/auth/permission-matrix.ts` is the executable copy of the personas-rbac §3 matrix (`implemented` / `planned` per route). Change both in the same PR.
+- Tests: `test/integration/rbac.int-spec.ts` discovers every Nest route; a mutating `/projects/:projectId` route without `@Roles` or a matching matrix entry fails CI (TC-AUTH-012). Each `implemented` entry is exercised table-driven for admin/analyst/viewer.
 
 ## 4. Secrets inventory
 
