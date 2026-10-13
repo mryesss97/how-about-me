@@ -75,9 +75,18 @@ analyzedMentions = distinct posts in range with a completed effective analysis (
 pendingMentions  = distinct posts in range whose latest run status ∈ {pending, processing}
 failedMentions   = distinct posts in range whose latest run status = failed
 irrelevantMentions = distinct posts in range with relevance = irrelevant   (for transparency)
+uncertainMentions  = distinct posts in range with relevance = uncertain    (for transparency)
 ```
 
-Plus `dataQuality`: `lastSyncStatus` (success/partial/failed/none in last 2 × max poll interval), `integrationStatus`.
+Coverage counts (except `relevantMentions`) ignore relevance, analysis-status and label filters (pending/failed posts have no labels); query and time filters still apply. A post that already has an effective analysis counts as analyzed even while a re-run is pending, so pending/failed count only posts without one.
+
+Plus `dataQuality`: `lastSyncStatus` (success/partial/failed/none in last 2 × max poll interval of enabled queries, default 600 s), `integrationStatus` (Threads connection; no row → `disconnected`), `collectorStatus`:
+
+- `paused` — collector circuit breaker open (`collector_state.circuit_open_until > now`);
+- `degraded` — `lastSyncStatus ∈ {failed, partial}` or Threads integration ≠ `connected`;
+- `healthy` — otherwise.
+
+`kpis.mentionCount.previous/growthPct/growthState` are always returned (growth vs the previous period, §5) even when `compare=false`; rate `previous` values and `range.previous` only when `compare=true`.
 
 ## 3. Charts (P0)
 
@@ -165,7 +174,7 @@ Range 2026-09-04 00:00 → 2026-09-05 00:00 (+07:00), relevance = relevant.
 | With intents                      | 2 410; complaint 675 → 28.0 %                        |
 | Previous period distinct relevant | 2 043 → growth +21.4 %                               |
 
-`positive + neutral + negative = 2 410 ✓` · `analyzed 2 410 + pending 61 + failed 10 = 2 481 ✓`.
+`positive + neutral + negative = 2 410 ✓` · `analyzed + pending + failed` = all in-range posts with an analysis run (any relevance, §2); it equals `relevantMentions` here only because the example has no irrelevant/uncertain posts.
 
 ## 9. Change control
 
