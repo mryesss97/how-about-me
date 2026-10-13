@@ -1,0 +1,153 @@
+"use client";
+
+import { ValidationErrorDetailsSchema, type AnalysisSettings } from "@how-about-me/contracts";
+import type { SafetyCategory } from "@how-about-me/taxonomy";
+import { useState, type FormEvent } from "react";
+import { toast } from "sonner";
+import { Badge } from "@/components/base/badges/badges";
+import { Button } from "@/components/base/buttons/button";
+import { Input } from "@/components/base/input/input";
+import { ApiError } from "@/lib/api/client";
+import { formatDateTime, formatRelativeOrAbsolute } from "@/lib/time/format";
+import { errorMessage } from "../api";
+import {
+  diffAnalysisSettings,
+  errorsFromIssues,
+  toDraft,
+  validateDraft,
+  type AnalysisDraft,
+  type PolicyErrors,
+  type ThresholdDraft,
+} from "./analysis-policy-form-state";
+import { AnalysisVersions } from "./analysis-versions";
+import { useUpdateAnalysisSettings } from "./api";
+import { SafetyThresholdsTable } from "./safety-thresholds-table";
+
+function PolicyHeader({ settings, timeZone }: { settings: AnalysisSettings; timeZone?: string }) {
+  const by = settings.createdBy ? (settings.createdBy.displayName ?? settings.createdBy.email) : null;
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-2">
+        <h2 className="text-md font-semibold text-primary">{settings.policyVersion}</h2>
+        {settings.isDefault ? (
+          <Badge size="sm" color="gray" type="pill-color">
+            Default
+          </Badge>
+        ) : null}
+      </div>
+      {settings.isDefault && !by ? (
+        <p className="text-sm text-tertiary">Default policy (taxonomy defaults)</p>
+      ) : settings.createdAt ? (
+        <p className="text-sm text-tertiary">
+          Created{" "}
+          <time dateTime={settings.createdAt} title={formatDateTime(settings.createdAt, timeZone)}>
+            {formatRelativeOrAbsolute(settings.createdAt, new Date(), timeZone)}
+          </time>
+          {by ? ` by ${by}` : null}
+        </p>
+      ) : null}
+      {settings.outdatedCount > 0 ? (
+        <p className="text-sm text-tertiary">
+          {settings.outdatedCount.toLocaleString("en-US")} posts were analysed with an older policy.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/** Settings → Analysis (UX §3.7, FR-190). Non-admins read only; the API enforces FR-015. */
+export function AnalysisSettingsForm({
+  pid,
+  settings,
+  canEdit,
+  timeZone,
+  onSaved,
+}: {
+  pid: string;
+  settings: AnalysisSettings;
+  canEdit: boolean;
+  timeZone?: string;
+  onSaved?: (s: AnalysisSettings) => void;
+}) {
+  const [draft, setDraft] = useState<AnalysisDraft>(() => toDraft(settings));
+  const [serverErrors, setServerErrors] = useState<PolicyErrors>({});
+  const update = useUpdateAnalysisSettings(pid);
+  const readOnly = !canEdit;
+
+  // BR-018 / BR-021: re-validated on every change so fixing one cell clears the pair.
+  const liveErrors = validateDraft(draft);
+  const errors = { ...serverErrors, ...liveErrors };
+  const body = diffAnalysisSettings(settings, draft);
+  const hasErrors = Object.keys(liveErrors).length > 0;
+  const dirty = Object.keys(body).length > 0 || hasErrors;
+
+  const edit = (fn: (d: AnalysisDraft) => AnalysisDraft) => {
+    setDraft(fn);
+    setServerErrors({});
+  };
+  const setBand = (k: "high" | "medium", v: string) => edit((d) => ({ ...d, bands: { ...d.bands, [k]: v } }));
+  const setThreshold = (c: SafetyCategory, level: keyof ThresholdDraft, v: string) =>
+    edit((d) => ({ ...d, thresholds: { ...d.thresholds, [c]: { ...d.thresholds[c], [level]: v } } }));
+
+  const onSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (hasErrors || Object.keys(body).length === 0) return;
+    update.mutate(body, {
+      onSuccess: (next) => {
+        // "No changes" only happens on a race (another admin saved the same values first); the API creates no version.
+        toast.success(next.version !== settings.version ? `Created ${next.policyVersion}` : "No changes");
+        onSaved?.(next);
+      },
+      onError: (err) => {
+        const details = err instanceof ApiError ? ValidationErrorDetailsSchema.safeParse(err.details) : null;
+        if (err instanceof ApiError && err.code === "VALIDATION_ERROR" && details?.success)
+          setServerErrors(errorsFromIssues(details.data.issues, draft));
+        else setServerErrors({ form: errorMessage(err) });
+      },
+    });
+  };
+
+  return (
+    <form onSubmit={onSubmit} noValidate className="flex max-w-3xl flex-col gap-6" aria-label="Analysis settings">
+      <PolicyHeader settings={settings} timeZone={timeZone} />
+      <fieldset className="flex flex-col gap-3">
+        <legend className="mb-2 text-sm font-semibold text-primary">Confidence bands</legend>
+        <div className="grid grid-cols-2 gap-4">
+          {(["high", "medium"] as const).map((k) => (
+            <Input
+              key={k}
+              label={k === "high" ? "High (≥)" : "Medium (≥)"}
+              type="number"
+              value={draft.bands[k]}
+              onChange={(v) => setBand(k, v)}
+              isDisabled={readOnly}
+              isInvalid={!!errors[`confidenceBands.${k}`]}
+              hint={errors[`confidenceBands.${k}`]}
+            />
+          ))}
+        </div>
+      </fieldset>
+      <SafetyThresholdsTable
+        thresholds={draft.thresholds}
+        errors={errors}
+        readOnly={readOnly}
+        onChange={setThreshold}
+      />
+      <AnalysisVersions settings={settings} />
+      {errors.form ? (
+        <p role="alert" className="text-sm text-error-primary">
+          {errors.form}
+        </p>
+      ) : null}
+      {readOnly ? (
+        <p className="text-sm text-tertiary">Only project admins can change these settings.</p>
+      ) : (
+        <div>
+          <Button type="submit" isDisabled={!dirty} isLoading={update.isPending}>
+            Create new policy version
+          </Button>
+        </div>
+      )}
+    </form>
+  );
+}
