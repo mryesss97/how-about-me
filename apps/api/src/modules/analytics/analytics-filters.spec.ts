@@ -78,6 +78,24 @@ describe("buildBaseSetCte", () => {
     expect(s.values).toEqual(expect.arrayContaining([["negative"], ["severe"], ["vi"]]));
   });
 
+  it("language=vi → plain ANY, no taxonomy fold (FR-143)", () => {
+    const sql = norm(buildBaseSetCte(scopeOf({ language: "vi" })));
+    expect(sql).toContain("AND e.language_code = ANY(?)");
+    expect(sql).not.toContain("IS NOT NULL");
+  });
+
+  it("language=other also matches codes outside the taxonomy, not NULL (FR-143, #201)", () => {
+    const s = buildBaseSetCte(scopeOf({ language: "other" }));
+    expect(norm(s)).toContain("e.language_code IS NOT NULL AND NOT (e.language_code = ANY(?::text[]))");
+    expect(s.values).toContainEqual(expect.arrayContaining(["vi", "en", "other", "unknown"]));
+  });
+
+  it("ignore language drops the language filter", () => {
+    expect(norm(buildBaseSetCte(scopeOf({ language: "other" }), { ignore: ["language"] }))).not.toContain(
+      "language_code = ANY",
+    );
+  });
+
   it("ignore drops the relevance filter (coverage)", () => {
     expect(norm(buildBaseSetCte(scopeOf({}), { ignore: ["relevance"] }))).not.toContain("relevance_label = ANY");
   });

@@ -3,6 +3,7 @@
  * — docs/01-product/07-metric-definitions.md §0, §5. Every analytics widget must start from `base`.
  */
 import type { AnalysisFilters, AnalyticsQuery } from "@how-about-me/contracts";
+import { LANGUAGE_CODES } from "@how-about-me/taxonomy";
 import { Prisma } from "@prisma/client";
 import { type Range, resolveRange } from "../../common/time/range";
 
@@ -50,6 +51,16 @@ function anyOf(col: string, values: readonly string[], cast?: string): Prisma.Sq
 }
 
 /**
+ * FR-143 / drill-down equivalence (#201): `other` = stored 'other' or any non-NULL code outside the taxonomy,
+ * the same fold as `languageCounts`. NULL (not analysed yet) is never `other`.
+ */
+export function languageFilter(values: readonly string[]): Prisma.Sql {
+  if (values.length === 0) return Prisma.empty;
+  if (!values.includes("other")) return Prisma.sql`AND e.language_code = ANY(${values})`;
+  return Prisma.sql`AND (e.language_code = ANY(${values}::text[]) OR (e.language_code IS NOT NULL AND NOT (e.language_code = ANY(${[...LANGUAGE_CODES]}::text[]))))`;
+}
+
+/**
  * CTE `base` — one row per post_id (FR-147): effective analysis (BR-025 via view), range [from,to),
  * ≥1 match with excluded_by_terms=false (all project queries incl. soft-deleted when queryIds empty, BR-010).
  * Default relevance=relevant comes from the schema (BR-016); pending/failed posts have NULL labels and drop out
@@ -75,7 +86,7 @@ export function buildBaseSetCte(scope: AnalyticsScope, opts: { ignore?: readonly
        ${anyOf("e.relevance_label", pick("relevance", f.relevance), "relevance_label")}
        ${anyOf("e.sentiment_label", pick("sentiment", f.sentiment), "sentiment_label")}
        ${anyOf("e.safety_level", pick("safety", f.safety), "safety_level")}
-       ${anyOf("e.language_code", pick("language", f.language))}
+       ${languageFilter(pick("language", f.language))}
        ${anyOf("e.latest_run_status", pick("analysisStatus", f.analysisStatus), "analysis_status")}
        ${intent.length > 0 ? Prisma.sql`AND EXISTS (SELECT 1 FROM analysis_intents i WHERE i.analysis_id = e.analysis_id AND i.label = ANY(${intent}))` : Prisma.empty}
        ${topic.length > 0 ? Prisma.sql`AND EXISTS (SELECT 1 FROM analysis_topics t WHERE t.analysis_id = e.analysis_id AND t.label = ANY(${topic}))` : Prisma.empty}

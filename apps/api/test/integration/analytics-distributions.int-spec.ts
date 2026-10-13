@@ -285,6 +285,19 @@ describe("Analytics distributions (T-093)", () => {
       expect(countOf(d, "en")).toBe(0);
     });
 
+    it("#201 drill-down equivalence: language=other also matches codes outside the taxonomy, never NULL (FR-143)", async () => {
+      await seedPost({ at: "2026-10-02T03:00:00Z", labels: { language: "vi" } });
+      await seedPost({ at: "2026-10-02T04:00:00Z", labels: { language: "other" } });
+      await seedPost({ at: "2026-10-02T05:00:00Z", labels: { language: "fr" } });
+      await seedPost({ at: "2026-10-02T06:00:00Z", labels: { language: null } });
+      const unfiltered = await dist("languages");
+      const other = await dist("languages", { ...WEEK, language: "other" });
+      expect(other.denominator).toBe(2);
+      expect(countOf(other, "other")).toBe(2);
+      expect(other.denominator).toBe(countOf(unfiltered, "other"));
+      expect((await dist("languages", { ...WEEK, language: "vi,other" })).denominator).toBe(3);
+    });
+
     it("FR-015: viewer 200, non-member denied, invalid query 400", async () => {
       expect((await get("languages")).status).toBe(200);
       expect([403, 404]).toContain((await get("languages", WEEK, "outsider")).status);

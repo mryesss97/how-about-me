@@ -310,6 +310,33 @@ describe("Mentions list (T-095)", () => {
     }
   });
 
+  it("drill-down: language=other includes codes outside taxonomy (#201, FR-143)", async () => {
+    const other = await seedPost({ labels: { language: "other" } });
+    const fr = await seedPost({ labels: { language: "fr" } });
+    const vi = await seedPost({ labels: { language: "vi" } });
+    await seedPost({ labels: null }); // not analysed → language NULL, never `other`
+    type Page = { items: { id: string; analysis: { language: string | null } }[] };
+    const page = async (f: Record<string, string>) => (await get(f).expect(200)).body as Page;
+    const res = await page({ language: "other" });
+    expect(res.items.map((x) => x.id).sort()).toEqual([other, fr].sort());
+    expect(res.items.map((x) => x.analysis.language)).toEqual(["other", "other"]);
+    expect((await page({ language: "vi" })).items.map((x) => x.id)).toEqual([vi]);
+
+    // Three-way equivalence: chart `other` slice == analytics base count == mentions totalCount.
+    const chart = await api(app, token)
+      .get(`/projects/${projectId}/analytics/languages?${qs({})}`)
+      .expect(200);
+    const slice = (chart.body as { distribution: { label: string; count: number }[] }).distribution.find(
+      (x) => x.label === "other",
+    )?.count;
+    const { scope } = resolveMentionsScope(MentionsListQuerySchema.parse({ ...WEEK, language: "other" }), projectId);
+    const rows = await prisma.$queryRaw<{ n: number }[]>(
+      withBase(scope, Prisma.sql`SELECT count(*)::int AS n FROM base`),
+    );
+    const total = (await get({ language: "other", count: "true" }).expect(200)).body.totalCount;
+    expect([slice, rows[0]?.n, total]).toEqual([2, 2, 2]);
+  });
+
   it("BR-025: active override changes filtering and source", async () => {
     const id = await seedPost({});
     const reviewer = (await createUser(prisma)).id;

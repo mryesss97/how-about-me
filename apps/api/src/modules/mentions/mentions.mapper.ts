@@ -48,7 +48,8 @@ export function toMentionListItem(row: MentionPageRow, h: HydratedMentions): Men
       safety: row.safety_level ? { level: row.safety_level } : null,
       intents,
       topics,
-      language: language.success ? language.data : null,
+      // FR-143 (#201): codes outside the taxonomy fold into `other`, matching the chart slice; NULL stays null.
+      language: language.success ? language.data : row.language_code ? "other" : null,
       summary: row.summary,
       overallConfidence: overall,
       confidenceBand: overall == null ? null : confidenceBand(overall),
