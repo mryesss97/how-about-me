@@ -58,5 +58,7 @@ export const MemberSchema = z.object({
 });
 export type Member = z.infer<typeof MemberSchema>;
 export const AddMemberBodySchema = z.object({ email: z.email(), role: UserRoleSchema });
+export type AddMemberBody = z.infer<typeof AddMemberBodySchema>;
 export const UpdateMemberBodySchema = z.object({ role: UserRoleSchema });
+export type UpdateMemberBody = z.infer<typeof UpdateMemberBodySchema>;
 export const MemberListResponseSchema = z.array(MemberSchema);

@@ -74,7 +74,7 @@ erDiagram
 ### 4.3 `project_members`
 
 | project_id uuid FK · user_id uuid FK · role user_role NN · invited_email text · created_by uuid · created_at / updated_at · **PK (project_id, user_id)** |
-Invitations before first login: row keyed by a placeholder profile created from email (id generated); reconciled on first login by email match.
+Invitations before first login: row keyed by a placeholder profile created from email (id generated); reconciled on first login by email match. The placeholder has `last_login_at = null`; `invited_email` stores the normalized (trimmed, lower-case) email; `created_by` is the inviting admin (T-035).
 
 ### 4.4 `integration_connections`
 

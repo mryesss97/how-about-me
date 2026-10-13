@@ -13,7 +13,7 @@ import { Roles } from "../../common/auth/roles.decorator";
 import { zod } from "../../common/pipes/zod-validation.pipe";
 import { ProjectsService } from "./projects.service";
 
-/** docs/02-architecture/05-api-contract.md §3 — FR-031, FR-032. Members are implemented in T-035. */
+/** docs/02-architecture/05-api-contract.md §3 — FR-031, FR-032. Members: ./members (T-035). */
 @ApiTags("projects")
 @ApiBearerAuth()
 @Controller("projects")

@@ -102,7 +102,7 @@ class AppError extends Error {
 - Non-`AppError` 5xx: message is always `"Internal server error"`, never a stack. `production`/`staging` add no `details`; `development`/`test` add `details.debug.message`. `AppError` 5xx (e.g. `THREADS_*`) keep their message.
 - Exception: Terminus `/health/ready` 503 body (`{status, info, error, details}`) is passed through unwrapped.
 
-Codes (subset): `VALIDATION_ERROR(400)`, `AUTH_MISSING_TOKEN/INVALID_TOKEN/TOKEN_EXPIRED(401)`, `FORBIDDEN_ROLE/FORBIDDEN_PROJECT(403)`, `NOT_FOUND(404)`, `QUERY_DUPLICATE(409)`, `QUERY_IMMUTABLE_FIELD(400)`, `SYNC_ALREADY_RUNNING(409)`, `LAST_ADMIN(409)`, `THREADS_UNAUTHORIZED/FORBIDDEN/RATE_LIMITED/UPSTREAM_ERROR/TIMEOUT/MALFORMED_RESPONSE(502/503)`, `ANALYSIS_SCHEMA_INVALID(500 internal, stored on run)`, `EXPORT_TOO_LARGE(413)`, `RATE_LIMITED(429)`, `INTERNAL(500)`. Full list lives in `packages/contracts/src/errors.ts`.
+Codes (subset): `VALIDATION_ERROR(400)`, `AUTH_MISSING_TOKEN/INVALID_TOKEN/TOKEN_EXPIRED(401)`, `FORBIDDEN_ROLE/FORBIDDEN_PROJECT(403)`, `NOT_FOUND(404)`, `QUERY_DUPLICATE(409)`, `QUERY_IMMUTABLE_FIELD(400)`, `SYNC_ALREADY_RUNNING(409)`, `LAST_ADMIN(409)`, `MEMBER_EXISTS(409)`, `THREADS_UNAUTHORIZED/FORBIDDEN/RATE_LIMITED/UPSTREAM_ERROR/TIMEOUT/MALFORMED_RESPONSE(502/503)`, `ANALYSIS_SCHEMA_INVALID(500 internal, stored on run)`, `EXPORT_TOO_LARGE(413)`, `RATE_LIMITED(429)`, `INTERNAL(500)`. Full list lives in `packages/contracts/src/errors.ts`.
 
 ## 6. Scheduling & workers
 
