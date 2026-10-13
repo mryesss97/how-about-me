@@ -143,6 +143,7 @@ export const MentionDetailSchema = MentionListItemSchema.extend({
 export type MentionDetail = z.infer<typeof MentionDetailSchema>;
 
 export const ReanalyzeResponseSchema = z.object({ runId: UuidSchema, status: z.literal("pending") });
+export type ReanalyzeResponse = z.infer<typeof ReanalyzeResponseSchema>;
 
 /** POST …/mentions/reanalyze (P1): list filters + dryRun. */
 export const BulkReanalyzeBodySchema = withDateRange(

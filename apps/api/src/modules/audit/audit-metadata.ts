@@ -40,6 +40,8 @@ export const AUDIT_METADATA_ALLOW_LIST: ReadonlySet<string> = new Set([
   "since",
   "until",
   "jobId",
+  "runId",
+  "effectiveVersion",
   "count",
   "postIds",
   "filters",

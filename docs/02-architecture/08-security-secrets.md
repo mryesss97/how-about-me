@@ -58,7 +58,7 @@ pino `redact` paths (`REDACT_PATHS` in `apps/api/src/common/logging/logger.confi
 Implementation (`apps/api/src/modules/audit/`, T-059):
 
 - `record(input, tx?)` — pass a Prisma `tx` to write the audit row in the same transaction as the mutation (audit failure then fails the mutation). Without `tx`, a failed write is logged at `warn` (no metadata) and never blocks the caller. `id` is a uuid v7; `requestId` comes from `req.id`.
-- Metadata sanitizing (`sanitizeAuditMetadata`): top-level keys must be in a shared allow-list (`changes, before, after, fields, role, previousRole, queryValue, queryType, since, until, jobId, count, postIds, filters, format, rowCount, field, value, reason, status, errorCode, name, email, enabled`); keys matching `/token|secret|password|api[_-]?key|authorization|ciphertext|private|service[_-]?role|credential|cookie|^key$/i` are dropped at any depth, even when allow-listed. Max depth 3, strings ≤ 500 chars, serialized JSON ≤ 4 KB (otherwise stored as `{ truncated: true }`). Per-action allow-lists are post-MVP.
+- Metadata sanitizing (`sanitizeAuditMetadata`): top-level keys must be in a shared allow-list (`changes, before, after, fields, role, previousRole, queryValue, queryType, since, until, jobId, runId, effectiveVersion, count, postIds, filters, format, rowCount, field, value, reason, status, errorCode, name, email, enabled`); keys matching `/token|secret|password|api[_-]?key|authorization|ciphertext|private|service[_-]?role|credential|cookie|^key$/i` are dropped at any depth, even when allow-listed. Max depth 3, strings ≤ 500 chars, serialized JSON ≤ 4 KB (otherwise stored as `{ truncated: true }`). Per-action allow-lists are post-MVP.
 
 ## 7. Transport & app hardening
 

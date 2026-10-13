@@ -47,7 +47,7 @@ export const PERMISSION_MATRIX: readonly PermissionEntry[] = [
     admin: "allow",
     analyst: { setting: "allowAnalystReanalyze" },
     viewer: "deny",
-    status: "planned",
+    status: "implemented",
   },
   { method: "POST", path: `${P}/mentions/reanalyze`, ...ADMIN_ONLY, status: "planned" },
   {
