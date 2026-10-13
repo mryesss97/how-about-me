@@ -26,4 +26,13 @@ describe("IntentDistributionChart", () => {
     );
     expect(screen.getByText(/req-1/)).toBeInTheDocument();
   });
+
+  it("FR-142: zero-count intents are not drillable", async () => {
+    const data = intentsFixture();
+    const zero = data.distribution.find((d) => d.count === 0);
+    render(<IntentDistributionChart data={data} getHref={(k) => `/mentions?intent=${k}`} onNavigate={() => {}} />);
+    await openTable();
+    expect(screen.getAllByRole("link").length).toBe(data.distribution.filter((d) => d.count > 0).length);
+    if (zero) expect(screen.queryByRole("link", { name: new RegExp(`^${zero.label}$`, "i") })).toBeNull();
+  });
 });
