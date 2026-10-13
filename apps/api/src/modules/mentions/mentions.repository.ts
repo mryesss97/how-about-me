@@ -165,8 +165,56 @@ export class MentionsRepository {
     return n > 0;
   }
 
-  transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
-    return this.prisma.$transaction(fn);
+  transaction<T>(
+    fn: (tx: Prisma.TransactionClient) => Promise<T>,
+    opts?: { timeout?: number; maxWait?: number },
+  ): Promise<T> {
+    return this.prisma.$transaction(fn, opts);
+  }
+
+  /** Exact count for bulk re-analyze (T-145): same SQL as `count()` but without the 1.5 s bound. */
+  async countMatched(
+    scope: AnalyticsScope,
+    q: string | undefined,
+    db: Prisma.TransactionClient = this.prisma,
+  ): Promise<number> {
+    const rows = await db.$queryRaw<unknown[]>(
+      withMentionsBase(scope, Prisma.sql`SELECT count(*)::int AS n ${mentionsFromWhere(q)}`),
+    );
+    return CountRowSchema.parse(rows[0]).n;
+  }
+
+  /**
+   * Up to `limit` posts of the filtered set that can actually be enqueued (T-145, FR-196), in `sort` order:
+   * no open run (FR-115) and no completed run for the same (hash, effective_version) (BR-024, FR-116).
+   */
+  async selectBulkCandidates(
+    tx: Prisma.TransactionClient,
+    scope: AnalyticsScope,
+    q: string | undefined,
+    sort: MentionSort,
+    effectiveVersion: string,
+    limit: number,
+  ): Promise<MentionForReanalyze[]> {
+    if (limit <= 0) return [];
+    const rows = await tx.$queryRaw<{ id: string; content_hash: string; revision: number }[]>(
+      withMentionsBase(
+        scope,
+        Prisma.sql`SELECT p.id, p.content_hash, p.revision ${mentionsFromWhere(q)}
+          AND NOT EXISTS (SELECT 1 FROM analysis_runs o WHERE o.post_id = p.id AND o.status IN ('pending', 'processing'))
+          AND NOT EXISTS (SELECT 1 FROM analysis_runs d WHERE d.post_id = p.id
+            AND d.source_content_hash = p.content_hash AND d.effective_version = ${effectiveVersion}
+            AND d.status = 'completed')
+          ${orderBy(MENTION_SORT_SPECS[sort])}
+          LIMIT ${limit}`,
+      ),
+    );
+    return rows.map((r) => ({
+      id: r.id,
+      projectId: scope.projectId,
+      contentHash: r.content_hash,
+      revision: r.revision,
+    }));
   }
 
   /**

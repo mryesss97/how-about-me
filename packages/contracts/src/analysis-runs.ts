@@ -5,6 +5,7 @@ import {
   IsoDateTimeSchema,
   UuidSchema,
   pageOf,
+  queryBoolean,
   withDateRange,
 } from "./common.js";
 import { AnalysisStatusSchema, AnalysisTriggerSchema } from "./enums.js";
@@ -42,3 +43,19 @@ export const RetryAnalysisRunResponseSchema = z.object({ runId: UuidSchema, stat
 export const RetryFailedBodySchema = z.object({ limit: z.number().int().min(1).max(500).default(100) });
 export type RetryFailedBody = z.infer<typeof RetryFailedBodySchema>;
 export const RetryFailedResponseSchema = z.object({ enqueued: z.number().int().nonnegative() });
+
+/**
+ * POST …/analysis-runs/mark-stale?version=<old>&dryRun= (T-145, BR-023) — admin only.
+ * Marks pending|completed runs of `version` in the project stale and re-enqueues within `cap`.
+ */
+export const MarkStaleQuerySchema = z.object({
+  version: z.string().trim().min(1).max(500),
+  dryRun: queryBoolean().default(false),
+});
+export type MarkStaleQuery = z.infer<typeof MarkStaleQuerySchema>;
+export const MarkStaleResponseSchema = z.object({
+  marked: z.number().int().nonnegative(),
+  enqueued: z.number().int().nonnegative(),
+  cap: z.number().int().nonnegative(),
+});
+export type MarkStaleResponse = z.infer<typeof MarkStaleResponseSchema>;

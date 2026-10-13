@@ -51,7 +51,7 @@ export const PERMISSION_MATRIX: readonly PermissionEntry[] = [
     viewer: "deny",
     status: "implemented",
   },
-  { method: "POST", path: `${P}/mentions/reanalyze`, ...ADMIN_ONLY, status: "planned" },
+  { method: "POST", path: `${P}/mentions/reanalyze`, ...ADMIN_ONLY, status: "implemented" },
   {
     method: "POST",
     path: `${P}/mentions/:mentionId/overrides`,
@@ -85,4 +85,5 @@ export const PERMISSION_MATRIX: readonly PermissionEntry[] = [
   { method: "GET", path: `${P}/audit-logs`, ...ADMIN_ONLY, status: "implemented" },
   { method: "GET", path: `${P}/settings/analysis`, ...ALL, status: "implemented" },
   { method: "PATCH", path: `${P}/settings/analysis`, ...ADMIN_ONLY, status: "implemented" },
+  { method: "POST", path: `${P}/analysis-runs/mark-stale`, ...ADMIN_ONLY, status: "implemented" },
 ];

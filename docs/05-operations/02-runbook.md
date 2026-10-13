@@ -47,7 +47,8 @@ System Status `/system-status` · Health `GET /health/ready` · Logs (host) · S
 ## 5. Re-analysis after prompt/model change
 
 1. Deploy with new `prompt_version`/model.
-2. Optionally mark old version stale & bulk enqueue (P1 endpoint) within `ANALYSIS_BULK_MAX`; otherwise new posts only.
+2. Optionally (admin): `POST …/analysis-runs/mark-stale?version=<old>&dryRun=true` to preview, then without `dryRun` — stales old-version runs and enqueues up to `ANALYSIS_BULK_MAX` posts (`trigger=version_change`). For posts beyond the cap, wait 5 minutes (shared throttle, `429` + `Retry-After`) and run `POST …/mentions/reanalyze` with `analysisStatus=[stale]`. Otherwise new posts only.
+   - Over the daily budget (`ANALYSIS_DAILY_BUDGET_USD`) the worker only claims `manual` runs, so `bulk`/`version_change` runs wait until the next day.
 3. Watch cost and failure rate; compare eval report before/after.
 
 ## 6. Token/secret rotation
