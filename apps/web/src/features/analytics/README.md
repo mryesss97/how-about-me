@@ -16,3 +16,7 @@ Files:
   - `mentions-over-time-chart.tsx`, `sentiment-distribution-chart.tsx`, `sentiment-over-time-chart.tsx`.
   - T-101: `horizontal-bar-chart.tsx` (shared, internal), `safety-distribution-chart.tsx` (patterns + icons), `top-topics-chart.tsx`, `intent-distribution-chart.tsx`.
   - T-148: `language-distribution-chart.tsx` — language donut + 8-row table (P1 row, FR-143).
+
+## Drill-down (T-102, FR-142)
+
+`OverviewView` builds hrefs with `toMentionsHref` + `lib/filters/drill-down.ts`, pinned to the `from/to` sent to analytics. `KpiCards` takes `hrefFor` (stretched link per card, separate link on "N severe"). Charts take `getHref`/`onNavigate` (`getBucketHref` for mentions over time): bars/slices/buckets navigate on click, and the "View as table" first column renders links (`ChartTable.rowHrefs`) as the keyboard path. Zero-count segments and topic/language `other` are not drillable.

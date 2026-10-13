@@ -109,7 +109,7 @@ Chart details (T-101, decided 2026-10-13 on #88):
 - Safety, Top topics and Intent are horizontal bar charts; every bar prints "count · share" as text and the tooltip names the denominator.
 - Safety: safe = gray solid, sensitive = warning diagonal stripes, severe = error dense dots; the legend shows the `safetyBadge` icon + label + share. No sentiment colours (BR-017). Its table ends with a Total row equal to the denominator (TC-DASH-014).
 - Top topics: top 12 by distinct mentions, "Other" always last. Intent: all labels incl. zero counts, in API order. Neither table has a summed Total; the last row is the denominator ("Mentions with a topic / an intent"). When shares add up past 100 % a note explains that a mention can have several labels.
-- Clicking a bar to drill down to `/mentions` is T-102.
+- Drill-down (T-102, FR-142): each KPI card is a link to `/mentions` with the doc 07 §6 filter (Sensitive + Severe → `safety=sensitive,severe`; the "N severe" line → `safety=severe`; Mention Growth → the current period, never the previous one). Clicking a bar, donut slice or time bucket opens the same list; the link pins the exact `from/to` sent to analytics, keeps all global filters (incl. relevance, BR-016) and drops `compare`. A segment value replaces the same filter key. Buckets map to `[bucketStart, nextBucketStart)`, the last one ends at the range `to`, clamped to the range. Topic `other` (top-12 remainder, no filter), language `other` (until #201 fixes the filter undercount) and zero-count segments/buckets are not clickable. Keyboard path: KPI cards and the first column of "View as table" rows are links.
 
 ### 3.3 Mentions Explorer (`/mentions`) — P0
 

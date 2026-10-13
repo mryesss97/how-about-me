@@ -1,9 +1,10 @@
 "use client";
 
 import type { TopicsDistributionResponse } from "@how-about-me/contracts";
+import type { TopicLabel } from "@how-about-me/taxonomy";
 import type { QueryStateError } from "@/features/shared/query-state";
 import { formatCount, formatRate } from "@/lib/format/number";
-import { ChartCard } from "./chart-card";
+import { ChartCard, type DrillDownProps, drillSelect, segmentHref } from "./chart-card";
 import { sumShares, toBarRows } from "./chart-data";
 import { HorizontalBarChart, MultiLabelNote } from "./horizontal-bar-chart";
 
@@ -13,13 +14,22 @@ export type TopTopicsChartProps = {
   error?: QueryStateError | null;
   onRetry?: () => void;
   className?: string;
-};
+} & DrillDownProps<TopicLabel>;
 
 /** Top topics (FR-138): top 12 by distinct mentions + "Other" last. No summed Total — multi-label (TC-DASH-015). */
-export function TopTopicsChart({ data, isLoading, error, onRetry, className }: TopTopicsChartProps) {
+export function TopTopicsChart({
+  data,
+  isLoading,
+  error,
+  onRetry,
+  className,
+  getHref,
+  onNavigate,
+}: TopTopicsChartProps) {
   const denominator = data?.denominator ?? 0;
   const rows = toBarRows(data?.distribution ?? []);
   const table = {
+    rowHrefs: rows.map((r) => segmentHref(getHref, r)),
     columns: ["Topic", "Count", "Share"],
     rows: [
       ...rows.map((r) => [r.name, formatCount(r.count), formatRate(r.share)]),
@@ -43,6 +53,7 @@ export function TopTopicsChart({ data, isLoading, error, onRetry, className }: T
         rows={rows}
         getFill={(r) => (r.key === "other" ? "var(--color-utility-neutral-400)" : "var(--color-utility-brand-500)")}
         denominator={denominator}
+        onSelect={drillSelect({ getHref, onNavigate })}
         denominatorLabel="with a topic"
       />
       {sumShares(rows) > 1 ? <MultiLabelNote noun="topics" /> : null}

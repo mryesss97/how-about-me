@@ -1,9 +1,14 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { useCallback, useMemo } from "react";
 import { useCurrentProject } from "@/features/auth/use-current-project";
 import { useRole } from "@/features/auth/use-role";
 import { ApiError } from "@/lib/api/client";
 import { DEFAULT_TZ } from "@/lib/filters/parsers";
+import { toMentionsHref } from "@/lib/filters/api-params";
+import { bucketDrillDown, type DrillKpiId, kpiDrillDown, segmentDrillDown } from "@/lib/filters/drill-down";
+import type { Filters } from "@/lib/filters/schema";
 import { useFilters } from "@/lib/filters/use-filters";
 import { QueryState } from "@/features/shared/query-state";
 import {
@@ -43,7 +48,8 @@ function toQueryError(err: unknown) {
 export function OverviewView() {
   const { project } = useCurrentProject();
   const { role } = useRole();
-  const { apiParams } = useFilters("analytics");
+  const { filters, apiParams } = useFilters("analytics");
+  const router = useRouter();
   const query = useOverview(project?.id, apiParams);
   const error = toQueryError(query.error);
   const timeseries = useMentionsTimeseries(project?.id, apiParams);
@@ -53,6 +59,24 @@ export function OverviewView() {
   const topics = useTopicsDistribution(project?.id, apiParams);
   const intents = useIntentsDistribution(project?.id, apiParams);
   const languages = useLanguagesDistribution(project?.id, apiParams);
+
+  // FR-142 drill-down: pin the exact range sent to analytics (not a fresh "now"), so the list matches the counts.
+  const queriedTo = apiParams.to;
+  const href = useCallback(
+    (extra: Partial<Filters> | null) =>
+      extra ? toMentionsHref(filters, extra, new Date(queriedTo ?? Date.now())) : null,
+    [filters, queriedTo],
+  );
+  const navigate = useCallback((to: string) => router.push(to), [router]);
+  const kpiHref = useCallback((id: DrillKpiId) => href(kpiDrillDown(id)) ?? "/mentions", [href]);
+  const bucketTimes = useMemo(() => timeseries.data?.data.map((p) => p.time) ?? [], [timeseries.data]);
+  const bucketHref = useCallback(
+    (i: number) =>
+      apiParams.from && apiParams.to
+        ? href(bucketDrillDown(bucketTimes, i, { from: apiParams.from, to: apiParams.to }))
+        : null,
+    [href, bucketTimes, apiParams.from, apiParams.to],
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -69,12 +93,14 @@ export function OverviewView() {
         {query.data ? (
           <div className="flex flex-col gap-4">
             <OverviewBanners data={query.data} canManage={role === "admin"} />
-            <KpiCards kpis={query.data.kpis} />
+            <KpiCards kpis={query.data.kpis} hrefFor={kpiHref} />
           </div>
         ) : null}
       </QueryState>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <MentionsOverTimeChart
+          getBucketHref={bucketHref}
+          onNavigate={navigate}
           className="lg:col-span-8"
           data={timeseries.data}
           isLoading={!project || timeseries.isLoading}
@@ -82,6 +108,8 @@ export function OverviewView() {
           onRetry={() => void timeseries.refetch()}
         />
         <SentimentDistributionChart
+          getHref={(k) => href(segmentDrillDown("sentiment", k))}
+          onNavigate={navigate}
           className="lg:col-span-4"
           data={sentiment.data}
           isLoading={!project || sentiment.isLoading}
@@ -97,6 +125,8 @@ export function OverviewView() {
           onRetry={() => void sentiment.refetch()}
         />
         <SafetyDistributionChart
+          getHref={(k) => href(segmentDrillDown("safety", k))}
+          onNavigate={navigate}
           className="lg:col-span-6"
           data={safety.data}
           isLoading={!project || safety.isLoading}
@@ -104,6 +134,8 @@ export function OverviewView() {
           onRetry={() => void safety.refetch()}
         />
         <TopTopicsChart
+          getHref={(k) => href(segmentDrillDown("topic", k))}
+          onNavigate={navigate}
           className="lg:col-span-6"
           data={topics.data}
           isLoading={!project || topics.isLoading}
@@ -111,6 +143,8 @@ export function OverviewView() {
           onRetry={() => void topics.refetch()}
         />
         <IntentDistributionChart
+          getHref={(k) => href(segmentDrillDown("intent", k))}
+          onNavigate={navigate}
           className="lg:col-span-6"
           data={intents.data}
           isLoading={!project || intents.isLoading}
@@ -118,6 +152,8 @@ export function OverviewView() {
           onRetry={() => void intents.refetch()}
         />
         <LanguageDistributionChart
+          getHref={(k) => href(segmentDrillDown("language", k))}
+          onNavigate={navigate}
           className="lg:col-span-4"
           data={languages.data}
           isLoading={!project || languages.isLoading}
