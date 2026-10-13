@@ -30,6 +30,19 @@ export type EnqueueResult =
 
 export type RunUsage = { inputTokens?: number; outputTokens?: number; estimatedCostUsd?: number };
 
+/** The 7 version fields stamped on `analysis_runs` when a run completes (BR-023, FR-110, TC-ANA-014). */
+export type RunVersions = {
+  classifierProvider: string;
+  classifierModel: string;
+  promptVersion: string;
+  taxonomyVersion: string;
+  safetyProvider: string;
+  safetyModel: string;
+  safetyPolicyVersion: string;
+};
+
+export type CompleteOptions = { versions?: RunVersions; skippedReason?: string };
+
 type Db = Prisma.TransactionClient;
 
 /** Triggers that bypass the "already completed" dedupe — doc 07 §7, FR-116. */
@@ -177,7 +190,22 @@ export class AnalysisService implements AnalysisEnqueuer {
   }
 
   /** processing → completed. Returns false if the run is no longer held by `workerId` (watchdog race). */
-  async markCompleted(runId: string, workerId: string, usage: RunUsage = {}, tx: Db = this.prisma): Promise<boolean> {
+  async markCompleted(
+    runId: string,
+    workerId: string,
+    usage: RunUsage = {},
+    tx: Db = this.prisma,
+    opts: CompleteOptions = {},
+  ): Promise<boolean> {
+    const v = opts.versions;
+    const versionSet = v
+      ? Prisma.sql`, classifier_provider = ${v.classifierProvider}, classifier_model = ${v.classifierModel},
+          prompt_version = ${v.promptVersion}, taxonomy_version = ${v.taxonomyVersion},
+          safety_provider = ${v.safetyProvider}, safety_model = ${v.safetyModel},
+          safety_policy_version = ${v.safetyPolicyVersion}`
+      : Prisma.empty;
+    // doc 07 §2: an irrelevant post completes with skipped_reason 'irrelevant'.
+    const skipSet = opts.skippedReason ? Prisma.sql`, skipped_reason = ${opts.skippedReason}` : Prisma.empty;
     return (
       (await this.finish(
         tx,
@@ -185,9 +213,26 @@ export class AnalysisService implements AnalysisEnqueuer {
         workerId,
         Prisma.sql`status = 'completed', completed_at = now(), locked_at = NULL,
           input_tokens = ${usage.inputTokens ?? null}::int, output_tokens = ${usage.outputTokens ?? null}::int,
-          estimated_cost_usd = ${usage.estimatedCostUsd ?? null}::numeric`,
+          estimated_cost_usd = ${usage.estimatedCostUsd ?? null}::numeric ${versionSet} ${skipSet}`,
       )) !== null
     );
+  }
+
+  /**
+   * Points `social_posts.current_analysis_id` at `analysisId` unless a newer run (uuidv7 order) of the same
+   * post already completed — a late-finishing older run never overwrites the newer pointer (FR-114).
+   * Returns true when the pointer was updated.
+   * The post row is locked first so two runs of the same post finishing concurrently serialize here: the
+   * NOT EXISTS check below runs as a new statement after the lock, so it sees the other run's commit.
+   */
+  async setCurrentAnalysis(tx: Db, postId: string, runId: string, analysisId: string): Promise<boolean> {
+    await tx.$queryRaw(Prisma.sql`SELECT 1 FROM social_posts WHERE id = ${postId}::uuid FOR UPDATE`);
+    const n = await tx.$executeRaw(Prisma.sql`
+      UPDATE social_posts SET current_analysis_id = ${analysisId}::uuid
+      WHERE id = ${postId}::uuid
+        AND NOT EXISTS (SELECT 1 FROM analysis_runs x
+          WHERE x.post_id = ${postId}::uuid AND x.id > ${runId}::uuid AND x.status = 'completed')`);
+    return n > 0;
   }
 
   /** processing → skipped (e.g. `empty_text`, `superseded`). */
@@ -222,7 +267,7 @@ export class AnalysisService implements AnalysisEnqueuer {
 
   /**
    * processing → pending (transient error), or → failed once `attempt_count >= ANALYSIS_MAX_ATTEMPTS`
-   * (doc 07 §8). Re-queue is immediate; backoff (2 s × 2^attempt) is left to T-074/T-075.
+   * (doc 07 §8). Re-queue is immediate; backoff (2 s × 2^attempt) is left to T-075.
    * Returns the resulting status, or null if the run is no longer held by `workerId`.
    */
   async requeue(runId: string, workerId: string, code: string, tx: Db = this.prisma): Promise<AnalysisStatus | null> {

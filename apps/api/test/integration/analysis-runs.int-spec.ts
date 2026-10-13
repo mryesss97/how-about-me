@@ -4,6 +4,7 @@ import type { PinoLogger } from "nestjs-pino";
 import { v7 as uuidv7 } from "uuid";
 import { APP_CONFIG, type AppConfig } from "../../src/config/config.module";
 import { PrismaService } from "../../src/database/prisma.service";
+import { AnalysisPipelineService } from "../../src/modules/analysis/analysis-pipeline.service";
 import { AnalysisWorkerService } from "../../src/modules/analysis/analysis-worker.service";
 import { AnalysisService, type ClaimedRun } from "../../src/modules/analysis/analysis.service";
 import {
@@ -361,7 +362,15 @@ describe("Analysis runs (T-070)", () => {
       expect((await prisma.socialPost.findFirstOrThrow()).latestRunStatus).toBe("completed");
     });
 
-    // Depends on #67 (T-074): the persist step that updates social_posts.current_analysis_id.
-    it.todo("TC-ANA-024: current_analysis_id points to the new analysis after the re-run (#67)");
+    it("TC-ANA-024: current_analysis_id points to the new analysis after the re-run (#67)", async () => {
+      const w = worker(app.get(AnalysisPipelineService));
+      await ingest.ingestPage(q, [post("edit2", "1zone v1")]);
+      await w.tick();
+      await ingest.ingestPage(q, [post("edit2", "1zone v2 edited")]);
+      await w.tick();
+      const [, second] = await prisma.analysisRun.findMany({ orderBy: { id: "asc" } });
+      const current = await prisma.postAnalysis.findUniqueOrThrow({ where: { analysisRunId: second?.id } });
+      expect((await prisma.socialPost.findFirstOrThrow()).currentAnalysisId).toBe(current.id);
+    });
   });
 });

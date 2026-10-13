@@ -36,7 +36,7 @@ export class AnalysisWorkerService implements OnApplicationBootstrap, OnApplicat
   onApplicationBootstrap(): void {
     if (!this.shouldPoll()) return;
     if (!this.processor) {
-      // Until T-074 binds a processor, do not claim runs (keeps dev data untouched).
+      // No processor bound (T-074 binds AnalysisPipelineService): do not claim runs.
       this.logger.info("analysis worker idle: no RunProcessor bound");
       return;
     }
