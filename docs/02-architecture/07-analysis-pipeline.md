@@ -239,4 +239,4 @@ Relevance gate; skip summary for spam (`ANALYSIS_SKIP_SUMMARY_FOR_SPAM=true`); v
 
 ## 12. Evaluation
 
-Run `pnpm --filter api eval:classifier -- --dataset docs/04-qa/datasets/eval-v1.jsonl` (dataset built in M3 per [../04-qa/03-ai-evaluation-plan.md](../04-qa/03-ai-evaluation-plan.md)); prints per-dimension accuracy/F1 and confusion tables; results stored under `docs/04-qa/eval-results/<date>-<prompt>.md`.
+Run `pnpm --filter @how-about-me/api eval:classifier -- --dataset ../../docs/04-qa/datasets/eval-v1.jsonl` (paths relative to `apps/api`; dataset built in M3; flags, record format and report layout in [../04-qa/03-ai-evaluation-plan.md](../04-qa/03-ai-evaluation-plan.md) §1, §3). `PROVIDERS_MODE=fake` (default) runs offline; prints per-dimension accuracy/F1 and confusion tables plus the §11 freeze-gate table; results stored under `docs/04-qa/eval-results/<date>-<prompt>.md`.

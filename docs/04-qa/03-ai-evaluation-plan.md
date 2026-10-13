@@ -44,7 +44,29 @@ Use definitions in taxonomy doc §2–§6 and §9; label intended attitude; mult
 pnpm --filter @how-about-me/api eval:classifier -- --dataset ../../docs/04-qa/datasets/eval-v1.jsonl --out ../../docs/04-qa/eval-results/$(date +%F)-classifier-v1.md
 ```
 
-Outputs per dimension: accuracy, precision/recall/F1 per label, confusion matrix, micro-F1 for multi-label, safety agreement + severe false negatives, average tokens & cost per item, latency.
+Outputs per dimension: accuracy, precision/recall/F1 per label, macro-F1, confusion matrix, micro-F1 (+ macro-F1, exact match) for multi-label, safety agreement + severe false negatives, average tokens & cost per item, latency.
+
+CLI (T-079, `apps/api/src/cli/eval-classifier.ts`; paths relative to `apps/api`):
+
+| Flag                     | Meaning                                                                             |
+| ------------------------ | ----------------------------------------------------------------------------------- |
+| `--dataset <path>`       | JSONL dataset (required). Any invalid line aborts with line number + id.            |
+| `--out <path>`           | Markdown report (default stdout).                                                   |
+| `--json <path>`          | Raw per-item predictions + summary (ids and labels only) for diffing runs.          |
+| `--brand-context <text>` | Overrides `ANALYSIS_BRAND_CONTEXT`. Report records only its sha256 prefix + length. |
+| `--limit N`              | Evaluate the first N items (cheap trial run in real mode).                          |
+| `--concurrency N`        | Parallel items, default 2, max 10.                                                  |
+| `--fail-on-gate`         | Exit 1 when any §11 gate fails (for future CI).                                     |
+
+- Providers come from the runtime factories: `PROVIDERS_MODE=fake` (default) runs offline; `real` needs `OPENAI_API_KEY` + `ANALYSIS_CLASSIFIER_MODEL`. Cost is 0 unless `ANALYSIS_PRICE_*` are set (report says so).
+- Exit 0 when the run completes, even with gate FAIL (gate is information for QC); exit 1 on argument, dataset or config errors.
+- Report: header (UTC time, dataset sha256, providers/model, prompt/taxonomy/safety-policy versions), freeze-gate table (doc 08 §11, PASS/FAIL), per-dimension tables + confusion, usage/latency (p50/p95), errors, mismatches. Items are identified by `id` only — item text never appears in the report or logs.
+- Items whose gold lacks a dimension (e.g. no `sentiment` on `irrelevant`) are excluded from that dimension. VI sentiment subset and the severe subset are derived from gold `labels.language === "vi"` / `labels.safetyLevel === "severe"`. Optional `tags: string[]` per record is accepted for grouping (not used by the gate). A provider error on one item is recorded and the run continues.
+- Draft synthetic fixture: `apps/api/src/cli/eval/__fixtures__/eval-draft.jsonl`; fake-mode sample report: `eval-results/2026-10-13-classifier-v1-draft-fake.md` (not a freeze result).
+
+```bash
+PROVIDERS_MODE=fake pnpm --filter @how-about-me/api eval:classifier -- --dataset src/cli/eval/__fixtures__/eval-draft.jsonl --out ../../docs/04-qa/eval-results/$(date +%F)-classifier-v1-draft-fake.md
+```
 
 ## 4. Acceptance
 
