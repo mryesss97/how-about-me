@@ -103,6 +103,9 @@ export const SafetyDistributionResponseSchema = typedDistribution(SafetyLevelSch
 export const IntentsDistributionResponseSchema = typedDistribution(IntentLabelSchema);
 /** Top 12 topics + "other" bucket. */
 export const TopicsDistributionResponseSchema = typedDistribution(TopicOrOther);
+export type SafetyDistributionResponse = z.infer<typeof SafetyDistributionResponseSchema>;
+export type IntentsDistributionResponse = z.infer<typeof IntentsDistributionResponseSchema>;
+export type TopicsDistributionResponse = z.infer<typeof TopicsDistributionResponseSchema>;
 
 /** P1 — GET …/analytics/topic-sentiment. */
 export const TopicSentimentResponseSchema = z.object({

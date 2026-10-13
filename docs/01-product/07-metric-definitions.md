@@ -100,11 +100,11 @@ Per bucket: counts for each label; stacked or 100 % stacked in UI (toggle).
 
 ### 3.5 Top topics
 
-For each topic label: `COUNT(DISTINCT post_id)` in `B` with that effective topic. Share = count / `topicAnalyzed` (posts with ≥ 1 topic). Shares may sum > 100 %. Return top 12 sorted desc, plus `other`.
+For each topic label: `COUNT(DISTINCT post_id)` in `B` with that effective topic. Share = count / `topicAnalyzed` (posts with ≥ 1 topic). Shares may sum > 100 %. Return top 12 sorted desc, plus `other`. Ranking covers real labels only (taxonomy label `other` excluded; ties by taxonomy order). The `other` bucket = `COUNT(DISTINCT post_id)` of posts tagged `other` **or** with any label outside the top 12 — a distinct count, never the sum of per-label counts.
 
 ### 3.6 Intent distribution
 
-Same as 3.5 on intents; all labels returned.
+Same as 3.5 on intents (denominator `intentAnalyzed`); all labels returned, count 0 included, sorted by count desc (ties by taxonomy order).
 
 ## 4. Charts (P1)
 

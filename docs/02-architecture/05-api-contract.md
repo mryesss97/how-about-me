@@ -192,11 +192,22 @@ Common query params (all optional): `from`, `to` (defaults last 7 d), `timezone`
 }
 ```
 
+- `denominator` = `sentimentAnalyzed` (= positive + neutral + negative); labels in fixed taxonomy order.
+- `timeseries`: always returned; `interval` = `hour` when range ≤ 48 h else `day`; buckets are local-time starts in the request timezone, zero-filled over `[from, to)`.
+
 ### `GET …/analytics/safety` → `{ denominator, distribution:[{label:"safe"|"sensitive"|"severe",count,share}] }`
+
+`denominator` = `safetyAnalyzed` (= sum of the three counts); fixed taxonomy order.
 
 ### `GET …/analytics/intents` → `{ denominator, distribution:[{label,count,share}] }` (all labels)
 
+`denominator` = `intentAnalyzed` (posts with ≥ 1 intent). All 11 labels, count 0 included, sorted by count desc (ties keep taxonomy order). Shares may sum > 100 %.
+
 ### `GET …/analytics/topics` → `{ denominator, distribution:[{label,count,share}] }` (top 12 + other)
+
+`denominator` = `topicAnalyzed` (posts with ≥ 1 topic). Real topic labels (taxonomy `other` excluded) sorted by count desc (ties by taxonomy order), at most 12, then one `other` entry = `COUNT(DISTINCT post_id)` of posts tagged `other` or with a label outside the top 12 (distinct, not a sum). Shares may sum > 100 %.
+
+All four distribution endpoints (T-093): every label is returned even with count 0; `share` is `null` when `denominator` = 0; counts are `COUNT(DISTINCT post_id)` over the base set; roles admin / analyst / viewer.
 
 ### `GET …/analytics/languages` (P1) → same shape
 

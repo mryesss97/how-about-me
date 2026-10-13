@@ -76,6 +76,10 @@ export const PERMISSION_MATRIX: readonly PermissionEntry[] = [
   },
   { method: "GET", path: `${P}/sync-jobs`, ...ALL, status: "planned" },
   { method: "GET", path: `${P}/system-status`, ...ALL, status: "planned" },
+  { method: "GET", path: `${P}/analytics/sentiment`, ...ALL, status: "implemented" },
+  { method: "GET", path: `${P}/analytics/safety`, ...ALL, status: "implemented" },
+  { method: "GET", path: `${P}/analytics/intents`, ...ALL, status: "implemented" },
+  { method: "GET", path: `${P}/analytics/topics`, ...ALL, status: "implemented" },
   { method: "GET", path: `${P}/audit-logs`, ...ADMIN_ONLY, status: "implemented" },
   { method: "PATCH", path: `${P}/settings/analysis`, ...ADMIN_ONLY, status: "planned" },
 ];
