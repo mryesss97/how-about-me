@@ -9,7 +9,7 @@ export async function fetchMe(): Promise<MeResponse> {
   return MeResponseSchema.parse(await apiFetch<unknown>("/me"));
 }
 
-/** Current user + project memberships (`projects` may be empty for non-members — handled by T-033). */
+/** Current user + project memberships (`projects` may be empty for non-members — see `RequireRole` / `useCurrentProject`). */
 export function useMe() {
   return useQuery({ queryKey: qk.me(), queryFn: fetchMe, staleTime: staleTimes.me });
 }

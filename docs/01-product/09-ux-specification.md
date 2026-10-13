@@ -20,7 +20,7 @@
 └─ /settings
    ├─ /settings/project         Name, timezone, toggles
    ├─ /settings/members         Members & roles (admin)
-   ├─ /settings/integrations    Threads connection (admin write, others read)
+   ├─ /settings/integrations    Threads connection (admin write, analyst read; hidden from viewer)
    └─ /settings/analysis        Thresholds & versions (P1)
 ```
 
@@ -140,7 +140,7 @@ Tabs: **Overview** · **Sync jobs** · **Analysis failures** · **Audit log** (a
 
 - **Project**: name, timezone (searchable select), toggles `Allow analysts to re-analyze`, `Allow viewers to export`. Save → toast.
 - **Members** (admin): table (name/email, role select, added, remove); "Invite member" dialog (email, role). Guard on last admin.
-- **Integrations** (admin write): Threads card — status, account, scopes, expiry; "Update token" (password-style input, never prefilled), "Verify connection", "Disconnect". Everyone else sees read-only card without controls.
+- **Integrations** (admin write): Threads card — status, account, scopes, expiry; "Update token" (password-style input, never prefilled), "Verify connection", "Disconnect". Analyst sees a read-only card without controls; Viewer does not see the tab (deep link → Forbidden).
 - **Analysis** (P1): confidence bands, safety thresholds table, current versions, "Create new policy version" with optional bulk re-analysis.
 
 ### 3.8 Reviews (`/reviews`) — P1
