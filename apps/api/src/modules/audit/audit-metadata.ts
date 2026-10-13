@@ -23,6 +23,7 @@ export const AUDIT_ACTIONS = [
   "override.revoked",
   "mentions.exported",
   "analysis_settings.updated",
+  "data.purged",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
@@ -54,6 +55,9 @@ export const AUDIT_METADATA_ALLOW_LIST: ReadonlySet<string> = new Set([
   "name",
   "email",
   "enabled",
+  "scope",
+  "counts",
+  "platformPostId",
 ]);
 
 /** Secret-looking keys are always dropped, even when allow-listed or nested (FR-200: no secrets in audit). */

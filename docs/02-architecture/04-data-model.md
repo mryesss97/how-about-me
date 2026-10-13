@@ -74,7 +74,7 @@ erDiagram
 ### 4.3 `project_members`
 
 | project_id uuid FK · user_id uuid FK · role user_role NN · invited_email text · created_by uuid · created_at / updated_at · **PK (project_id, user_id)** |
-Invitations before first login: row keyed by a placeholder profile created from email (id generated); reconciled on first login by email match.
+Invitations before first login: row keyed by a placeholder profile created from email (id generated); reconciled on first login by email match. The placeholder has `last_login_at = null`; `invited_email` stores the normalized (trimmed, lower-case) email; `created_by` is the inviting admin (T-035).
 
 ### 4.4 `integration_connections`
 
@@ -213,7 +213,7 @@ Intent/topic overrides are resolved by `effective_post_labels(kind)` function (P
 - Partial unique indexes, generated `tsvector`, the view, and the deferrable FK are raw SQL in `prisma/migrations/20260905120100_init_extras/migration.sql`; `FOR UPDATE SKIP LOCKED` claims are raw SQL in repositories.
 - **Known Prisma limitation (verified T-007, Prisma 6.19 / PG16):** Migrate cannot model everything in `init_extras`. Ignored by Prisma (no drift): partial unique indexes `listening_queries_active_unique`, `analysis_runs_open_unique`, `analysis_overrides_active_unique`, the `DEFERRABLE` FK on `current_analysis_id`, and the `effective_post_analysis` view. Declared in `schema.prisma` so diffing stays clean: `social_posts_search_vector_idx` (`@@index([searchVector], type: Gin, map: ...)`) and the generated `search_vector` column (`@default(dbgenerated("to_tsvector('simple'::regconfig, COALESCE(text, ''::text))"))`; without these Prisma proposes `DROP INDEX "social_posts_search_vector_idx"` and `ALTER COLUMN "search_vector" DROP DEFAULT`). Check: `pnpm --filter @how-about-me/api db:drift` (needs `SHADOW_DATABASE_URL`) must print an empty migration / exit 0. If a generated migration still contains a `DROP` of any object above, delete those lines before committing (checklist in the PR template for `apps/api/prisma/**`). Never edit an applied migration file (checksum mismatch on `migrate deploy`); fix forward with a new migration. Integration coverage: `apps/api/test/integration/schema-baseline.int-spec.ts`.
 - `current_analysis_id` FK is `DEFERRABLE INITIALLY DEFERRED` to allow insert-then-point in one transaction.
-- `prisma/seed.ts`: project, admin membership (from `SEED_ADMIN_EMAIL`), 4 queries, integration connection placeholder (`disconnected`). Idempotent keys: project `slug` (existing project not updated); query `(project, query_type, lower(query_value))` among non-deleted rows, value normalized first (BR-004/BR-005), P2002 treated as existing (BR-006); integration `(project, platform)`; membership `(project, user)` with role forced to `admin`.
+- `prisma/seed.ts`: project, admin membership (from `SEED_ADMIN_EMAIL`), 4 queries, integration connection placeholder (`disconnected`). Idempotent keys: project `slug` (existing project not updated); query `(project, query_type, lower(query_value))` among non-deleted rows (exact `lower() = lower()`, not ILIKE, so `_`/`%` are literal; shared helper `findActiveQueryDuplicate`), value normalized first (BR-004/BR-005), P2002 treated as existing (BR-006); integration `(project, platform)`; membership `(project, user)` with role forced to `admin`.
 
 ## 7. Sizing & retention
 
