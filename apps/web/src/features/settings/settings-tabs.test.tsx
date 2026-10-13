@@ -45,4 +45,11 @@ describe("SettingsTabs", () => {
     expect(await screen.findByRole("link", { name: "Members" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Project" })).not.toHaveAttribute("aria-current");
   });
+
+  it.each(["admin", "analyst", "viewer"] as const)("FR-190: %s sees the Analysis tab", async (role) => {
+    apiFetch.mockResolvedValue(meFixture([projectFixture(P1, role)]));
+    renderTabs();
+    await waitFor(() => expect(screen.getByTestId("role")).toHaveTextContent(role));
+    expect(screen.getByRole("link", { name: "Analysis" })).toBeInTheDocument();
+  });
 });

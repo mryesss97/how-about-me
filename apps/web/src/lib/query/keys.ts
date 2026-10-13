@@ -13,6 +13,7 @@ export const qk = {
   systemStatus: (pid: string) => ["project", pid, "system-status"] as const,
   integration: (pid: string) => ["project", pid, "integrations", "threads"] as const,
   members: (pid: string) => ["project", pid, "members"] as const,
+  analysisSettings: (pid: string) => ["project", pid, "settings", "analysis"] as const,
   auditLogs: (pid: string, filters?: unknown) => ["project", pid, "audit-logs", filters ?? {}] as const,
 };
 

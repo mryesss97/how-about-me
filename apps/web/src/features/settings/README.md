@@ -8,3 +8,4 @@ Settings (UX §3.7, T-036):
 - `members-settings.tsx` / `members-table.tsx` / `invite-member-dialog.tsx` — `/settings/members` (admin): role change, remove with confirm, invite by email.
 - `settings-dialog.tsx` — controlled modal shell. `test-fixtures.ts` — test data.
 - T-107: project permission toggles (`allowAnalystReanalyze`, `allowViewerExport`) show a short explanation; Save invalidates `/me` so the new permissions apply immediately.
+- `analysis/` — `/settings/analysis` (FR-190, T-151b): bands + safety thresholds form (diff-only PATCH, per-cell errors), current versions, re-analysis prompt (button disabled until T-145).
