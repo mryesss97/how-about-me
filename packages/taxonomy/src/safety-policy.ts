@@ -7,7 +7,26 @@ import type { SafetyLevel } from "./labels.js";
  */
 export type SafetyThreshold = { sensitive: number | null; severe: number | null };
 
-export const SAFETY_POLICY_V1: Readonly<Record<string, SafetyThreshold>> = {
+/** Moderation categories covered by safety-policy-v1, in doc 08 §9 order (BR-018). */
+export const SAFETY_CATEGORIES = [
+  "harassment",
+  "harassment/threatening",
+  "hate",
+  "hate/threatening",
+  "sexual",
+  "sexual/minors",
+  "violence",
+  "violence/graphic",
+  "self-harm",
+  "self-harm/intent",
+  "self-harm/instructions",
+  "illicit",
+  "illicit/violent",
+] as const;
+export type SafetyCategory = (typeof SAFETY_CATEGORIES)[number];
+
+/** Frozen v1 table; any change must bump SAFETY_POLICY_VERSION (BR-018, doc 08 §10). Sentiment never feeds it (BR-017). */
+export const SAFETY_POLICY_V1: Readonly<Record<SafetyCategory, SafetyThreshold>> = Object.freeze({
   harassment: { sensitive: 0.5, severe: null },
   "harassment/threatening": { sensitive: 0.3, severe: 0.7 },
   hate: { sensitive: 0.4, severe: 0.8 },
@@ -21,7 +40,7 @@ export const SAFETY_POLICY_V1: Readonly<Record<string, SafetyThreshold>> = {
   "self-harm/instructions": { sensitive: null, severe: 0.4 },
   illicit: { sensitive: 0.5, severe: null },
   "illicit/violent": { sensitive: 0.4, severe: 0.7 },
-};
+});
 
 export type SafetyPolicyInput = { categoryScores: Record<string, number>; flagged: boolean };
 export type SafetyPolicyResult = {

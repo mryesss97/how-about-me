@@ -78,14 +78,14 @@ export const TOPIC_GUIDE: Record<TopicLabel, string> = {
 export const RELEVANCE_GUIDE: Record<RelevanceLabel, string> = {
   relevant:
     "About 1Zone and/or Eventista (brand, event, artists, tickets, venue, staff, app, membership) or an experience with them.",
-  uncertain: "Mentions the term but context is insufficient or ambiguous.",
+  uncertain: "Mentions the term but context is insufficient or ambiguous, or classifier confidence is low (< 0.60).",
   irrelevant:
     "The term refers to something else (e.g. 'time zone', 'zone 1'), or empty/emoji-only text with no brand link.",
 };
 
 export const SENTIMENT_GUIDE: Record<SentimentLabel, string> = {
   positive: "Praise, excitement, gratitude, satisfaction, recommendation.",
-  neutral: "Informational, questions without emotion, announcements, balanced.",
+  neutral: "Informational, questions without emotion, announcements, mixed with no dominant polarity.",
   negative: "Complaint, disappointment, anger, boycott, sarcasm expressing dissatisfaction.",
 };
 

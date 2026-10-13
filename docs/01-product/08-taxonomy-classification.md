@@ -4,7 +4,7 @@
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Status   | Approved for v1; frozen at M3 exit after evaluation                                                                                                                          |
 | Source   | [00-source/01_PRODUCT_REQUIREMENTS.md](../00-source/01_PRODUCT_REQUIREMENTS.md) §9–§10 · [00-source/03_DATA_MODEL_AND_API.md](../00-source/03_DATA_MODEL_AND_API.md) §16–§17 |
-| Code     | `packages/taxonomy` (labels, versions, guides) · `apps/api/src/modules/analysis/`                                                                                            |
+| Code     | `packages/taxonomy` (labels, versions, guides, `renderTaxonomyGuide`, `SAFETY_CATEGORIES`, `effectiveRelevance`) · `apps/api/src/modules/analysis/`                          |
 | Versions | `taxonomy-v1`, `classifier-v1` (prompt), `safety-policy-v1`                                                                                                                  |
 
 ## 1. Dimensions overview
