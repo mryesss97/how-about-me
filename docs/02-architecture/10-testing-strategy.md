@@ -50,6 +50,15 @@
 
 `login → overview renders KPIs → change preset 24h → click negative segment → mentions filtered → open detail → viewer cannot see Settings/Integrations → admin adds query → run now → job success → mention appears`. Runs on nightly schedule and before release; uses seeded fake provider fixtures.
 
+**Running locally** (package `@how-about-me/web`; `--filter web` does not match):
+
+1. Start the stack: `pnpm db:up && pnpm db:migrate && pnpm db:seed` (`SEED_ADMIN_EMAIL` set), then root `pnpm dev` with the API on `PROVIDERS_MODE=fake`. Playwright starts the web dev server itself (`webServer`, reuses an existing one on :3000) unless `PLAYWRIGHT_BASE_URL` is set.
+2. One-off: `pnpm --filter @how-about-me/web e2e:install` (Chromium).
+3. Optional credentials (Supabase test users, owner-provided): `E2E_ADMIN_EMAIL`, `E2E_ADMIN_PASSWORD`, `E2E_VIEWER_EMAIL`, `E2E_VIEWER_PASSWORD` — see `apps/web/.env.example`. Never commit them.
+4. Run: `pnpm --filter @how-about-me/web e2e` (or `e2e:ui`). Unit: `pnpm --filter @how-about-me/web test` / `test:coverage`.
+
+**Structure of `apps/web/e2e/`:** project `setup` (`auth.setup.ts`) logs in per role and saves `e2e/.auth/<role>.json` (gitignored). If credentials are missing or the login form is not wired yet (T-032) it writes an empty state and skips. Specs named `*.auth.spec.ts` run in project `chromium-auth` with the admin session; others run unauthenticated in `chromium`. `e2e/fixtures.ts` exports `test` with `asRole(role)` for a page using another role's session (e.g. viewer for FR-015). E2E is not part of `pnpm verify`; it runs manually and nightly. There is no root `test:e2e` script yet, so `issue:ship` does not run e2e (decision 2026-10-13, #15); add it when an e2e smoke ticket puts e2e into CI.
+
 ## 5. Fixtures
 
 - `apps/api/src/modules/integrations/threads/__fixtures__/*.json`: recorded POC responses (sanitised, no tokens, usernames pseudonymised).

@@ -15,6 +15,7 @@ next-env.d.ts
 coverage/
 playwright-report/
 test-results/
+apps/web/e2e/.auth/
 
 # env & secrets
 .env
