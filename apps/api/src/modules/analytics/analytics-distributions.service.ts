@@ -8,37 +8,28 @@ import type {
 } from "@how-about-me/contracts";
 import { INTENT_LABELS, SAFETY_LEVELS, SENTIMENT_LABELS, TOPIC_LABELS } from "@how-about-me/taxonomy";
 import { AppError } from "../../common/errors/app.error";
-import { bucketInterval, formatInTz } from "../../common/time/range";
 import { type AnalyticsScope, resolveAnalyticsQuery } from "./analytics-filters";
 import { AnalyticsDistributionsRepository } from "./analytics-distributions.repository";
+import { AnalyticsTimeseriesService } from "./analytics-timeseries.service";
 import { sortByCountDesc, toDistribution, toTopicsDistribution } from "./distributions";
 
 /** T-093 — FR-136…FR-140, FR-147; docs/02-architecture/05-api-contract.md §6. */
 @Injectable()
 export class AnalyticsDistributionsService {
-  constructor(private readonly repo: AnalyticsDistributionsRepository) {}
+  constructor(
+    private readonly repo: AnalyticsDistributionsRepository,
+    private readonly timeseries: AnalyticsTimeseriesService,
+  ) {}
 
   async sentiment(projectId: string, query: AnalyticsQuery): Promise<SentimentResponse> {
     const scope = await this.scope(projectId, query);
-    const interval = bucketInterval(scope.range);
-    const [rows, buckets] = await Promise.all([
+    // FR-136 sentiment over time reuses the T-092 helper (default interval: hour ≤ 48 h, else day).
+    const [rows, timeseries] = await Promise.all([
       this.repo.sentimentCounts(scope),
-      this.repo.sentimentTimeseries(scope, interval),
+      this.timeseries.sentimentTimeseries(scope),
     ]);
     const denominator = rows.reduce((s, r) => s + r.count, 0);
-    return {
-      denominator,
-      distribution: toDistribution(SENTIMENT_LABELS, rows, denominator),
-      timeseries: {
-        interval,
-        data: buckets.map((b) => ({
-          time: formatInTz(b.bucket, scope.timezone),
-          positive: b.positive,
-          neutral: b.neutral,
-          negative: b.negative,
-        })),
-      },
-    };
+    return { denominator, distribution: toDistribution(SENTIMENT_LABELS, rows, denominator), timeseries };
   }
 
   async safety(projectId: string, query: AnalyticsQuery): Promise<SafetyDistributionResponse> {

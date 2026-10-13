@@ -2,14 +2,12 @@ import { Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { TOPIC_LABELS } from "@how-about-me/taxonomy";
 import { PrismaService } from "../../database/prisma.service";
-import { type AnalyticsScope, bucketExpr, timeColumn, withBase } from "./analytics-filters";
+import { type AnalyticsScope, withBase } from "./analytics-filters";
 import { type LabelCount, TOP_TOPICS } from "./distributions";
 
-export type SentimentBucketRow = { bucket: Date; positive: number; neutral: number; negative: number };
 export type TaggedCounts = { rows: LabelCount[]; denominator: number };
 export type TopicCounts = { top: LabelCount[]; otherCount: number; denominator: number };
 
-const UNITS = { hour: "1 hour", day: "1 day" } as const;
 const DENOM = "__denominator__";
 const OTHER = "__other__";
 
@@ -85,34 +83,6 @@ export class AnalyticsDistributionsRepository {
     const { rows: rest, denominator } = splitDenominator(rows);
     const otherCount = rest.find((r) => r.label === OTHER)?.count ?? 0;
     return { top: rest.filter((r) => r.label !== OTHER), otherCount, denominator };
-  }
-
-  /** §3.3 — zero-filled local-time buckets in [from,to); timezone is a bound param, GROUP BY 1. */
-  sentimentTimeseries(scope: AnalyticsScope, interval: "hour" | "day"): Promise<SentimentBucketRow[]> {
-    const tz = scope.timezone;
-    const unit = Prisma.raw(`'${interval}'`);
-    const step = Prisma.raw(`'${UNITS[interval]}'::interval`);
-    const bucket = bucketExpr(timeColumn(scope.filters.timeField), interval, tz);
-    return this.prisma.$queryRaw<SentimentBucketRow[]>(
-      withBase(
-        scope,
-        Prisma.sql`, series AS (
-            SELECT (g AT TIME ZONE ${tz}) AS bucket
-              FROM generate_series(date_trunc(${unit}, ${scope.range.from}::timestamptz AT TIME ZONE ${tz}),
-                                   ${scope.range.to}::timestamptz AT TIME ZONE ${tz}, ${step}) g),
-          agg AS (
-            SELECT ${bucket} AS bucket,
-                   COUNT(DISTINCT e.post_id) FILTER (WHERE e.sentiment_label = 'positive')::int AS positive,
-                   COUNT(DISTINCT e.post_id) FILTER (WHERE e.sentiment_label = 'neutral')::int AS neutral,
-                   COUNT(DISTINCT e.post_id) FILTER (WHERE e.sentiment_label = 'negative')::int AS negative
-              FROM base e GROUP BY 1)
-          SELECT s.bucket, COALESCE(a.positive, 0)::int AS positive, COALESCE(a.neutral, 0)::int AS neutral,
-                 COALESCE(a.negative, 0)::int AS negative
-            FROM series s LEFT JOIN agg a ON a.bucket = s.bucket
-           WHERE s.bucket < ${scope.range.to}::timestamptz
-           ORDER BY s.bucket`,
-      ),
-    );
   }
 }
 
