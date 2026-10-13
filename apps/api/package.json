@@ -20,6 +20,7 @@
     "db:reset": "prisma migrate reset --force",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
+    "db:drift": "prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --shadow-database-url \"$SHADOW_DATABASE_URL\" --exit-code",
     "poc:threads": "tsx src/cli/poc-threads.ts",
     "eval:classifier": "tsx src/cli/eval-classifier.ts",
     "purge": "tsx src/cli/purge.ts",

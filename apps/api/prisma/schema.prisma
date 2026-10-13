@@ -302,8 +302,8 @@ model SocialPost {
 
   currentAnalysisId String?         @map("current_analysis_id") @db.Uuid
   latestRunStatus   AnalysisStatus? @map("latest_run_status")
-  /// Generated column: to_tsvector('simple', coalesce(text,'')) + GIN index — created in raw SQL migration.
-  searchVector      Unsupported("tsvector")? @map("search_vector")
+  /// Generated column + GIN index created in raw SQL (init_extras); dbgenerated default mirrors the expression so `migrate diff` stays empty (T-007, FR-161).
+  searchVector      Unsupported("tsvector")? @default(dbgenerated("to_tsvector('simple'::regconfig, COALESCE(text, ''::text))")) @map("search_vector")
 
   firstSeenAt DateTime @map("first_seen_at") @db.Timestamptz(6)
   lastSeenAt  DateTime @map("last_seen_at") @db.Timestamptz(6)
@@ -322,6 +322,8 @@ model SocialPost {
   @@index([projectId, firstSeenAt(sort: Desc)])
   @@index([projectId, latestRunStatus])
   @@index([projectId, currentAnalysisId])
+  /// GIN index on the generated tsvector (FR-161); declared so `migrate dev` stops proposing a DROP.
+  @@index([searchVector], type: Gin, map: "social_posts_search_vector_idx")
   @@map("social_posts")
 }
 
