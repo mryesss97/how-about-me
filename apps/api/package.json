@@ -25,7 +25,9 @@
     "poc:threads": "tsx --env-file-if-exists=.env src/cli/poc-threads.ts",
     "eval:classifier": "tsx --env-file-if-exists=.env src/cli/eval-classifier.ts",
     "purge": "tsx --env-file-if-exists=.env src/cli/purge.ts",
-    "secrets:rewrap": "tsx --env-file-if-exists=.env src/cli/secrets-rewrap.ts"
+    "secrets:rewrap": "tsx --env-file-if-exists=.env src/cli/secrets-rewrap.ts",
+    "perf:seed": "tsx --env-file-if-exists=.env src/cli/perf-seed.ts",
+    "perf:explain": "tsx --env-file-if-exists=.env src/cli/perf-explain.ts"
   },
   "prisma": {
     "seed": "tsx --env-file-if-exists=.env prisma/seed.ts"
