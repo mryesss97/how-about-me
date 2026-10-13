@@ -1,12 +1,12 @@
 import { Module } from "@nestjs/common";
 import { PrismaModule } from "../../database/prisma.module";
-import { ANALYSIS_ENQUEUER, SqlAnalysisEnqueuer } from "../analysis/analysis-enqueuer";
+import { AnalysisModule } from "../analysis/analysis.module";
 import { IngestionService } from "./ingestion.service";
 
-/** Collector pipeline (T-051). Provider tokens come from the global `ProvidersModule`. */
+/** Collector pipeline (T-051). `ANALYSIS_ENQUEUER` comes from `AnalysisModule` (T-070). */
 @Module({
-  imports: [PrismaModule],
-  providers: [IngestionService, { provide: ANALYSIS_ENQUEUER, useClass: SqlAnalysisEnqueuer }],
+  imports: [PrismaModule, AnalysisModule],
+  providers: [IngestionService],
   exports: [IngestionService],
 })
 export class CollectorModule {}

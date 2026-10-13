@@ -1,6 +1,7 @@
 import type { INestApplication } from "@nestjs/common";
 import { v7 as uuidv7 } from "uuid";
-import { ANALYSIS_ENQUEUER, SqlAnalysisEnqueuer } from "../../src/modules/analysis/analysis-enqueuer";
+import { ANALYSIS_ENQUEUER } from "../../src/modules/analysis/analysis-enqueuer";
+import type { AnalysisService } from "../../src/modules/analysis/analysis.service";
 import { IngestionService, type IngestionQuery } from "../../src/modules/collector/ingestion.service";
 import { normalizeItem, type NormalizedPost } from "../../src/modules/collector/post-normalizer";
 import type { PrismaService } from "../../src/database/prisma.service";
@@ -95,7 +96,7 @@ describe("IngestionService (T-051)", () => {
     expect((await prisma.socialPost.findFirstOrThrow()).latestRunStatus).toBe("pending");
 
     await prisma.analysisRun.deleteMany();
-    const enq = app.get<SqlAnalysisEnqueuer>(ANALYSIS_ENQUEUER);
+    const enq = app.get<AnalysisService>(ANALYSIS_ENQUEUER);
     const input = {
       postId: run.postId,
       projectId,
@@ -140,7 +141,7 @@ describe("IngestionService (T-051)", () => {
   });
 
   it("rolls back the whole page when the enqueuer throws", async () => {
-    const enq = app.get<SqlAnalysisEnqueuer>(ANALYSIS_ENQUEUER);
+    const enq = app.get<AnalysisService>(ANALYSIS_ENQUEUER);
     const spy = jest.spyOn(enq, "enqueue").mockRejectedValueOnce(new Error("boom"));
     await expect(svc.ingestPage(qA, [post("p1", "x")])).rejects.toThrow("boom");
     spy.mockRestore();

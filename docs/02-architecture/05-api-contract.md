@@ -323,7 +323,10 @@ Run object: `{ id, postId, status, trigger, effectiveVersion, attemptCount, erro
 
 ## 11. Audit
 
-`GET /projects/:projectId/audit-logs` (admin): `action?, actorUserId?, from, to, cursor, limit` → `{ items:[{id, action, actor:{id,displayName,email}, entityType, entityId, metadata, requestId, createdAt}], nextCursor }`.
+`GET /projects/:projectId/audit-logs` (admin): `action?, actorUserId?, from, to, cursor, limit` → `{ items:[{id, action, actor:{id,displayName,email}, entityType, entityId, metadata, requestId, createdAt}], nextCursor, totalCount? }`.
+
+- Sorted `createdAt desc, id desc` (keyset cursor). `from` inclusive, `to` exclusive (absolute UTC instants, range ≤ `MAX_RANGE_DAYS`). `count=true` adds `totalCount`. Always scoped to `:projectId`; `action` is exact match.
+- `actor` is `null` when the user was deleted (`ON DELETE SET NULL`) or for system actions. Errors: 400 `VALIDATION_ERROR` (bad query/cursor), 403 `FORBIDDEN_ROLE` (analyst/viewer), 403 `FORBIDDEN_PROJECT` (non-member).
 
 ## 12. Health
 
