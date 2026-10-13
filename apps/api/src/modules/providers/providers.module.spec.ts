@@ -5,7 +5,9 @@ import { FakeSafetyProvider } from "../analysis/providers/fake-safety.provider";
 import { CONTENT_CLASSIFIER, SAFETY_PROVIDER } from "../analysis/providers/interfaces";
 import { FakeThreadsProvider } from "../integrations/threads/fake-threads.provider";
 import { SOCIAL_DISCOVERY_PROVIDER } from "../integrations/threads/social-discovery.provider";
-import { ProvidersModule } from "./providers.module";
+import { loadEnv } from "../../config/env.schema";
+import { OpenAiModerationProvider } from "../analysis/providers/openai-moderation.provider";
+import { createSafetyProvider, ProvidersModule } from "./providers.module";
 
 /** Minimum env `loadEnv()` needs; no DB connection is opened by this module. */
 const BASE_ENV = { DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/unused?schema=public" };
@@ -49,5 +51,29 @@ describe("ProvidersModule (PROVIDERS_MODE wiring, FR-112, FR-047)", () => {
       { requestId: "r", projectId: "p", runId: "run" },
     );
     expect(out.usage.estimatedCostUsd).toBeGreaterThan(0);
+  });
+
+  describe("createSafetyProvider (T-071)", () => {
+    const cfg = (env: Record<string, string>) => loadEnv({ NODE_ENV: "test", ...BASE_ENV, ...env });
+
+    it("builds the OpenAI moderation adapter in real mode with a key", () => {
+      const provider = createSafetyProvider(cfg({ PROVIDERS_MODE: "real", OPENAI_API_KEY: "sk-test" }));
+      expect(provider).toBeInstanceOf(OpenAiModerationProvider);
+      expect(provider.model).toBe("omni-moderation-latest");
+    });
+
+    it("rejects an unknown SAFETY_PROVIDER", () => {
+      expect(() =>
+        createSafetyProvider(cfg({ PROVIDERS_MODE: "real", OPENAI_API_KEY: "sk-test", SAFETY_PROVIDER: "acme" })),
+      ).toThrow(/Unsupported SAFETY_PROVIDER/);
+    });
+
+    it("fails fast without OPENAI_API_KEY in real mode", () => {
+      expect(() => createSafetyProvider(cfg({ PROVIDERS_MODE: "real" }))).toThrow(/OPENAI_API_KEY/);
+    });
+
+    it("keeps the fake in fake mode", () => {
+      expect(createSafetyProvider(cfg({ PROVIDERS_MODE: "fake" }))).toBeInstanceOf(FakeSafetyProvider);
+    });
   });
 });

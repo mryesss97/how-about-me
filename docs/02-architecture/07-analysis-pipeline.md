@@ -173,7 +173,11 @@ System: role (social-listening analyst for **1Zone / Eventista**, Vietnamese liv
 
 ## 6. Safety policy mapping
 
-`packages/taxonomy/src/safety-policy.v1.ts` exports thresholds (doc 08 §9) and `mapSafetyLevel(scores, flagged): { level, policyVersion, triggeredCategories }`. Unit tests cover boundaries; `triggeredCategories` stored inside `safety_category_scores` JSONB as `{ scores, triggered }`.
+`packages/taxonomy/src/safety-policy.ts` exports thresholds (doc 08 §9) and `mapSafetyLevel({ categoryScores, flagged }): { level, policyVersion, triggered }`. Unit tests cover boundaries; `triggered` is stored inside `safety_category_scores` JSONB as `{ scores, triggered }`.
+
+The real adapter is `OpenAiModerationProvider` (`apps/api/src/modules/analysis/providers/openai-moderation.provider.ts`, T-071): native `fetch` to `POST {OPENAI_BASE_URL}/moderations` with `{ model: SAFETY_MODEL, input: text }` (only the text is sent). The thin HTTP helper `openai-http.ts` (timeout via `AbortController`, error mapping; reused by T-072) maps 429/5xx/timeout/network → `ANALYSIS_PROVIDER_ERROR` (retryable, `Retry-After` honoured), 401/403 → `ANALYSIS_PROVIDER_AUTH`, other 4xx → `ANALYSIS_PROVIDER_BAD_REQUEST`, invalid JSON/shape → `ANALYSIS_SCHEMA_INVALID`. Error messages carry only the HTTP status and OpenAI's `error.type`/`error.code` (never its free-text `message`, which can quote the input), plus `x-request-id` in `subcode`; the timeout covers the body read too. Scores are clamped to `[0,1]`; `raw` keeps only `{ id, model }` (actual snapshot, for audit). Empty text returns an empty, unflagged result without calling the API (T-074 decides whether to skip). Unknown categories are kept in `scores` but ignored by the policy.
+
+`toSafetyAnalysis(result)` (`apps/api/src/modules/analysis/safety/safety-mapping.ts`) turns a provider result into the persisted fields `safetyFlagged`, `safetyLevel`, `safetyPolicyVersion`, `safetyCategoryScores = { scores, triggered }`; it takes no sentiment input (BR-017). T-074 calls it when writing `post_analyses`.
 
 ## 7. Versioning & dedupe (BR-023, BR-024)
 
@@ -195,6 +199,8 @@ effective_version = `${classifier.provider}|${classifier.model}|${classifier.pro
 | empty text                     | `skipped empty_text`                                                                                                                                |
 | stuck `processing` > 10 min    | re-queued by watchdog on tick                                                                                                                       |
 
+Two retry tiers: inside one job attempt the adapter retries transient errors via `withRetry` (`OPENAI_MAX_RETRIES=2`, base 2 s, cap 30 s, `Retry-After` honoured up to 60 s — longer ends the attempt), so one attempt makes at most 3 HTTP calls and a whole job (3 attempts) at most 9. Non-transient codes are never retried in the adapter.
+
 ## 9. Cost controls
 
 Relevance gate; skip summary for spam (`ANALYSIS_SKIP_SUMMARY_FOR_SPAM=true`); version dedupe; `ANALYSIS_DAILY_BUDGET_USD` soft cap → when exceeded, worker pauses non-manual runs and System Status shows `analysis.status=budget_paused` (admin can raise/resume). Token counts from provider usage; cost = tokens × configured price table (`ANALYSIS_PRICE_INPUT_PER_1M`, `ANALYSIS_PRICE_OUTPUT_PER_1M`).
@@ -205,21 +211,22 @@ Relevance gate; skip summary for spam (`ANALYSIS_SKIP_SUMMARY_FOR_SPAM=true`); v
 
 ## 11. Configuration
 
-| Env                                                          | Default                             |
-| ------------------------------------------------------------ | ----------------------------------- |
-| `ANALYSIS_POLL_MS`                                           | 5000                                |
-| `ANALYSIS_BATCH_SIZE`                                        | 20                                  |
-| `ANALYSIS_CONCURRENCY`                                       | 3                                   |
-| `ANALYSIS_MAX_ATTEMPTS`                                      | 3                                   |
-| `ANALYSIS_TWO_STEP`                                          | false                               |
-| `ANALYSIS_CLASSIFIER_PROVIDER` / `ANALYSIS_CLASSIFIER_MODEL` | `openai` / _(owner input)_          |
-| `SAFETY_PROVIDER` / `SAFETY_MODEL`                           | `openai` / `omni-moderation-latest` |
-| `OPENAI_API_KEY`                                             | _(owner input)_                     |
-| `ANALYSIS_BRAND_CONTEXT`                                     | seeded text                         |
-| `ANALYSIS_SKIP_SUMMARY_FOR_SPAM`                             | true                                |
-| `ANALYSIS_DAILY_BUDGET_USD`                                  | 5                                   |
-| `ANALYSIS_BULK_MAX`                                          | 2000                                |
-| `PROVIDERS_MODE`                                             | `real` \| `fake`                    |
+| Env                                                            | Default                                 |
+| -------------------------------------------------------------- | --------------------------------------- |
+| `ANALYSIS_POLL_MS`                                             | 5000                                    |
+| `ANALYSIS_BATCH_SIZE`                                          | 20                                      |
+| `ANALYSIS_CONCURRENCY`                                         | 3                                       |
+| `ANALYSIS_MAX_ATTEMPTS`                                        | 3                                       |
+| `ANALYSIS_TWO_STEP`                                            | false                                   |
+| `ANALYSIS_CLASSIFIER_PROVIDER` / `ANALYSIS_CLASSIFIER_MODEL`   | `openai` / _(owner input)_              |
+| `SAFETY_PROVIDER` / `SAFETY_MODEL`                             | `openai` / `omni-moderation-latest`     |
+| `OPENAI_API_KEY`                                               | _(owner input)_                         |
+| `OPENAI_BASE_URL` / `OPENAI_TIMEOUT_MS` / `OPENAI_MAX_RETRIES` | `https://api.openai.com/v1` / 15000 / 2 |
+| `ANALYSIS_BRAND_CONTEXT`                                       | seeded text                             |
+| `ANALYSIS_SKIP_SUMMARY_FOR_SPAM`                               | true                                    |
+| `ANALYSIS_DAILY_BUDGET_USD`                                    | 5                                       |
+| `ANALYSIS_BULK_MAX`                                            | 2000                                    |
+| `PROVIDERS_MODE`                                               | `real` \| `fake`                        |
 
 ## 12. Evaluation
 
