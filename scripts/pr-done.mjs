@@ -216,6 +216,21 @@ export function doneSection({ sha, e2e = false, links = [], skipped }) {
 }
 
 /** `text` without the `## ` section that starts with `heading`, up to the next `## `. */
+/** A line that signs the PR body, e.g. the "Generated with Claude Code" attribution. */
+const TRAILER = /^🤖 Generated with \[[^\]]+\]\([^)]+\)\s*$/;
+
+/**
+ * Splits trailer lines (the attribution) out of a PR body so they can go last
+ * again after `issue:ship` replaces the Definition of Done placeholder, which
+ * otherwise swallows everything after it.
+ */
+export function splitTrailer(text) {
+  const lines = String(text).split("\n");
+  const trailer = lines.filter((line) => TRAILER.test(line.trim())).map((line) => line.trim());
+  const rest = lines.filter((line) => !TRAILER.test(line.trim())).join("\n");
+  return { text: rest, trailer: [...new Set(trailer)].join("\n") };
+}
+
 export function withoutSection(text, heading) {
   const lines = String(text).split("\n");
   const start = lines.findIndex((line) => line.trimEnd() === heading);
