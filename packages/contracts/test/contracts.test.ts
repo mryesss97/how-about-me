@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   AnalysisFiltersSchema,
   CreateListeningQueryBodySchema,
+  LISTENING_QUERY_IMMUTABLE_FIELDS,
   MentionsListQuerySchema,
+  QueryDuplicateDetailsSchema,
   UpdateListeningQueryBodySchema,
 } from "../src/index.js";
 
@@ -44,6 +46,23 @@ describe("listening query body (FR-052 / BR-004)", () => {
   it("update body never injects defaults for unsent fields (PATCH semantics)", () => {
     const r = UpdateListeningQueryBodySchema.parse({ displayName: "Renamed" });
     expect(r).toEqual({ displayName: "Renamed" });
+  });
+});
+
+describe("listening query helpers (T-042)", () => {
+  it("BR-009: immutable fields are queryValue and queryType", () => {
+    expect([...LISTENING_QUERY_IMMUTABLE_FIELDS]).toEqual(["queryValue", "queryType"]);
+  });
+  it("FR-053: duplicate details carry a uuid existingId", () => {
+    expect(QueryDuplicateDetailsSchema.safeParse({ existingId: "0199a3b4-0000-7000-8000-000000000001" }).success).toBe(
+      true,
+    );
+    expect(QueryDuplicateDetailsSchema.safeParse({ existingId: "nope" }).success).toBe(false);
+  });
+  it("BR-004: a value made only of # is empty after strip → rejected; >100 chars rejected", () => {
+    const base = { displayName: "x", queryType: "keyword" as const };
+    expect(CreateListeningQueryBodySchema.safeParse({ ...base, queryValue: "###" }).success).toBe(false);
+    expect(CreateListeningQueryBodySchema.safeParse({ ...base, queryValue: "a".repeat(101) }).success).toBe(false);
   });
 });
 

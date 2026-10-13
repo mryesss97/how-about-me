@@ -52,7 +52,7 @@ Legend: ✅ allowed · ❌ denied · ⚙️ allowed when project setting enables
 | Manage members & roles                                | `GET/POST/PATCH/DELETE /projects/:id/members`                 | ✅    | ❌                         | ❌                     |
 | View Threads integration status                       | `GET /projects/:id/integrations/threads`                      | ✅    | ✅ (no secrets)            | ✅ (no secrets)        |
 | Configure Threads integration / rotate token          | `PUT /projects/:id/integrations/threads`, `POST …/verify`     | ✅    | ❌                         | ❌                     |
-| List/view listening queries                           | `GET …/listening-queries`                                     | ✅    | ✅                         | ✅                     |
+| List/view listening queries                           | `GET …/listening-queries`, `GET …/listening-queries/:id`      | ✅    | ✅                         | ✅                     |
 | Create/edit/enable/disable/soft-delete/restore query  | `POST/PATCH/DELETE …/listening-queries/:id`, `POST …/restore` | ✅    | ❌                         | ❌                     |
 | Run query now                                         | `POST …/listening-queries/:id/run`                            | ✅    | ❌                         | ❌                     |
 | Backfill (P1)                                         | `POST …/listening-queries/:id/backfill`                       | ✅    | ❌                         | ❌                     |
