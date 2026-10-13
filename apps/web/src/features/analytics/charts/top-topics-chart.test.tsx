@@ -31,4 +31,13 @@ describe("TopTopicsChart", () => {
     render(<TopTopicsChart isLoading />);
     expect(screen.queryByRole("button", { name: "View as table" })).toBeNull();
   });
+
+  it("FR-142: table rows link to their drill-down; aggregated Other is plain text", async () => {
+    const getHref = (k: string) => (k === "other" ? null : `/mentions?topic=${k}`);
+    render(<TopTopicsChart data={topicsFixture()} getHref={getHref} onNavigate={() => {}} />);
+    await openTable();
+    expect(screen.getByRole("link", { name: "Ticket" })).toHaveAttribute("href", "/mentions?topic=ticket");
+    expect(screen.queryByRole("link", { name: "Other" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Mentions with a topic" })).toBeNull();
+  });
 });

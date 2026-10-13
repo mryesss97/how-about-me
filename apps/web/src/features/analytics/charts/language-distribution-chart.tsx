@@ -5,7 +5,7 @@ import type { LanguageCode } from "@how-about-me/taxonomy";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import type { QueryStateError } from "@/features/shared/query-state";
 import { formatCount, formatRate } from "@/lib/format/number";
-import { ChartCard } from "./chart-card";
+import { ChartCard, type DrillDownProps, drillSelect, segmentHref } from "./chart-card";
 import { LANGUAGE_COLORS, LANGUAGE_NAMES } from "./chart-data";
 import { MetricTooltip } from "./metric-tooltip";
 
@@ -15,7 +15,7 @@ export type LanguageDistributionChartProps = {
   error?: QueryStateError | null;
   onRetry?: () => void;
   className?: string;
-};
+} & DrillDownProps<LanguageCode>;
 
 type Slice = { key: LanguageCode; name: string; count: number; share: number | null };
 
@@ -29,6 +29,8 @@ export function LanguageDistributionChart({
   error,
   onRetry,
   className,
+  getHref,
+  onNavigate,
 }: LanguageDistributionChartProps) {
   const denominator = data?.denominator ?? 0;
   const rows: Slice[] = (data?.distribution ?? []).map((d) => ({
@@ -40,7 +42,9 @@ export function LanguageDistributionChart({
   // Zero-count codes stay in the table but are dropped from the donut and legend.
   const slices = rows.filter((s) => s.count > 0);
 
+  const select = drillSelect({ getHref, onNavigate });
   const table = {
+    rowHrefs: rows.map((s) => segmentHref(getHref, s)),
     columns: ["Language", "Count", "Share"],
     rows: [
       ...rows.map((s) => [s.name, formatCount(s.count), formatRate(s.share)]),
@@ -86,9 +90,13 @@ export function LanguageDistributionChart({
               outerRadius="85%"
               stroke="none"
               isAnimationActive={false}
+              onClick={(_entry: unknown, index: number) => {
+                const s = slices[index];
+                if (s && select?.canSelect(s)) select.select(s);
+              }}
             >
               {slices.map((s) => (
-                <Cell key={s.key} fill={LANGUAGE_COLORS[s.key]} />
+                <Cell key={s.key} fill={LANGUAGE_COLORS[s.key]} cursor={select?.canSelect(s) ? "pointer" : undefined} />
               ))}
             </Pie>
           </PieChart>

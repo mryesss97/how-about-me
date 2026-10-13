@@ -7,7 +7,7 @@ import { useId } from "react";
 import type { QueryStateError } from "@/features/shared/query-state";
 import { formatCount, formatRate } from "@/lib/format/number";
 import { safetyBadge } from "@/lib/semantics/badges";
-import { ChartCard } from "./chart-card";
+import { ChartCard, type DrillDownProps, drillSelect, segmentHref } from "./chart-card";
 import { type BarRow, SAFETY_COLORS } from "./chart-data";
 import { HorizontalBarChart } from "./horizontal-bar-chart";
 
@@ -17,7 +17,7 @@ export type SafetyDistributionChartProps = {
   error?: QueryStateError | null;
   onRetry?: () => void;
   className?: string;
-};
+} & DrillDownProps<SafetyLevel>;
 
 const ICONS = { ShieldTick, AlertTriangle, AlertOctagon } as const;
 
@@ -48,7 +48,15 @@ function SafetyPatterns({ idPrefix }: { idPrefix: string }) {
 }
 
 /** Safety distribution (FR-137). safe + sensitive + severe = denominator (TC-DASH-014). Sentiment ≠ safety (BR-017). */
-export function SafetyDistributionChart({ data, isLoading, error, onRetry, className }: SafetyDistributionChartProps) {
+export function SafetyDistributionChart({
+  data,
+  isLoading,
+  error,
+  onRetry,
+  className,
+  getHref,
+  onNavigate,
+}: SafetyDistributionChartProps) {
   // useId returns ":r0:" — colons break url(#…) references.
   const idPrefix = `safety-${useId().replace(/:/g, "")}`;
   const denominator = data?.denominator ?? 0;
@@ -58,6 +66,7 @@ export function SafetyDistributionChart({ data, isLoading, error, onRetry, class
   });
 
   const table = {
+    rowHrefs: rows.map((r) => segmentHref(getHref, r)),
     columns: ["Level", "Count", "Share"],
     rows: [
       ...rows.map((r) => [r.name, formatCount(r.count), formatRate(r.share)]),
@@ -82,6 +91,7 @@ export function SafetyDistributionChart({ data, isLoading, error, onRetry, class
         rows={rows}
         getFill={(r) => safetyFill(r.key, idPrefix)}
         denominator={denominator}
+        onSelect={drillSelect({ getHref, onNavigate })}
         denominatorLabel="analysed"
         defs={<SafetyPatterns idPrefix={idPrefix} />}
       />

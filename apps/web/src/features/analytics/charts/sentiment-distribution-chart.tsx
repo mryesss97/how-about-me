@@ -6,7 +6,7 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import type { QueryStateError } from "@/features/shared/query-state";
 import { formatCount, formatRate } from "@/lib/format/number";
 import { sentimentBadge } from "@/lib/semantics/badges";
-import { ChartCard } from "./chart-card";
+import { ChartCard, type DrillDownProps, drillSelect, segmentHref } from "./chart-card";
 import { SENTIMENT_COLORS, SENTIMENT_ORDER } from "./chart-data";
 import { MetricTooltip } from "./metric-tooltip";
 
@@ -16,7 +16,7 @@ export type SentimentDistributionChartProps = {
   error?: QueryStateError | null;
   onRetry?: () => void;
   className?: string;
-};
+} & DrillDownProps<SentimentLabel>;
 
 type Slice = { key: SentimentLabel; name: string; count: number; share: number | null };
 
@@ -27,6 +27,8 @@ export function SentimentDistributionChart({
   error,
   onRetry,
   className,
+  getHref,
+  onNavigate,
 }: SentimentDistributionChartProps) {
   const denominator = data?.denominator ?? 0;
   const slices: Slice[] = SENTIMENT_ORDER.map((key) => {
@@ -34,7 +36,9 @@ export function SentimentDistributionChart({
     return { key, name: sentimentBadge[key].label, count: item?.count ?? 0, share: item?.share ?? null };
   });
 
+  const select = drillSelect({ getHref, onNavigate });
   const table = {
+    rowHrefs: slices.map((s) => segmentHref(getHref, s)),
     columns: ["Sentiment", "Count", "Share"],
     rows: [
       ...slices.map((s) => [s.name, formatCount(s.count), formatRate(s.share)]),
@@ -80,9 +84,17 @@ export function SentimentDistributionChart({
               outerRadius="85%"
               stroke="none"
               isAnimationActive={false}
+              onClick={(_entry: unknown, index: number) => {
+                const s = slices[index];
+                if (s && select?.canSelect(s)) select.select(s);
+              }}
             >
               {slices.map((s) => (
-                <Cell key={s.key} fill={SENTIMENT_COLORS[s.key]} />
+                <Cell
+                  key={s.key}
+                  fill={SENTIMENT_COLORS[s.key]}
+                  cursor={select?.canSelect(s) ? "pointer" : undefined}
+                />
               ))}
             </Pie>
           </PieChart>

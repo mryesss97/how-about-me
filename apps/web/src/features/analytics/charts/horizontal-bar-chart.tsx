@@ -18,6 +18,7 @@ export function HorizontalBarChart<R extends BarRow>({
   denominator,
   denominatorLabel,
   defs,
+  onSelect,
 }: {
   rows: readonly R[];
   getFill: (row: R) => string;
@@ -25,6 +26,8 @@ export function HorizontalBarChart<R extends BarRow>({
   denominatorLabel: string;
   /** SVG <defs> (e.g. hatch patterns referenced by getFill). */
   defs?: ReactNode;
+  /** FR-142 drill-down on bar click; rows for which it returns false are not clickable. */
+  onSelect?: { canSelect: (row: R) => boolean; select: (row: R) => void };
 }) {
   const data = rows.map((r) => ({ ...r, valueLabel: barValueLabel(r) }));
   return (
@@ -64,9 +67,13 @@ export function HorizontalBarChart<R extends BarRow>({
             isAnimationActive={false}
             radius={[0, 4, 4, 0]}
             shape={(props: ComponentProps<typeof Rectangle>) => <Rectangle {...props} />}
+            onClick={(_entry: unknown, index: number) => {
+              const row = rows[index];
+              if (row && onSelect?.canSelect(row)) onSelect.select(row);
+            }}
           >
-            {data.map((r) => (
-              <Cell key={r.key} fill={getFill(r)} />
+            {data.map((r, i) => (
+              <Cell key={r.key} fill={getFill(r)} cursor={onSelect?.canSelect(rows[i] as R) ? "pointer" : undefined} />
             ))}
             <LabelList dataKey="valueLabel" position="right" fill="var(--color-text-tertiary)" className="text-xs" />
           </Bar>

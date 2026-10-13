@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { type ReactNode, useState } from "react";
 import { ToggleButton as AriaToggleButton } from "react-aria-components";
 import { Table } from "@/components/application/table/table";
@@ -7,7 +8,35 @@ import { QueryState, type QueryStateError } from "@/features/shared/query-state"
 import { cx } from "@/utils/cx";
 
 /** Tabular twin of a chart (NFR-032): first column is the row header, the rest are pre-formatted cells. */
-export type ChartTable = { columns: readonly string[]; rows: ReadonlyArray<readonly string[]> };
+export type ChartTable = {
+  columns: readonly string[];
+  rows: ReadonlyArray<readonly string[]>;
+  /** FR-142: drill-down href per row (same index as `rows`); null/missing = plain text. Keyboard path to drill-down. */
+  rowHrefs?: ReadonlyArray<string | null | undefined>;
+};
+
+/** FR-142 drill-down wiring passed by /overview: href per segment key (null = not drillable) + navigation. */
+export type DrillDownProps<K extends string> = {
+  getHref?: (key: K) => string | null;
+  onNavigate?: (href: string) => void;
+};
+
+/** Zero-count segments are not drillable (empty list adds nothing). */
+export function segmentHref<K extends string>(getHref: DrillDownProps<K>["getHref"], row: { key: K; count: number }) {
+  return row.count > 0 ? (getHref?.(row.key) ?? null) : null;
+}
+
+/** Bar/slice click handler built from DrillDownProps; undefined when drill-down is off. */
+export function drillSelect<K extends string>({ getHref, onNavigate }: DrillDownProps<K>) {
+  if (!getHref || !onNavigate) return undefined;
+  return {
+    canSelect: (row: { key: K; count: number }) => segmentHref(getHref, row) !== null,
+    select: (row: { key: K; count: number }) => {
+      const href = segmentHref(getHref, row);
+      if (href) onNavigate(href);
+    },
+  };
+}
 
 export type ChartCardProps = {
   title: string;
@@ -93,7 +122,18 @@ function ChartDataTable({ caption, table }: { caption: string; table: ChartTable
         {table.rows.map((row, r) => (
           <Table.Row key={r} id={r}>
             {row.map((cell, c) => (
-              <Table.Cell key={c}>{cell}</Table.Cell>
+              <Table.Cell key={c}>
+                {c === 0 && table.rowHrefs?.[r] ? (
+                  <Link
+                    href={table.rowHrefs[r]}
+                    className="font-medium text-brand-secondary underline-offset-2 outline-focus-ring hover:underline focus-visible:outline-2"
+                  >
+                    {cell}
+                  </Link>
+                ) : (
+                  cell
+                )}
+              </Table.Cell>
             ))}
           </Table.Row>
         ))}
