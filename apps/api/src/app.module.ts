@@ -9,11 +9,14 @@ import { HttpExceptionFilter } from "./common/errors/http-exception.filter";
 import { buildLoggerParams } from "./common/logging/logger.config";
 import { APP_CONFIG, AppConfigModule, type AppConfig } from "./config/config.module";
 import { PrismaModule } from "./database/prisma.module";
+import { AnalysisModule } from "./modules/analysis/analysis.module";
+import { AuditModule } from "./modules/audit/audit.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { CollectorModule } from "./modules/collector/collector.module";
 import { HealthModule } from "./modules/health/health.module";
 import { ProjectsModule } from "./modules/projects/projects.module";
 import { ProvidersModule } from "./modules/providers/providers.module";
+import { SchedulerModule } from "./jobs/scheduler.module";
 
 @Module({
   imports: [
@@ -29,8 +32,11 @@ import { ProvidersModule } from "./modules/providers/providers.module";
     ProjectsModule,
     ProvidersModule,
     CollectorModule,
-    // M2+: IntegrationsModule, ListeningQueriesModule, SyncJobsModule, AuditModule, SystemStatusModule
-    // M3+: AnalysisModule · M4+: MentionsModule, AnalyticsModule · M6: ReviewsModule, ExportModule
+    AnalysisModule,
+    SchedulerModule,
+    AuditModule,
+    // M2+: IntegrationsModule, ListeningQueriesModule, SyncJobsModule, SystemStatusModule
+    // M4+: MentionsModule, AnalyticsModule · M6: ReviewsModule, ExportModule
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

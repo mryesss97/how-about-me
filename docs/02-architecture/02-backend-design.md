@@ -106,20 +106,29 @@ Codes (subset): `VALIDATION_ERROR(400)`, `AUTH_MISSING_TOKEN/INVALID_TOKEN/TOKEN
 
 ## 6. Scheduling & workers
 
-- `@nestjs/schedule` `@Interval(60_000)` on `SchedulerService.tick()` only when `APP_ROLE ∈ {worker, all}`.
-- Tick: `claimDueQueries(limit = COLLECTOR_MAX_CONCURRENT_QUERIES)` → run sequentially per instance (bounded concurrency `p-limit`), each in its own try/catch; never let one query's failure abort the tick.
-- `AnalysisWorkerService` `@Interval(ANALYSIS_POLL_MS=5000)`: claim batch, process with bounded concurrency (`ANALYSIS_CONCURRENCY=3`).
-- Graceful shutdown: `enableShutdownHooks`; workers finish current page/item, release locks.
-- Claiming SQL (queries):
+- Collector tick (T-048, `apps/api/src/jobs/`): `SchedulerService` registers interval `collector-tick` every `COLLECTOR_TICK_MS` (default 60 000) via `SchedulerRegistry`, only when `APP_ROLE ∈ {worker, all}`. Overlapping ticks in one instance are skipped.
+- Tick: `QueryClaimRepository.claimDueQueries(workerId, limit = COLLECTOR_MAX_CONCURRENT_QUERIES, COLLECTOR_LOCK_STALE_MINUTES)` → run each claimed query through the `COLLECTOR_RUNNER` token (bounded concurrency via the in-repo `runWithConcurrency` helper), each in its own try/catch; a thrown error counts as `failed` (`last_error_code` = `AppError.code` or `INTERNAL`). Never let one query's failure abort the tick. `COLLECTOR_RUNNER` is bound to `null` until T-052 binds `CollectorService`; with no runner the tick is not registered (no claims, no `next_run_at`/`last_run_at` moved by runs that never happened).
+- After each run `computeNextRunAt` (ingestion §3) → `completeRun` writes `next_run_at`, `consecutive_failures`, `last_run_at`, `last_error_*` and clears the lock **only `WHERE locked_by = $worker`** (a worker whose stale lock was re-claimed writes nothing). The guard only prevents overwrites: a run longer than `COLLECTOR_LOCK_STALE_MINUTES` can still be re-claimed and run twice, so the T-052 runner must heartbeat `locked_at` or bound its pages per run. The runner also owns `sync_jobs` (create the scheduled job, move the claimed `manualJobId` from `queued` to `running`); otherwise a queued manual job keeps its query due on every tick.
+- `AnalysisWorkerService` registers its interval (`ANALYSIS_POLL_MS=5000`) through `SchedulerRegistry` on bootstrap, only when `APP_ROLE ∈ {worker, all}`, `NODE_ENV ≠ test` and a `RunProcessor` (`ANALYSIS_RUN_PROCESSOR`, T-074) is bound. Tick: watchdog `requeueStuck()` → `claimBatch(ANALYSIS_BATCH_SIZE)` → process with bounded concurrency (`ANALYSIS_CONCURRENCY=3`); overlapping ticks are skipped. On shutdown it stops polling and waits up to 10 s for the current batch.
+- Graceful shutdown: `enableShutdownHooks`; workers finish current page/item, release locks (`releaseLocks(workerId)`, wait ≤ 30 s for the in-flight tick).
+- Claiming SQL (queries) — due = `next_run_at <= now()`, `next_run_at IS NULL` (new query) or a queued manual job; manual first (FR-058); projects with an open circuit or without a `connected` Threads integration are skipped:
 
 ```sql
 UPDATE listening_queries q SET locked_at = now(), locked_by = $worker
-WHERE q.id IN (
-  SELECT id FROM listening_queries
-  WHERE enabled AND deleted_at IS NULL AND next_run_at <= now()
-    AND (locked_at IS NULL OR locked_at < now() - ($stale)::interval)
-  ORDER BY next_run_at LIMIT $limit FOR UPDATE SKIP LOCKED)
-RETURNING q.*;
+FROM (
+  SELECT lq.id, mj.id AS manual_job_id FROM listening_queries lq
+  LEFT JOIN LATERAL (SELECT sj.id FROM sync_jobs sj
+     WHERE sj.query_id = lq.id AND sj.status = 'queued' AND sj.trigger = 'manual'
+     ORDER BY sj.created_at LIMIT 1) mj ON true
+  WHERE lq.enabled AND lq.deleted_at IS NULL
+    AND (lq.next_run_at IS NULL OR lq.next_run_at <= now() OR mj.id IS NOT NULL)
+    AND (lq.locked_at IS NULL OR lq.locked_at < now() - make_interval(mins => $stale))
+    AND NOT EXISTS (SELECT 1 FROM collector_state cs WHERE cs.project_id = lq.project_id AND cs.circuit_open_until > now())
+    AND EXISTS (SELECT 1 FROM integration_connections ic WHERE ic.project_id = lq.project_id AND ic.platform = 'threads' AND ic.status = 'connected')
+  ORDER BY (mj.id IS NOT NULL) DESC, lq.next_run_at NULLS FIRST
+  LIMIT $limit FOR UPDATE OF lq SKIP LOCKED) c
+WHERE q.id = c.id
+RETURNING q.id, q.project_id, q.poll_interval_seconds, q.consecutive_failures, q.next_run_at, c.manual_job_id;
 ```
 
 Analysis runs use the same pattern on `analysis_runs` with `status='pending'`.
