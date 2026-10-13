@@ -53,7 +53,7 @@ pino `redact` paths (`REDACT_PATHS` in `apps/api/src/common/logging/logger.confi
 
 ## 6. Audit log
 
-`AuditService.record({ projectId, actorUserId, action, entityType, entityId, metadata, requestId })` called from services (not controllers). Actions: `project.updated`, `member.added|role_changed|removed`, `integration.updated|verified|disconnected|refresh_failed`, `query.created|updated|enabled|disabled|deleted|restored|run_requested|backfill_requested`, `analysis.reanalyze_requested|bulk_reanalyze_requested|retry_requested`, `override.created|revoked`, `mentions.exported`, `analysis_settings.updated`. Immutable (no update/delete endpoints). Retention ≥ 12 months.
+`AuditService.record({ projectId, actorUserId, action, entityType, entityId, metadata, requestId })` called from services (not controllers). Actions: `project.updated`, `member.added|role_changed|removed`, `integration.updated|verified|disconnected|refresh_failed`, `query.created|updated|enabled|disabled|deleted|restored|run_requested|backfill_requested`, `analysis.reanalyze_requested|bulk_reanalyze_requested|retry_requested`, `override.created|revoked`, `mentions.exported`, `analysis_settings.updated`, `data.purged` (purge CLI, T-126). Immutable (no update/delete endpoints). Retention ≥ 12 months.
 
 Implementation (`apps/api/src/modules/audit/`, T-059):
 
@@ -73,7 +73,7 @@ Implementation (`apps/api/src/modules/audit/`, T-059):
 ## 8. Data protection & compliance
 
 - Store only requested provider fields; no enrichment; no media binaries; `raw_data` truncated.
-- Purge tooling: `pnpm --filter api purge -- --post <id> | --project <id> --before <date>` (audited). See [../05-operations/04-data-retention-purge.md](../05-operations/04-data-retention-purge.md).
+- Purge tooling: `pnpm --filter @how-about-me/api purge -- --post <id> | --project <id> --before <date> | --sync-jobs --before <date>` (dry run by default, audited as `data.purged`). See [../05-operations/04-data-retention-purge.md](../05-operations/04-data-retention-purge.md).
 - Access limited to invited internal roles; audit for all mutations.
 - Before production: review Meta Platform Terms for retention; record policy version used for automated safety labels.
 
