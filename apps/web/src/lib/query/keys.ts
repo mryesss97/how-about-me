@@ -7,6 +7,7 @@ export const qk = {
   timeseries: (pid: string, filters: unknown) => ["project", pid, "analytics", "timeseries", filters] as const,
   distribution: (pid: string, kind: string, filters: unknown) => ["project", pid, "analytics", kind, filters] as const,
   mentions: (pid: string, filters: unknown) => ["project", pid, "mentions", filters] as const,
+  reviews: (pid: string, filters: unknown) => ["project", pid, "reviews", filters] as const,
   mention: (pid: string, id: string) => ["project", pid, "mention", id] as const,
   queries: (pid: string, filters?: unknown) => ["project", pid, "listening-queries", filters ?? {}] as const,
   syncJobs: (pid: string, filters?: unknown) => ["project", pid, "sync-jobs", filters ?? {}] as const,
@@ -23,5 +24,6 @@ export const staleTimes = {
   systemStatus: 10_000,
   mentions: 15_000,
   queries: 15_000,
+  reviews: 15_000,
   me: 60_000,
 } as const;

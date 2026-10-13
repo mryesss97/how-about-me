@@ -14,7 +14,8 @@ describe("AppSidebar", () => {
     apiFetch.mockResolvedValue(meFixture([projectFixture(P1, "viewer")]));
     render(<AppSidebar />, { wrapper: Providers });
     expect(await screen.findAllByText("viewer")).not.toHaveLength(0);
-    for (const label of ["Overview", "Mentions", "Listening Queries", "System Status"])
+    // #219: Reviews is open to every role (viewer reads only).
+    for (const label of ["Overview", "Mentions", "Reviews", "Listening Queries", "System Status"])
       expect(screen.getAllByText(label).length).toBeGreaterThan(0);
     expect(screen.queryByLabelText("Project")).not.toBeInTheDocument();
   });

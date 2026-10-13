@@ -51,6 +51,8 @@ export function useReanalyze(pid: string | null | undefined, id: string) {
     Promise.all([
       qc.invalidateQueries({ queryKey: key }),
       qc.invalidateQueries({ queryKey: ["project", pid ?? "", "mentions"] }),
+      // BR-040: a new run reopens a reviewed item.
+      qc.invalidateQueries({ queryKey: ["project", pid ?? "", "reviews"] }),
     ]);
   return useMutation({
     mutationFn: async () =>
@@ -81,7 +83,7 @@ export function useReanalyze(pid: string | null | undefined, id: string) {
 /** FR-191: admin and analyst may override. UX gating only — the server enforces `@Roles` (FR-015). */
 export const canOverride = (role: UserRole | null) => role === "admin" || role === "analyst";
 
-/** Detail, list and analytics all read effective values (FR-192, BR-025), so all three go stale. */
+/** Detail, list, analytics and the review queue all read effective values (FR-192, BR-025), so all go stale. */
 function useOverrideRefresh(pid: string | null | undefined, id: string) {
   const qc = useQueryClient();
   const p = pid ?? "";
@@ -90,6 +92,8 @@ function useOverrideRefresh(pid: string | null | undefined, id: string) {
       qc.invalidateQueries({ queryKey: qk.mention(p, id) }),
       qc.invalidateQueries({ queryKey: ["project", p, "mentions"] }),
       qc.invalidateQueries({ queryKey: ["project", p, "analytics"] }),
+      // FR-195: an override can move the item out of (or between) review tabs.
+      qc.invalidateQueries({ queryKey: ["project", p, "reviews"] }),
     ]);
 }
 
