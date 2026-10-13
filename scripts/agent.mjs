@@ -14,7 +14,7 @@
 // all worktrees share it, git ignores it. `cost` sums it per ticket and label.
 import { spawnSync } from "node:child_process";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { parseTicket } from "./lib/ticket.mjs";
@@ -47,7 +47,8 @@ const REPORT_PREFIX = { plan: "research", code: "impl", review: "qa" };
 /** First line of the QA report, as `.claude/agents/qa-tester.md` defines it. */
 export const QA_REPORT_HEADING = "# Báo cáo QA";
 /** Lock files count as noise when sizing a diff. */
-const DIFF_EXCLUDE = [":(exclude)pnpm-lock.yaml"];
+const LOCK_FILES = ["pnpm-lock.yaml"];
+const DIFF_EXCLUDE = LOCK_FILES.map((name) => `:(exclude)${name}`);
 
 /**
  * The QA report inside the final message of a review run, or `null`.
@@ -204,16 +205,45 @@ function readIssue(ticket) {
   return { title: issue.title, body: issue.body, labels: issue.labels.map((label) => label.name) };
 }
 
-function diffLines() {
-  const base = run("git", ["merge-base", "HEAD", "origin/develop"]).stdout.trim();
-  const stat = run("git", ["diff", "--numstat", base, "--", ".", ...DIFF_EXCLUDE]).stdout;
-  return stat
+/**
+ * Lines changed against origin/develop: `git diff --numstat` plus the lines of
+ * untracked files, since the coder's new files are usually not committed when
+ * the review runs. Lock files do not count.
+ */
+/** Lines in a file's text, as `git diff --numstat` would count an added file. */
+function lineCount(text) {
+  if (!text) return 0;
+  return text.split("\n").length - (text.endsWith("\n") ? 1 : 0);
+}
+
+export function countDiffLines(numstat, untracked) {
+  const tracked = numstat
     .split("\n")
     .filter(Boolean)
     .reduce((total, line) => {
       const [added, removed] = line.split("\t");
       return total + (Number(added) || 0) + (Number(removed) || 0);
     }, 0);
+  const fresh = untracked
+    .filter(({ path }) => !LOCK_FILES.includes(basename(path)))
+    .reduce((total, { text }) => total + lineCount(text), 0);
+  return tracked + fresh;
+}
+
+function diffLines() {
+  const base = run("git", ["merge-base", "HEAD", "origin/develop"]).stdout.trim();
+  const stat = run("git", ["diff", "--numstat", base, "--", ".", ...DIFF_EXCLUDE]).stdout;
+  const untracked = run("git", ["ls-files", "--others", "--exclude-standard", "-z"])
+    .stdout.split("\0")
+    .filter(Boolean)
+    .map((path) => {
+      try {
+        return { path, text: readFileSync(path, "utf8") };
+      } catch {
+        return { path, text: "" };
+      }
+    });
+  return countDiffLines(stat, untracked);
 }
 
 function areas() {

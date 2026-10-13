@@ -10,6 +10,7 @@ import { test } from "node:test";
 import {
   cliIsRecent,
   codePrompt,
+  countDiffLines,
   COST_HEADING,
   costSection,
   extractQaReport,
@@ -243,4 +244,18 @@ test("codePrompt fixes the QA blockers after a failed review", () => {
   assert.match(text, /Fix every blocker in \.claude\/runs\/qa-12\.md/);
   assert.match(text, /research-12\.md/);
   assert.match(text, /pnpm verify:quiet/);
+});
+
+test("countDiffLines adds untracked files to the numstat total", () => {
+  const numstat = "10\t2\tapps/api/src/a.ts\n-\t-\tlogo.png\n";
+  const untracked = [
+    { path: "apps/api/src/new.ts", text: "a\nb\nc\n" },
+    { path: "docs/no-newline.md", text: "x\ny" },
+    { path: "empty.txt", text: "" },
+  ];
+  assert.equal(countDiffLines(numstat, untracked), 12 + 3 + 2);
+});
+
+test("countDiffLines ignores untracked lock files", () => {
+  assert.equal(countDiffLines("", [{ path: "pnpm-lock.yaml", text: "a\n".repeat(500) }]), 0);
 });
