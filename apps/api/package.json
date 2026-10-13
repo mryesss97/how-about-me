@@ -31,6 +31,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@date-fns/tz": "^1.5.0",
     "@how-about-me/contracts": "workspace:*",
     "@how-about-me/taxonomy": "workspace:*",
     "@nestjs/common": "^11.1.6",
@@ -43,6 +44,7 @@
     "@nestjs/throttler": "^6.4.0",
     "@prisma/client": "^6.16.2",
     "cron": "4.4.0",
+    "date-fns": "^4.4.0",
     "helmet": "^8.1.0",
     "jose": "^6.1.0",
     "nestjs-pino": "^4.4.0",

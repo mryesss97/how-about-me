@@ -127,6 +127,10 @@ Behaviour notes (T-042, FR-051…FR-057):
 
 Common query params (all optional): `from`, `to` (defaults last 7 d), `timezone` (default project tz), `queryIds[]`, `relevance[]` (default `relevant`), `sentiment[]`, `safety[]`, `intent[]`, `topic[]`, `language[]`, `analysisStatus[]`, `compare=false`, `timeField=published_at`.
 
+- Default range = `[now − 7×24h, now)` (same as the web `7d` preset). Only `from` sent → `to = from + 7×24h`; only `to` → `from = to − 7×24h`; the derived range is still checked (`to > from`, ≤ 366 d → `400 VALIDATION_ERROR`).
+- With `queryIds` empty, the base set uses matches of every project query, soft-deleted included (BR-010); matches with `excluded_by_terms=true` never count.
+- Response `range.from/to` (and `previous`) are ISO 8601 with the selected timezone's offset (e.g. `2026-09-04T00:00:00+07:00`); inputs accept `Z` or any offset.
+
 ### `GET /projects/:projectId/analytics/overview`
 
 ```json
