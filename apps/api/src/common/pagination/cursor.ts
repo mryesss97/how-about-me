@@ -1,6 +1,7 @@
 import { AppError } from "../errors/app.error";
 
-/** createdAt-sorted lists (audit, listening queries) use created-at-keyset.ts on top of this codec (#188). */
+/** createdAt-sorted lists (audit, listening queries) use created-at-keyset.ts on top of this codec (#188).
+ * This codec only checks shape/sort/arity/id; validating each key against its SQL type is the consumer's job (#195). */
 
 /** Multi-key keyset cursor bound to a sort (T-095): base64url(JSON {v:1, s, k, id}). */
 export type SortCursor = { sort: string; keys: (string | number)[]; id: string };

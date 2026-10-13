@@ -4,6 +4,9 @@
  */
 import type { MentionSort, MentionsListQuery } from "@how-about-me/contracts";
 import { Prisma } from "@prisma/client";
+import { AppError } from "../../common/errors/app.error";
+import { type SortCursor, decodeSortCursor } from "../../common/pagination/cursor";
+import { isUtcMicrosKey, utcMicrosKeySql } from "../../common/pagination/created-at-keyset";
 import { resolveRange } from "../../common/time/range";
 import { type AnalyticsScope, buildBaseSetCte } from "../analytics/analytics-filters";
 
@@ -60,9 +63,47 @@ export function orderBy(spec: SortKey[]): Prisma.Sql {
   return Prisma.raw(`ORDER BY ${parts.join(", ")}`);
 }
 
-/** Sort key columns as text (`k0`, `k1`…) — text keeps timestamptz µs and numeric precision for the cursor. */
+/**
+ * Sort key columns as text (`k0`, `k1`…). Timestamps use the deterministic UTC µs format (#188/#195,
+ * independent of session DateStyle/TimeZone); int/numeric keep full precision via `::text`.
+ */
 export function sortKeySelect(spec: SortKey[]): Prisma.Sql {
-  return Prisma.raw(spec.map((k, i) => `(${k.expr})::text AS k${i}`).join(", "));
+  const cols = spec.map((k, i) =>
+    k.cast === "timestamptz"
+      ? Prisma.sql`${utcMicrosKeySql(k.expr)} AS ${Prisma.raw(`k${i}`)}`
+      : Prisma.raw(`(${k.expr})::text AS k${i}`),
+  );
+  return Prisma.join(cols, ", ");
+}
+
+const INT_RE = /^-?\d{1,10}$/;
+const NUMERIC_RE = /^-?\d{1,6}(\.\d{1,20})?$/;
+const INT4_MIN = -(2 ** 31);
+const INT4_MAX = 2 ** 31 - 1;
+
+function normalizeKey(cast: SortKey["cast"], key: string | number): string | null {
+  if (cast === "timestamptz") return isUtcMicrosKey(key) ? key : null;
+  const s = String(key);
+  if (cast === "int") {
+    if (!INT_RE.test(s)) return null;
+    const n = Number(s);
+    return Number.isSafeInteger(n) && n >= INT4_MIN && n <= INT4_MAX ? s : null;
+  }
+  return NUMERIC_RE.test(s) ? s : null;
+}
+
+/** #195: decodes a mentions cursor and checks every key against its SQL cast so PG never throws (500 → 400). */
+export function decodeMentionCursor(raw: string | undefined | null, sort: MentionSort): SortCursor | null {
+  const spec = MENTION_SORT_SPECS[sort];
+  const c = decodeSortCursor(raw, { sort, arity: spec.length });
+  if (!c) return null;
+  const keys = spec.map((k, i) => {
+    const key = c.keys[i];
+    const v = key === undefined ? null : normalizeKey(k.cast, key);
+    if (v === null) throw new AppError("VALIDATION_ERROR", "Invalid cursor", { path: "cursor" });
+    return v;
+  });
+  return { sort, keys, id: c.id };
 }
 
 export function normalizeQ(q: string | undefined): string {

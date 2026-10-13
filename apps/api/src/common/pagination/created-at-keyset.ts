@@ -11,7 +11,12 @@ import { decodeSortCursor, encodeSortCursor } from "./cursor";
 export const CREATED_DESC_SORT = "created_desc";
 
 /** Deterministic format, independent of session TimeZone/DateStyle: `YYYY-MM-DDTHH:MI:SS.uuuuuuZ`. */
-export const CREATED_AT_KEY_SQL = Prisma.raw(`to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`);
+export function utcMicrosKeySql(expr: string): Prisma.Sql {
+  // expr is a code whitelist, never user input
+  return Prisma.raw(`to_char((${expr}) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`);
+}
+
+export const CREATED_AT_KEY_SQL = utcMicrosKeySql("created_at");
 
 export type CreatedAtCursor = { key: string; id: string };
 export type CreatedAtTable = "audit_logs" | "listening_queries";
@@ -27,9 +32,13 @@ export function decodeCreatedAtCursor(raw: string | undefined | null): CreatedAt
   const c = decodeSortCursor(raw, { sort: CREATED_DESC_SORT, arity: 1 });
   if (!c) return null;
   const key = c.keys[0];
-  if (typeof key !== "string" || !KEY_RE.test(key) || !isRealDate(key))
-    throw new AppError("VALIDATION_ERROR", "Invalid cursor", { path: "cursor" });
+  if (!isUtcMicrosKey(key)) throw new AppError("VALIDATION_ERROR", "Invalid cursor", { path: "cursor" });
   return { key, id: c.id };
+}
+
+/** True for a real UTC instant in the µs key format produced by `utcMicrosKeySql` (#188, #195). */
+export function isUtcMicrosKey(key: unknown): key is string {
+  return typeof key === "string" && KEY_RE.test(key) && isRealDate(key);
 }
 
 function isRealDate(key: string): boolean {

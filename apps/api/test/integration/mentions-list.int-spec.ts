@@ -4,6 +4,7 @@ import type { INestApplication } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import type { PrismaService } from "../../src/database/prisma.service";
 import { withBase } from "../../src/modules/analytics/analytics-filters";
+import { encodeSortCursor } from "../../src/common/pagination/cursor";
 import { resolveMentionsScope } from "../../src/modules/mentions/mentions-query";
 import { MentionsRepository } from "../../src/modules/mentions/mentions.repository";
 import {
@@ -231,6 +232,42 @@ describe("Mentions list (T-095)", () => {
     const cursor = (first.body as { nextCursor: string }).nextCursor;
     expect(cursor).toBeTruthy();
     expect((await get({ cursor, sort: "oldest" }).expect(400)).body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("TC-MEN-004b (#195): tampered cursor keys per sort → 400, never 500", async () => {
+    await seedPost({});
+    const T = "2026-10-01T00:00:00.123456Z";
+    const cases: [string, (string | number)[]][] = [
+      ["newest", ["abc"]],
+      ["newest", ["2026-10-01 00:00:00.123456+00"]],
+      ["oldest", [123]],
+      ["safety_desc", ["x", T]],
+      ["safety_desc", ["99999999999", T]],
+      ["confidence_asc", ["NaN", T]],
+      ["confidence_asc", ["1e400", T]],
+      ["relevance_desc", ["3", "", T]],
+      ["relevance_desc", ["1.5", "0.5", T]],
+    ];
+    for (const [sort, keys] of cases) {
+      const cursor = encodeSortCursor({ sort, keys, id: randomUUID() });
+      const res = await get({ sort, cursor }).expect(400);
+      expect(res.body.error.code).toBe("VALIDATION_ERROR");
+      expect(res.body.error.requestId).toBeTruthy();
+    }
+  });
+
+  it("TC-MEN-004c (#195): µs timestamp keys page without dupes/gaps inside one millisecond", async () => {
+    const ids: string[] = [];
+    for (let i = 0; i < 4; i += 1) ids.push(await seedPost({ labels: { relConf: 0.5, overall: 0.5 } }));
+    for (const [i, id] of ids.entries()) {
+      await prisma.$executeRaw(
+        Prisma.sql`UPDATE social_posts SET published_at = ${`2026-10-02T00:00:00.12345${i}Z`}::timestamptz WHERE id = ${id}::uuid`,
+      );
+    }
+    for (const sort of ["newest", "confidence_asc", "relevance_desc"]) {
+      const got = await all({ sort, limit: 1 });
+      expect([...got].sort()).toEqual([...ids].sort());
+    }
   });
 
   it("TC-MEN-005: filters, DISTINCT posts (BR-002), excluded matches (BR-007), drill-down equivalence", async () => {
