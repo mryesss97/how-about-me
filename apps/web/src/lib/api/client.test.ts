@@ -95,7 +95,8 @@ describe("apiDownload (T-147)", () => {
     setAccessTokenGetter(() => "tok");
     const out = await apiDownload("/x.csv", { params: { relevance: ["relevant"] } });
     expect(out.filename).toBe("mentions-20261014-0030.csv");
-    expect(await out.blob.text()).toContain("post_id");
+    // Blob#text() is missing in some jsdom versions (CI): compare the byte size instead (BOM 3 + "post_id" 7 + CRLF 2).
+    expect(out.blob.size).toBe(12);
     expect(fetchMock.mock.calls[0]?.[0]).toContain("/x.csv?relevance=relevant");
   });
 
