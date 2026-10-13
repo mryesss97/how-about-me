@@ -7,7 +7,7 @@ Design: see docs/02-architecture/02-backend-design.md §3 and the related pipeli
 
 - `listening-queries.controller.ts` — routes of API contract §5 (list, get, create, patch, delete, restore). Mutations `@Roles("admin")`.
 - `listening-queries.service.ts` — business rules + transactions + audit (BR-004…BR-010, BR-034, FR-051…FR-057).
-- `listening-queries.repository.ts` — the only Prisma access; duplicate check uses `lower(query_value) = lower($1)` like the partial unique index (no ILIKE). Maps rows to the `ListeningQuery` DTO.
+- `listening-queries.repository.ts` — the only Prisma access; duplicate check uses `lower(query_value) = lower($1)` like the partial unique index (no ILIKE), delegated to `common/queries/find-active-query-duplicate.ts` (also used by `prisma/seed.ts`). Maps rows to the `ListeningQuery` DTO.
 - `reject-immutable-fields.pipe.ts` — `400 QUERY_IMMUTABLE_FIELD` for `queryValue`/`queryType` in PATCH, before Zod strips them.
 - `term-matcher.ts` — include/exclude term matching (T-044).
 

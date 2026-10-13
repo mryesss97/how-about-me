@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { Prisma, type QueryType } from "@prisma/client";
-import { z } from "zod";
 import type { ListeningQuery, ListeningQueryListQuery } from "@how-about-me/contracts";
+import { findActiveQueryDuplicate } from "../../common/queries/find-active-query-duplicate";
 import { AppError } from "../../common/errors/app.error";
 import { decodeCursor, encodeCursor } from "../../common/pagination/cursor";
 import { PrismaService } from "../../database/prisma.service";
@@ -9,8 +9,6 @@ import { PrismaService } from "../../database/prisma.service";
 export type ListeningQueryRow = Prisma.ListeningQueryGetPayload<object>;
 export type CreatorRef = { id: string; displayName: string | null };
 export type ListeningQueryPage = { items: ListeningQuery[]; nextCursor: string | null; totalCount?: number };
-
-const IdRowsSchema = z.array(z.object({ id: z.string() }));
 
 /** Prisma access for listening_queries (docs/02-architecture/04-data-model.md §4.6). Maps rows to contract DTOs. */
 @Injectable()
@@ -20,6 +18,7 @@ export class ListeningQueriesRepository {
   /**
    * BR-006 / FR-053: same expression as the partial unique index `listening_queries_active_unique`
    * (lower(query_value), active rows only). Exact `lower() = lower()` — no ILIKE, so `_`/`%` are literal.
+   * Delegates to common/queries/find-active-query-duplicate.ts (shared with prisma/seed.ts).
    */
   async findActiveDuplicate(
     projectId: string,
@@ -28,18 +27,7 @@ export class ListeningQueriesRepository {
     excludeId?: string,
     tx?: Prisma.TransactionClient,
   ): Promise<string | null> {
-    const db = tx ?? this.prisma;
-    const exclude = excludeId ? Prisma.sql`AND id <> ${excludeId}::uuid` : Prisma.empty;
-    const rows: unknown = await db.$queryRaw(Prisma.sql`
-      SELECT id::text AS id FROM listening_queries
-       WHERE project_id = ${projectId}::uuid
-         AND platform = 'threads'
-         AND query_type = ${queryType}::query_type
-         AND lower(query_value) = lower(${queryValue})
-         AND deleted_at IS NULL
-         ${exclude}
-       LIMIT 1`);
-    return IdRowsSchema.parse(rows)[0]?.id ?? null;
+    return findActiveQueryDuplicate(tx ?? this.prisma, { projectId, queryType, queryValue, excludeId });
   }
 
   create(data: Prisma.ListeningQueryUncheckedCreateInput, tx?: Prisma.TransactionClient): Promise<ListeningQueryRow> {

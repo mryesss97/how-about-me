@@ -74,4 +74,26 @@ describe("idempotent seed (T-008)", () => {
     expect(res.adminUserId).toBeUndefined();
     expect(await prisma.projectMember.count({ where: { projectId: res.projectId } })).toBe(0);
   });
+
+  it("BR-006: '_' and '%' are literal, not wildcards; re-run stays idempotent", async () => {
+    // Order matters: ILIKE puts the wildcard in the searched value, so the old check matched
+    // `a_b` against an existing `axb` (and `50%` against `50abc`) and skipped them.
+    const queries = ["axb", "a_b", "50abc", "50%"].map((v) => ({
+      displayName: v,
+      queryValue: v,
+      queryType: QueryType.keyword,
+    }));
+    const { projectId } = await runSeed(prisma, { queries });
+    const values = async () =>
+      (await prisma.listeningQuery.findMany({ where: { projectId, deletedAt: null } })).map((q) => q.queryValue).sort();
+    expect(await values()).toEqual(["50%", "50abc", "a_b", "axb"]);
+    await runSeed(prisma, { queries });
+    expect(await values()).toEqual(["50%", "50abc", "a_b", "axb"]);
+  });
+
+  it("BR-006: duplicate match is case-insensitive", async () => {
+    const mk = (v: string) => ({ displayName: v, queryValue: v, queryType: QueryType.keyword });
+    const { projectId } = await runSeed(prisma, { queries: [mk("a_b"), mk("A_B")] });
+    expect(await prisma.listeningQuery.count({ where: { projectId, deletedAt: null } })).toBe(1);
+  });
 });
