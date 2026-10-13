@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { AuthBridge } from "@/features/auth/auth-bridge";
+import { RequireProject } from "@/features/auth/require-project";
 import { AppSidebar } from "@/features/shared/app-sidebar";
 import { getServerUser } from "@/lib/supabase/server";
 
@@ -14,7 +15,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <AuthBridge>
       <div className="flex min-h-dvh flex-col lg:flex-row">
         <AppSidebar />
-        <main className="min-w-0 flex-1 bg-primary">{children}</main>
+        <main className="min-w-0 flex-1 bg-primary">
+          <RequireProject>{children}</RequireProject>
+        </main>
       </div>
     </AuthBridge>
   );

@@ -38,17 +38,17 @@ Each requirement is atomic, testable and has a priority. "Verify" names the test
 
 ## FR-04x · Threads Integration
 
-| ID     | Requirement                                                                                                                                         | Pri | Stories | Verify         |
-| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------- | --- | ------- | -------------- |
-| FR-040 | Admin SHALL store the Threads access token via API; the token is encrypted at rest (AES-256-GCM, key from env) in `integration_secrets`.            | P0  | US-020  | TC-INT         |
-| FR-041 | The API SHALL never return token values; logs SHALL redact them.                                                                                    | P0  | US-020  | TC-INT         |
-| FR-042 | Admin SHALL trigger a verification call updating `status`, `last_verified_at`, `account_identifier`, `granted_scopes`, `token_expires_at`.          | P0  | US-021  | TC-INT         |
-| FR-043 | Only Admin may write integration settings; Analyst/Viewer may read status.                                                                          | P0  | US-020  | TC-INT         |
-| FR-044 | Integration status SHALL expose `connected \| expired \| permission_error \| error \| disconnected`, last success, last error code/message.         | P0  | US-022  | TC-INT         |
-| FR-045 | On provider `401/403` the system SHALL set status `expired`/`permission_error`, pause scheduling for the project and surface it in System Status.   | P0  | US-023  | TC-INT, TC-COL |
-| FR-046 | When the provider supports long-lived token refresh, the system SHALL refresh tokens expiring within 7 days daily and audit failures.               | P0* | US-024  | TC-INT         |
-| FR-047 | All Threads API calls SHALL go through `ThreadsDiscoveryProvider implements SocialDiscoveryProvider`; other modules only use provider-neutral DTOs. | P0  | US-025  | TC-COL         |
-| FR-048 | A POC report per template SHALL be produced and accepted before M2 ingestion requirements are frozen.                                               | P0  | US-026  | —              |
+| ID     | Requirement                                                                                                                                                                                                                   | Pri | Stories | Verify         |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- | ------- | -------------- |
+| FR-040 | Admin SHALL store the Threads access token via API; the token is encrypted at rest (AES-256-GCM, key from env) in `integration_secrets`.                                                                                      | P0  | US-020  | TC-INT         |
+| FR-041 | The API SHALL never return token values; logs SHALL redact them.                                                                                                                                                              | P0  | US-020  | TC-INT         |
+| FR-042 | Admin SHALL trigger a verification call updating `status`, `last_verified_at`, `account_identifier`, `granted_scopes`, `token_expires_at`.                                                                                    | P0  | US-021  | TC-INT         |
+| FR-043 | Only Admin may write integration settings; Analyst/Viewer may read status via the API. In the web UI the Integrations page is shown to Admin/Analyst only (Viewer sees connection health on System Status — TC-AUTH-014/015). | P0  | US-020  | TC-INT         |
+| FR-044 | Integration status SHALL expose `connected \| expired \| permission_error \| error \| disconnected`, last success, last error code/message.                                                                                   | P0  | US-022  | TC-INT         |
+| FR-045 | On provider `401/403` the system SHALL set status `expired`/`permission_error`, pause scheduling for the project and surface it in System Status.                                                                             | P0  | US-023  | TC-INT, TC-COL |
+| FR-046 | When the provider supports long-lived token refresh, the system SHALL refresh tokens expiring within 7 days daily and audit failures.                                                                                         | P0* | US-024  | TC-INT         |
+| FR-047 | All Threads API calls SHALL go through `ThreadsDiscoveryProvider implements SocialDiscoveryProvider`; other modules only use provider-neutral DTOs.                                                                           | P0  | US-025  | TC-COL         |
+| FR-048 | A POC report per template SHALL be produced and accepted before M2 ingestion requirements are frozen.                                                                                                                         | P0  | US-026  | —              |
 
 \* P0 if Meta's flow requires it (validated in POC).
 
