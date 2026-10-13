@@ -8,7 +8,7 @@ import { Input } from "@/components/base/input/input";
 import { NativeSelect } from "@/components/base/select/select-native";
 import { ApiError } from "@/lib/api/client";
 import { errorMessage, useAddMember } from "./api";
-import { SettingsDialog } from "./settings-dialog";
+import { SettingsDialog } from "@/features/shared/settings-dialog";
 
 export const ROLE_OPTIONS = USER_ROLES.map((r) => ({ value: r, label: r[0].toUpperCase() + r.slice(1) }));
 

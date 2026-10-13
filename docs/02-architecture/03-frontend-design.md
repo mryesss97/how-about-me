@@ -43,7 +43,7 @@ apps/web/src/
 └─ styles/                       globals.css, theme.css (Untitled UI tokens), typography.css
 ```
 
-Feature folders never import from each other, except `features/auth` (session, current project, role), which any feature may use. Shared code lives in `features/shared` (UI and shared hooks, e.g. `OverviewBanners`, `DetailSlideout`, `useOverview`) or `lib/` (e.g. `lib/query/infinite-list.ts` with `isRejectedCursor` / `flattenUnique`). Route files in `app/` compose features (e.g. the Mentions page renders the analytics `FilterBar`; the Reviews route injects `MentionDetail` into `ReviewsView` via `renderDetail`, #233). Remaining exception: Mentions detail opens the settings `SettingsDialog` (`features/settings`); moving it to `features/shared` is a follow-up. Untitled UI `components/` are treated as vendor-ish: modifications minimal and documented.
+Feature folders never import from each other, except `features/auth` (session, current project, role), which any feature may use. Shared code lives in `features/shared` (UI and shared hooks, e.g. `OverviewBanners`, `DetailSlideout`, `useOverview`, `SettingsDialog`) or `lib/` (e.g. `lib/query/infinite-list.ts` with `isRejectedCursor` / `flattenUnique`). Route files in `app/` compose features (e.g. the Mentions page renders the analytics `FilterBar`; the Reviews route injects `MentionDetail` into `ReviewsView` via `renderDetail`, #233). The boundary is enforced by `no-restricted-imports` in `apps/web/eslint.config.mjs` (#236): a feature may import only itself, `features/shared` and `features/auth`; `shared` and `auth` may import only each other. Untitled UI `components/` are treated as vendor-ish: modifications minimal and documented.
 
 ## 2. Rendering & data strategy
 

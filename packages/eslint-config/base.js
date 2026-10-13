@@ -3,6 +3,18 @@ import prettier from "eslint-config-prettier";
 import tseslint from "typescript-eslint";
 import globals from "globals";
 
+/** Package-boundary patterns; re-used by configs that override `no-restricted-imports`. */
+export const restrictedImportPatterns = [
+  {
+    group: ["@how-about-me/api", "@how-about-me/api/*", "apps/api/*"],
+    message: "Web must not import from the API app. Use @how-about-me/contracts.",
+  },
+  {
+    group: ["@how-about-me/web", "@how-about-me/web/*", "apps/web/*"],
+    message: "API must not import from the web app.",
+  },
+];
+
 /** Shared base: TS strict-ish rules, prettier compatibility, package-boundary guard. */
 export default tseslint.config(
   { ignores: ["**/dist/**", "**/.next/**", "**/coverage/**", "**/node_modules/**", "**/*.d.ts"] },
@@ -25,16 +37,7 @@ export default tseslint.config(
       "no-restricted-imports": [
         "error",
         {
-          patterns: [
-            {
-              group: ["@how-about-me/api", "@how-about-me/api/*", "apps/api/*"],
-              message: "Web must not import from the API app. Use @how-about-me/contracts.",
-            },
-            {
-              group: ["@how-about-me/web", "@how-about-me/web/*", "apps/web/*"],
-              message: "API must not import from the web app.",
-            },
-          ],
+          patterns: restrictedImportPatterns,
         },
       ],
     },

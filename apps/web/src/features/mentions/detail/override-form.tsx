@@ -18,7 +18,7 @@ import { Button } from "@/components/base/buttons/button";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { NativeSelect } from "@/components/base/select/select-native";
 import { TextArea } from "@/components/base/textarea/textarea";
-import { SettingsDialog } from "@/features/settings/settings-dialog";
+import { SettingsDialog } from "@/features/shared/settings-dialog";
 import { humanize } from "./format";
 import { activeOverrides, FIELD_LABELS } from "./overrides";
 

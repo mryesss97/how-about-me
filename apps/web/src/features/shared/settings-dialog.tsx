@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { Heading as AriaHeading } from "react-aria-components";
 import { Dialog, Modal, ModalOverlay } from "@/components/application/modals/modal";
 
-/** Controlled modal shell shared by the Members dialogs. */
+/** Controlled modal shell shared by Settings and Mentions dialogs. */
 export function SettingsDialog({
   isOpen,
   onClose,

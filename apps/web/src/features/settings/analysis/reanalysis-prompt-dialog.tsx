@@ -5,7 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/base/buttons/button";
 import { ApiError } from "@/lib/api/client";
-import { SettingsDialog } from "../settings-dialog";
+import { SettingsDialog } from "@/features/shared/settings-dialog";
 import { retryAfterSeconds, waitText } from "@/lib/api/rate-limit";
 import { useMarkStale } from "./api";
 
