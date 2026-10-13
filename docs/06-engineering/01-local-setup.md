@@ -42,6 +42,8 @@ pnpm db:seed          # project, admin (SEED_ADMIN_EMAIL), 4 queries
 
 Reset: `pnpm db:reset`.
 
+The API's tsx scripts (`db:seed`, `seed:auth-user`, `eval:classifier`, `purge`, `secrets:rewrap`) read `apps/api/.env` themselves via `tsx --env-file-if-exists=.env`; variables already exported in the shell take precedence.
+
 The container's init script (`docker/postgres/init/01-test-db.sql`) also creates `how_about_me_test`, the database the API integration tests use. It runs only on a fresh `pgdata` volume; on an older volume create it by hand: `docker exec how-about-me-postgres createdb -U postgres how_about_me_test`.
 
 macOS: the repo must sit under a path Docker Desktop shares. `/Users` is shared by default, `/Applications` is not. If the repo lives in `/Applications/...`, `pnpm db:up` fails with `Mounts denied: The path …/docker/postgres/init is not shared from the host`. Fix: Docker Desktop → Settings → Resources → File sharing → add the repo's parent folder (e.g. `/Applications/Nobilabs`) → Apply & restart, then run `pnpm db:up` again.
@@ -71,6 +73,7 @@ With `PROVIDERS_MODE=fake` the collector ingests fixtures and the analyzer produ
 ## 6. Troubleshooting
 
 - Prisma "prepared statement already exists" → ensure `DATABASE_URL` has `?pgbouncer=true` when using Supabase pooler; locally use direct Postgres.
+- `pnpm db:seed` → `Environment variable not found: DATABASE_URL` → make sure `apps/api/.env` exists (`cp apps/api/.env.example apps/api/.env`).
 - Port in use → `PORT=4001 pnpm --filter @how-about-me/api dev`.
 - `pnpm db:up` → `Mounts denied … is not shared from the host` → add the repo's parent folder to Docker Desktop File sharing (see §3).
 - `test:int` → `Cannot find module '@how-about-me/contracts'` → run it from the root (`pnpm test:int`) so Turborepo builds `packages/*` first, or `pnpm build` once.
