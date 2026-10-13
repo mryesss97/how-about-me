@@ -11,4 +11,5 @@ export * from "./analysis-runs.js";
 export * from "./sync-jobs.js";
 export * from "./system-status.js";
 export * from "./audit.js";
+export * from "./analysis-settings.js";
 export * from "./analysis/classifier-output.js";

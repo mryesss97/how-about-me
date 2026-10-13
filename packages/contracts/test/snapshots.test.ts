@@ -4,6 +4,7 @@ import type { z } from "zod";
 import {
   ANALYSIS_STATUSES,
   ANALYSIS_TRIGGERS,
+  AnalysisSettingsSchema,
   AuditLogsPageSchema,
   ERROR_CODES,
   HealthReadyResponseSchema,
@@ -33,6 +34,7 @@ const cases: [string, z.ZodType][] = [
   ["health-ready", HealthReadyResponseSchema],
   ["query-share", QueryShareResponseSchema],
   ["topic-sentiment", TopicSentimentResponseSchema],
+  ["analysis-settings", AnalysisSettingsSchema],
 ];
 
 describe("doc example fixtures", () => {

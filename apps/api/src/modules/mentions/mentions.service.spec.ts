@@ -21,11 +21,12 @@ function setup(opts: { post?: MentionForReanalyze | null; open?: boolean; create
     transaction: jest.fn((fn: (t: Prisma.TransactionClient) => Promise<unknown>) => fn(tx)),
   };
   const analysis = {
-    effectiveVersion: "v1",
     enqueueDetailed: jest
       .fn()
       .mockResolvedValue(
-        opts.created === false ? { created: false, reason: "already_open" } : { created: true, runId: RUN },
+        opts.created === false
+          ? { created: false, reason: "already_open" }
+          : { created: true, runId: RUN, effectiveVersion: "v1" },
       ),
   };
   const audit = { record: jest.fn().mockResolvedValue(undefined) };
@@ -105,7 +106,7 @@ const row = (i: number): MentionPageRow => ({
   summary: null,
   overall_model_confidence: 0.9,
   has_override: false,
-  keys: [`2026-10-01 00:00:0${i}+00`],
+  keys: [`2026-10-01T00:00:0${i}.000000Z`],
 });
 
 function listSetup(rows: MentionPageRow[], count: number | null = 7) {
@@ -178,6 +179,15 @@ describe("MentionsService.list", () => {
     const { svc, repo } = listSetup([]);
     const cursor = encodeSortCursor({ sort: "newest", keys: ["x"], id: MID });
     await expect(svc.list(PID, LQ({ sort: "oldest", cursor }))).rejects.toMatchObject({ code: "VALIDATION_ERROR" });
+    expect(repo.listPage).not.toHaveBeenCalled();
+  });
+});
+
+describe("MentionsService.list tampered keys (#195)", () => {
+  it("a cursor with a non-timestamp key → VALIDATION_ERROR, repo untouched", async () => {
+    const { svc, repo } = listSetup([]);
+    const cursor = encodeSortCursor({ sort: "newest", keys: ["abc"], id: MID });
+    await expect(svc.list(PID, LQ({ cursor }))).rejects.toMatchObject({ code: "VALIDATION_ERROR" });
     expect(repo.listPage).not.toHaveBeenCalled();
   });
 });

@@ -5,6 +5,7 @@ import { v7 as uuidv7 } from "uuid";
 import { APP_CONFIG, type AppConfig } from "../../src/config/config.module";
 import { PrismaService } from "../../src/database/prisma.service";
 import { AnalysisPipelineService } from "../../src/modules/analysis/analysis-pipeline.service";
+import { AnalysisPolicyService } from "../../src/modules/analysis/settings/analysis-policy.service";
 import { AnalysisPauseService } from "../../src/modules/analysis/analysis-pause.service";
 import { AnalysisWorkerService } from "../../src/modules/analysis/analysis-worker.service";
 import { AnalysisService } from "../../src/modules/analysis/analysis.service";
@@ -156,7 +157,15 @@ describe("Analysis pipeline (T-074)", () => {
     const classify = jest.spyOn(classifier, "classify");
     const moderate = jest.spyOn(safety, "moderate");
     const cfg = { ...app.get<AppConfig>(APP_CONFIG), ANALYSIS_TWO_STEP: true };
-    const pipeline = new AnalysisPipelineService(prisma, svc, classifier, safety, cfg, silent);
+    const pipeline = new AnalysisPipelineService(
+      prisma,
+      svc,
+      classifier,
+      safety,
+      cfg,
+      silent,
+      app.get(AnalysisPolicyService),
+    );
     const twoStep = new AnalysisWorkerService(
       svc,
       app.get(SchedulerRegistry),

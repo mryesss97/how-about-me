@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { INestApplication } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 import request from "supertest";
 import { AuditService } from "../../src/modules/audit/audit.service";
 import type { PrismaService } from "../../src/database/prisma.service";
@@ -113,5 +114,49 @@ describe("Audit logs (T-059)", () => {
     const bad = await get("admin", "?cursor=garbage");
     expect(bad.status).toBe(400);
     expect(bad.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("#188 FR-201: keyset keeps µs — rows inside one millisecond page exactly once", async () => {
+    const micros = [5, 1, 7, 3, 3, 0, 6, 2];
+    for (let i = 0; i < micros.length; i++)
+      await audit.record({ projectId, actorUserId: null, action: "project.updated" });
+    const rows = await prisma.auditLog.findMany({ where: { projectId }, select: { id: true } });
+    for (const [i, r] of rows.entries())
+      await prisma.$executeRaw(
+        Prisma.sql`UPDATE audit_logs SET created_at = timestamptz '2026-10-01T00:00:00.123Z' + make_interval(secs => ${micros[i]}::float8 / 1e6) WHERE id = ${r.id}::uuid`,
+      );
+    const expected = (
+      await prisma.$queryRaw<{ id: string }[]>(
+        Prisma.sql`SELECT id::text AS id FROM audit_logs WHERE project_id = ${projectId}::uuid ORDER BY created_at DESC, id DESC`,
+      )
+    ).map((r) => r.id);
+    const seen: string[] = [];
+    let cursor: string | null = null;
+    let first = true;
+    while (first || cursor) {
+      const res = await get("admin", `?limit=3&count=true${cursor ? `&cursor=${cursor}` : ""}`);
+      expect(res.status).toBe(200);
+      expect(res.body.totalCount).toBe(8);
+      seen.push(...res.body.items.map((i: { id: string }) => i.id));
+      cursor = res.body.nextCursor as string | null;
+      first = false;
+    }
+    expect(new Set(seen).size).toBe(8);
+    expect(seen).toEqual(expected);
+
+    const from = await get("admin", "?from=2026-10-01T00:00:00.123003Z&count=true");
+    expect(from.body.totalCount).toBe(5); // inclusive µs bound: .123003 ×2, .123005, .123006, .123007
+
+    const tampered = Buffer.from(JSON.stringify({ v: 1, s: "created_desc", k: ["nope"], id: "1; drop" })).toString(
+      "base64url",
+    );
+    const badKey = Buffer.from(JSON.stringify({ v: 1, s: "created_desc", k: ["nope"], id: randomUUID() })).toString(
+      "base64url",
+    );
+    for (const c of [tampered, badKey]) {
+      const bad = await get("admin", `?cursor=${c}`);
+      expect(bad.status).toBe(400);
+      expect(bad.body.error.code).toBe("VALIDATION_ERROR");
+    }
   });
 });

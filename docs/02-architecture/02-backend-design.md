@@ -32,7 +32,7 @@ apps/api/src/
 │  ├─ errors/                   AppError, error codes, HttpExceptionFilter (→ {error:{code,message,requestId}})
 │  ├─ logging/                  pino config, redaction, request-id middleware
 │  ├─ pipes/                    ZodValidationPipe
-│  ├─ pagination/               cursor helpers (base64 of (sortKey,id))
+│  ├─ pagination/               cursor helpers (opaque `{v,s,k,id}` keyset; sort keys read as text from SQL to keep timestamptz µs — #188)
 │  └─ time/                     timezone/window utilities
 ├─ database/                    PrismaModule, PrismaService, transaction helper, advisory lock helper
 ├─ modules/

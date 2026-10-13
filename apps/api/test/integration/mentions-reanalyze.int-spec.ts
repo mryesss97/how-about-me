@@ -53,7 +53,8 @@ describe("Mentions reanalyze (T-076)", () => {
 
   beforeAll(async () => {
     ({ app, prisma } = await createTestApp());
-    version = app.get(AnalysisService).effectiveVersion;
+    // No analysis_settings row → v1 default policy (FR-190).
+    version = app.get(AnalysisService).effectiveVersionOf("safety-policy-v1");
   });
   beforeEach(async () => {
     await resetDb(prisma);

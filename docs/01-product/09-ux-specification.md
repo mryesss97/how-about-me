@@ -97,6 +97,20 @@ Interactions: click a KPI → `/mentions` with filters; click a bar/segment → 
 
 Chart library: Recharts via Untitled UI `charts-base.tsx` wrappers; palette from theme tokens; patterns for safety chart.
 
+Chart details (T-100, decided 2026-10-13 on #87):
+
+- Mentions over time: tooltip share = bucket ÷ all mentions in the range ("of N mentions"; "—" when N = 0). Compare draws a dashed "Previous period" line; a range with 0 mentions but a non-zero previous period still shows the chart.
+- Sentiment donut: centre shows the denominator ("analysed"); the legend lists Positive · Neutral · Negative with their share as text. Sentiment over time: stacked bars, legend toggles series, tooltip share per bucket total.
+- Ghost series only on Mentions over time: the sentiment API has no previous-period data.
+- Bucket labels use the bucketing timezone (`hour` → `HH:mm dd/MM`, `day` → `dd/MM`). Each chart has its own loading, empty ("No mentions in this range") and error (request ID + Retry) state. "View as table" is a toggle button (`aria-pressed`), and long tables scroll inside the card.
+
+Chart details (T-101, decided 2026-10-13 on #88):
+
+- Safety, Top topics and Intent are horizontal bar charts; every bar prints "count · share" as text and the tooltip names the denominator.
+- Safety: safe = gray solid, sensitive = warning diagonal stripes, severe = error dense dots; the legend shows the `safetyBadge` icon + label + share. No sentiment colours (BR-017). Its table ends with a Total row equal to the denominator (TC-DASH-014).
+- Top topics: top 12 by distinct mentions, "Other" always last. Intent: all labels incl. zero counts, in API order. Neither table has a summed Total; the last row is the denominator ("Mentions with a topic / an intent"). When shares add up past 100 % a note explains that a mention can have several labels.
+- Clicking a bar to drill down to `/mentions` is T-102.
+
 ### 3.3 Mentions Explorer (`/mentions`) — P0
 
 - Filter bar (2.1) + search input (`q`, debounced 400 ms) + sort select (Newest, Oldest, Highest safety severity, Lowest confidence, Highest relevance).

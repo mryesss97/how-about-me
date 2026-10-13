@@ -2,8 +2,13 @@ import { Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { v7 as uuidv7 } from "uuid";
 import type { AuditLog } from "@how-about-me/contracts";
-import { decodeCursor, encodeCursor } from "../../common/pagination/cursor";
-import { AppError } from "../../common/errors/app.error";
+import {
+  countWhere,
+  decodeCreatedAtCursor,
+  encodeCreatedAtCursor,
+  orderByIds,
+  pageKeysByCreatedAt,
+} from "../../common/pagination/created-at-keyset";
 import { PrismaService } from "../../database/prisma.service";
 import type { AuditMetadata } from "./audit-metadata";
 
@@ -45,44 +50,36 @@ export class AuditRepository {
     });
   }
 
+  /** FR-201 / #188: keyset `(created_at, id) DESC` in SQL (µs precision), then hydrate by id. */
   async list(projectId: string, q: AuditListQuery): Promise<AuditListPage> {
-    const where = buildAuditWhere(projectId, q);
-    const cursor = decodeCursor(q.cursor);
-    const keyset: Prisma.AuditLogWhereInput = cursor ? cursorWhere(cursor) : {};
-    const rows = await this.prisma.auditLog.findMany({
-      where: { AND: [where, keyset] },
-      include: { actor: { select: { id: true, displayName: true, email: true } } },
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: q.limit + 1,
-    });
-    const page = rows.slice(0, q.limit);
-    const last = page[page.length - 1];
-    const nextCursor =
-      rows.length > q.limit && last ? encodeCursor({ key: last.createdAt.toISOString(), id: last.id }) : null;
-    const result: AuditListPage = { items: page.map(toAuditLog), nextCursor };
-    if (q.count) result.totalCount = await this.prisma.auditLog.count({ where });
+    const cursor = decodeCreatedAtCursor(q.cursor);
+    const where = buildAuditWhereSql(projectId, q);
+    const keys = await pageKeysByCreatedAt(this.prisma, "audit_logs", where, cursor, q.limit);
+    const pageKeys = keys.slice(0, q.limit);
+    const ids = pageKeys.map((k) => k.id);
+    const rows =
+      ids.length === 0
+        ? []
+        : await this.prisma.auditLog.findMany({
+            where: { id: { in: ids } },
+            include: { actor: { select: { id: true, displayName: true, email: true } } },
+          });
+    const last = pageKeys.at(-1);
+    const nextCursor = keys.length > q.limit && last ? encodeCreatedAtCursor(last) : null;
+    const result: AuditListPage = { items: orderByIds(ids, rows).map(toAuditLog), nextCursor };
+    if (q.count) result.totalCount = await countWhere(this.prisma, "audit_logs", where);
     return result;
   }
 }
 
-/** Filters: project scope always; action exact; actor; from inclusive, to exclusive (UTC instants). */
-export function buildAuditWhere(projectId: string, q: AuditListQuery): Prisma.AuditLogWhereInput {
-  const createdAt: Prisma.DateTimeFilter = {};
-  if (q.from) createdAt.gte = new Date(q.from);
-  if (q.to) createdAt.lt = new Date(q.to);
-  return {
-    projectId,
-    ...(q.action ? { action: q.action } : {}),
-    ...(q.actorUserId ? { actorUserId: q.actorUserId } : {}),
-    ...(q.from || q.to ? { createdAt } : {}),
-  };
-}
-
-/** Keyset on (createdAt desc, id desc). */
-export function cursorWhere(c: { key: string; id: string }): Prisma.AuditLogWhereInput {
-  const at = new Date(c.key);
-  if (Number.isNaN(at.getTime())) throw new AppError("VALIDATION_ERROR", "Invalid cursor", { path: "cursor" });
-  return { OR: [{ createdAt: { lt: at } }, { createdAt: at, id: { lt: c.id } }] };
+/** Filters: project scope always; action exact; actor; from inclusive, to exclusive (ISO strings keep µs). */
+export function buildAuditWhereSql(projectId: string, q: AuditListQuery): Prisma.Sql {
+  const parts: Prisma.Sql[] = [Prisma.sql`project_id = ${projectId}::uuid`];
+  if (q.action) parts.push(Prisma.sql`action = ${q.action}`);
+  if (q.actorUserId) parts.push(Prisma.sql`actor_user_id = ${q.actorUserId}::uuid`);
+  if (q.from) parts.push(Prisma.sql`created_at >= ${q.from}::timestamptz`);
+  if (q.to) parts.push(Prisma.sql`created_at < ${q.to}::timestamptz`);
+  return Prisma.join(parts, " AND ");
 }
 
 type DbRow = {

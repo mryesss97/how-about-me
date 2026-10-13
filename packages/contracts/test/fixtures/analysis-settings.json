@@ -1,0 +1,80 @@
+{
+  "policyVersion": "safety-policy-v2",
+  "version": 2,
+  "isDefault": false,
+  "confidenceBands": {
+    "high": 0.8,
+    "medium": 0.6
+  },
+  "safetyThresholds": {
+    "harassment": {
+      "sensitive": 0.5,
+      "severe": null
+    },
+    "harassment/threatening": {
+      "sensitive": 0.3,
+      "severe": 0.7
+    },
+    "hate": {
+      "sensitive": 0.4,
+      "severe": 0.7
+    },
+    "hate/threatening": {
+      "sensitive": 0.3,
+      "severe": 0.6
+    },
+    "sexual": {
+      "sensitive": 0.5,
+      "severe": null
+    },
+    "sexual/minors": {
+      "sensitive": null,
+      "severe": 0.3
+    },
+    "violence": {
+      "sensitive": 0.5,
+      "severe": 0.85
+    },
+    "violence/graphic": {
+      "sensitive": 0.4,
+      "severe": 0.8
+    },
+    "self-harm": {
+      "sensitive": 0.3,
+      "severe": 0.7
+    },
+    "self-harm/intent": {
+      "sensitive": null,
+      "severe": 0.4
+    },
+    "self-harm/instructions": {
+      "sensitive": null,
+      "severe": 0.4
+    },
+    "illicit": {
+      "sensitive": 0.5,
+      "severe": null
+    },
+    "illicit/violent": {
+      "sensitive": 0.4,
+      "severe": 0.7
+    }
+  },
+  "versions": {
+    "classifierProvider": "openai",
+    "classifierModel": "gpt-4.1-mini",
+    "promptVersion": "classifier-v1",
+    "taxonomyVersion": "taxonomy-v1",
+    "safetyProvider": "openai-moderation",
+    "safetyModel": "omni-moderation-latest",
+    "safetyPolicyVersion": "safety-policy-v2"
+  },
+  "effectiveVersion": "openai|gpt-4.1-mini|classifier-v1|taxonomy-v1|openai-moderation|omni-moderation-latest|safety-policy-v2",
+  "outdatedCount": 2,
+  "createdAt": "2026-10-13T03:00:00.000Z",
+  "createdBy": {
+    "id": "0199c2a0-0000-7000-8000-000000000001",
+    "displayName": "Admin",
+    "email": "admin@example.com"
+  }
+}

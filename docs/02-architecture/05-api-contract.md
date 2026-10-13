@@ -24,6 +24,8 @@
 | Request id        | `x-request-id` echoed                                                                                                            |
 | Roles             | see permission matrix [../01-product/02-personas-rbac.md](../01-product/02-personas-rbac.md#3-permission-matrix-server-enforced) |
 
+Cursors are opaque. A malformed, tampered or legacy cursor (one issued before a cursor format change, e.g. #188) returns `400 VALIDATION_ERROR` and the client resets to the first page. Timestamp sort keys inside a cursor keep full `timestamptz` µs precision, so rows created in the same millisecond are never skipped or repeated (#188).
+
 ## 2. Auth & user
 
 ### `GET /me`
@@ -270,7 +272,7 @@ Query: `from,to,timezone,queryIds[],q,relevance[] (default relevant),sentiment[]
 
 - Base set = analytics §6 (metric-definitions §0/§6): default range `[now − 7×24h, now)`, `relevance` default `relevant` (BR-016), ≥1 match with `excluded_by_terms=false` (BR-007), empty `queryIds` includes soft-deleted queries (BR-010), effective analysis incl. active overrides (BR-025). One row per post (BR-002). Posts never analysed have NULL labels and drop out under the default relevance; send `relevance=` (empty) to include them.
 - Sorts (NULLs last, tie-breaker `published_at DESC, post_id`): `newest` = `published_at DESC`; `oldest` = `published_at ASC, post_id ASC`; `safety_desc` = severe > sensitive > safe > none; `confidence_asc` = `overall_model_confidence ASC`; `relevance_desc` = label rank (relevant > uncertain > irrelevant) then `relevance_confidence DESC`.
-- `cursor` is opaque and bound to `sort`; malformed, tampered or other-sort cursor → `400 VALIDATION_ERROR`. `limit` 1–100 (above → 400, no clamping). Clients must reset the cursor when filters change and dedupe by `id` (re-analysis between pages may move a post under label sorts).
+- `cursor` is opaque and bound to `sort`; malformed, tampered or other-sort cursor → `400 VALIDATION_ERROR`, including keys that do not fit the sort's types (e.g. a non-timestamp key for `newest`, int outside int4, non-decimal numeric) (#195). Timestamp keys are UTC with µs (`YYYY-MM-DDTHH:MI:SS.uuuuuuZ`); mentions cursors issued before #195 are legacy → 400, client resets to page 1. `limit` 1–100 (above → 400, no clamping). Clients must reset the cursor when filters change and dedupe by `id` (re-analysis between pages may move a post under label sorts).
 - `q` (NFC, whitespace-collapsed): full-text `websearch_to_tsquery('simple', q)` on `search_vector` (no stemming/unaccent: "gia ve" ≠ "giá vé"); terms < 3 characters or without letters/digits use case-insensitive substring `ILIKE` with `%`/`_` taken literally.
 - `count=true` → `totalCount` of the whole filtered set (ignores cursor), equal to the dashboard number for the same filters. Bounded by a 1.5 s `statement_timeout`; on timeout `totalCount` is omitted.
 - `matchedQueries` includes matches of soft-deleted queries and `excludedByTerms=true` matches. `analysis.status` = latest run status (`pending` when no run exists); labels stay those of the current analysis while a re-run is pending. `errorCode` only when `status=failed`.
@@ -318,6 +320,19 @@ Job object:
 | `POST …/analysis-runs/retry-failed` | admin  | `{ limit ≤ 500 (default 100) }` → `{ enqueued }`                         |
 
 Run object: `{ id, postId, status, trigger, effectiveVersion, attemptCount, errorCode, errorMessage, startedAt, completedAt, createdAt }`.
+
+### Analysis settings (P1, FR-190, T-151)
+
+| Method & path                                  | Role   | Request                      | Response               | Errors                                                                                |
+| ---------------------------------------------- | ------ | ---------------------------- | ---------------------- | ------------------------------------------------------------------------------------- |
+| `GET /projects/:projectId/settings/analysis`   | member | —                            | `200 AnalysisSettings` | 403 `FORBIDDEN_PROJECT`                                                               |
+| `PATCH /projects/:projectId/settings/analysis` | admin  | `UpdateAnalysisSettingsBody` | `200 AnalysisSettings` | 400 `VALIDATION_ERROR` (`details.issues`), 403 `FORBIDDEN_ROLE` / `FORBIDDEN_PROJECT` |
+
+`AnalysisSettings`: `{ policyVersion:"safety-policy-v2", version:2, isDefault:false, confidenceBands:{high,medium}, safetyThresholds:{<category>:{sensitive,severe}} (all 13), versions:{7 fields}, effectiveVersion, outdatedCount, createdAt|null, createdBy:{id,displayName,email}|null }`. `isDefault:true` (version 1, no row) means the v1 constants. `outdatedCount` = posts whose current analysis has another `safety_policy_version`.
+
+`UpdateAnalysisSettingsBody`: `{ confidenceBands?: {high, medium}, safetyThresholds?: {<category>?: {sensitive, severe}} }`, at least one key. Values step 0.01 in [0.01, 1]; `medium < high`; per category not both `null`, and `sensitive < severe` when both set; unknown categories rejected.
+
+PATCH behaviour: one transaction, project row locked `FOR UPDATE` (concurrent admins get consecutive versions). The body is merged into the active policy and the merged policy is re-validated. No change → `200` with the current settings, no row, no audit. Otherwise a new row `version+1` / `safety-policy-v{n}` is inserted and `analysis_settings.updated` is audited in the same transaction with `{ changes:{"confidenceBands.high"|"safetyThresholds.<cat>.<level>":{from,to}}, effectiveVersion }`. PATCH never stales or enqueues runs; re-analysis is optional and goes through FR-196 (T-145).
 
 ## 10. System status
 

@@ -300,6 +300,35 @@ describe("OpenAiStructuredClassifier (T-072, FR-106..110, FR-117)", () => {
     expect(out.summary).toBe("The author mentions a meeting time.");
   });
 
+  it("BR-021 / FR-190: project confidence bands decide banding and are never sent to the model", async () => {
+    const at055 = () => {
+      const content = JSON.parse(String(irrelevant.choices[0]?.message.content)) as Record<string, unknown>;
+      return json({
+        ...irrelevant,
+        choices: [
+          {
+            ...irrelevant.choices[0],
+            message: {
+              role: "assistant",
+              refusal: null,
+              content: JSON.stringify({
+                ...content,
+                relevance: { label: "relevant", confidence: 0.55, explanation: "Mentions the brand." },
+                summary: "s",
+              }),
+            },
+          },
+        ],
+      });
+    };
+    const custom = setup([at055]);
+    const out = await custom.classifier.classify({ ...input, confidenceBands: { high: 0.8, medium: 0.5 } }, ctx);
+    expect(out.relevance.label).toBe("relevant");
+    expect(JSON.stringify(sentBody(custom.fetchFn))).not.toContain("confidenceBands");
+    const dflt = setup([at055]);
+    expect((await dflt.classifier.classify(input, ctx)).relevance.label).toBe("uncertain");
+  });
+
   it("relevance() uses the sub-schema and returns relevance, language and usage", async () => {
     const { classifier, fetchFn } = setup([() => json(relevanceOnly)]);
     const out = await classifier.relevance(input, ctx);

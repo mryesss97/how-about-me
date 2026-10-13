@@ -8,6 +8,7 @@ import { PrismaService } from "../../src/database/prisma.service";
 import { ANALYSIS_AUTH_PAUSE_MS } from "../../src/modules/analysis/analysis-failure-policy";
 import { AnalysisPauseService } from "../../src/modules/analysis/analysis-pause.service";
 import { AnalysisPipelineService } from "../../src/modules/analysis/analysis-pipeline.service";
+import { AnalysisPolicyService } from "../../src/modules/analysis/settings/analysis-policy.service";
 import { AnalysisWorkerService } from "../../src/modules/analysis/analysis-worker.service";
 import { AnalysisService } from "../../src/modules/analysis/analysis.service";
 import {
@@ -68,7 +69,15 @@ describe("Analysis failure handling (T-075)", () => {
 
   function worker(c: AppConfig = cfg): { w: AnalysisWorkerService; pause: AnalysisPauseService } {
     const pause = new AnalysisPauseService(prisma, c);
-    const pipeline = new AnalysisPipelineService(prisma, svc, classifier, safety, c, silent);
+    const pipeline = new AnalysisPipelineService(
+      prisma,
+      svc,
+      classifier,
+      safety,
+      c,
+      silent,
+      app.get(AnalysisPolicyService),
+    );
     const w = new AnalysisWorkerService(svc, app.get(SchedulerRegistry), c, silent, pause, pipeline);
     w.sleep = async () => undefined;
     return { w, pause };

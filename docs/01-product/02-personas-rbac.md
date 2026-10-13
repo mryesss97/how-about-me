@@ -65,6 +65,7 @@ Legend: ✅ allowed · ❌ denied · ⚙️ allowed when project setting enables
 | View sync jobs                                        | `GET …/sync-jobs`                                             | ✅    | ✅                         | ✅                     |
 | View system status                                    | `GET …/system-status`                                         | ✅    | ✅                         | ✅                     |
 | View audit log                                        | `GET …/audit-logs`                                            | ✅    | ❌                         | ❌                     |
+| View analysis settings (P1)                           | `GET …/settings/analysis`                                     | ✅    | ✅                         | ✅                     |
 | Change classification thresholds / policy config (P1) | `PATCH …/settings/analysis`                                   | ✅    | ❌                         | ❌                     |
 
 > UI note (T-033): the web Integrations page is shown to Admin/Analyst only; Viewer keeps API read access and sees connection health on System Status (TC-AUTH-014/015).

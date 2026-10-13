@@ -8,6 +8,7 @@ import { AnalysisPipelineService } from "../../src/modules/analysis/analysis-pip
 import { AnalysisPauseService } from "../../src/modules/analysis/analysis-pause.service";
 import { AnalysisWorkerService } from "../../src/modules/analysis/analysis-worker.service";
 import { AnalysisService, type ClaimedRun } from "../../src/modules/analysis/analysis.service";
+import { AnalysisPolicyService } from "../../src/modules/analysis/settings/analysis-policy.service";
 import {
   CONTENT_CLASSIFIER,
   SAFETY_PROVIDER,
@@ -111,6 +112,7 @@ describe("Analysis runs (T-070)", () => {
             cfg,
             app.get<ContentClassifier>(CONTENT_CLASSIFIER),
             app.get<SafetyProvider>(SAFETY_PROVIDER),
+            app.get(AnalysisPolicyService),
           ),
       );
       const owner = new Map<string, string>();
@@ -325,7 +327,7 @@ describe("Analysis runs (T-070)", () => {
       });
       expect(await prisma.$transaction((tx) => svc.enqueue(tx, { ...input, trigger: "ingest" }))).toBe(true);
       expect((await prisma.analysisRun.findMany({ where: { status: "pending" } }))[0]?.effectiveVersion).toBe(
-        svc.effectiveVersion,
+        await svc.effectiveVersionFor(input.projectId),
       );
     });
   });
@@ -362,7 +364,9 @@ describe("Analysis runs (T-070)", () => {
     it("BR-023: markVersionStale refuses the current effective_version and changes nothing", async () => {
       await seedRuns(1);
       await prisma.analysisRun.updateMany({ data: { status: "completed" } });
-      await expect(svc.markVersionStale(svc.effectiveVersion)).rejects.toThrow(/current effective_version/);
+      const current = await svc.effectiveVersionFor(projectId);
+      await expect(svc.markVersionStale(current)).rejects.toThrow(/current effective_version/);
+      await expect(svc.markVersionStale(current, { projectId })).rejects.toThrow(/current effective_version/);
       expect(await prisma.analysisRun.count({ where: { status: "completed" } })).toBe(1);
     });
 

@@ -8,6 +8,7 @@ import type { RelevanceLabel } from "@how-about-me/taxonomy";
 import { useFilters } from "@/lib/filters/use-filters";
 import { relevanceBadge } from "@/lib/semantics/badges";
 import { AppliedFilterChips } from "./applied-filter-chips";
+import { humanizeLabel } from "./charts/chart-data";
 import { EnumMultiSelect } from "./enum-multi-select";
 import { TimeControls } from "./time-controls";
 
@@ -30,8 +31,6 @@ const MULTI_SELECTS: { key: Exclude<EnumFilterKey, "relevance">; label: string }
   { key: "language", label: "Language" },
   { key: "analysisStatus", label: "Analysis status" },
 ];
-
-const humanize = (v: string) => v.charAt(0).toUpperCase() + v.slice(1).replace(/_/g, " ");
 
 /** Sticky shared filter bar for Overview & Mentions — UX §2.1, FR-130/131. State lives in the URL (nuqs). */
 export function FilterBar({ showCompare = false, queryOptions = [] }: FilterBarProps) {
@@ -75,7 +74,7 @@ export function FilterBar({ showCompare = false, queryOptions = [] }: FilterBarP
           <EnumMultiSelect
             key={key}
             label={label}
-            items={ENUM_FILTERS[key].map((v) => ({ id: v, label: humanize(v) }))}
+            items={ENUM_FILTERS[key].map((v) => ({ id: v, label: humanizeLabel(v) }))}
             value={filters[key]}
             onChange={(next) => setFilters({ [key]: next } as Partial<Filters>)}
           />

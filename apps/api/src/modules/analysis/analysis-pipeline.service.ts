@@ -1,13 +1,14 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { ClassifierOutputSchema, parseClassifierOutput, type ClassifierOutput } from "@how-about-me/contracts";
-import { SAFETY_POLICY_VERSION, TAXONOMY_VERSION } from "@how-about-me/taxonomy";
+import type { AnalysisPolicy } from "@how-about-me/taxonomy";
 import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 import { v7 as uuidv7 } from "uuid";
 import { ProviderError } from "../../common/errors/provider.error";
 import { APP_CONFIG, type AppConfig } from "../../config/config.module";
 import { PrismaService } from "../../database/prisma.service";
 import { AnalysisLockLostError, truncateMessage } from "./analysis-failure-policy";
-import { AnalysisService, type ClaimedRun, type RunUsage, type RunVersions } from "./analysis.service";
+import { policyVersionOfEffective } from "./analysis-enqueuer";
+import { AnalysisService, type ClaimedRun, type RunUsage } from "./analysis.service";
 import {
   CONTENT_CLASSIFIER,
   SAFETY_PROVIDER,
@@ -19,6 +20,7 @@ import {
 } from "./providers/interfaces";
 import type { RunProcessor } from "./run-processor";
 import { toSafetyAnalysis, type SafetyAnalysis } from "./safety/safety-mapping";
+import { AnalysisPolicyService } from "./settings/analysis-policy.service";
 
 type RelevanceResult = Awaited<ReturnType<ContentClassifier["relevance"]>>;
 
@@ -81,8 +83,6 @@ function sumUsage(items: Usage[]): RunUsage {
  */
 @Injectable()
 export class AnalysisPipelineService implements RunProcessor {
-  private readonly versions: RunVersions;
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly analysis: AnalysisService,
@@ -90,18 +90,8 @@ export class AnalysisPipelineService implements RunProcessor {
     @Inject(SAFETY_PROVIDER) private readonly safety: SafetyProvider,
     @Inject(APP_CONFIG) private readonly cfg: AppConfig,
     @InjectPinoLogger(AnalysisPipelineService.name) private readonly logger: PinoLogger,
-  ) {
-    // BR-023: same inputs as computeEffectiveVersion().
-    this.versions = {
-      classifierProvider: classifier.provider,
-      classifierModel: classifier.model,
-      promptVersion: classifier.promptVersion,
-      taxonomyVersion: TAXONOMY_VERSION,
-      safetyProvider: safety.name,
-      safetyModel: safety.model,
-      safetyPolicyVersion: SAFETY_POLICY_VERSION,
-    };
-  }
+    private readonly policies: AnalysisPolicyService,
+  ) {}
 
   async process(run: ClaimedRun): Promise<void> {
     const post = await this.prisma.socialPost.findUnique({
@@ -120,20 +110,24 @@ export class AnalysisPipelineService implements RunProcessor {
       return;
     }
 
+    // BR-023 / FR-190: analyse with the policy recorded in the run's effective_version, not the active one,
+    // so a run enqueued before a policy change still matches its own version key.
+    const policy = await this.policies.byPolicyVersion(run.projectId, policyVersionOfEffective(run.effectiveVersion));
     const input: ClassifierInput = {
       text,
       username: post.username ?? undefined,
       matchedTerms: await this.matchedTerms(run.postId),
       brandContext: this.brandContext(post.project),
+      confidenceBands: { ...policy.confidenceBands },
     };
     const ctx: AnalysisContext = { requestId: run.id, projectId: run.projectId, runId: run.id };
-    const outcome = await this.callProviders(input, ctx);
-    await this.persist(run, outcome);
+    const outcome = await this.callProviders(input, ctx, policy);
+    await this.persist(run, outcome, policy);
     this.logger.info({ runId: run.id, kind: outcome.kind }, "analysis run completed");
   }
 
   /** All provider calls live here (doc 07 §2 order: relevance gate before safety). */
-  private async callProviders(input: ClassifierInput, ctx: AnalysisContext): Promise<Outcome> {
+  private async callProviders(input: ClassifierInput, ctx: AnalysisContext, policy: AnalysisPolicy): Promise<Outcome> {
     const usage: Usage[] = [];
     if (this.cfg.ANALYSIS_TWO_STEP) {
       const rel = await this.withCorrection<RelevanceResult>(
@@ -155,7 +149,7 @@ export class AnalysisPipelineService implements RunProcessor {
         ctx,
         usage,
       );
-      return { kind: "full", output, safety: toSafetyAnalysis(safety), usage };
+      return { kind: "full", output, safety: toSafetyAnalysis(safety, policy), usage };
     }
     // Single-step: classify first, gate on its relevance, then moderate (sequential, saves moderation calls).
     const { usage: _cu, ...output } = await this.withCorrection(
@@ -169,7 +163,7 @@ export class AnalysisPipelineService implements RunProcessor {
       return { kind: "irrelevant", relevance: output.relevance, language: output.language, usage };
     }
     const safety = await this.safety.moderate({ text: input.text }, ctx);
-    return { kind: "full", output, safety: toSafetyAnalysis(safety), usage };
+    return { kind: "full", output, safety: toSafetyAnalysis(safety, policy), usage };
   }
 
   /**
@@ -206,7 +200,7 @@ export class AnalysisPipelineService implements RunProcessor {
     );
   }
 
-  private async persist(run: ClaimedRun, outcome: Outcome): Promise<void> {
+  private async persist(run: ClaimedRun, outcome: Outcome, policy: AnalysisPolicy): Promise<void> {
     const analysisId = uuidv7();
     const relevance = outcome.kind === "full" ? outcome.output.relevance : outcome.relevance;
     const base = {
@@ -255,7 +249,8 @@ export class AnalysisPipelineService implements RunProcessor {
         });
       }
       const ok = await this.analysis.markCompleted(run.id, run.lockedBy, sumUsage(outcome.usage), tx, {
-        versions: this.versions,
+        // BR-023: the 7 fields match the run's effective_version.
+        versions: this.analysis.runVersions(policy.policyVersion),
         skippedReason: outcome.kind === "irrelevant" ? "irrelevant" : undefined,
       });
       // Watchdog took the run back: roll back so no orphan analysis remains.

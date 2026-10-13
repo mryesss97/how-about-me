@@ -92,3 +92,14 @@ describe("TC-ANA-007 safety-policy-v1 full-table boundaries", () => {
     expect(Object.keys(input).sort()).toEqual(["categoryScores", "flagged"]);
   });
 });
+
+// BR-018: a custom per-project policy (FR-190) is applied with its own version string.
+describe("mapSafetyLevel with a custom policy (BR-018)", () => {
+  it("uses the given thresholds and version", () => {
+    const policy = { ...SAFETY_POLICY_V1, hate: { sensitive: 0.4, severe: 0.7 } };
+    const r = mapSafetyLevel({ categoryScores: { hate: 0.75 }, flagged: false }, policy, "safety-policy-v2");
+    expect(r.level).toBe("severe");
+    expect(r.policyVersion).toBe("safety-policy-v2");
+    expect(mapSafetyLevel({ categoryScores: { hate: 0.75 }, flagged: false }).level).toBe("sensitive");
+  });
+});
