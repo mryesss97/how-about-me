@@ -50,6 +50,11 @@ export const EnvSchema = z
     THREADS_APP_ID: z.string().optional(),
     THREADS_APP_SECRET: z.string().optional(),
     OPENAI_API_KEY: z.string().optional(),
+    /** Shared by the moderation (T-071) and classifier (T-072) adapters. */
+    OPENAI_BASE_URL: z.url().default("https://api.openai.com/v1"),
+    OPENAI_TIMEOUT_MS: int(15000),
+    /** In-adapter retries per job attempt (on top of the job-level backoff, doc 07 §8). */
+    OPENAI_MAX_RETRIES: int(2),
     SAFETY_PROVIDER: z.string().default("openai"),
     SAFETY_MODEL: z.string().default("omni-moderation-latest"),
     ANALYSIS_CLASSIFIER_PROVIDER: z.string().default("openai"),

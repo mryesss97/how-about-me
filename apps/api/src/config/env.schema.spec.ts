@@ -14,6 +14,13 @@ describe("loadEnv fail-fast", () => {
     expect(loadEnv(base).DATABASE_URL).toBe("postgres://x");
   });
 
+  it("defaults the shared OpenAI settings (T-071)", () => {
+    const env = loadEnv(base);
+    expect(env.OPENAI_BASE_URL).toBe("https://api.openai.com/v1");
+    expect(env.OPENAI_TIMEOUT_MS).toBe(15000);
+    expect(env.OPENAI_MAX_RETRIES).toBe(2);
+  });
+
   it("lists missing DATABASE_URL by path", () => {
     expect(() => loadEnv({ NODE_ENV: "test" })).toThrow(/DATABASE_URL/);
   });
