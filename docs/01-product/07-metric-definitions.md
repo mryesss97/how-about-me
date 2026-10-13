@@ -159,7 +159,7 @@ Each metric maps to a mentions filter that returns exactly the counted posts:
 
 For rates the list returns the numerator posts. Topic `other` is the top-12 remainder and has no filter, so it is not drillable. Language `other` is drillable: `language=other` matches stored `other` plus any non-NULL code outside the taxonomy, the same set the slice counts (#201). FE mapping: `apps/web/src/lib/filters/drill-down.ts` (T-102).
 
-QA reconciles list totals (`totalCount` header from `/mentions?count=true`) against chart numbers.
+QA reconciles list totals (`totalCount` header from `/mentions?count=true`) against chart numbers. Automated on the shared fixture (T-094): `apps/api/test/integration/analytics/fixture-equivalence.int-spec.ts`, expected numbers in `apps/api/test/fixtures/analytics-expected.ts`.
 
 ## 7. Operational metrics
 
