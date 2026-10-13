@@ -1,20 +1,21 @@
 #!/usr/bin/env node
-// Fails if the built Next.js bundle contains server-only secret patterns. Run after `pnpm --filter web build`.
+// Fails if the web build env or the built Next.js bundle exposes server-only secrets.
+// Run after `pnpm --filter web build`. Pass `--build-env` in CI to also reject server-only vars in the env.
+// Docs: docs/02-architecture/08-security-secrets.md §9.
 import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { scanEnv, scanText } from "./lib/fe-secrets.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outDir = resolve(root, "apps/web/.next");
-const FORBIDDEN = [
-  /SUPABASE_SERVICE_ROLE_KEY/,
-  /service_role/i,
-  /\bsk-[A-Za-z0-9]{20,}/,
-  /OPENAI_API_KEY/,
-  /THREADS_APP_SECRET/,
-  /INTEGRATION_ENCRYPTION_KEYS/,
-  /DATABASE_URL/,
-];
+const buildEnv = process.argv.includes("--build-env");
+
+const envProblems = scanEnv(process.env, { buildEnv });
+if (envProblems.length) {
+  console.error("❌ Web build env exposes secrets:\n" + envProblems.join("\n"));
+  process.exit(1);
+}
 if (!existsSync(outDir)) {
   console.error(`No build output at ${outDir}. Run the web build first.`);
   process.exit(2);
@@ -30,8 +31,7 @@ const files = [];
 })(outDir);
 const hits = [];
 for (const f of files) {
-  const s = readFileSync(f, "utf8");
-  for (const re of FORBIDDEN) if (re.test(s)) hits.push(`${f} ⇢ ${re}`);
+  for (const h of scanText(readFileSync(f, "utf8"), process.env)) hits.push(`${f} ⇢ ${h}`);
 }
 if (hits.length) {
   console.error("❌ Forbidden secret patterns found in web build:\n" + hits.join("\n"));

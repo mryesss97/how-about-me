@@ -19,8 +19,8 @@ The browser holds only: Supabase URL, **anon** key, its own session JWT, API bas
 
 ## 2. Authentication (JWT)
 
-- Supabase issues access tokens (JWT, 1 h) + refresh tokens. API verifies with Supabase JWKS (`SUPABASE_URL/auth/v1/.well-known/jwks.json`, cached 10 min) or `SUPABASE_JWT_SECRET` (HS256 projects). Verify `iss`, `aud=authenticated`, `exp`.
-- `sub` → `user_profiles.id`. Email from claims; profile upsert on first call.
+- Supabase issues access tokens (JWT, 1 h) + refresh tokens. API verifies with Supabase JWKS (`SUPABASE_URL/auth/v1/.well-known/jwks.json`, cached 10 min) or `SUPABASE_JWT_SECRET` (HS256 projects). Verify `iss` (= `${SUPABASE_URL}/auth/v1`, override `SUPABASE_JWT_ISSUER`), `aud=authenticated`, `exp` (clock tolerance 5 s). HS256 fallback is tried only when JWKS verification fails for a reason other than expiry. Tokens with `is_anonymous: true` are rejected (`AUTH_INVALID_TOKEN`). `Authorization` scheme `Bearer` is case-insensitive.
+- `sub` → `user_profiles.id`. Email (lowercased) from claims; profile upsert on first call (concurrent first calls tolerated); invitation placeholders matched by email are re-keyed to `sub`. `last_login_at` is rewritten only when older than 5 minutes.
 - Sign-ups disabled in Supabase dashboard; invitations by Admin (`POST /members`) → optional Supabase invite email via service-role key **server-side only** (`SUPABASE_SERVICE_ROLE_KEY` in API env, never web).
 - No cookies for API auth (Bearer only) → CSRF not applicable to API; the Next.js server uses Supabase cookies solely for redirecting unauthenticated users; state-changing calls go browser → API with Bearer.
 
@@ -73,9 +73,13 @@ pino `redact` paths (`REDACT_PATHS` in `apps/api/src/common/logging/logger.confi
 
 ## 9. CI security gates
 
-- `scripts/check-fe-secrets.mjs`: scans `apps/web/.next` output for forbidden patterns (`SERVICE_ROLE`, `sk-`, `THREADS_ACCESS`, `OPENAI_API_KEY`).
-- `pnpm audit --prod --audit-level=high` (allow-list file `.audit-allowlist.json` with justification & expiry).
-- Secret scanning: `gitleaks` action on PRs.
+- `scripts/check-fe-secrets.mjs` (`pnpm check:fe-secrets --build-env` in the CI `build` job, logic in `scripts/lib/fe-secrets.mjs`):
+  - **Env check.** With `--build-env`, fails if any server-only var is set in the web build env: `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, `THREADS_APP_SECRET`, `THREADS_ACCESS_TOKEN`, `INTEGRATION_ENCRYPTION_KEYS`, `DATABASE_URL`, `DIRECT_URL`. Always fails on a `NEXT_PUBLIC_*` var whose name contains `SERVICE_ROLE|SECRET|OPENAI|TOKEN|PRIVATE|DATABASE`, whose value looks like an OpenAI key (`sk-…`), or whose value is a JWT with `role: service_role`.
+  - **Bundle check.** Scans `apps/web/.next` (excluding cache) for the patterns `SUPABASE_SERVICE_ROLE_KEY`, `service_role`, `sk-…`, `OPENAI_API_KEY`, `THREADS_APP_SECRET`, `THREADS_ACCESS_TOKEN`, `INTEGRATION_ENCRYPTION_KEYS`, `DATABASE_URL`, and for the literal value (≥ 8 chars) of every server-only var present in the env.
+- `pnpm audit:check` (`scripts/audit-check.mjs`): runs `pnpm audit --prod --json` and fails on any high/critical advisory not in `.audit-allowlist.json`, or whose entry has expired. Stale entries only warn.
+  - Entry format: `"GHSA-xxxx": { "package": "…", "reason": "…", "expires": "YYYY-MM-DD" }`. Expiry ≤ 90 days; the reviewer of the PR adding the entry approves it. Prefer fixing (upgrade / `pnpm.overrides`) over allowlisting.
+  - At T-003 all existing high/critical advisories (mainly `next` < 16.3.8 and transitive deps) were allowlisted until 2026-11-14; a follow-up ticket upgrades them.
+- Secret scanning: `gitleaks` action on PRs (full history, `fetch-depth: 0`) and in the `pre-push` hook. A false positive (e.g. a test fixture) goes into `.gitleaksignore` by fingerprint with a comment; a real secret is rotated, never ignored.
 - Dependabot weekly for npm + GitHub Actions.
 
 ## 10. Security checklist (release gate, mirrors source §8)
