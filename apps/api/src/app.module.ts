@@ -15,6 +15,7 @@ import { CollectorModule } from "./modules/collector/collector.module";
 import { HealthModule } from "./modules/health/health.module";
 import { ProjectsModule } from "./modules/projects/projects.module";
 import { ProvidersModule } from "./modules/providers/providers.module";
+import { SchedulerModule } from "./jobs/scheduler.module";
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { ProvidersModule } from "./modules/providers/providers.module";
     ProjectsModule,
     ProvidersModule,
     CollectorModule,
+    SchedulerModule,
     AuditModule,
     // M2+: IntegrationsModule, ListeningQueriesModule, SyncJobsModule, SystemStatusModule
     // M3+: AnalysisModule · M4+: MentionsModule, AnalyticsModule · M6: ReviewsModule, ExportModule

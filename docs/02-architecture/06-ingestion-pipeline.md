@@ -53,9 +53,10 @@ export type ProviderContext = { accessToken: string; requestId: string; projectI
 
 ## 3. Scheduling
 
-- Tick every 60 s (`@Interval`). Skip entirely if circuit open for the project or integration status ∉ {connected}.
+- Tick every `COLLECTOR_TICK_MS` (default 60 s; `SchedulerRegistry` interval in `jobs/scheduler.service.ts`, worker/all roles only). Skip entirely if circuit open for the project or integration status ∉ {connected}.
 - Claim: SQL in [02-backend-design.md §6](02-backend-design.md#6-scheduling--workers); `COLLECTOR_MAX_CONCURRENT_QUERIES=3`, stale lock `COLLECTOR_LOCK_STALE_MINUTES=15`.
-- After run: `next_run_at = completed_at + poll_interval_seconds` on success/partial; on failure `next_run_at = now() + min(poll_interval × 2^consecutive_failures, 3600 s)`; `consecutive_failures` reset on success.
+- After run (`jobs/next-run.ts`): `next_run_at = completed_at + poll_interval_seconds` on success **and partial** (partial schedules like success); on failure `next_run_at = now() + min(poll_interval × 2^n, 3600 s)` where n = `consecutive_failures` _before_ this failure, then `consecutive_failures = n + 1`; reset to 0 on success/partial. This schedule-level backoff is separate from the per-request retry in `common/retry`.
+- A query with `next_run_at IS NULL` (never run) is due on the next tick.
 - Manual run (`/run`) inserts a `queued` job with `trigger=manual` processed by the next tick ahead of scheduled ones; only one non-terminal job per query at a time.
 - Backfill (P1) jobs use explicit `window_since/until`; they may span many pages; `COLLECTOR_MAX_PAGES_PER_JOB` applies per job and resumes via `last_cursor` on retry.
 
