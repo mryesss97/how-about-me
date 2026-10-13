@@ -1,6 +1,7 @@
 // Idempotent seed — docs/02-architecture/04-data-model.md §6, FR-019/FR-030/FR-050.
 import { Prisma, PrismaClient, QueryType, UserRole } from "@prisma/client";
 import { v7 as uuidv7 } from "uuid";
+import { findActiveQueryDuplicate } from "../src/common/queries/find-active-query-duplicate";
 import { normalizeQuery } from "../src/common/queries/normalize-query";
 
 export const SEED_PROJECT = {
@@ -18,7 +19,7 @@ export const SEED_QUERIES: { displayName: string; queryValue: string; queryType:
 
 export async function runSeed(
   prisma: PrismaClient,
-  opts: { adminEmail?: string; log?: (m: string) => void } = {},
+  opts: { adminEmail?: string; log?: (m: string) => void; queries?: typeof SEED_QUERIES } = {},
 ): Promise<{ projectId: string; adminUserId?: string }> {
   const log = opts.log ?? (() => undefined);
 
@@ -30,17 +31,15 @@ export async function runSeed(
   });
   log(`project ${project.slug} (${project.id})`);
 
-  for (const q of SEED_QUERIES) {
+  for (const q of opts.queries ?? SEED_QUERIES) {
     const { queryValue, searchMode } = normalizeQuery(q); // BR-004, BR-005 — before lookup and create
-    const existing = await prisma.listeningQuery.findFirst({
-      where: {
-        projectId: project.id,
-        queryType: q.queryType,
-        queryValue: { equals: queryValue, mode: "insensitive" },
-        deletedAt: null,
-      },
+    // BR-006: exact lower() = lower() like the partial unique index — not ILIKE, so '_'/'%' stay literal.
+    const existingId = await findActiveQueryDuplicate(prisma, {
+      projectId: project.id,
+      queryType: q.queryType,
+      queryValue,
     });
-    if (existing) {
+    if (existingId) {
       log(`query exists: ${q.queryType} ${queryValue}`);
       continue;
     }
