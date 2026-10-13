@@ -22,8 +22,8 @@ export type EnqueueInput = {
 export interface AnalysisEnqueuer {
   /** Returns true when a new `pending` run was created. */
   enqueue(tx: Prisma.TransactionClient, input: EnqueueInput): Promise<boolean>;
-  /** Marks `pending`/`completed` runs of an older content hash as `stale` (FR-078). */
-  markCurrentStale(tx: Prisma.TransactionClient, postId: string, newHash: string): Promise<void>;
+  /** Marks `pending`/`completed` runs of an older content hash as `stale` (FR-078); returns the count. */
+  markCurrentStale(tx: Prisma.TransactionClient, postId: string, newHash: string): Promise<number>;
 }
 
 /** effective_version formula — doc 07 §7 (BR-023). */

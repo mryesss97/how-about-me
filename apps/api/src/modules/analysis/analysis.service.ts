@@ -95,11 +95,43 @@ export class AnalysisService implements AnalysisEnqueuer {
     return { created: true, runId: created.id };
   }
 
-  /** pending|completed → stale for older content hashes (FR-078, BR-003). */
-  async markCurrentStale(tx: Db, postId: string, newHash: string): Promise<void> {
-    await tx.$executeRaw(Prisma.sql`
-      UPDATE analysis_runs SET status = 'stale'
-      WHERE post_id = ${postId}::uuid AND status IN ('pending', 'completed') AND source_content_hash <> ${newHash}`);
+  /**
+   * pending|completed → stale for older content hashes (FR-078, FR-100, BR-003). `processing` runs are left
+   * alone; the processor marks them `skipped superseded` (doc 07 §1). Returns the number of runs marked.
+   */
+  async markCurrentStale(tx: Db, postId: string, newHash: string): Promise<number> {
+    const rows = await tx.$queryRaw<{ n: number }[]>(Prisma.sql`
+      WITH c AS (
+        UPDATE analysis_runs SET status = 'stale'
+        WHERE post_id = ${postId}::uuid AND status IN ('pending', 'completed') AND source_content_hash <> ${newHash}
+        RETURNING id, post_id),
+      p AS (${this.syncLatestStatus(Prisma.sql`c`, Prisma.sql`'stale'::analysis_status`)})
+      SELECT count(*)::int AS n FROM c`);
+    return rows[0]?.n ?? 0;
+  }
+
+  /**
+   * Version change helper (doc 07 §7, BR-023, FR-100): pending|completed runs of `oldVersion` → stale.
+   * Does not re-enqueue (bulk enqueue within caps and the `mark-stale` endpoint are P1).
+   * Throws when `oldVersion` is the current effective version, so current results are never staled.
+   */
+  async markVersionStale(
+    oldVersion: string,
+    opts: { projectId?: string } = {},
+    tx: Db = this.prisma,
+  ): Promise<{ marked: number }> {
+    if (oldVersion === this.effectiveVersion) {
+      throw new Error("markVersionStale: refusing to mark the current effective_version stale");
+    }
+    const projectFilter = opts.projectId ? Prisma.sql`AND project_id = ${opts.projectId}::uuid` : Prisma.empty;
+    const rows = await tx.$queryRaw<{ n: number }[]>(Prisma.sql`
+      WITH c AS (
+        UPDATE analysis_runs SET status = 'stale'
+        WHERE effective_version = ${oldVersion} AND status IN ('pending', 'completed') ${projectFilter}
+        RETURNING id, post_id),
+      p AS (${this.syncLatestStatus(Prisma.sql`c`, Prisma.sql`'stale'::analysis_status`)})
+      SELECT count(*)::int AS n FROM c`);
+    return { marked: rows[0]?.n ?? 0 };
   }
 
   /**
