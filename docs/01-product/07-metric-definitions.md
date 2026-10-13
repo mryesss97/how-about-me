@@ -161,7 +161,7 @@ Each metric maps to a mentions filter that returns exactly the counted posts:
 
 For rates the list returns the numerator posts. Topic `other` is the top-12 remainder and has no filter, so it is not drillable. Language `other` is drillable: `language=other` matches stored `other` plus any non-NULL code outside the taxonomy, the same set the slice counts (#201). In the topic × sentiment matrix (T-149) `other` is a real label and is drillable (`topic=other`). Cell values replace the global `topic`/`sentiment` keys (as for every segment), so with a global `topic` filter active a cell of another topic can count fewer posts than its list (the matrix counts posts with both topics). FE mapping: `apps/web/src/lib/filters/drill-down.ts` (T-102).
 
-QA reconciles list totals (`totalCount` header from `/mentions?count=true`) against chart numbers.
+QA reconciles list totals (`totalCount` header from `/mentions?count=true`) against chart numbers. Automated on the shared fixture (T-094): `apps/api/test/integration/analytics/fixture-equivalence.int-spec.ts`, expected numbers in `apps/api/test/fixtures/analytics-expected.ts`.
 
 ## 7. Operational metrics
 
