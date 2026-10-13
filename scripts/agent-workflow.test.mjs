@@ -9,6 +9,7 @@ import { test } from "node:test";
 
 import {
   cliIsRecent,
+  codePrompt,
   COST_HEADING,
   costSection,
   extractQaReport,
@@ -226,4 +227,20 @@ test("isConnectionDropAfterGreenHook retries only a drop after a green hook", ()
   // Another push error after a green hook: no retry.
   assert.equal(isConnectionDropAfterGreenHook(green + "! [rejected] non-fast-forward"), false);
   assert.equal(isConnectionDropAfterGreenHook(undefined), false);
+});
+
+test("codePrompt implements the plan when there is no failed QA report", () => {
+  const ticket = { ref: "#12", slug: "12" };
+  for (const report of [null, "# Báo cáo QA: x\n\n## Kết quả: PASS\n"]) {
+    const text = codePrompt(ticket, report);
+    assert.match(text, /^Implement the approved plan \.claude\/runs\/research-12\.md/);
+    assert.doesNotMatch(text, /qa-12/);
+  }
+});
+
+test("codePrompt fixes the QA blockers after a failed review", () => {
+  const text = codePrompt({ ref: "#12", slug: "12" }, "# Báo cáo QA: x\n\n## Kết quả: FAIL\n\n## Blockers\n1. y\n");
+  assert.match(text, /Fix every blocker in \.claude\/runs\/qa-12\.md/);
+  assert.match(text, /research-12\.md/);
+  assert.match(text, /pnpm verify:quiet/);
 });

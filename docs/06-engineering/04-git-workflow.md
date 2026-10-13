@@ -72,6 +72,8 @@ The owner adopted the live-stream-admin loop on 2026-10-13. Agents follow it for
 
 Tickets that touch the same files run one after another. Tickets in different areas may run in parallel; keep about 4 agents, because high load makes the tests in `pre-push` time out.
 
+The loop runs continuously (owner, 2026-10-13, #140): no stop to approve the plan or the QA report. A ticket is unblocked when every `depends_on` ticket is merged into `develop`, it has no `needs: owner-input` label, and it touches different files than the tickets in flight; unblocked tickets run in parallel. QA FAIL goes back to the coder, at most 2 rounds. The agent stops and asks the owner only for owner input, a contract or data-model decision the docs do not settle, QA still failing after 2 rounds, or a red check the ticket did not cause.
+
 Tickets the owner marks "pending" stay untouched. For an open question the owner has not answered, follow the agent's written proposal and record the decision, with the date, in a ticket comment.
 
 | Step                                                                                                                          | Command                                                                          |
