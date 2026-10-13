@@ -59,7 +59,15 @@ Feature folders never import from each other except via `lib/`. Untitled UI `com
 
 ## 4. Filters & URL state
 
-`lib/filters/schema.ts` (Zod) defines: `from, to, tz, preset, queryIds[], relevance[], sentiment[], safety[], intent[], topic[], language[], analysisStatus[], q, sort, compare`. `nuqs` parsers keep them in the URL; a `toApiParams(filters)` helper produces API query params; a `toMentionsHref(filters, extra)` helper builds drill-down links (FR-142).
+Layout `apps/web/src/lib/filters/`:
+
+- `schema.ts` — `Filters` type (`preset, from, to, tz, queryIds[], relevance[], sentiment[], safety[], intent[], topic[], language[], analysisStatus[], q, sort, compare`), `PRESETS` (`1h, 24h, 7d, 30d, custom`), default preset **`7d`**, default relevance `[relevant]` (BR-016). Enums come from `@how-about-me/taxonomy` / `contracts`, never redefined.
+- `parsers.ts` — `nuqs` parsers (`filterParsers`, `serializeFilters`); `clearOnDefault`, `history: "replace"`. Arrays are CSV. Invalid enum values / UUIDs are dropped, an invalid `tz` falls back to `NEXT_PUBLIC_DEFAULT_TIMEZONE`. `cache.ts` exposes `filtersCache` for Server Components.
+- `time-range.ts` — `resolveRange` (relative presets slide with `now`; **only `preset` is stored in the URL**, so reload re-resolves; custom stores `from`/`to` instants), `calendarRangeToInstants` (calendar days → 00:00 of start day … 00:00 of day after end day **in the selected tz**), `validateRange` (≤ `MAX_RANGE_DAYS`), `expectedInterval` (display-only mirror of FR-135).
+- `api-params.ts` — `toApiParams(filters, { target: "analytics" | "mentions", now })`: maps `tz` → API `timezone`, drops `preset`, CSV arrays, omits empty arrays, always sends `relevance`, `compare` only for analytics, `q`/`sort` only for mentions, keys sorted (stable query key). `toMentionsHref(filters, extra)` builds drill-down links (FR-142) pinned as `preset=custom` with the resolved range and no `compare`. `appliedChips` / `removeFilterValue` back the removable chips. `timeField` is not exposed in the MVP (server default).
+- `use-filters.ts` — `useFilters(target)` → `{ filters, setFilters, reset, apiParams }`; `now` floored to the minute.
+
+UI: `features/analytics/filter-bar.tsx` (+ `time-controls.tsx`, `enum-multi-select.tsx`, `applied-filter-chips.tsx`), rendered inside `<Suspense>` on Overview (`showCompare`) and Mentions. Query options are passed in as props. Timezone picker lists `Intl.supportedValuesOf("timeZone")` with `Asia/Ho_Chi_Minh` and `UTC` pinned first.
 
 ## 5. Charts
 
