@@ -16,7 +16,7 @@
 ## 2. NestJS (`apps/api`)
 
 - One module per bounded context (doc 02). Files: `*.module.ts`, `*.controller.ts`, `*.service.ts`, `*.repository.ts`, `dto/` (re-export from contracts), `__fixtures__/`, `*.spec.ts`.
-- Controllers: thin; validate with `ZodValidationPipe`; decorate roles `@Roles('admin')`; return contract DTOs; never return Prisma models.
+- Controllers: thin; validate with `ZodValidationPipe`; decorate roles `@Roles('admin')` (and `@AllowRoleWhenSetting` for ⚙️ cells); every new `/projects/:projectId` route adds or flips its entry in `common/auth/permission-matrix.ts`; return contract DTOs; never return Prisma models.
 - Services: business logic & transactions; inject repositories/providers via interfaces (`@Inject(SAFETY_PROVIDER)` tokens).
 - Repositories: only place that imports `@prisma/client`; map to domain/DTO types.
 - Raw SQL: `Prisma.sql` tagged templates; parametrised; result parsed with Zod.

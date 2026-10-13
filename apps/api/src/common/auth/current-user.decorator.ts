@@ -1,8 +1,8 @@
 import { createParamDecorator, type ExecutionContext } from "@nestjs/common";
-import type { UserRole } from "@how-about-me/contracts";
+import type { ProjectSettings, UserRole } from "@how-about-me/contracts";
 
 export type AuthUser = { id: string; email: string; displayName: string | null };
-export type ProjectContext = { projectId: string; role: UserRole };
+export type ProjectContext = { projectId: string; role: UserRole; settings?: ProjectSettings };
 export type AuthedRequest = {
   user?: AuthUser;
   project?: ProjectContext;
