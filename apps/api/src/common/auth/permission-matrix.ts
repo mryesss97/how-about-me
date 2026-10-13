@@ -40,6 +40,7 @@ export const PERMISSION_MATRIX: readonly PermissionEntry[] = [
   { method: "POST", path: `${P}/listening-queries/:queryId/run`, ...ADMIN_ONLY, status: "planned" },
   { method: "POST", path: `${P}/listening-queries/:queryId/backfill`, ...ADMIN_ONLY, status: "planned" },
   { method: "GET", path: `${P}/analytics/overview`, ...ALL, status: "implemented" },
+  { method: "GET", path: `${P}/analytics/mentions-timeseries`, ...ALL, status: "implemented" },
   { method: "GET", path: `${P}/mentions`, ...ALL, status: "planned" },
   { method: "GET", path: `${P}/mentions/:mentionId`, ...ALL, status: "planned" },
   {

@@ -12,3 +12,9 @@ Design: see docs/02-architecture/02-backend-design.md §3 and the related pipeli
 
 - `GET /projects/:projectId/analytics/overview` — `overview.controller.ts` → `overview.service.ts` → `overview.repository.ts` (raw SQL over `base`). Pure helpers (`rate`, `growth`, `collectorStatus`) in `overview.math.ts`; `METRICS_VERSION` in `metrics-version.ts`.
 - KPIs use the filtered base set; coverage ignores relevance/status/label filters; mention growth is always computed vs the previous period, rate `previous` only with `compare=true` (metric-definitions §1–§2).
+
+## Timeseries (T-092)
+
+- `GET projects/:projectId/analytics/mentions-timeseries` — `analytics-timeseries.controller.ts` → `analytics-timeseries.service.ts` (`chooseInterval`, `alignSeries`) → `analytics-timeseries.repository.ts` (raw SQL).
+- `bucketSeriesCte(range, interval, tz)` in `analytics-filters.ts` — CTE `buckets` for zero-fill; join counts on `bucketExpr` of the same base time column.
+- `AnalyticsTimeseriesService.sentimentTimeseries(scope, interval?)` — exported for `/analytics/sentiment` (T-093).

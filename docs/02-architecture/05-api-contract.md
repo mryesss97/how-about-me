@@ -179,6 +179,8 @@ Common query params (all optional): `from`, `to` (defaults last 7 d), `timezone`
 }
 ```
 
+Query: common analytics query (§6) + `interval=hour|day` (optional). Omitted → `hour` if range ≤ 48 h, else `day`. `day` is always valid; `hour` only when range ≤ 31 days (≤ 744 points), otherwise `400 VALIDATION_ERROR`. Buckets are zero-filled in the requested timezone; the first bucket may be partial when `from` is not on a bucket boundary. `previous` is present only when `compare=true` (aligned by bucket position, metric-definitions §3.1). Roles: admin, analyst, viewer.
+
 ### `GET …/analytics/sentiment`
 
 ```json
