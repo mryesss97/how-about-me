@@ -11,4 +11,14 @@ Feature folder — see docs/02-architecture/03-frontend-design.md §1.
 | `mentions-toolbar.tsx`               | Total count (when the API omits `totalCount`: "N+ mentions loaded" while more pages exist, exact "N mentions" on the last page), search debounced 400 ms → URL `q`, sort → URL `sort`. Esc in search clears the box.                                                                                                                             |
 | `mentions-view.tsx`                  | Wires project, `useFilters("mentions")` pinned by `usePinnedParams` (relative ranges do not re-key the list every minute), sync/pending banners (reuses overview coverage, FR-159), toolbar and list.                                                                                                                                            |
 
-Not here yet: detail slide-out and Esc-to-close (T-104), `reviewStatus` filter (Reviews, P1), export (P1).
+## `detail/` — Mention detail (UX §3.4, T-104)
+
+- `api.ts` — `useMentionDetail` (key `qk.mention`, polls 5 s while pending/processing), `useReanalyze` (POST `…/reanalyze`, optimistic `pending`, 409 `ANALYSIS_ALREADY_PENDING` → info toast), `canReanalyze(role, settings)` (admin, or analyst when `allowAnalystReanalyze`; UX only, BR-033).
+- `mention-detail.tsx` — container shared by page and slide-out: loading / 404 / error, status banner, operations toolbar, Original + Analysis columns.
+- `original-panel.tsx` + `linkify.ts` — plain text with https links only (`noopener noreferrer`, FR-157/158), media, quote/repost, matched queries (excluded ones labelled "excluded"), first/last seen, revision.
+- `analysis-tabs.tsx` → `analysis-current.tsx` (badges, safety scores table, versions) and `analysis-history.tsx` (runs; no tokens per run in the contract).
+- `status-banner.tsx` — pending/processing info, failed + error code + Retry (admin), stale warning. Retry uses `reanalyze` until `analysis-runs/:id/retry` exists.
+- `operations-toolbar.tsx`, `use-copy.ts` — Re-analyze with confirm, copy post ID / permalink (toast), Open on Threads.
+- `mention-detail-slideout.tsx` — rendered by the intercepting route `app/(app)/mentions/@detail/(.)[id]`; Esc/close → `router.back()` (fallback push to `/mentions?<filters>`), focus returns to the row. "Open full page" is a plain `<a>` to leave the intercept.
+
+Not here yet: `reviewStatus` filter (Reviews, P1), export (P1).

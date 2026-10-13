@@ -127,19 +127,19 @@ Chart details (T-101, decided 2026-10-13 on #88):
   - Rows are de-duplicated by `id` across pages. "Load more" and infinite scroll share the same request; a failed further page shows an inline error with Retry and keeps the loaded rows. If the API rejects the cursor (`400 VALIDATION_ERROR` on `cursor`, e.g. a cursor from before a deploy, #195), the list starts over from the first page instead of showing an error.
   - With a relative preset, the resolved range is pinned when the page loads or a filter changes, so a new minute never resets the loaded pages.
   - Matched-query chips whose exclude terms matched (`excludedByTerms`) are hidden in the list (FR-059, TC-MEN-021); detail (T-104) shows them as "excluded".
-  - `Esc` in the search box clears it. On rows, `Esc` does nothing until the slide-out exists (T-104).
+  - `Esc` in the search box clears it. On rows, `Esc` has no action of its own; inside the detail slide-out (T-104) it closes the slide-out and returns focus to the row.
   - Sync-failed / analysis-pending banners reuse the Overview coverage for the same range (FR-159). Re-analyze is not on the row; it belongs to detail (T-104).
 
 ### 3.4 Mention Detail (`/mentions/[id]`) — P0
 
-Two-column (≥ 1024 px) or stacked:
+Two-column (≥ 1024 px) or stacked. Clicking a row in `/mentions` opens the detail as a slide-out over the list (URL becomes `/mentions/:id?<filters>`; Esc/close returns to the list with filters kept and focus back on the row); a deep link or refresh renders the full page (T-104).
 
 - **Original**: full text (plain, links auto-detected as text with external icon), `@username`, published (tz), permalink button "Open on Threads", media metadata (type, thumbnail URL as image if allowed, alt text), quote/repost indicators, matched queries, first seen / last seen, revision.
 - **Analysis** (tabs: _Current_, _History_):
   - Current: relevance (badge + confidence + explanation), sentiment (badge + confidence), safety (level badge + expandable category scores table), intents (chips + confidence), topics (chips + confidence), language, summary, overall confidence band, versions (provider/model/prompt/taxonomy/policy), analyzed_at. Analyst override values shown with "Analyst" badge and original AI value struck-through (P1).
-  - History: table of runs (status, versions, analyzed_at, tokens, cost, error).
+  - History: table of runs (status, trigger, effective version, created/completed, cost, error). Runs carry no tokens in the API contract, so tokens are shown only on _Current_ (T-104).
 - **Operations** toolbar: Re-analyze (admin / analyst if allowed; confirm dialog; disabled while pending), Override (P1), Copy post ID, Copy permalink, Open on Threads.
-- Status banner if latest run pending/failed with error code + Retry (admin).
+- Status banner if latest run pending/failed with error code + Retry (admin); stale shows a warning. Until `POST …/analysis-runs/:id/retry` exists, Retry calls `POST …/mentions/:id/reanalyze` (same effect: a new pending run). The detail polls every 5 s while the run is pending/processing.
 
 ### 3.5 Listening Queries (`/listening-queries`) — P0
 
