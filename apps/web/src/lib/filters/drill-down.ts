@@ -48,6 +48,15 @@ export function segmentDrillDown<D extends SegmentDimension>(dim: D, value: Segm
 }
 
 /**
+ * Topic × sentiment cell / negative contributor (FR-144, T-149) → `topic=[t]` (+ `sentiment=[s]`). Unlike
+ * `segmentDrillDown`, `other` is NOT blocked: in the matrix `other` is the real taxonomy label, so
+ * `topic=other` returns exactly the counted posts. Without a sentiment (table row header) drills the whole topic.
+ */
+export function topicSentimentDrillDown(topic: TopicLabel, sentiment?: SentimentLabel): Partial<Filters> {
+  return sentiment ? { topic: [topic], sentiment: [sentiment] } : { topic: [topic] };
+}
+
+/**
  * Keyword share bar (FR-145, T-150) → `queryIds=[id]`. Replaces any global `queryIds`, so the list is exactly the
  * posts with a non-excluded match for that query within the other filters (doc 07 §6).
  */

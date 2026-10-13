@@ -31,3 +31,8 @@ Design: see docs/02-architecture/02-backend-design.md §3 and the related pipeli
 
 - `GET …/analytics/query-share` — `analytics-query-share.{controller,service,repository}.ts`, pure helper `query-share.ts`.
 - Denominator = distinct posts in `B`; per-query counts only non-excluded matches (overlap allowed, `note: "overlapping"`). Soft-deleted queries listed only with counts (BR-010).
+
+## Topic × sentiment (T-149)
+
+- `GET …/analytics/topic-sentiment` — in the distributions group (`analytics-distributions.{controller,service,repository}.ts`), pure helper `toTopicSentimentRows` in `distributions.ts`.
+- One SQL: DISTINCT posts per (effective topic, effective sentiment) over `B`; posts without sentiment drop out, labels outside the taxonomy ignored. Row denominator = `total`; always 12 rows, `total` desc, `other` (real label) last.

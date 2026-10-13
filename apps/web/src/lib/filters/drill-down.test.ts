@@ -2,7 +2,7 @@ import { MentionsListQuerySchema } from "@how-about-me/contracts";
 import { createLoader } from "nuqs/server";
 import { describe, expect, it } from "vitest";
 import { toApiParams, toMentionsHref } from "./api-params";
-import { bucketDrillDown, kpiDrillDown, queryDrillDown, segmentDrillDown } from "./drill-down";
+import { bucketDrillDown, kpiDrillDown, queryDrillDown, segmentDrillDown, topicSentimentDrillDown } from "./drill-down";
 import { filterParsers } from "./parsers";
 import { defaultFilters, type Filters } from "./schema";
 
@@ -129,5 +129,26 @@ describe("queryDrillDown (FR-145, T-150)", () => {
   it("replaces global queryIds in the Mentions href (FR-142)", () => {
     const href = toMentionsHref(base({ queryIds: [Q1, Q2] }), queryDrillDown(Q2), now);
     expect(new URL(href, "http://x").searchParams.getAll("queryIds").join(",")).toBe(Q2);
+  });
+});
+
+describe("topicSentimentDrillDown (T-149, FR-144/FR-142)", () => {
+  it("cell → topic + sentiment; `other` is a real label and drillable", () => {
+    expect(topicSentimentDrillDown("ticket", "negative")).toEqual({ topic: ["ticket"], sentiment: ["negative"] });
+    expect(topicSentimentDrillDown("other", "positive")).toEqual({ topic: ["other"], sentiment: ["positive"] });
+    expect(topicSentimentDrillDown("other")).toEqual({ topic: ["other"] });
+  });
+
+  it("TC-DASH-019: keeps global filters, cell values replace global topic/sentiment", () => {
+    const q = query(
+      toMentionsHref(
+        base({ topic: ["venue"], sentiment: ["positive"], language: ["vi"] }),
+        topicSentimentDrillDown("ticket", "negative"),
+        now,
+      ),
+    );
+    expect(q.get("topic")).toBe("ticket");
+    expect(q.get("sentiment")).toBe("negative");
+    expect(q.get("language")).toBe("vi");
   });
 });

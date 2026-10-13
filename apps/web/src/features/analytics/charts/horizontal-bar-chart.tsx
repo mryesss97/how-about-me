@@ -17,6 +17,7 @@ export function HorizontalBarChart<R extends BarRow>({
   getFill,
   denominator,
   denominatorLabel,
+  rowDenominator,
   defs,
   onSelect,
 }: {
@@ -24,6 +25,8 @@ export function HorizontalBarChart<R extends BarRow>({
   getFill: (row: R) => string;
   denominator: number;
   denominatorLabel: string;
+  /** Per-row denominator for the tooltip (e.g. topic row total, FR-144); falls back to `denominator`. */
+  rowDenominator?: (row: R) => number;
   /** SVG <defs> (e.g. hatch patterns referenced by getFill). */
   defs?: ReactNode;
   /** FR-142 drill-down on bar click; rows for which it returns false are not clickable. */
@@ -54,7 +57,7 @@ export function HorizontalBarChart<R extends BarRow>({
                 <MetricTooltip
                   title={r.name}
                   lines={[{ name: r.name, count: r.count, share: r.share }]}
-                  denominator={denominator}
+                  denominator={rowDenominator?.(r) ?? denominator}
                   denominatorLabel={denominatorLabel}
                 />
               );

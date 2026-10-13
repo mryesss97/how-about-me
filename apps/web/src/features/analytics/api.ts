@@ -8,6 +8,7 @@ import {
   SafetyDistributionResponseSchema,
   SentimentResponseSchema,
   TimeseriesResponseSchema,
+  TopicSentimentResponseSchema,
   TopicsDistributionResponseSchema,
 } from "@how-about-me/contracts";
 import { useQuery } from "@tanstack/react-query";
@@ -58,6 +59,7 @@ const DISTRIBUTIONS = {
   topics: TopicsDistributionResponseSchema,
   languages: LanguagesDistributionResponseSchema,
   "query-share": QueryShareResponseSchema,
+  "topic-sentiment": TopicSentimentResponseSchema,
 } as const;
 
 function useDistribution<K extends keyof typeof DISTRIBUTIONS>(
@@ -95,3 +97,7 @@ export const useLanguagesDistribution = (pid: string | null | undefined, params:
 /** GET /projects/:projectId/analytics/query-share (FR-145) — distinct mentions per query; counts overlap. */
 export const useQueryShare = (pid: string | null | undefined, params: Record<string, string>) =>
   useDistribution("query-share", pid, params);
+
+/** GET /projects/:projectId/analytics/topic-sentiment (FR-144) — one request feeds the heatmap and the contributors. */
+export const useTopicSentiment = (pid: string | null | undefined, params: Record<string, string>) =>
+  useDistribution("topic-sentiment", pid, params);

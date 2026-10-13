@@ -220,6 +220,17 @@ FR-143 (T-148). `denominator` = `COUNT(DISTINCT post_id)` of base-set posts with
 
 ### `GET …/analytics/topic-sentiment` (P1) → `{ rows:[{topic, positive, neutral, negative, total, negativeShare}] }`
 
+Topic × sentiment matrix and negative-topic contributors (FR-144, T-149). Roles admin/analyst/viewer; same analytics params as the other widgets (`compare` ignored).
+
+- Each cell = `COUNT(DISTINCT post_id)` in `B` with that effective topic (`effective_post_topics`, BR-025) and that effective sentiment. Posts without a sentiment are not counted.
+- `total = positive + neutral + negative` (posts with that topic and a sentiment); `negativeShare = negative / total`, `null` when `total = 0` (FR-140).
+- Always the 12 taxonomy topic labels (count 0 included); `other` is the real label, not a remainder bucket. Labels outside the taxonomy are ignored.
+- Sorted `total DESC`, ties in taxonomy order, `other` last.
+
+```json
+{ "rows": [{ "topic": "ticket", "positive": 1, "neutral": 1, "negative": 2, "total": 4, "negativeShare": 0.5 }] }
+```
+
 ### `GET …/analytics/query-share` (P1) → `{ denominator, distribution:[{queryId, displayName, count, share}] , note:"overlapping" }`
 
 Keyword share (FR-145, T-150). Roles admin/analyst/viewer; same analytics params as the other widgets.

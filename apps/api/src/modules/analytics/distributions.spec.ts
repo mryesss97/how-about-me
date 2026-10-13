@@ -1,6 +1,6 @@
 import { INTENT_LABELS, TOPIC_LABELS } from "@how-about-me/taxonomy";
 import { bucketInterval } from "../../common/time/range";
-import { sortByCountDesc, toDistribution, toTopicsDistribution } from "./distributions";
+import { sortByCountDesc, toDistribution, toTopicSentimentRows, toTopicsDistribution } from "./distributions";
 
 /** T-093 pure helpers — metric-definitions §3.1–3.6, FR-140. */
 describe("distributions helpers (T-093)", () => {
@@ -71,5 +71,44 @@ describe("distributions helpers (T-093)", () => {
     const from = new Date("2026-10-01T00:00:00Z");
     expect(bucketInterval({ from, to: new Date(from.getTime() + 48 * 3600e3) })).toBe("hour");
     expect(bucketInterval({ from, to: new Date(from.getTime() + 48 * 3600e3 + 1) })).toBe("day");
+  });
+});
+
+/** T-149 — FR-144, FR-140; metric-definitions §4 Topic × sentiment. */
+describe("toTopicSentimentRows", () => {
+  it("returns all 12 taxonomy rows, zero rows have negativeShare null (FR-140)", () => {
+    const rows = toTopicSentimentRows(TOPIC_LABELS, []);
+    expect(rows).toHaveLength(TOPIC_LABELS.length);
+    expect(rows.every((r) => r.total === 0 && r.negativeShare === null)).toBe(true);
+    expect(rows.at(-1)?.topic).toBe("other");
+  });
+
+  it("total = positive + neutral + negative and negativeShare = negative / total (FR-144)", () => {
+    const rows = toTopicSentimentRows(TOPIC_LABELS, [
+      { topic: "ticket", sentiment: "positive", count: 1 },
+      { topic: "ticket", sentiment: "neutral", count: 1 },
+      { topic: "ticket", sentiment: "negative", count: 2 },
+    ]);
+    expect(rows[0]).toEqual({ topic: "ticket", positive: 1, neutral: 1, negative: 2, total: 4, negativeShare: 0.5 });
+  });
+
+  it("sorts total desc, ties keep taxonomy order, `other` last even when largest", () => {
+    const rows = toTopicSentimentRows(TOPIC_LABELS, [
+      { topic: "other", sentiment: "negative", count: 9 },
+      { topic: "venue", sentiment: "neutral", count: 2 },
+      { topic: "price", sentiment: "neutral", count: 2 },
+      { topic: "artist", sentiment: "positive", count: 1 },
+    ]);
+    expect(rows.slice(0, 3).map((r) => r.topic)).toEqual(["venue", "price", "artist"]);
+    expect(rows.at(-1)).toMatchObject({ topic: "other", negative: 9, negativeShare: 1 });
+  });
+
+  it("ignores topics and sentiments outside the taxonomy", () => {
+    const rows = toTopicSentimentRows(TOPIC_LABELS, [
+      { topic: "legacy_label", sentiment: "negative", count: 5 },
+      { topic: "ticket", sentiment: "mixed", count: 5 },
+    ]);
+    expect(rows).toHaveLength(TOPIC_LABELS.length);
+    expect(rows.every((r) => r.total === 0)).toBe(true);
   });
 });

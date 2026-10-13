@@ -1,4 +1,4 @@
-import type { SentimentResponse, TimeseriesResponse } from "@how-about-me/contracts";
+import type { SentimentResponse, TimeseriesResponse, TopicSentimentResponse } from "@how-about-me/contracts";
 import type { LanguageCode, SafetyLevel, SentimentLabel } from "@how-about-me/taxonomy";
 
 /** Pure data helpers for the overview charts (T-100) — kept free of React/Recharts so they are unit-testable. */
@@ -124,3 +124,32 @@ export const LANGUAGE_COLORS: Record<LanguageCode, string> = {
   other: "var(--color-utility-neutral-400)",
   unknown: "var(--color-utility-neutral-300)",
 };
+
+/** Heatmap cell opacity (FR-144): share within the topic row → 0.08..0.6. Capped so dark text stays AA-readable. */
+export const HEATMAP_MIN_OPACITY = 0.08;
+export const HEATMAP_MAX_OPACITY = 0.6;
+export function heatmapOpacity(share: number | null): number {
+  if (share === null || share <= 0) return HEATMAP_MIN_OPACITY;
+  return HEATMAP_MIN_OPACITY + Math.min(share, 1) * (HEATMAP_MAX_OPACITY - HEATMAP_MIN_OPACITY);
+}
+
+type TopicSentimentRow = TopicSentimentResponse["rows"][number];
+export type ContributorRow = BarRow<TopicSentimentRow["topic"]> & { total: number };
+
+/**
+ * Negative-topic contributors (FR-144, doc 07 §4): topics with negative > 0, ranked negative desc, then
+ * negativeShare desc, then API order. count = negative, share = negativeShare (row denominator = total).
+ */
+export function toContributorRows(rows: readonly TopicSentimentRow[]): ContributorRow[] {
+  return rows
+    .map((r, i) => ({ r, i }))
+    .filter(({ r }) => r.negative > 0)
+    .sort((a, b) => b.r.negative - a.r.negative || (b.r.negativeShare ?? 0) - (a.r.negativeShare ?? 0) || a.i - b.i)
+    .map(({ r }) => ({
+      key: r.topic,
+      name: humanizeLabel(r.topic),
+      count: r.negative,
+      share: r.negativeShare,
+      total: r.total,
+    }));
+}
