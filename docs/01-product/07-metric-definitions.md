@@ -123,7 +123,7 @@ Same as 3.5 on intents (denominator `intentAnalyzed`); all labels returned, coun
 - **Language distribution**: distinct posts per `language_code` over posts with a language (`language_code IS NOT NULL`, `unknown` included; posts not yet analysed are excluded). Codes outside the taxonomy count as `other`; all 8 codes are listed, sorted by count desc (ties in taxonomy order). Filter `language=other` matches the same set (stored `other` or any non-NULL code outside the taxonomy) — drill-down equivalence (#201).
 - **Topic × sentiment**: matrix `topic → {positive, neutral, negative}` distinct counts; denominator per row = posts with that topic and a sentiment.
 - **Negative-topic contributors**: topics ranked by `negativeCount` and `negativeShareWithinTopic = negativeCount / topicSentimentAnalyzed`.
-- **Keyword share**: distinct posts per query (overlap allowed); tooltip explains overlap.
+- **Keyword share**: distinct posts per query (overlap allowed); tooltip explains overlap. Denominator = distinct posts in `B` (= mentionCount). A query counts only its matches with `excluded_by_terms=false`. Lists every non-deleted query (count 0 included) plus soft-deleted queries with count > 0 (BR-010); with `queryIds` exactly those queries. Sorted count desc, then display name.
 
 ## 5. Previous-period math
 
@@ -151,6 +151,7 @@ Each metric maps to a mentions filter that returns exactly the counted posts:
 | safety `severe`    | `+ safety=severe`                                    |
 | topic `ticket`     | `+ topic=ticket`                                     |
 | intent `complaint` | `+ intent=complaint` (also complaint rate)           |
+| query share bar q  | `queryIds=q` (replaces global `queryIds`)            |
 | timeseries bucket  | `from=bucketStart,to=bucketEnd`                      |
 | previous period    | `from=prevFrom,to=prevTo`                            |
 

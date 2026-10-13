@@ -3,6 +3,9 @@ import { PrismaModule } from "../../database/prisma.module";
 import { AnalyticsDistributionsController } from "./analytics-distributions.controller";
 import { AnalyticsDistributionsRepository } from "./analytics-distributions.repository";
 import { AnalyticsDistributionsService } from "./analytics-distributions.service";
+import { AnalyticsQueryShareController } from "./analytics-query-share.controller";
+import { AnalyticsQueryShareRepository } from "./analytics-query-share.repository";
+import { AnalyticsQueryShareService } from "./analytics-query-share.service";
 import { AnalyticsTimeseriesController } from "./analytics-timeseries.controller";
 import { AnalyticsTimeseriesRepository } from "./analytics-timeseries.repository";
 import { AnalyticsTimeseriesService } from "./analytics-timeseries.service";
@@ -13,7 +16,12 @@ import { OverviewService } from "./overview.service";
 /** Analytics API (M4) — T-091 overview, T-092 timeseries, T-093 distributions. Each widget ticket adds its own lines here. */
 @Module({
   imports: [PrismaModule],
-  controllers: [OverviewController, AnalyticsTimeseriesController, AnalyticsDistributionsController],
+  controllers: [
+    OverviewController,
+    AnalyticsTimeseriesController,
+    AnalyticsDistributionsController,
+    AnalyticsQueryShareController,
+  ],
   providers: [
     OverviewService,
     OverviewRepository,
@@ -21,6 +29,8 @@ import { OverviewService } from "./overview.service";
     AnalyticsTimeseriesRepository,
     AnalyticsDistributionsService,
     AnalyticsDistributionsRepository,
+    AnalyticsQueryShareService,
+    AnalyticsQueryShareRepository,
   ],
   exports: [AnalyticsTimeseriesService],
 })

@@ -2,7 +2,7 @@ import { MentionsListQuerySchema } from "@how-about-me/contracts";
 import { createLoader } from "nuqs/server";
 import { describe, expect, it } from "vitest";
 import { toApiParams, toMentionsHref } from "./api-params";
-import { bucketDrillDown, kpiDrillDown, segmentDrillDown } from "./drill-down";
+import { bucketDrillDown, kpiDrillDown, queryDrillDown, segmentDrillDown } from "./drill-down";
 import { filterParsers } from "./parsers";
 import { defaultFilters, type Filters } from "./schema";
 
@@ -115,5 +115,19 @@ describe("drill-down hrefs", () => {
     const params = toApiParams(parseFilters(query(href)), { target: "mentions", now });
     expect(MentionsListQuerySchema.safeParse(params).success).toBe(true);
     expect(params.safety).toBe("sensitive,severe");
+  });
+});
+
+describe("queryDrillDown (FR-145, T-150)", () => {
+  const Q1 = "00000000-0000-4000-8000-000000000001";
+  const Q2 = "00000000-0000-4000-8000-000000000002";
+
+  it("maps a keyword share bar to queryIds=[id]", () => {
+    expect(queryDrillDown(Q1)).toEqual({ queryIds: [Q1] });
+  });
+
+  it("replaces global queryIds in the Mentions href (FR-142)", () => {
+    const href = toMentionsHref(base({ queryIds: [Q1, Q2] }), queryDrillDown(Q2), now);
+    expect(new URL(href, "http://x").searchParams.getAll("queryIds").join(",")).toBe(Q2);
   });
 });

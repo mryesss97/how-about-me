@@ -3,7 +3,7 @@ Feature folder — see docs/02-architecture/03-frontend-design.md §1 and the T-
 Files:
 
 - `filter-bar.tsx`, `time-controls.tsx`, `applied-filter-chips.tsx`, `enum-multi-select.tsx` — shared filter bar (T-098).
-- `api.ts` — `useOverview`, `useMentionsTimeseries`, `useSentiment`, `useSafetyDistribution`, `useTopicsDistribution`, `useIntentsDistribution`, `useLanguagesDistribution` hooks (`GET …/analytics/overview|mentions-timeseries|sentiment|safety|topics|intents|languages`), all keyed on `apiParams`.
+- `api.ts` — `useOverview`, `useMentionsTimeseries`, `useSentiment`, `useSafetyDistribution`, `useTopicsDistribution`, `useIntentsDistribution`, `useLanguagesDistribution`, `useQueryShare` hooks (`GET …/analytics/overview|mentions-timeseries|sentiment|safety|topics|intents|languages|query-share`), all keyed on `apiParams`.
 - `kpi-definitions.ts` — KPI labels + tooltip copy from docs/01-product/07-metric-definitions.md §1.
 - `kpi-cards.tsx` — six KPI cards (FR-132/133/140): "—" for null rates, "New" for growth, pp delta when compare is on.
 - `overview-banners.tsx` — banners from `coverage` / `dataQuality` (FR-134).
@@ -16,6 +16,7 @@ Files:
   - `mentions-over-time-chart.tsx`, `sentiment-distribution-chart.tsx`, `sentiment-over-time-chart.tsx`.
   - T-101: `horizontal-bar-chart.tsx` (shared, internal), `safety-distribution-chart.tsx` (patterns + icons), `top-topics-chart.tsx`, `intent-distribution-chart.tsx`.
   - T-148: `language-distribution-chart.tsx` — language donut + 8-row table (P1 row, FR-143).
+  - T-150: `query-share-chart.tsx` — keyword share bars (FR-145), overlap note, drill-down `queryIds=[id]` via `queryDrillDown`.
 
 ## Drill-down (T-102, FR-142)
 
