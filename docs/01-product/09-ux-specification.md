@@ -74,7 +74,7 @@ Threads permalink: icon `link-external-01`, `target=_blank`, `rel=noopener noref
 
 ### 2.6 Accessibility
 
-Keyboard reachable filters/tables/drawers (React Aria); focus rings visible; charts expose data table via "View as table" toggle; contrast AA; badges include text.
+Keyboard reachable filters/tables/drawers (React Aria); focus rings visible; charts expose data table via "View as table" toggle (the Sentiment map uses a segmented "Bubbles | Table" toggle instead, #222); contrast AA; badges include text.
 
 ## 3. Screens
 
@@ -90,8 +90,9 @@ Layout (12-col grid, 24 px gap):
 2. **KPI row**: 6 cards (2 rows × 3 on tablet). Card = label + info icon, big value, delta vs previous (arrow + %, or "New"), sub-text with denominator ("of 2,410 analysed"). Mention Growth is its own card ("New" when the previous period had 0). Rate cards show a delta in percentage points ("+2.1 pp") only when Compare is on; delta colour is neutral (arrow only). Banners: `lastSyncStatus` failed/partial → sync-failed banner; `pendingMentions > 0` → pending banner; `integrationStatus ≠ connected` → integration banner (link for admins only).
 3. **Mentions over time** (span 8) + **Sentiment distribution** donut (span 4).
 4. **Sentiment over time** stacked bars (span 6) + **Safety distribution** horizontal bars (span 6).
-5. **Top topics** horizontal bar (span 6) + **Intent distribution** horizontal bar (span 6).
-6. P1 row: Language donut · Keyword share (horizontal bars) · Topic × sentiment heatmap · Negative-topic contributors.
+5. **Sentiment map** bubble chart (span 12, #222).
+6. **Top topics** horizontal bar (span 6) + **Intent distribution** horizontal bar (span 6).
+7. P1 row: Language donut · Keyword share (horizontal bars) · Topic × sentiment heatmap · Negative-topic contributors.
    - Keyword share (T-150): one bar per query in "count · share"; overlap note always shown (a mention counts once under each matched query); table ends with a "Distinct mentions" row, no Total; click → `/mentions?queryIds=<id>`.
 
 Interactions: click a KPI → `/mentions` with filters; click a bar/segment → `/mentions` with `+dimension=value`; hover shows count, share, denominator; chart legend toggles series; "View as table" on each chart. Compare toggle draws ghost series/values.
@@ -117,6 +118,13 @@ Chart details (T-149, decided 2026-10-13 on #120):
 - Layout: the P1 row is Language donut · Keyword share · Negative-topic contributors (4 + 4 + 4 columns); the Topic × sentiment heatmap takes a full row below. Both use one `topic-sentiment` request.
 - Topic × sentiment heatmap: rows = all 12 topics in API order, columns Positive · Neutral · Negative + "With sentiment". Each cell prints "count · share" (share within the topic row) and its sentiment colour gets stronger with the share (colour is never the only cue, NFR-030; no safety colours, BR-017). Non-zero cells are links to `/mentions?topic=t&sentiment=s` (incl. `topic=other`); zero cells are plain text. "View as table": Topic, Positive, Neutral, Negative, With sentiment, Negative share; the topic column links to `topic=t`; no Total row (multi-label). Empty state "No analysed mentions in this range".
 - Negative-topic contributors: red horizontal bars, only topics with negative mentions, ranked by negative count then negative share; label "count · negative share", tooltip names the topic denominator ("with sentiment in this topic"). Click → `/mentions?topic=t&sentiment=negative`. Empty state "No negative mentions in this range".
+
+Chart details (#222, decided 2026-10-13):
+
+- Sentiment map: one bubble per topic with sentiment (topics with total 0 get no bubble), data from `topic-sentiment` (same request as the heatmap). Area ∝ mentions with sentiment (`total`); colour = dominant sentiment (argmax; tie-break negative > positive > neutral); tint strength + "% sentiment" line = dominant share. Bubbles smaller than 25 % of the largest radius are drawn at that minimum so they stay clickable (area is then not to scale; the table always has exact numbers). Layout: deterministic circle packing fitted to the canvas (360 / 480 / 560 px high by breakpoint), centres stretched horizontally (≤ 1.6×) to fill wide cards; no overlap. Labels: radius ≥ 58 px → topic, "75.0% negative", "N mentions"; 36–58 px → topic + "75.0%"; smaller → tooltip on hover/focus (the button's accessible name always has the full text, e.g. "Ticket, 75.0% negative, 420 mentions"). Sentiment colours only (no safety colours, BR-017); selected bubble has a sky ring.
+- Chips "All · Negative · Positive · Neutral (n)" filter by dominant sentiment (local state, not in the URL, not the global sentiment filter) and apply to bubbles and table; no match → "No topics where {s} is dominant.". "Bubbles | Table" toggle in the header; table columns Topic, Dominant sentiment, Dominant share, Positive, Neutral, Negative, With sentiment (topic links to `topic=t`, no Total row). Footer: "Area = mentions with sentiment · Intensity = share of the dominant sentiment", "N topics" and the multi-label note.
+- Click / Enter / Space on a bubble selects it (`aria-pressed`) and opens the detail panel: 3 sentiment rows "count · share" with bar, non-zero rows link to `topic=t&sentiment=s`, "View all N mentions" → `topic=t`. Escape deselects. Phase 1 shows no posts inline.
+- Motion: grow-in stagger on first render, gentle float (paused while the map is hovered/focused), hover lift, animated re-layout when chips/data change (position by `transform`; the radius eases `width`/`height` on the same 600 ms curve, only on re-layout); idle float, grow-in and hover are `transform`/`opacity` only. The hovered/selected bubble is raised above its neighbours. `prefers-reduced-motion: reduce` turns all of it off.
 
 ### 3.3 Mentions Explorer (`/mentions`) — P0
 

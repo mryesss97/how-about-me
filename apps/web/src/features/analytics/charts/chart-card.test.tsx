@@ -65,3 +65,40 @@ describe("ChartCard", () => {
     expect(retried).toBe(true);
   });
 });
+
+describe("ChartCard viewToggle / toolbar / footer (#222)", () => {
+  it("NFR-032: segmented toggle switches to table; toolbar in both modes; footer only when ready", async () => {
+    const { rerender } = render(
+      <ChartCard
+        title="Map"
+        table={table}
+        viewToggle={{ chart: "Bubbles", table: "Table" }}
+        toolbar={<p>chips</p>}
+        footer={<p>legend</p>}
+      >
+        <div>chart</div>
+      </ChartCard>,
+    );
+    expect(screen.queryByRole("button", { name: "View as table" })).toBeNull();
+    expect(screen.getByRole("radio", { name: "Bubbles" })).toHaveAttribute("aria-checked", "true");
+    await act(async () => fireEvent.click(screen.getByRole("radio", { name: "Table" })));
+    expect(screen.getByRole("grid", { name: "Map (table)" })).toBeInTheDocument();
+    expect(screen.getByText("chips")).toBeInTheDocument();
+    expect(screen.getByText("legend")).toBeInTheDocument();
+    rerender(
+      <ChartCard
+        title="Map"
+        table={table}
+        isLoading
+        viewToggle={{ chart: "Bubbles", table: "Table" }}
+        toolbar={<p>chips</p>}
+        footer={<p>legend</p>}
+      >
+        <div>chart</div>
+      </ChartCard>,
+    );
+    expect(screen.queryByText("chips")).toBeNull();
+    expect(screen.queryByText("legend")).toBeNull();
+    expect(screen.queryByRole("radio")).toBeNull();
+  });
+});

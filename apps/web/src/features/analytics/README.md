@@ -18,6 +18,7 @@ Files:
   - T-148: `language-distribution-chart.tsx` — language donut + 8-row table (P1 row, FR-143).
   - T-150: `query-share-chart.tsx` — keyword share bars (FR-145), overlap note, drill-down `queryIds=[id]` via `queryDrillDown`.
   - T-149: `topic-sentiment-heatmap.tsx` (HTML grid, cells are links) and `negative-topics-chart.tsx` (contributors, per-row tooltip denominator via `HorizontalBarChart.rowDenominator`); drill-down via `topicSentimentDrillDown`.
+  - #222: `sentiment-bubble-map.tsx` (Sentiment map card), `bubble-canvas.tsx` (3D bubbles + motion), `bubble-detail-panel.tsx`, `sentiment-icon.tsx`, `bubble-layout.ts` (pure: dominant sentiment, intensity, deterministic packing); copy in `../copy.ts`.
 
 ## Drill-down (T-102, FR-142)
 

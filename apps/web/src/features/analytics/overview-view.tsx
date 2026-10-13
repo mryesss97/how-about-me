@@ -39,6 +39,7 @@ import {
   SentimentDistributionChart,
   SentimentOverTimeChart,
   TopTopicsChart,
+  SentimentBubbleMap,
   TopicSentimentHeatmap,
 } from "./charts";
 import { FilterBar } from "./filter-bar";
@@ -55,7 +56,8 @@ function toQueryError(err: unknown) {
 /**
  * /overview body: filters → banners → KPI cards (T-099) → charts (T-100). Safety chart slot is T-101;
  * P1 row: language donut (T-148), keyword share (T-150), negative-topic contributors (T-149); topic × sentiment
- * heatmap (T-149) full width below. Contributors and heatmap share one topic-sentiment request.
+ * heatmap (T-149) full width below. Sentiment bubble map (#222) full width above Top topics / Intent.
+ * Bubble map, contributors and heatmap share one topic-sentiment request.
  * Each chart has its own query state so one failing chart never blanks the page.
  */
 export function OverviewView() {
@@ -147,6 +149,14 @@ export function OverviewView() {
           isLoading={!project || safety.isLoading}
           error={toQueryError(safety.error)}
           onRetry={() => void safety.refetch()}
+        />
+        <SentimentBubbleMap
+          getHref={(t, s) => href(topicSentimentDrillDown(t, s ?? undefined))}
+          className="lg:col-span-12"
+          data={topicSentiment.data}
+          isLoading={!project || topicSentiment.isLoading}
+          error={toQueryError(topicSentiment.error)}
+          onRetry={() => void topicSentiment.refetch()}
         />
         <TopTopicsChart
           getHref={(k) => href(segmentDrillDown("topic", k))}

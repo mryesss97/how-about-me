@@ -127,6 +127,8 @@ Same as 3.5 on intents (denominator `intentAnalyzed`); all labels returned, coun
 - **Negative-topic contributors** (T-149): topics ranked by `negativeCount` and `negativeShareWithinTopic = negativeCount / topicSentimentAnalyzed` (= `rows[].negativeShare`, null when the row total = 0, FR-140). The UI lists only topics with `negative > 0`, ranked `negative` desc, ties by share desc; no top-N cut.
 - **Keyword share**: distinct posts per query (overlap allowed); tooltip explains overlap. Denominator = distinct posts in `B` (= mentionCount). A query counts only its matches with `excluded_by_terms=false`. Lists every non-deleted query (count 0 included) plus soft-deleted queries with count > 0 (BR-010); with `queryIds` exactly those queries. Sorted count desc, then display name.
 
+- **Sentiment map** (#222): derived on the FE from Topic × sentiment, no extra request. One bubble per topic with `total > 0`; area ∝ `total`; dominant = argmax(positive, neutral, negative) with tie-break negative > positive > neutral; dominant share = dominant / `total`. Radius floor = 25 % of the largest radius (tiny topics are not to scale; the table has exact numbers). Multi-label: bubble totals are never summed; "N topics" counts bubbles, not posts.
+
 ## 5. Previous-period math
 
 ```text
@@ -156,6 +158,8 @@ Each metric maps to a mentions filter that returns exactly the counted posts:
 | query share bar q             | `queryIds=q` (replaces global `queryIds`)            |
 | topic × sentiment cell (t, s) | `+ topic=t&sentiment=s`                              |
 | negative contributor t        | `+ topic=t&sentiment=negative`                       |
+| sentiment map bubble t        | `+ topic=t`                                          |
+| sentiment map detail (t, s)   | `+ topic=t&sentiment=s`                              |
 | timeseries bucket             | `from=bucketStart,to=bucketEnd`                      |
 | previous period               | `from=prevFrom,to=prevTo`                            |
 

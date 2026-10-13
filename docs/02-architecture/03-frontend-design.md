@@ -86,6 +86,8 @@ Recharts via Untitled UI `application/charts/charts-base.tsx` wrappers. Rules: c
 
 Implementation pattern (T-100, `features/analytics/charts/`): every chart is wrapped in `ChartCard` (title, "View as table" `ToggleButton` with `aria-pressed`, per-chart `QueryState` so one failing chart never blanks the page, explicit empty state per BR-032) and tooltips use `MetricTooltip`. Charts are loaded lazily via `next/dynamic({ ssr: false })` with a fixed-height skeleton (`charts/index.ts`). Bucket labels use the bucketing timezone (response `timezone`, else the filter `tz`), never the browser's. Compare ghost series (dashed "Previous period") exists only on Mentions over time — `SentimentResponse` carries no previous-period data. Click-through drill-down is T-102.
 
+Exception (#222): the Sentiment map is not Recharts — `d3-hierarchy` (`packSiblings`, ≥ 3.1.2 for deterministic output) computes the layout in `charts/bubble-layout.ts`, bubbles are HTML buttons styled in `globals.css` (`.bubble-3d`), idle/hover/grow-in motion animates only `transform`/`opacity` (re-layout also eases the radius via `width`/`height`) and is disabled via `usePrefersReducedMotion` (`data-motion`) and the `prefers-reduced-motion` media query. `ChartCard` gained optional `viewToggle` (segmented chart | table), `toolbar` (shown in both modes) and `footer`. Still lazy-loaded.
+
 ## 6. Components mapping (Untitled UI)
 
 | Need                                          | Component                                                                      |
@@ -109,7 +111,7 @@ Missing components are added with `npx untitledui@latest add <name>` into the sa
 
 ## 8. Accessibility & i18n
 
-React Aria primitives; every icon-only button has `aria-label`; charts have table fallback. Copy in English for MVP; strings centralised in `features/*/copy.ts` to allow VI later.
+React Aria primitives; every icon-only button has `aria-label`; charts have table fallback. Copy in English for MVP; strings centralised in `features/*/copy.ts` to allow VI later (first one: `features/analytics/copy.ts`, #222, keeps the VI prototype labels as comments).
 
 ## 9. Performance
 
