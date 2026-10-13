@@ -40,7 +40,7 @@ Rules are normative and referenced by code comments (`// BR-007`) and tests.
 - **BR-018** `safe | sensitive | severe` is a product policy mapping over provider categories; the mapping is versioned (`safety_policy_version`) and configurable.
 - **BR-019** Intent and topic are multi-label; their percentages need not sum to 100 %.
 - **BR-020** `model_confidence` is an estimated, uncalibrated signal used for prioritisation and review, never presented as probability.
-- **BR-021** Confidence bands v1: high ≥ 0.80 (auto-accept), medium 0.60–0.79 (accepted, visually marked), low < 0.60 (review queue / treated as `uncertain` for relevance).
+- **BR-021** Confidence bands v1: high ≥ 0.80 (auto-accept), medium 0.60–0.79 (accepted, visually marked), low < 0.60 (review queue / treated as `uncertain` for relevance). These are v1 defaults; configurable per project (FR-190).
 - **BR-022** Summary is produced only for `relevant`/`uncertain` content with non-empty text; skipped for spam when configured.
 - **BR-023** Every analysis result carries `classifier_provider, classifier_model, prompt_version, taxonomy_version, safety_provider, safety_model, safety_policy_version, analyzed_at`.
 - **BR-024** Identical `(source_content_hash, effective_version)` is never analysed twice unless forced by an Admin.

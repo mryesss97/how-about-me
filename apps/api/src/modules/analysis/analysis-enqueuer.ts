@@ -26,8 +26,15 @@ export interface AnalysisEnqueuer {
   markCurrentStale(tx: Prisma.TransactionClient, postId: string, newHash: string): Promise<number>;
 }
 
-/** effective_version formula — doc 07 §7 (BR-023). */
-export function computeEffectiveVersion(classifier: ContentClassifier, safety: SafetyProvider): string {
+/**
+ * effective_version formula — doc 07 §7 (BR-023). The last segment is the project's analysis policy version
+ * (FR-190); defaults to v1 for callers without a project (eval).
+ */
+export function computeEffectiveVersion(
+  classifier: ContentClassifier,
+  safety: SafetyProvider,
+  safetyPolicyVersion: string = SAFETY_POLICY_VERSION,
+): string {
   return [
     classifier.provider,
     classifier.model,
@@ -35,6 +42,14 @@ export function computeEffectiveVersion(classifier: ContentClassifier, safety: S
     TAXONOMY_VERSION,
     safety.name,
     safety.model,
-    SAFETY_POLICY_VERSION,
+    safetyPolicyVersion,
   ].join("|");
+}
+
+/**
+ * Policy version recorded in an effective_version (last `|` segment). Assumes provider/model names never
+ * contain `|` (true for every bound provider).
+ */
+export function policyVersionOfEffective(effectiveVersion: string): string {
+  return effectiveVersion.slice(effectiveVersion.lastIndexOf("|") + 1);
 }

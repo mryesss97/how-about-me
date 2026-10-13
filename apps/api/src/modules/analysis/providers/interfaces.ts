@@ -1,4 +1,5 @@
 import type { ClassifierOutput } from "@how-about-me/contracts";
+import type { ConfidenceBands } from "@how-about-me/taxonomy";
 
 /** AI provider contracts — docs/02-architecture/07-analysis-pipeline.md §3 (ADR-0007). Implemented in T-071/T-072 (real) and T-013 (fake). */
 export type AnalysisContext = { requestId: string; projectId: string; runId: string };
@@ -24,6 +25,8 @@ export type ClassifierInput = {
   languageHint?: string;
   /** Set only on the corrective retry (FR-113): validation issues (`path: message`) of the previous output. */
   correction?: { issues: string[] };
+  /** Project policy bands for BR-021 banding (FR-190). Never sent to the model; absent → v1 defaults. */
+  confidenceBands?: ConfidenceBands;
 };
 export interface ContentClassifier {
   readonly provider: string;

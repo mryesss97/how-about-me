@@ -319,6 +319,19 @@ Job object:
 
 Run object: `{ id, postId, status, trigger, effectiveVersion, attemptCount, errorCode, errorMessage, startedAt, completedAt, createdAt }`.
 
+### Analysis settings (P1, FR-190, T-151)
+
+| Method & path                                  | Role   | Request                      | Response               | Errors                                                                                |
+| ---------------------------------------------- | ------ | ---------------------------- | ---------------------- | ------------------------------------------------------------------------------------- |
+| `GET /projects/:projectId/settings/analysis`   | member | —                            | `200 AnalysisSettings` | 403 `FORBIDDEN_PROJECT`                                                               |
+| `PATCH /projects/:projectId/settings/analysis` | admin  | `UpdateAnalysisSettingsBody` | `200 AnalysisSettings` | 400 `VALIDATION_ERROR` (`details.issues`), 403 `FORBIDDEN_ROLE` / `FORBIDDEN_PROJECT` |
+
+`AnalysisSettings`: `{ policyVersion:"safety-policy-v2", version:2, isDefault:false, confidenceBands:{high,medium}, safetyThresholds:{<category>:{sensitive,severe}} (all 13), versions:{7 fields}, effectiveVersion, outdatedCount, createdAt|null, createdBy:{id,displayName,email}|null }`. `isDefault:true` (version 1, no row) means the v1 constants. `outdatedCount` = posts whose current analysis has another `safety_policy_version`.
+
+`UpdateAnalysisSettingsBody`: `{ confidenceBands?: {high, medium}, safetyThresholds?: {<category>?: {sensitive, severe}} }`, at least one key. Values step 0.01 in [0.01, 1]; `medium < high`; per category not both `null`, and `sensitive < severe` when both set; unknown categories rejected.
+
+PATCH behaviour: one transaction, project row locked `FOR UPDATE` (concurrent admins get consecutive versions). The body is merged into the active policy and the merged policy is re-validated. No change → `200` with the current settings, no row, no audit. Otherwise a new row `version+1` / `safety-policy-v{n}` is inserted and `analysis_settings.updated` is audited in the same transaction with `{ changes:{"confidenceBands.high"|"safetyThresholds.<cat>.<level>":{from,to}}, effectiveVersion }`. PATCH never stales or enqueues runs; re-analysis is optional and goes through FR-196 (T-145).
+
 ## 10. System status
 
 ### `GET /projects/:projectId/system-status`
