@@ -1,7 +1,14 @@
 "use client";
 
-import { MentionsPageSchema, type MentionListItem, type MentionsPage } from "@how-about-me/contracts";
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  BulkReanalyzeBodySchema,
+  BulkReanalyzeResponseSchema,
+  MentionsPageSchema,
+  type BulkReanalyzeResponse,
+  type MentionListItem,
+  type MentionsPage,
+} from "@how-about-me/contracts";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 import { ApiError, apiFetch } from "@/lib/api/client";
 import { qk, staleTimes } from "@/lib/query/keys";
@@ -63,4 +70,32 @@ export function flattenUnique(pages: readonly MentionsPage[]): MentionListItem[]
       out.push(item);
     }
   return out;
+}
+
+/**
+ * POST /projects/:pid/mentions/reanalyze (T-146, FR-196). Body = the list's filters + `dryRun`; CSV params are
+ * parsed into arrays by the shared schema. Admin only (server `@Roles("admin")`, FR-015). A real run invalidates
+ * the list (analysis status badges) and overview (analysis-pending banner).
+ */
+export function useBulkReanalyze(pid: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      params,
+      dryRun,
+    }: {
+      params: Record<string, string>;
+      dryRun: boolean;
+    }): Promise<BulkReanalyzeResponse> => {
+      const body = BulkReanalyzeBodySchema.parse({ ...params, dryRun });
+      return BulkReanalyzeResponseSchema.parse(
+        await apiFetch<unknown>(`/projects/${pid}/mentions/reanalyze`, { method: "POST", body: JSON.stringify(body) }),
+      );
+    },
+    onSuccess: (r, vars) => {
+      if (vars.dryRun || r.enqueued === 0) return;
+      void qc.invalidateQueries({ queryKey: ["project", pid, "mentions"] });
+      void qc.invalidateQueries({ queryKey: ["project", pid, "analytics", "overview"] });
+    },
+  });
 }
