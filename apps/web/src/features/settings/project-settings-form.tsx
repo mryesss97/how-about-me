@@ -104,14 +104,17 @@ export function ProjectSettingsForm({ project, canEdit }: { project: Project; ca
       >
         {(item) => <SelectItem id={item.id} label={item.label} />}
       </ComboBox>
+      {/* FR-032 / T-107: each permission toggle explains its effect; /me is refetched after Save. */}
       <Toggle
         label="Allow analysts to re-analyze"
+        hint="Analysts can queue re-analysis for mentions. Admins always can."
         isSelected={settings.allowAnalystReanalyze}
         onChange={(v) => setSettings((s) => ({ ...s, allowAnalystReanalyze: v }))}
         isDisabled={readOnly}
       />
       <Toggle
         label="Allow viewers to export"
+        hint="Viewers can download CSV exports of mentions and analytics."
         isSelected={settings.allowViewerExport}
         onChange={(v) => setSettings((s) => ({ ...s, allowViewerExport: v }))}
         isDisabled={readOnly}

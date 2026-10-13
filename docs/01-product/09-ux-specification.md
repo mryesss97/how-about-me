@@ -138,7 +138,7 @@ Tabs: **Overview** · **Sync jobs** · **Analysis failures** · **Audit log** (a
 
 ### 3.7 Settings (`/settings/*`) — P0
 
-- **Project**: name, timezone (searchable select), toggles `Allow analysts to re-analyze`, `Allow viewers to export`. Save → toast. Every role sees the tab; Analyst and Viewer get the form read-only (fields disabled, no Save), and the API rejects their PATCH (FR-015). The PATCH carries only the changed fields.
+- **Project**: name, timezone (searchable select), toggles `Allow analysts to re-analyze`, `Allow viewers to export`. Save → toast. Every role sees the tab; Analyst and Viewer get the form read-only (fields disabled, no Save), and the API rejects their PATCH (FR-015). The PATCH carries only the changed fields. Each toggle shows a one-line explanation of its effect, and after Save `/me` is refetched so the new permissions apply immediately.
 - **Members** (admin): table (name/email, role select, added, remove with confirm); "Invite member" dialog (email, role, default Viewer; `409 MEMBER_EXISTS` shown under the email field). Guard on last admin: the sole admin's role select and Remove are disabled as a hint, and a `409 LAST_ADMIN` reverts the role select and shows an error.
 - **Integrations** (admin write): Threads card — status, account, scopes, expiry; "Update token" (password-style input, never prefilled), "Verify connection", "Disconnect". Analyst sees a read-only card without controls; Viewer does not see the tab (deep link → Forbidden).
 - **Analysis** (P1): confidence bands, safety thresholds table, current versions, "Create new policy version" with optional bulk re-analysis.
