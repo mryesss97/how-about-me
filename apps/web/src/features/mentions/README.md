@@ -22,5 +22,6 @@ Feature folder — see docs/02-architecture/03-frontend-design.md §1.
 - `mention-detail-slideout.tsx` — rendered by the intercepting route `app/(app)/mentions/@detail/(.)[id]`; Esc/close → `router.back()` (fallback push to `/mentions?<filters>`), focus returns to the row. "Open full page" is a plain `<a>` to leave the intercept.
 
 - `export-button.tsx` — `canExport(role, settings)` (UX only, BR-033), `useExportMentions` (`apiDownload` of `…/mentions/export.csv` with the pinned list params, saves the blob), `ExportButton` in the toolbar `actions` slot; toasts for 413/429/403 (T-147). The view renders it only after hydration (`useHydrated`, `src/hooks/use-hydrated.ts`): `/me` may already be cached when the Suspense boundary hydrates, so rendering it during hydration would mismatch the server HTML.
+- `bulk-reanalyze-dialog.tsx` — `canBulkReanalyze(role)` (admin only, UX), `BulkReanalyzeButton` (toolbar `actions`, snapshots the pinned params on open) and `BulkReanalyzeDialog` (dry-run preview → Confirm, 0-matched / over-cap / 429 / 403 states; T-146, FR-196). Hook `useBulkReanalyze` in `api.ts`; rate-limit helpers in `src/lib/api/rate-limit.ts`.
 
 Not here yet: `reviewStatus` filter (Reviews, P1).

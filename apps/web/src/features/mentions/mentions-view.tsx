@@ -12,6 +12,7 @@ import { ApiError } from "@/lib/api/client";
 import { useFilters } from "@/lib/filters/use-filters";
 import { flattenUnique, useMentionsList } from "./api";
 import { MentionsList } from "./mentions-list";
+import { BulkReanalyzeButton, canBulkReanalyze } from "./bulk-reanalyze-dialog";
 import { canExport, ExportButton } from "./export-button";
 import { MentionsToolbar } from "./mentions-toolbar";
 
@@ -84,8 +85,13 @@ export function MentionsView() {
         hasMore={list.hasNextPage}
         showCount={pagesLoaded || !list.isError}
         actions={
-          // Same pinned params as the visible list so the CSV matches the shown count (FR-180).
-          hydrated && project && canExport(role, settings) ? <ExportButton pid={project.id} params={apiParams} /> : null
+          // Same pinned params as the visible list so the CSV / re-analysis preview matches the shown count (FR-180).
+          hydrated && project ? (
+            <div className="flex gap-2">
+              {canBulkReanalyze(role) ? <BulkReanalyzeButton pid={project.id} params={apiParams} /> : null}
+              {canExport(role, settings) ? <ExportButton pid={project.id} params={apiParams} /> : null}
+            </div>
+          ) : null
         }
       />
       <MentionsList
