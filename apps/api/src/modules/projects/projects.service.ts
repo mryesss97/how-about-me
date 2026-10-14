@@ -27,7 +27,7 @@ export class ProjectsService {
   }
 
   /**
-   * FR-032: admin edits name/timezone/settings (toggles + `phraseMinMentions`, #251). Settings are merged (unsent keys keep their value).
+   * FR-032: admin edits name/timezone/settings (toggles + `phraseMinMentions` #251 + `landingTerms` #261). Settings are merged (unsent keys keep their value).
    * FR-200: `project.updated` is audited in the same transaction with only the changed fields; no-op → no audit.
    */
   update(
@@ -53,11 +53,11 @@ export class ProjectsService {
         data.timezone = body.timezone;
       }
       if (body.settings) {
-        // Keys mix booleans and numbers (#251); values are already schema-validated per key.
+        // Keys mix booleans, numbers (#251) and string arrays (#261); values are already schema-validated per key.
         const merged: Record<keyof ProjectSettings, ProjectSettings[keyof ProjectSettings]> = { ...currentSettings };
         for (const key of Object.keys(body.settings) as (keyof ProjectSettings)[]) {
           const next = body.settings[key];
-          if (next === undefined || next === currentSettings[key]) continue;
+          if (next === undefined || sameSettingValue(next, currentSettings[key])) continue;
           merged[key] = next;
           changes[`settings.${key}`] = { from: currentSettings[key], to: next };
         }
@@ -82,4 +82,10 @@ export class ProjectsService {
       return toProject(updated, role);
     });
   }
+}
+
+/** Value equality for setting values — arrays (`landingTerms`, #261) compare element-wise; order is significant. */
+export function sameSettingValue(a: unknown, b: unknown): boolean {
+  if (Array.isArray(a) && Array.isArray(b)) return a.length === b.length && a.every((v, i) => v === b[i]);
+  return a === b;
 }

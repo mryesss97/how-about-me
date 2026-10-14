@@ -8,7 +8,7 @@ export const projectData = (over: Partial<Project> = {}): Project => ({
   slug: "brand-a",
   description: null,
   timezone: "Asia/Ho_Chi_Minh",
-  settings: { allowAnalystReanalyze: true, allowViewerExport: false, phraseMinMentions: 2 },
+  settings: { allowAnalystReanalyze: true, allowViewerExport: false, phraseMinMentions: 2, landingTerms: [] },
   isActive: true,
   createdAt: "2026-01-01T00:00:00.000Z",
   updatedAt: "2026-01-01T00:00:00.000Z",

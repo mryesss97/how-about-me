@@ -82,7 +82,7 @@ describe("ProjectRoleGuard (FR-014, FR-015, FR-016)", () => {
     expect(r.project).toEqual({
       projectId: PID,
       role: "viewer",
-      settings: { allowAnalystReanalyze: true, allowViewerExport: false, phraseMinMentions: 2 },
+      settings: { allowAnalystReanalyze: true, allowViewerExport: false, phraseMinMentions: 2, landingTerms: [] },
     });
   });
 

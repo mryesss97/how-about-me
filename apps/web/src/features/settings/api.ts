@@ -59,6 +59,9 @@ export function useUpdateProject(pid: string) {
       // FR-148 / #251: the phrases query key does not carry the threshold, so refetch the bubble map's phrases.
       else if (body.settings?.phraseMinMentions !== undefined)
         void qc.invalidateQueries({ queryKey: ["project", pid, "analytics", "phrases"] });
+      // FR-149 / #261: landing balloons read the configured terms server-side (not in the key).
+      if (!body.timezone && body.settings?.landingTerms !== undefined)
+        void qc.invalidateQueries({ queryKey: ["project", pid, "analytics", "landing-terms"] });
     },
   });
 }

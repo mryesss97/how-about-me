@@ -68,6 +68,7 @@ describe("Projects (T-034)", () => {
       allowAnalystReanalyze: true,
       allowViewerExport: true,
       phraseMinMentions: 2,
+      landingTerms: [],
     });
   });
 
@@ -77,7 +78,12 @@ describe("Projects (T-034)", () => {
       .set(auth("admin"))
       .send({ settings: { phraseMinMentions: 5 } });
     expect(res.status).toBe(200);
-    expect(res.body.settings).toEqual({ allowAnalystReanalyze: true, allowViewerExport: false, phraseMinMentions: 5 });
+    expect(res.body.settings).toEqual({
+      allowAnalystReanalyze: true,
+      allowViewerExport: false,
+      phraseMinMentions: 5,
+      landingTerms: [],
+    });
     const logs = await prisma.auditLog.findMany({ where: { projectId: p1, action: "project.updated" } });
     expect(logs[0]?.metadata).toEqual({ changes: { "settings.phraseMinMentions": { from: 2, to: 5 } } });
     const get = await http().get(`/api/v1/projects/${p1}`).set(auth("analyst"));
@@ -100,6 +106,49 @@ describe("Projects (T-034)", () => {
       .patch(`/api/v1/projects/${p1}`)
       .set(auth("analyst"))
       .send({ settings: { phraseMinMentions: 5 } });
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe("FORBIDDEN_ROLE");
+  });
+
+  it("TC-PROJ-016 / BR-042 (#261): admin PATCH landingTerms normalises, dedupes, audits; same list → no new audit", async () => {
+    const send = (landingTerms: unknown) =>
+      http().patch(`/api/v1/projects/${p1}`).set(auth("admin")).send({ settings: { landingTerms } });
+    const res = await send(["  Giá Vé ", "giá vé", "App"]);
+    expect(res.status).toBe(200);
+    expect(res.body.settings).toEqual({
+      allowAnalystReanalyze: true,
+      allowViewerExport: false,
+      phraseMinMentions: 2,
+      landingTerms: ["giá vé", "app"],
+    });
+    const where = { projectId: p1, action: "project.updated" };
+    const logs = await prisma.auditLog.findMany({ where });
+    expect(logs[0]?.metadata).toEqual({ changes: { "settings.landingTerms": { from: [], to: ["giá vé", "app"] } } });
+    const get = await http().get(`/api/v1/projects/${p1}`).set(auth("analyst"));
+    expect(get.body.settings.landingTerms).toEqual(["giá vé", "app"]);
+    const me = await http().get("/api/v1/me").set(auth("analyst"));
+    expect(me.body.projects[0].settings.landingTerms).toEqual(["giá vé", "app"]);
+    expect((await send(["giá vé", "app"])).status).toBe(200);
+    expect(await prisma.auditLog.count({ where })).toBe(1);
+  });
+
+  it.each([[Array.from({ length: 21 }, (_, i) => `t${i}`)], [[""]], [["a".repeat(61)]], [["!!!"]]])(
+    "TC-PROJ-016 (#261): landingTerms #%# → 400 VALIDATION_ERROR",
+    async (value) => {
+      const res = await http()
+        .patch(`/api/v1/projects/${p1}`)
+        .set(auth("admin"))
+        .send({ settings: { landingTerms: value } });
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    },
+  );
+
+  it("TC-PROJ-016 (#261): analyst PATCH landingTerms → 403 FORBIDDEN_ROLE", async () => {
+    const res = await http()
+      .patch(`/api/v1/projects/${p1}`)
+      .set(auth("analyst"))
+      .send({ settings: { landingTerms: ["x"] } });
     expect(res.status).toBe(403);
     expect(res.body.error.code).toBe("FORBIDDEN_ROLE");
   });

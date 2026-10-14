@@ -78,6 +78,7 @@ Project settings introduced by this matrix (stored on `monitoring_projects.setti
 - `allowAnalystReanalyze` [true]
 - `allowViewerExport` [false]
 - `phraseMinMentions` [2] — int 1–50, bubble-map Phrases threshold (#251); a display threshold, not a permission gate; admin edits via `PATCH /projects/:projectId`.
+- `landingTerms` [] — ≤ 20 landing-page balloon phrases (BR-042, #261); a display setting, not a permission gate; admin edits via `PATCH /projects/:projectId`.
 
 ## 4. Enforcement rules
 
