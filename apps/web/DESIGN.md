@@ -273,7 +273,8 @@ The signboard world reaches the working screens as **accents** (owner decision 2
 - **Plaque button (#275).** `.plaque-button`: white plate, 2px navy border, 2px corners, condensed caps 15px navy; hover/selected invert to navy with white lettering (160ms, colour only). Used for "Xem dạng bảng".
 - **Filter panel (#275).** The sticky filter bar is a white enamel panel with a 2px navy bottom rule; its controls stay Untitled/Inter.
 - **What stays Inter:** tables, form controls, filters, chart axes, post text, descriptions and help text. Sign lettering is for titles, figures and short labels only.
-- **Copy:** Vietnamese, screen by screen as each screen is restyled (#275, #277–#281).
+- **Sign-in & 404 (#286).** Public screens stand on the wall; the form/message sits on a single white enamel board with navy keyline; title Bungee caps (`.page-fascia-title`); fields and primary button stay Untitled/Inter; 404 actions are plaque buttons (Quay lại / Về trang chủ → `/`). Plaque buttons show a 2px navy focus ring.
+- **Copy:** Vietnamese, screen by screen as each screen is restyled (#275, #277–#281, #286).
 - Tokens live on `:root` (`--wall`, `--ink`, `--sky-enamel`, `--red-enamel`, `--green-enamel`, `--enamel-white`); the sign fonts load once in the root layout (`src/lib/fonts/sign.ts`).
 
 ## Do's and Don'ts
