@@ -36,6 +36,7 @@ Concept: an ear + a speech bubble — "Lắng nghe. Thấu hiểu." Palette: Sky
 
 - Sticky under the header. Order: **Time range** (preset segmented control + custom date-range picker + timezone select) · **Queries** (multi-select with `#` rendering for tags) · **Relevance** (default `Relevant`; chips `Relevant`, `Uncertain`, `Irrelevant`) · **Sentiment** · **Safety** · **Intent** · **Topic** · **Language** · **Analysis status** · "Compare with previous period" toggle (Overview only) · "Reset".
 - Default time preset is **7d**. The timezone select lists all IANA zones with `Asia/Ho_Chi_Minh` and `UTC` pinned first. Custom ranges over 366 days show an inline error and are not applied.
+- Changing the timezone keeps a custom range's **calendar dates** (#240): the selected days are re-read as `[from 00:00, to+1 00:00)` in the new timezone (e.g. 1–7 Oct stays 1–7 Oct). Only ranges whose ends are both 00:00 in the old timezone are re-zoned; exact-instant ranges (e.g. hour-bucket drill-down, FR-142) keep their instants. Relative presets (1h/24h/7d/30d) only change `tz`. `tz`/`from`/`to` update in one URL change.
 - All filters sync to the URL query string (`nuqs`). Changing a filter refetches all widgets.
 - Applied filters show as removable chips under the bar.
 

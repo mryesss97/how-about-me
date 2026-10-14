@@ -47,6 +47,25 @@ describe("FilterBar (UX §2.1)", () => {
     expect(lastQuery()).toBe("");
   });
 
+  it("#240: switching tz on a custom range keeps the calendar dates in the URL", async () => {
+    // 1–7 Oct in Asia/Ho_Chi_Minh (GMT+7).
+    const { lastQuery, onUrlUpdate } = setup(
+      "?preset=custom&from=2026-09-30T17:00:00.000Z&to=2026-10-07T17:00:00.000Z&tz=Asia/Ho_Chi_Minh",
+    );
+    const tz = screen.getByRole("combobox", { name: "Timezone" });
+    await act(async () => {
+      tz.focus();
+      fireEvent.change(tz, { target: { value: "UTC" } });
+    });
+    const utc = await screen.findByRole("option", { name: /· UTC$/ });
+    await act(async () => fireEvent.click(utc));
+    await waitFor(() => expect(onUrlUpdate).toHaveBeenCalled());
+    const params = new URLSearchParams(lastQuery());
+    expect(params.get("tz")).toBe("UTC");
+    expect(params.get("from")).toBe("2026-10-01T00:00:00.000Z");
+    expect(params.get("to")).toBe("2026-10-08T00:00:00.000Z");
+  });
+
   it("hides compare unless showCompare", () => {
     setup();
     expect(screen.queryByText("Compare to previous period")).not.toBeInTheDocument();

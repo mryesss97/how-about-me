@@ -47,6 +47,31 @@ export function instantsToCalendarRange(from: Date, to: Date, tz: string) {
   };
 }
 
+/** True when `d` is exactly 00:00 local time in `tz`. */
+function isLocalMidnight(d: Date, tz: string): boolean {
+  const midnight = toZoned(toCalendarDate(fromDate(d, tz)), tz).toDate();
+  return midnight.getTime() === d.getTime();
+}
+
+/**
+ * URL patch for a timezone change — UX §2.1, #240: keep calendar dates, not instants.
+ * A custom range picked by calendar days (both ends at 00:00 in the old tz) is re-read as
+ * `[from 00:00, to+1 00:00)` in `nextTz`. Exact-instant ranges (e.g. hour drill-down, FR-142)
+ * and relative presets only change `tz`. Returned as one patch so the URL updates atomically.
+ */
+export function timezoneChangePatch(
+  filters: Pick<Filters, "preset" | "from" | "to" | "tz">,
+  nextTz: string,
+): Partial<Filters> {
+  if (nextTz === filters.tz) return {};
+  const { preset, from, to, tz } = filters;
+  if (preset !== "custom" || !from || !to || !isLocalMidnight(from, tz) || !isLocalMidnight(to, tz)) {
+    return { tz: nextTz };
+  }
+  const { start, end } = instantsToCalendarRange(from, to, tz);
+  return { tz: nextTz, ...calendarRangeToInstants(start, end, nextTz) };
+}
+
 /** TC-DASH-003: `to > from` and span ≤ MAX_RANGE_DAYS. Returns a UI message or null. */
 export function validateRange(from: Date, to: Date): string | null {
   const span = to.getTime() - from.getTime();

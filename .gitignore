@@ -46,3 +46,7 @@ docs/04-qa/datasets/*.jsonl
 # agent workflow (.claude/WORKFLOW.md)
 .claude/runs/
 .claude/settings.local.json
+
+# Next 16.3+ `next dev` agent files (#241) — never commit; disabled via agentRules:false
+apps/web/AGENTS.md
+apps/web/CLAUDE.md
