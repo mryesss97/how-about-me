@@ -122,7 +122,7 @@ describe("SchedulerService (FR-070, FR-086)", () => {
 
   it("shutdown releases this worker's locks", async () => {
     const { svc, repo } = setup("all", { run: ok }, []);
-    await svc.onApplicationShutdown();
+    await svc.beforeApplicationShutdown();
     expect(repo.releaseLocks).toHaveBeenCalledWith(svc.workerId);
   });
 });

@@ -139,3 +139,6 @@ Writing stable integration tests (#189):
 - Concurrent `prisma.$transaction` calls in one test need `{ maxWait: 10_000 }` (default 2 s fails on a loaded machine with P2028).
 - Assert ordering only with `ORDER BY` plus a tie-break column.
 - Do not rely on shell env: `setup-after-env.ts` forces `APP_ROLE=api` and `PROVIDERS_MODE=fake`.
+- Use `127.0.0.1`, never `localhost`, in DB URLs (#258). On a loaded macOS host resolving `localhost` sometimes stalls past Prisma's 5 s connect timeout (P1001 → 500). `test-db.ts` rewrites a `localhost` host in `TEST_DATABASE_URL`.
+- Concurrent requests in one test: use `Promise.allSettled` and assert `{ status, error.code, debug }` so a failure explains itself (#258).
+- DB work during shutdown (release locks, wait for in-flight ticks) goes in `beforeApplicationShutdown`; `PrismaService` disconnects in `onApplicationShutdown`. Doing DB work later than the disconnect makes Prisma reconnect and leak one connection per closed app, which exhausts `max_connections` when several worktrees run (#258, `app-shutdown.int-spec.ts`).

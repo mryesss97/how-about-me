@@ -8,7 +8,7 @@ import type { PrismaService } from "../../src/database/prisma.service";
  * `prisma migrate deploy` creates the database when it does not exist yet.
  */
 export function resolveTestDatabaseUrl(): string {
-  if (process.env.TEST_DATABASE_URL) return process.env.TEST_DATABASE_URL;
+  if (process.env.TEST_DATABASE_URL) return preferLoopbackIp(process.env.TEST_DATABASE_URL);
   let root = process.cwd();
   try {
     root = execSync("git rev-parse --show-toplevel", { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
@@ -16,7 +16,18 @@ export function resolveTestDatabaseUrl(): string {
     // Not a git checkout: fall back to cwd.
   }
   const hash = createHash("sha1").update(root).digest("hex").slice(0, 8);
-  return `postgresql://postgres:postgres@localhost:5432/how_about_me_test_${hash}?schema=public`;
+  return `postgresql://postgres:postgres@127.0.0.1:5432/how_about_me_test_${hash}?schema=public`;
+}
+
+/**
+ * Rewrites host `localhost` → `127.0.0.1` (#258): resolving `localhost` on a loaded macOS host sometimes
+ * stalls past Prisma's 5 s connect_timeout (P1001). Everything else in the URL stays untouched.
+ */
+export function preferLoopbackIp(url: string): string {
+  const u = new URL(url);
+  if (u.hostname !== "localhost") return url;
+  u.hostname = "127.0.0.1";
+  return u.toString();
 }
 
 /** Database name only — never log the full URL (it carries the password). */

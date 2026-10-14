@@ -1,4 +1,4 @@
-import { Inject, Injectable, Optional, type OnApplicationShutdown, type OnModuleInit } from "@nestjs/common";
+import { Inject, Injectable, Optional, type BeforeApplicationShutdown, type OnModuleInit } from "@nestjs/common";
 import { SchedulerRegistry } from "@nestjs/schedule";
 import { randomUUID } from "node:crypto";
 import { hostname } from "node:os";
@@ -16,7 +16,7 @@ const MAX_ERROR_MESSAGE_LENGTH = 1_000;
 
 /** Collector tick — FR-070/071/086, docs/02-architecture/02-backend-design.md §6. */
 @Injectable()
-export class SchedulerService implements OnModuleInit, OnApplicationShutdown {
+export class SchedulerService implements OnModuleInit, BeforeApplicationShutdown {
   readonly workerId = `${hostname()}:${process.pid}:${randomUUID().slice(0, 8)}`;
   private current: Promise<void> | null = null;
   private readonly abort = new AbortController();
@@ -118,7 +118,7 @@ export class SchedulerService implements OnModuleInit, OnApplicationShutdown {
     }
   }
 
-  async onApplicationShutdown() {
+  async beforeApplicationShutdown() {
     if (this.registry.doesExist("interval", COLLECTOR_TICK_INTERVAL))
       this.registry.deleteInterval(COLLECTOR_TICK_INTERVAL);
     this.abort.abort();

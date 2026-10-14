@@ -75,7 +75,7 @@ describe("RetentionJobService registration (T-153, NFR-054)", () => {
     const job = registry.addCronJob.mock.calls[0][1] as CronJob;
     registry.doesExist.mockReturnValue(true);
     registry.getCronJob.mockReturnValue(job);
-    await svc.onApplicationShutdown();
+    await svc.beforeApplicationShutdown();
     expect(job.isActive).toBe(false);
     expect(registry.deleteCronJob).toHaveBeenCalledWith(RETENTION_CRON_JOB);
   });
