@@ -6,13 +6,14 @@ import type { AnalysisFilters, AnalyticsQuery } from "@how-about-me/contracts";
 import { LANGUAGE_CODES } from "@how-about-me/taxonomy";
 import { Prisma } from "@prisma/client";
 import { type Range, resolveRange } from "../../common/time/range";
+import { mentionsTermSql, normalizedPostText } from "./term-match";
 
 export type ScopeFilters = Omit<AnalysisFilters, "from" | "to" | "timezone">;
 export type AnalyticsScope = { projectId: string; range: Range; timezone: string; filters: ScopeFilters };
 export type ResolvedAnalyticsQuery = { scope: AnalyticsScope; previousScope?: AnalyticsScope };
 
 export type IgnorableFilter =
-  "relevance" | "sentiment" | "safety" | "language" | "analysisStatus" | "intent" | "topic" | "phrase";
+  "relevance" | "sentiment" | "safety" | "language" | "analysisStatus" | "intent" | "topic" | "phrase" | "term";
 
 export function resolveAnalyticsQuery(
   query: AnalyticsQuery,
@@ -80,6 +81,15 @@ export function buildBaseSetCte(scope: AnalyticsScope, opts: { ignore?: readonly
   const intent = pick("intent", f.intent);
   const topic = pick("topic", f.topic);
   const phrase = pick("phrase", f.phrase);
+  // BR-042 term filter (#273): keep posts whose text or current-analysis phrases mention the term.
+  const term = f.term && !skip.has("term") ? f.term : undefined;
+  const termFilter = term
+    ? Prisma.sql`AND EXISTS (SELECT 1 FROM social_posts tp WHERE tp.id = e.post_id AND ${mentionsTermSql({
+        normText: normalizedPostText(Prisma.sql`tp.text`),
+        analysisIdCol: Prisma.sql`e.analysis_id`,
+        term: Prisma.sql`${term}::text`,
+      })})`
+    : Prisma.empty;
   return Prisma.sql`base AS (
     SELECT e.post_id, e.published_at, e.first_seen_at, e.relevance_label, e.sentiment_label,
            e.safety_level, e.language_code, e.latest_run_status, e.analysis_id,
@@ -97,6 +107,7 @@ export function buildBaseSetCte(scope: AnalyticsScope, opts: { ignore?: readonly
        ${intent.length > 0 ? Prisma.sql`AND EXISTS (SELECT 1 FROM effective_post_intents i WHERE i.post_id = e.post_id AND i.label = ANY(${intent}))` : Prisma.empty}
        ${topic.length > 0 ? Prisma.sql`AND EXISTS (SELECT 1 FROM effective_post_topics t WHERE t.post_id = e.post_id AND t.label = ANY(${topic}))` : Prisma.empty}
        ${phrase.length > 0 ? Prisma.sql`AND EXISTS (SELECT 1 FROM analysis_phrases ap WHERE ap.analysis_id = e.analysis_id AND ap.phrase = ANY(${phrase}::text[]))` : Prisma.empty}
+       ${termFilter}
   )`;
 }
 

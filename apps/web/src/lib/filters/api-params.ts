@@ -29,6 +29,7 @@ export function toApiParams(filters: Filters, opts: { target: ApiTarget; now?: D
     const values = filters[key];
     if (values.length > 0) out[key] = values.join(",");
   }
+  if (filters.term) out.term = filters.term; // BR-042 (#273)
   if (!out.relevance) out.relevance = DEFAULT_RELEVANCE.join(",");
   if (opts.target === "analytics") {
     if (filters.compare) out.compare = "true";
@@ -60,8 +61,15 @@ export function phraseMentionsHref(phrase: string): string {
   return `/mentions${serializeFilters({ phrase: [phrase] })}`;
 }
 
+/** #273: `/mentions?term=<t>` link (page defaults for range/relevance); parser re-normalises (BR-041). */
+export function termMentionsHref(term: string): string {
+  return `/mentions${serializeFilters({ term })}`;
+}
+
+export type ChipKey = ArrayFilterKey | "term";
+
 export interface AppliedChip {
-  key: ArrayFilterKey;
+  key: ChipKey;
   value: string;
   label: string;
 }
@@ -100,7 +108,7 @@ function valueLabel(key: ArrayFilterKey, value: string, queryNames: Record<strin
 /** Chips for active non-default filters (relevance = [relevant] yields no chip, BR-016). */
 export function appliedChips(filters: Filters, queryNames: Record<string, string> = {}): AppliedChip[] {
   const isDefaultRelevance = filters.relevance.length === 1 && filters.relevance[0] === "relevant";
-  return ARRAY_KEYS.flatMap((key) => {
+  const chips: AppliedChip[] = ARRAY_KEYS.flatMap((key) => {
     if (key === "relevance" && isDefaultRelevance) return [];
     return (filters[key] as string[]).map((value) => ({
       key,
@@ -108,10 +116,14 @@ export function appliedChips(filters: Filters, queryNames: Record<string, string
       label: `${LABEL_PREFIX[key]}: ${valueLabel(key, value, queryNames)}`,
     }));
   });
+  // BR-042 (#273): term shown verbatim.
+  if (filters.term) chips.push({ key: "term", value: filters.term, label: `Cụm từ: ${filters.term}` });
+  return chips;
 }
 
 /** Removes one value; emptied relevance falls back to [relevant] (BR-016: empty must not mean "all"). */
-export function removeFilterValue(filters: Filters, key: ArrayFilterKey, value: string): Partial<Filters> {
+export function removeFilterValue(filters: Filters, key: ChipKey, value: string): Partial<Filters> {
+  if (key === "term") return { term: null };
   const next = (filters[key] as string[]).filter((v) => v !== value);
   if (key === "relevance" && next.length === 0) return { relevance: [...DEFAULT_RELEVANCE] };
   return { [key]: next } as Partial<Filters>;

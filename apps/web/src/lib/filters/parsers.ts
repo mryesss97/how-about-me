@@ -51,6 +51,8 @@ export const filterParsers = {
   language: enumArray(ENUM_FILTERS.language),
   analysisStatus: enumArray(ENUM_FILTERS.analysisStatus),
   phrase: parseAsArrayOf(parseAsPhrase).withDefault([]),
+  // BR-042 (#273): single term, same BR-041 normalisation; invalid → dropped.
+  term: parseAsPhrase,
   q: parseAsString,
   sort: parseAsStringLiteral(MENTION_SORTS).withDefault("newest"),
   compare: parseAsBoolean.withDefault(false),

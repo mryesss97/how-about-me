@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { AnalyticsQuerySchema, MentionsListQuerySchema } from "@how-about-me/contracts";
-import { appliedChips, phraseMentionsHref, removeFilterValue, toApiParams, toMentionsHref } from "./api-params";
+import {
+  appliedChips,
+  phraseMentionsHref,
+  removeFilterValue,
+  termMentionsHref,
+  toApiParams,
+  toMentionsHref,
+} from "./api-params";
 import { filterParsers } from "./parsers";
 import { defaultFilters, type Filters } from "./schema";
 
@@ -107,5 +114,24 @@ describe("phraseMentionsHref (#250, FR-148, BR-041)", () => {
     expect(url.pathname).toBe("/mentions");
     expect([...url.searchParams.keys()]).toEqual(["phrase"]);
     expect(filterParsers.phrase.parse(url.searchParams.get("phrase") ?? "")).toEqual([p]);
+  });
+});
+
+describe("term filter (#273, BR-042)", () => {
+  const f = base({ term: "giá vé" });
+  it("is sent to analytics and mentions and parses server-side", () => {
+    expect(toApiParams(f, { target: "analytics", now }).term).toBe("giá vé");
+    expect(toApiParams(f, { target: "mentions", now }).term).toBe("giá vé");
+    expect(MentionsListQuerySchema.parse(toApiParams(f, { target: "mentions", now })).term).toBe("giá vé");
+    expect(toApiParams(base(), { target: "analytics", now })).not.toHaveProperty("term");
+  });
+  it("renders a 'Cụm từ' chip and removes to null", () => {
+    expect(appliedChips(f)).toContainEqual({ key: "term", value: "giá vé", label: "Cụm từ: giá vé" });
+    expect(removeFilterValue(f, "term", "giá vé")).toEqual({ term: null });
+  });
+  it("termMentionsHref round-trips through the parser", () => {
+    const url = new URL(termMentionsHref("giá vé"), "http://x");
+    expect(url.pathname).toBe("/mentions");
+    expect(filterParsers.term.parse(url.searchParams.get("term") ?? "")).toBe("giá vé");
   });
 });
