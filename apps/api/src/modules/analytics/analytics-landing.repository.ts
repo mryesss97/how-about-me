@@ -32,7 +32,7 @@ export class AnalyticsLandingRepository {
               SELECT t.term, t.ord::int AS ord FROM unnest(${[...terms]}::text[]) WITH ORDINALITY AS t(term, ord)),
             texts AS (
               SELECT b.post_id, b.analysis_id, b.sentiment_label::text AS sentiment,
-                     regexp_replace(lower(coalesce(p.text, '')), '[\\s,;|]+', ' ', 'g') AS norm
+                     regexp_replace(lower(normalize(coalesce(p.text, ''), NFC)), '[\\s,;|]+', ' ', 'g') AS norm
                 FROM base b JOIN social_posts p ON p.id = b.post_id
                WHERE b.sentiment_label IS NOT NULL),
             matched AS (

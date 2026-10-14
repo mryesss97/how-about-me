@@ -1,5 +1,6 @@
 "use client";
 
+import type { Project } from "@how-about-me/contracts";
 import { useCurrentProject } from "@/features/auth/use-current-project";
 import { QueryState } from "@/features/shared/query-state";
 import { useProject } from "./api";
@@ -13,10 +14,14 @@ function ProjectSettingsLoaded({ pid, canEdit }: { pid: string; canEdit: boolean
       {/* key: reset local form state when the project or its server version changes */}
       {q.data ? (
         <div className="flex flex-col gap-8">
-          <ProjectSettingsForm key={`${pid}:${q.data.updatedAt}`} project={q.data} canEdit={canEdit} />
+          <ProjectSettingsForm key={projectFormKey(pid, q.data)} project={q.data} canEdit={canEdit} />
           <hr className="border-secondary" />
-          {/* #261: separate Save; saving either form bumps updatedAt and remounts both (unsaved drafts reset). */}
-          <LandingTermsForm key={`landing:${pid}:${q.data.updatedAt}`} project={q.data} canEdit={canEdit} />
+          {/* #261: separate Save; each form remounts only when its own saved values change, so the other keeps its draft. */}
+          <LandingTermsForm
+            key={`landing:${pid}:${JSON.stringify(q.data.settings.landingTerms)}`}
+            project={q.data}
+            canEdit={canEdit}
+          />
         </div>
       ) : null}
     </QueryState>
@@ -28,4 +33,10 @@ export function ProjectSettings() {
   const { project, isLoading } = useCurrentProject();
   if (isLoading || !project) return <QueryState isLoading>{null}</QueryState>;
   return <ProjectSettingsLoaded pid={project.id} canEdit={project.role === "admin"} />;
+}
+
+/** Server values edited by ProjectSettingsForm (#261: not `updatedAt`, which a landing-terms save also bumps). */
+function projectFormKey(pid: string, p: Project) {
+  const { name, timezone, settings } = p;
+  return `${pid}:${JSON.stringify([name, timezone, settings.allowAnalystReanalyze, settings.allowViewerExport])}`;
 }
