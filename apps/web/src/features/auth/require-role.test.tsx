@@ -61,6 +61,6 @@ describe("RequireRole", () => {
   it("shows a no-project state for non-members", async () => {
     apiFetch.mockResolvedValue(meFixture([]));
     renderGuard();
-    expect(await screen.findByText("You are not a member of any project.")).toBeInTheDocument();
+    expect(await screen.findByText("Bạn chưa thuộc dự án nào.")).toBeInTheDocument();
   });
 });

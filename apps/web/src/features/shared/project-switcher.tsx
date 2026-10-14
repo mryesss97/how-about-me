@@ -9,7 +9,7 @@ export function ProjectSwitcher() {
   if (projects.length < 2) return null;
   return (
     <Select
-      aria-label="Project"
+      aria-label="Dự án"
       size="sm"
       items={projects.map((p) => ({ id: p.id, label: p.name }))}
       selectedKey={project?.id ?? null}

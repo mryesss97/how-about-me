@@ -71,7 +71,7 @@ describe("semantic badges (UX §2.2, NFR-035)", () => {
 
   it("BR-020: the confidence marker says it is not a probability", () => {
     render(<ConfidenceMarker band="low" />);
-    expect(screen.getByTitle(/not a probability/i)).toBeInTheDocument();
+    expect(screen.getByTitle(/không phải xác suất/i)).toBeInTheDocument();
   });
 
   it("BR-025: an overridden value is labelled Analyst, an AI value is labelled AI", () => {

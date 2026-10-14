@@ -75,8 +75,8 @@ export function timezoneChangePatch(
 /** TC-DASH-003: `to > from` and span ≤ MAX_RANGE_DAYS. Returns a UI message or null. */
 export function validateRange(from: Date, to: Date): string | null {
   const span = to.getTime() - from.getTime();
-  if (span <= 0) return "End must be after start";
-  if (span > MAX_RANGE_DAYS * DAY_MS) return `Range must not exceed ${MAX_RANGE_DAYS} days`;
+  if (span <= 0) return "Ngày kết thúc phải sau ngày bắt đầu";
+  if (span > MAX_RANGE_DAYS * DAY_MS) return `Khoảng thời gian không được quá ${MAX_RANGE_DAYS} ngày`;
   return null;
 }
 

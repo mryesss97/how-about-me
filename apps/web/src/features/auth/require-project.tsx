@@ -9,8 +9,8 @@ export function NoProjectState() {
   return (
     <EmptyState
       illustration="empty"
-      title="You are not a member of any project."
-      description="Ask an admin to invite you."
+      title="Bạn chưa thuộc dự án nào."
+      description="Nhờ quản trị viên mời bạn vào dự án."
     />
   );
 }

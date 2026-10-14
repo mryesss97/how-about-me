@@ -97,7 +97,7 @@ export function ConfidenceMarker({ band, size = "sm" }: { band: ConfidenceBand; 
   if (!marker.show) return null;
   return (
     <Badge type="pill-color" color={band === "low" ? "warning" : "gray"} size={size}>
-      <span title="Estimated model confidence — used for prioritisation, not a probability">{marker.label}</span>
+      <span title="Độ tin cậy ước tính của mô hình — dùng để ưu tiên xem lại, không phải xác suất">{marker.label}</span>
     </Badge>
   );
 }
