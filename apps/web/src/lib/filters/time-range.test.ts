@@ -63,7 +63,7 @@ describe("validateRange — TC-DASH-003", () => {
     const from = new Date("2025-01-01T00:00:00Z");
     expect(validateRange(from, new Date(from.getTime() + 366 * 24 * H))).toBeNull();
     expect(validateRange(from, new Date(from.getTime() + 367 * 24 * H))).toMatch(/366/);
-    expect(validateRange(from, from)).toMatch(/after/);
+    expect(validateRange(from, from)).toMatch(/sau ngày bắt đầu/);
   });
 });
 

@@ -26,7 +26,7 @@ export const CloseButton = ({ label, className, size = "sm", theme = "light", ..
     return (
         <AriaButton
             {...otherProps}
-            aria-label={label || "Close"}
+            aria-label={label || "Đóng"}
             className={(state) =>
                 cx(
                     "flex cursor-pointer items-center justify-center rounded-lg p-2 transition duration-100 ease-linear focus:outline-hidden",

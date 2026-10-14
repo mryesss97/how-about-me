@@ -33,7 +33,7 @@ describe("RequireProject", () => {
   it("shows the no-project state when the user has no membership", async () => {
     apiFetch.mockResolvedValue(meFixture([]));
     renderGate();
-    expect(await screen.findByText("You are not a member of any project.")).toBeInTheDocument();
+    expect(await screen.findByText("Bạn chưa thuộc dự án nào.")).toBeInTheDocument();
     expect(screen.queryByText("page content")).not.toBeInTheDocument();
   });
 

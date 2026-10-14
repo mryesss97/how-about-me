@@ -24,7 +24,7 @@ describe("FilterBar (UX §2.1)", () => {
   it("TC-DASH-005: applied filters show as chips and removing a chip updates the URL", async () => {
     const { lastQuery, onUrlUpdate } = setup("?sentiment=negative");
     expect(screen.getByText("Cảm xúc: Tiêu cực")).toBeInTheDocument();
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: /remove/i })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /xoá/i })));
     // Wait for the throttled nuqs flush so the assertion cannot pass vacuously (#237)
     await waitFor(() => expect(onUrlUpdate).toHaveBeenCalled());
     expect(lastQuery()).not.toContain("sentiment");

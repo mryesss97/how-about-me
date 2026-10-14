@@ -17,7 +17,7 @@ describe("AppSidebar", () => {
     // #219: Reviews is open to every role (viewer reads only). #274: Vietnamese shell.
     for (const label of ["Tổng quan", "Bài nhắc", "Cần xem lại", "Truy vấn theo dõi", "Trạng thái hệ thống"])
       expect(screen.getAllByText(label).length).toBeGreaterThan(0);
-    expect(screen.queryByLabelText("Project")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Dự án")).not.toBeInTheDocument();
   });
 
   it("shows the project switcher with ≥ 2 projects", async () => {
@@ -25,7 +25,7 @@ describe("AppSidebar", () => {
     render(<AppSidebar />, { wrapper: Providers });
     expect((await screen.findAllByText("Quản trị")).length).toBeGreaterThan(0);
     expect(screen.getAllByText("P 11111111-1111-4111-8111-111111111111").length).toBeGreaterThan(0);
-    expect(screen.getAllByLabelText("Project").length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText("Dự án").length).toBeGreaterThan(0);
   });
 
   it("#262: the logo links to the landing page /", async () => {
