@@ -87,9 +87,9 @@ export const DEFAULT_TIMEOUT_MS = 30_000;
 const MIN_TIMEOUT_MS = 1_000;
 const MAX_TIMEOUT_MS = 300_000;
 /**
- * apps/web/src/providers/theme.tsx: next-themes puts this class on <html> in
- * dark mode and follows the system scheme by default (`enableSystem`), so
- * `--dark` emulates `prefers-color-scheme: dark`. A test keeps them in step.
+ * The app is light only (#260). `--dark` emulates `prefers-color-scheme: dark`
+ * and asserts <html> never gets this (vendored Untitled UI) dark class, i.e.
+ * an OS in dark mode still renders the light theme.
  */
 export const DARK_CLASS = "dark-mode";
 
@@ -362,10 +362,8 @@ export async function capture({ url, out, size, timeout, dark, steps }) {
     await network.idle({ idleTime: 500, concurrency: 2, timeout: Math.min(5_000, timeout) }).catch(() => {});
     if (dark) {
       const isDark = await page.evaluate((name) => document.documentElement.classList.contains(name), DARK_CLASS);
-      if (!isDark) {
-        throw new Error(
-          `--dark: app không theo dark mode (thiếu class ${DARK_CLASS} trên <html>), xem apps/web/src/providers/theme.tsx.`,
-        );
+      if (isDark) {
+        throw new Error(`--dark: app đổi theme theo OS (<html> có class ${DARK_CLASS}), vi phạm light-only #260.`);
       }
     }
     for (const [position, step] of steps.entries()) {

@@ -279,7 +279,7 @@ function checkShots(noShots) {
         "Branch này đổi UI nhưng chưa có screenshot trước và sau.",
         "Chụp: pnpm issue:shot before <name> --url /<route> (trên code cũ),",
         "rồi: pnpm issue:shot after <name> --url /<route> (trên code mới). Dev server: pnpm dev, cổng 3000.",
-        'Màn tải dữ liệu: thêm --wait-text "<chữ>". Đổi theme: chụp thêm cặp --dark.',
+        'Màn tải dữ liệu: thêm --wait-text "<chữ>". Kiểm tra OS dark vẫn light: chụp thêm --dark.',
         'Nếu UI không đổi thật, thêm --no-shots "<lý do>".',
         ...(missing.length ? [`Còn thiếu: ${missing.join(", ")}`] : []),
       ].join("\n"),

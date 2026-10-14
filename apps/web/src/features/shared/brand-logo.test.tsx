@@ -12,17 +12,11 @@ describe("BrandLogo (#221 brand v2)", () => {
     ["horizontal", "logo-horizontal"],
     ["stacked", "logo-stacked"],
     ["mark", "mark"],
-  ] as const)("variant %s uses the official primary + white files", (variant, file) => {
-    const { container } = render(<BrandLogo variant={variant} />);
-    const srcs = Array.from(container.querySelectorAll("img")).map((img) => img.getAttribute("src"));
-    expect(srcs).toEqual([`/brand/${file}-primary.svg`, `/brand/${file}-white.svg`]);
-  });
-
-  it("hides the white variant in light mode and shows it only in dark mode", () => {
-    const { container } = render(<BrandLogo />);
-    const [primary, white] = Array.from(container.querySelectorAll("img"));
-    expect(primary).toHaveClass("block", "dark:hidden");
-    expect(white).toHaveClass("hidden", "dark:block");
-    expect(white).toHaveAttribute("aria-hidden", "true");
+  ] as const)("variant %s renders only the primary file (light only, #260)", (variant, file) => {
+    const { container } = render(<BrandLogo variant={variant} className="h-8" />);
+    const imgs = Array.from(container.querySelectorAll("img"));
+    expect(imgs.map((img) => img.getAttribute("src"))).toEqual([`/brand/${file}-primary.svg`]);
+    expect(imgs[0]).toHaveClass("h-8");
+    expect(imgs[0]?.className).not.toContain("dark:");
   });
 });

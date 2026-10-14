@@ -96,7 +96,7 @@ The husky `pre-push` hook runs gitleaks, shellcheck and `pnpm verify` (reusing t
 Screenshots:
 
 - `pnpm issue:shot before <name> --url /<route>` right after `issue:start`, before changing code; `pnpm issue:shot after <name> --url /<route>` when the change is done. A path resolves against `http://localhost:3000` (`pnpm dev`), or `SHOT_BASE_URL` when the web app runs on another port.
-- Default viewport `1366x768`. Flags: `--size WxH`, `--timeout <ms>`, `--dark`, and steps `--wait-text "<text>"`, `--click "<label>"`, `--scroll "<text>"` that run in order. `--file <png>` saves a shot taken another way (for example a screen that needs a signed-in session). Full table: [.claude/WORKFLOW.md](../../.claude/WORKFLOW.md#definition-of-done).
+- Default viewport `1366x768`. Flags: `--size WxH`, `--timeout <ms>`, `--dark` (emulates an OS in dark mode and checks the app stays light, #260), and steps `--wait-text "<text>"`, `--click "<label>"`, `--scroll "<text>"` that run in order. `--file <png>` saves a shot taken another way (for example a screen that needs a signed-in session). Full table: [.claude/WORKFLOW.md](../../.claude/WORKFLOW.md#definition-of-done).
 - The script drives the Playwright that `apps/web` installs for e2e (`CHROME_PATH`, then Playwright's Chromium, then a system Chrome). No extra dependency.
 - PNGs stay in `.claude/runs/shots/` (gitignored). `issue:ship` commits them to the orphan branch `pr-assets`, one folder per branch, links them as `blob/pr-assets/…?raw=true` in a before/after table, and clears the folder after the PR opens.
 - Do not delete `pr-assets`: merged PRs link their screenshots there. The `pre-push` hook skips pushes to it (images only, no code).

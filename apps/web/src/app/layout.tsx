@@ -4,7 +4,6 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Toaster } from "sonner";
 import { QueryProvider } from "@/lib/query/provider";
 import { RouteProvider } from "@/providers/router-provider";
-import { Theme } from "@/providers/theme";
 import "@/styles/globals.css";
 import { cx } from "@/utils/cx";
 
@@ -16,25 +15,20 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  // Brand v2 (#221): Mist in light, app dark surface in dark.
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F5FBFF" },
-    { media: "(prefers-color-scheme: dark)", color: "#0C0E12" },
-  ],
-  colorScheme: "light dark",
+  // Light only (owner decision 2026-10-14, #260): Mist chrome, native controls stay light.
+  themeColor: "#F5FBFF",
+  colorScheme: "light",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body className={cx(inter.variable, "bg-primary antialiased")}>
         <RouteProvider>
-          <Theme>
-            <NuqsAdapter>
-              <QueryProvider>{children}</QueryProvider>
-              <Toaster position="bottom-right" richColors />
-            </NuqsAdapter>
-          </Theme>
+          <NuqsAdapter>
+            <QueryProvider>{children}</QueryProvider>
+            <Toaster position="bottom-right" richColors />
+          </NuqsAdapter>
         </RouteProvider>
       </body>
     </html>
