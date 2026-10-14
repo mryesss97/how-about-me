@@ -68,9 +68,13 @@ describe("ReviewsView (UX §3.8, FR-195, TC-REV-007)", () => {
     serve();
     setup();
     await waitFor(() => expect(screen.getAllByTestId("review-row")).toHaveLength(2));
-    expect(screen.getByText("1.234")).toBeInTheDocument();
+    expect(screen.getByText(/1\.234/)).toBeInTheDocument();
+    // #278 plaque tabs: the selected plaque carries aria-selected / data-selected.
+    const all = screen.getByRole("tab", { name: /Tất cả/ });
+    expect(all).toHaveAttribute("aria-selected", "true");
+    expect(all).toHaveAttribute("data-selected");
     expect(listCalls()[0]?.[1].params).toMatchObject({ status: "unreviewed", count: "true" });
-    fireEvent.click(screen.getByRole("tab", { name: /Failed/ }));
+    fireEvent.click(screen.getByRole("tab", { name: /Phân tích lỗi/ }));
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/reviews?reason=failed"));
   });
 
@@ -85,7 +89,7 @@ describe("ReviewsView (UX §3.8, FR-195, TC-REV-007)", () => {
     serve([reviewFixture()], { counts: undefined });
     setup();
     await waitFor(() => expect(screen.getAllByTestId("review-row")).toHaveLength(1));
-    expect(screen.queryByText("1.234")).toBeNull();
+    expect(screen.queryByText(/1\.234/)).toBeNull();
   });
 
   it("BR-040: marks 2 rows — POST body, optimistic removal, success toast", async () => {
@@ -99,13 +103,13 @@ describe("ReviewsView (UX §3.8, FR-195, TC-REV-007)", () => {
         ? new Promise((r) => (resolve = r))
         : Promise.resolve({ items: [items[2]], nextCursor: null, counts }),
     );
-    fireEvent.click(screen.getByLabelText(`Select item by ${items[0]?.username}`));
-    fireEvent.click(screen.getByLabelText(`Select item by ${items[1]?.username}`));
-    fireEvent.click(screen.getByRole("button", { name: "Mark reviewed (2)" }));
+    fireEvent.click(screen.getByLabelText(`Chọn mục của @${items[0]?.username}`));
+    fireEvent.click(screen.getByLabelText(`Chọn mục của @${items[1]?.username}`));
+    fireEvent.click(screen.getByRole("button", { name: "Đánh dấu đã xem lại (2)" }));
     await waitFor(() => expect(screen.getAllByTestId("review-row")).toHaveLength(1));
     expect(JSON.parse(markCalls()[0]?.[1].body ?? "{}")).toEqual({ postIds: [items[0]?.id, items[1]?.id] });
     resolve({ marked: 2 });
-    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Marked 2 reviewed"));
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Đã đánh dấu 2 mục đã xem lại"));
   });
 
   it("rolls back and toasts when mark-reviewed fails", async () => {
@@ -118,8 +122,8 @@ describe("ReviewsView (UX §3.8, FR-195, TC-REV-007)", () => {
         ? Promise.reject(new ApiError(403, "FORBIDDEN_ROLE", "Forbidden", "req-1"))
         : Promise.resolve({ items, nextCursor: null, counts }),
     );
-    fireEvent.click(screen.getByLabelText(`Select item by ${items[0]?.username}`));
-    fireEvent.click(screen.getByRole("button", { name: "Mark reviewed (1)" }));
+    fireEvent.click(screen.getByLabelText(`Chọn mục của @${items[0]?.username}`));
+    fireEvent.click(screen.getByRole("button", { name: "Đánh dấu đã xem lại (1)" }));
     await waitFor(() => expect(toastError).toHaveBeenCalled());
     expect(screen.getAllByTestId("review-row")).toHaveLength(2);
   });
@@ -128,9 +132,9 @@ describe("ReviewsView (UX §3.8, FR-195, TC-REV-007)", () => {
     serve(Array.from({ length: 60 }, () => reviewFixture()));
     setup();
     await waitFor(() => expect(screen.getAllByTestId("review-row")).toHaveLength(60));
-    fireEvent.click(screen.getByLabelText("Select all"));
-    expect(screen.getByRole("button", { name: "Mark reviewed (50)" })).toBeInTheDocument();
-    expect(screen.getByText("Up to 50 at a time")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Chọn tất cả"));
+    expect(screen.getByRole("button", { name: "Đánh dấu đã xem lại (50)" })).toBeInTheDocument();
+    expect(screen.getByText("Tối đa 50 mục mỗi lần")).toBeInTheDocument();
   });
 
   it("FR-015: viewer sees the queue without checkboxes or Mark reviewed", async () => {
@@ -139,7 +143,7 @@ describe("ReviewsView (UX §3.8, FR-195, TC-REV-007)", () => {
     setup();
     await waitFor(() => expect(screen.getAllByTestId("review-row")).toHaveLength(2));
     expect(screen.queryByRole("checkbox")).toBeNull();
-    expect(screen.queryByRole("button", { name: /Mark reviewed/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Đánh dấu đã xem lại/ })).toBeNull();
   });
 
   it("Show reviewed: status=reviewed, no mark action, reviewer shown", async () => {
@@ -153,8 +157,8 @@ describe("ReviewsView (UX §3.8, FR-195, TC-REV-007)", () => {
     setup();
     await waitFor(() => expect(screen.getByText("Lan")).toBeInTheDocument());
     expect(listCalls()[0]?.[1].params).toMatchObject({ status: "reviewed" });
-    expect(screen.queryByRole("button", { name: /Mark reviewed/ })).toBeNull();
-    fireEvent.click(screen.getByRole("switch"));
+    expect(screen.queryByRole("button", { name: /Đánh dấu đã xem lại/ })).toBeNull();
+    fireEvent.click(screen.getByRole("switch", { name: "Hiện mục đã xem lại" }));
     expect(replace).toHaveBeenCalledWith("/reviews");
   });
 
@@ -163,8 +167,8 @@ describe("ReviewsView (UX §3.8, FR-195, TC-REV-007)", () => {
     setup();
     expect(await screen.findByText("LLM_TIMEOUT")).toBeInTheDocument();
     const row = screen.getByTestId("review-row");
-    expect(within(row).getByText("42.0%")).toBeInTheDocument();
-    expect(within(row).getByText("low")).toBeInTheDocument();
+    expect(within(row).getByText("42,0%")).toBeInTheDocument();
+    expect(within(row).getByText("Thấp")).toBeInTheDocument();
   });
 
   it("clicking a row opens ?item= (push, Back closes)", async () => {
@@ -187,7 +191,7 @@ describe("ReviewsView (UX §3.8, FR-195, TC-REV-007)", () => {
         : Promise.resolve({ items: [], nextCursor: null, counts }),
     );
     const dialog = screen.getByRole("dialog");
-    fireEvent.click(await within(dialog).findByRole("button", { name: "Mark reviewed" }));
+    fireEvent.click(await within(dialog).findByRole("button", { name: "Đánh dấu đã xem lại" }));
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/reviews"));
     expect(JSON.parse(markCalls()[0]?.[1].body ?? "{}")).toEqual({ postIds: [item.id] });
   });
@@ -195,7 +199,7 @@ describe("ReviewsView (UX §3.8, FR-195, TC-REV-007)", () => {
   it("empty state", async () => {
     serve([]);
     setup();
-    expect(await screen.findByText("No items need review")).toBeInTheDocument();
+    expect(await screen.findByText("Không có mục nào cần xem lại")).toBeInTheDocument();
   });
 
   it("error state with retry", async () => {

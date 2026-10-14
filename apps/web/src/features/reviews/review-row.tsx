@@ -1,21 +1,17 @@
 "use client";
 
-import type { ReviewQueueItem, ReviewReason } from "@how-about-me/contracts";
+import type { ReviewQueueItem } from "@how-about-me/contracts";
+import type { ConfidenceBand } from "@how-about-me/taxonomy";
 import { Edit05 } from "@untitledui/icons";
 import { Badge } from "@/components/base/badges/badges";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { AnalysisStatusBadge, RelevanceBadge, SentimentBadge } from "@/features/shared/semantic-badge";
+import { formatRate } from "@/lib/format/number";
+import { reviewReasonLabelVi } from "@/lib/semantics/labels";
 import { formatDateTime, formatRelativeOrAbsolute, tzLabel } from "@/lib/time/format";
 import { cx } from "@/utils/cx";
 
-export const REASON_LABEL: Record<ReviewReason, string> = {
-  failed: "Failed",
-  uncertain: "Uncertain",
-  low_confidence: "Low confidence",
-};
-
-/** BR-020: the score is a band for prioritisation, not a probability. */
-const formatConfidence = (v: number | null) => (v === null ? "—" : `${(v * 100).toFixed(1)}%`);
+const BAND_LABEL: Record<ConfidenceBand, string> = { low: "Thấp", medium: "Trung bình", high: "Cao" };
 
 type Props = {
   item: ReviewQueueItem;
@@ -35,7 +31,7 @@ export function ReviewRow({ item, tz, selectable, selected, disabled, showReview
     <tr
       tabIndex={0}
       data-testid="review-row"
-      aria-label={`Review item by ${item.username ?? "unknown"}`}
+      aria-label={`Mục cần xem lại của @${item.username ?? "không rõ"}`}
       onClick={() => onOpen(item.id)}
       onKeyDown={(e) => {
         if (e.key === "Enter" && e.target === e.currentTarget) onOpen(item.id);
@@ -48,7 +44,7 @@ export function ReviewRow({ item, tz, selectable, selected, disabled, showReview
       {selectable ? (
         <td className="w-10 px-3 py-3" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
           <Checkbox
-            aria-label={`Select item by ${item.username ?? "unknown"}`}
+            aria-label={`Chọn mục của @${item.username ?? "không rõ"}`}
             isSelected={selected}
             isDisabled={disabled}
             onChange={(on) => onToggle(item.id, on)}
@@ -66,20 +62,20 @@ export function ReviewRow({ item, tz, selectable, selected, disabled, showReview
             {formatRelativeOrAbsolute(item.publishedAt, new Date(), tz)}
           </time>
           {a.hasOverride ? (
-            <span title="Has an analyst override" className="text-tertiary">
-              <Edit05 className="size-4" aria-label="Has override" />
+            <span title="Đã có chỉnh sửa của chuyên viên" className="text-tertiary">
+              <Edit05 className="size-4" aria-label="Đã chỉnh sửa" />
             </span>
           ) : null}
         </div>
         <p className={cx("line-clamp-2 text-sm", item.text ? "text-primary" : "text-quaternary")}>
-          {item.text ?? "No text"}
+          {item.text ?? "Không có nội dung"}
         </p>
       </td>
       <td className="px-3 py-3">
         <div className="flex flex-wrap gap-1">
           {item.reasons.map((r) => (
             <Badge key={r} type="pill-color" color={r === "failed" ? "error" : "warning"} size="sm">
-              {REASON_LABEL[r]}
+              {reviewReasonLabelVi[r]}
             </Badge>
           ))}
         </div>
@@ -87,12 +83,13 @@ export function ReviewRow({ item, tz, selectable, selected, disabled, showReview
       <td className="px-3 py-3">{a.relevance ? <RelevanceBadge value={a.relevance} /> : "—"}</td>
       <td className="px-3 py-3">{a.sentiment ? <SentimentBadge value={a.sentiment} /> : "—"}</td>
       <td className="px-3 py-3 text-sm whitespace-nowrap">
-        <span title="Estimated model confidence — a band for prioritisation, not a probability">
-          {formatConfidence(a.overallConfidence)}
+        {/* BR-020: the score is a band for prioritisation, not a probability. */}
+        <span title="Độ tin cậy ước tính — là mức để ưu tiên, không phải xác suất">
+          {formatRate(a.overallConfidence)}
         </span>
         {a.confidenceBand ? (
           <Badge type="modern" color="gray" size="sm" className="ml-1">
-            {a.confidenceBand}
+            {BAND_LABEL[a.confidenceBand]}
           </Badge>
         ) : null}
       </td>

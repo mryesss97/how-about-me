@@ -234,13 +234,14 @@ Queue of `uncertain`, low-confidence, failed items; tabs by reason; row → deta
 
 Built in #219 (`apps/web/src/features/reviews`):
 
-- **Tabs** All · Uncertain · Low confidence · Failed, each with a count badge from page 1 `counts`. When the API omits `counts` (count timed out) the badges are hidden — never shown as 0 (BR-032).
-- **URL state:** `?reason=uncertain|low_confidence|failed` (missing/invalid → All), `?status=reviewed` (toggle "Show reviewed"; default unreviewed), `?item=<postId>` (slide-out). Tabs and the toggle replace history; opening a row pushes, so Back closes the slide-out. Changing tab/status clears the selection.
-- **Table:** post (user, time with tz tooltip, 2-line text, override icon), reasons, relevance, sentiment, confidence (`%` + band; a band, not a probability — BR-020), analysis status (+ `errorCode` when failed), and "Reviewed by" when Show reviewed is on. Load more paginates (25 / page).
-- **Mark reviewed (admin, analyst):** checkboxes + "Mark reviewed (N)"; select-all and manual selection are capped at 50 (`MARK_REVIEWED_MAX`, helper "Up to 50 at a time"). Rows disappear optimistically and come back with a toast (incl. Request ID) on error. Not offered under Show reviewed; no "Unmark" in v1. A new analysis run reopens an item (BR-040).
-- **Slide-out:** mention detail with override form (T-143) + "Mark reviewed" for that item (closes on success); "Open full page" → `/mentions/:id`.
+- **Signboard (#278):** tabs are plaques (`.plaque-button`, selected inverts to navy); tabs + toolbar sit in a white enamel panel with a 2px navy rule; the table sits in an `.operate-board` and scrolls horizontally inside it (390px never scrolls the page). Table, controls and helper text stay Inter. Copy is Vietnamese; enum values in the URL stay English.
+- **Tabs** Tất cả · Chưa chắc · Độ tin cậy thấp · Phân tích lỗi, each with a count (`Tất cả · 1.234`) from page 1 `counts`. When the API omits `counts` (count timed out) the counts are hidden — never shown as 0 (BR-032).
+- **URL state:** `?reason=uncertain|low_confidence|failed` (missing/invalid → All), `?status=reviewed` (toggle "Hiện mục đã xem lại"; default unreviewed), `?item=<postId>` (slide-out). Tabs and the toggle replace history; opening a row pushes, so Back closes the slide-out. Changing tab/status clears the selection.
+- **Table:** post (user, time with tz tooltip, 2-line text, override icon), reasons, relevance, sentiment, confidence (`%` + band; a band, not a probability — BR-020), analysis status (+ `errorCode` when failed), and "Reviewed by" when Show reviewed is on. "Tải thêm" (plaque) paginates (25 / page). Confidence renders vi-VN (`42,0%`), band as Thấp / Trung bình / Cao. Column headers: Bài viết, Lý do, Mức liên quan, Cảm xúc, Độ tin cậy, Trạng thái, Người xem lại.
+- **Mark reviewed (admin, analyst):** checkboxes + "Đánh dấu đã xem lại (N)"; select-all and manual selection are capped at 50 (`MARK_REVIEWED_MAX`, helper "Tối đa 50 mục mỗi lần"). Success toast "Đã đánh dấu N mục đã xem lại" (+ "(bỏ qua M)"). Rows disappear optimistically and come back with a toast "Không thể đánh dấu đã xem lại" (incl. "Mã yêu cầu") on error. Not offered under Show reviewed; no "Unmark" in v1. A new analysis run reopens an item (BR-040).
+- **Slide-out:** mention detail with override form (T-143) + "Đánh dấu đã xem lại" for that item (closes on success); title "Chi tiết bài viết"; "Mở trang đầy đủ" → `/mentions/:id`. The detail body (MentionDetail, override form) is restyled with Mentions (#277).
 - **Viewer:** read-only — no checkboxes, no Mark reviewed, no override form.
-- **Empty:** "No items need review" (unreviewed) / "No reviewed items".
+- **Empty:** "Không có mục nào cần xem lại" / "Đã xem hết." (unreviewed) / "Chưa có mục nào đã xem lại" (reviewed).
 
 ## 4. Responsive behaviour
 

@@ -1,3 +1,4 @@
+import type { ReviewReason } from "@how-about-me/contracts";
 import type { IntentLabel, LanguageCode, TopicLabel } from "@how-about-me/taxonomy";
 import { analysisStatusBadge, relevanceBadge, safetyBadge, sentimentBadge } from "./badges";
 
@@ -45,7 +46,15 @@ export const languageLabelVi: Record<LanguageCode, string> = {
   unknown: "Không xác định",
 };
 
-export type LabelKind = "intent" | "topic" | "language" | "sentiment" | "safety" | "relevance" | "analysisStatus";
+/** Review queue reasons (#278, FR-195); wording matches the relevance/analysis-status badges. */
+export const reviewReasonLabelVi: Record<ReviewReason, string> = {
+  uncertain: "Chưa chắc",
+  low_confidence: "Độ tin cậy thấp",
+  failed: "Phân tích lỗi",
+};
+
+export type LabelKind =
+  "intent" | "topic" | "language" | "sentiment" | "safety" | "relevance" | "analysisStatus" | "reviewReason";
 
 /** `customer_service` → "Customer service" — fallback for values outside the taxonomy. */
 export const humanizeLabel = (v: string) => v.charAt(0).toUpperCase() + v.slice(1).replace(/_/g, " ");
@@ -58,6 +67,7 @@ const TABLES: Record<LabelKind, Record<string, string>> = {
   safety: Object.fromEntries(Object.entries(safetyBadge).map(([k, v]) => [k, v.label])),
   relevance: Object.fromEntries(Object.entries(relevanceBadge).map(([k, v]) => [k, v.label])),
   analysisStatus: Object.fromEntries(Object.entries(analysisStatusBadge).map(([k, v]) => [k, v.label])),
+  reviewReason: reviewReasonLabelVi,
 };
 
 export function displayLabel(kind: LabelKind, value: string): string {
