@@ -1,4 +1,4 @@
-export const DEFAULT_AFTER_LOGIN = "/overview";
+export const DEFAULT_AFTER_LOGIN = "/"; // #262: landing page
 
 // Any origin works: we only check that `next` resolves to a same-origin path.
 const PROBE_ORIGIN = "http://same-origin.invalid";

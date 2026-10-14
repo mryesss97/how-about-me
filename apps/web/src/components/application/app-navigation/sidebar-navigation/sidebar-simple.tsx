@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { SearchLg } from "@untitledui/icons";
 import { Input } from "@/components/base/input/input";
+import Link from "next/link";
 import { BrandLogo } from "@/features/shared/brand-logo";
 import { cx } from "@/utils/cx";
 import { MobileNavigationHeader } from "../base-components/mobile-header";
@@ -56,7 +57,10 @@ export const SidebarNavigationSimple = ({
         >
             <div className="flex flex-col gap-5 px-4 lg:px-5">
                 {/* Brand guide v2: horizontal logo >= 180 px wide (#221). */}
-                <BrandLogo variant="horizontal" className="h-auto w-[180px]" />
+                {/* #262: logo links to the landing page. */}
+                <Link href="/" aria-label="How About Me home" className="self-start rounded-md outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2">
+                    <BrandLogo variant="horizontal" className="h-auto w-[180px]" />
+                </Link>
 
                 {/* Mobile search input */}
                 <Input size="md" aria-label="Search" placeholder="Search" icon={SearchLg} className="md:hidden" />

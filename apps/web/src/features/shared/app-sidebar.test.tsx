@@ -27,4 +27,12 @@ describe("AppSidebar", () => {
     expect(screen.getAllByText("P 11111111-1111-4111-8111-111111111111").length).toBeGreaterThan(0);
     expect(screen.getAllByLabelText("Project").length).toBeGreaterThan(0);
   });
+
+  it("#262: the logo links to the landing page /", async () => {
+    apiFetch.mockResolvedValue(meFixture([projectFixture(P1, "viewer")]));
+    render(<AppSidebar />, { wrapper: Providers });
+    const links = await screen.findAllByRole("link", { name: "How About Me home" });
+    expect(links.length).toBeGreaterThan(0);
+    for (const l of links) expect(l).toHaveAttribute("href", "/");
+  });
 });

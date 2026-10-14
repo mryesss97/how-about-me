@@ -12,6 +12,7 @@
 apps/web/src/
 ├─ app/
 │  ├─ layout.tsx                 fonts, Theme, RouteProvider, QueryProvider
+│  ├─ page.tsx                   landing `/` (#262): server session guard + AuthBridge + RequireProject, no shell
 │  ├─ (public)/login/page.tsx
 │  └─ (app)/                     authenticated shell (sidebar + header), guards
 │     ├─ layout.tsx
@@ -26,6 +27,8 @@ apps/web/src/
 ├─ features/                     product features (one folder per epic)
 │  ├─ auth/                      supabase client, session hooks, role helpers, <RequireRole>
 │  ├─ analytics/                 filter bar, KPI cards, charts, drill-down mapping
+│  ├─ landing/                   landing page `/` (#262): balloons, hero, stats, pure data/layout helpers
+│  ├─ shared/bubbles/            pseudo-3D bubble shell/label, bubble layout core, sentiment colours (#262; used by analytics + landing)
 │  ├─ mentions/                  list, row, detail, badges mapping
 │  ├─ listening-queries/         table, drawer form
 │  ├─ system-status/
@@ -58,7 +61,7 @@ Feature folders never import from each other, except `features/auth` (session, c
 
 - `@supabase/ssr` browser client with **anon key** only (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`).
 - API client injects `Authorization: Bearer <access_token>`; on `401 AUTH_TOKEN_EXPIRED` → `supabase.auth.refreshSession()` once → retry → else redirect `/login?reason=expired`.
-- `src/proxy.ts` (Next 16 proxy): refreshes the Supabase cookie via `getUser()` on every request; unauthenticated non-public paths → `/login?next=<path>`, signed-in `/login` → `/overview`. Any Supabase error counts as signed out.
+- `src/proxy.ts` (Next 16 proxy): refreshes the Supabase cookie via `getUser()` on every request; unauthenticated non-public paths → `/login?next=<path>`, signed-in `/login` → `/` (landing, #262). Default after login (`DEFAULT_AFTER_LOGIN`) is `/`. Any Supabase error counts as signed out.
 - `(app)/layout.tsx` is a second server-side guard (`getUser()`, `force-dynamic`) and mounts `AuthBridge`, which registers the token getter and a **deduped** refresh handler (concurrent 401s share one `refreshSession()`; retry exactly once).
 - Login (`features/auth/login-form.tsx`): generic "Invalid email or password", banner for `reason=expired`, no sign-up link, Google button only when `NEXT_PUBLIC_AUTH_GOOGLE_ENABLED=true` → `/auth/callback` (`exchangeCodeForSession`). `next` is sanitised (`safe-next.ts`: must resolve to a same-origin path via `new URL`, no `//` or `\`, never `/login` or `/auth/*`).
 - Sign out = `supabase.auth.signOut()` + `queryClient.clear()` + `location.replace("/login")` (no history entry with data, TC-AUTH-016).
@@ -125,7 +128,7 @@ Page backgrounds use `bg-secondary` (Mist): the login page, the app shell `<main
 
 Error/success/warning, gray scale and the sentiment/safety palettes are not brand colours and are unchanged (BR-017). Charts using `utility-brand-*` follow the sky scale.
 
-Logo: `features/shared/brand-logo.tsx` (`horizontal | stacked | mark`) renders the official primary SVG only (no white variant, #260); files in `apps/web/public/brand/`. Used in the sidebar and mobile header (horizontal, 180 px wide — the guide minimum) and on the login page (stacked). Icons use Next file conventions: `src/app/favicon.ico`, `icon.svg`, `apple-icon.png` (180). `viewport.themeColor` = Mist `#F5FBFF`.
+Logo: `features/shared/brand-logo.tsx` (`horizontal | stacked | mark`) renders the official primary SVG only (no white variant, #260); files in `apps/web/public/brand/`. Used in the sidebar and mobile header (horizontal, 180 px wide — the guide minimum; wrapped in a link to `/`, #262), on the landing page (stacked) and on the login page (stacked). Icons use Next file conventions: `src/app/favicon.ico`, `icon.svg`, `apple-icon.png` (180). `viewport.themeColor` = Mist `#F5FBFF`.
 
 Illustrations (#245): `features/shared/state-illustration.tsx` (`empty | pending | sync-attention`, 360×240) renders `public/brand/illustrations/{name}.svg` (no dark files, #260), decorative (`alt=""`, `aria-hidden`), max 240/280 px wide. The light files differ from the pack in one fill: the panel is Sky Tint `#E0F2FE` (brand-100) instead of Mist `#F5FBFF`, because Mist equals `bg-secondary` and the panel vanished on page backgrounds (#253). A tinted container behind the image was tried first and rejected: the 360×240 viewBox has transparent margins, so the container showed as a larger box around the panel. Opt-in via `EmptyState illustration` / `QueryState emptyIllustration`; the default (FeaturedIcon) stays for chart cards and widgets.
 

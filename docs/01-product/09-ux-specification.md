@@ -10,8 +10,9 @@
 
 ```text
 /login                          Public
+/                               Landing (signed in, full screen, no sidebar; default after login, #262)
 /(app)                          Authenticated shell (sidebar + header)
-├─ /overview                    Dashboard (default after login)
+├─ /overview                    Dashboard (Explore from the landing)
 ├─ /mentions                    Mentions Explorer
 │  └─ /mentions/[id]            Mention detail (route; also opens as slide-out from list)
 ├─ /listening-queries           Query table + create/edit drawer
@@ -24,7 +25,7 @@
    └─ /settings/analysis        Thresholds & versions (P1)
 ```
 
-Sidebar (Untitled UI `sidebar-simple`): Overview · Mentions · Listening Queries · Reviews (P1) · System Status · Settings. Footer: account card (name, role badge, sign out). Project switcher appears only with ≥ 2 projects.
+Sidebar (Untitled UI `sidebar-simple`): logo links to `/` (landing, #262) · Overview · Mentions · Listening Queries · Reviews (P1) · System Status · Settings. Footer: account card (name, role badge, sign out). Project switcher appears only with ≥ 2 projects.
 
 ### Brand (v2)
 
@@ -85,9 +86,20 @@ Keyboard reachable filters/tables/drawers (React Aria); focus rings visible; cha
 
 ## 3. Screens
 
+### 3.0 Landing (`/`) — P1 (#262, FR-020)
+
+One viewport (`100dvh`, no scroll on desktop ≥ 640 px), no sidebar or header, Mist background, light only.
+
+- **Balloons** — one per configured landing term (`landingTerms`, FR-149, BR-042), last 30 days in the project timezone. Same pseudo-3D style as the sentiment map: area ∝ mentions, colour = dominant effective sentiment, tint = its share. A term with 0 mentions still shows as a small grey dashed balloon. Balloons float around the hero and never cover the hero or stats (deterministic layout; a balloon that does not fit is dropped). Not links/buttons: each is a focusable `role="img"` named "term · 62.0% positive · 128 mentions" with the same text as hover/focus tooltip.
+- **Hero** — stacked logo, headline "See how Threads feels about you.", tagline "Listen. Understand.", primary **Explore** (xl) → `/overview` (current project kept, no filters).
+- **Stats** (4) — Mentions (+ growth vs previous period: `+12.0%` / `−5.0%` / `New` / `0%`), Positive %, Negative %, Last updated (relative < 24 h, else absolute; "Never synced"). From the overview endpoint over the landing `range` with `compare=true` (fallback: last 30 days if landing-terms failed). Safety is never shown here (BR-017). Sum of balloons ≠ Mentions (terms overlap).
+- **States** — loading: stat skeletons, no balloons; stats error: strip hidden, hero stays; landing-terms error: no balloons; no terms: admin sees "Add landing phrases in Settings" → `/settings/project`, other roles "No landing phrases configured yet."; no project: the shared no-project state.
+- **Mobile** (< 640 px): page may scroll, stats 2×2, Explore full width, at most 8 balloons (largest), smaller radius.
+- **Motion** — float + hover lift like the sentiment map; `prefers-reduced-motion` → static (`data-motion="reduced"`, NFR-031).
+
 ### 3.1 Login (`/login`)
 
-Centered card: logo, email + password, "Continue with Google" (if enabled), error text. No sign-up link. Footer: "Ask an admin for access."
+Centered card: logo, email + password, "Continue with Google" (if enabled), error text. No sign-up link. Footer: "Ask an admin for access." After sign-in → `/` (landing, #262) unless a safe `next` is given; a signed-in visit to `/login` → `/`.
 
 ### 3.2 Overview (`/overview`) — P0
 
@@ -213,6 +225,7 @@ Built in #219 (`apps/web/src/features/reviews`):
 
 ## 4. Responsive behaviour
 
+- Landing `/` (#262): one viewport from 640 px; below, scrolls with ≤ 8 balloons and a 2×2 stats grid.
 - ≥ 1280 px: full sidebar, 12-col grid.
 - 768–1279 px: collapsed slim sidebar, charts 2-per-row → 1-per-row, tables horizontally scrollable.
 - < 768 px: read-only Overview/Mentions acceptable; admin forms not optimised.
