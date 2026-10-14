@@ -77,8 +77,20 @@ describe("auth: JWT guard, /me, profile upsert (T-030)", () => {
 
   it("concurrent first-login requests all succeed (no P2002 → 500)", async () => {
     const token = await mintTestJwt({ sub: randomUUID(), email: "race@example.com" });
-    const results = await Promise.all(Array.from({ length: 5 }, () => me().set("authorization", `Bearer ${token}`)));
-    expect(results.map((r) => r.status)).toEqual([200, 200, 200, 200, 200]);
+    // #258: allSettled + error code/debug so a failure message explains itself (P1001 / too many clients / ...).
+    const settled = await Promise.allSettled(
+      Array.from({ length: 5 }, () => me().set("authorization", `Bearer ${token}`)),
+    );
+    const outcomes = settled.map((s) =>
+      s.status === "fulfilled"
+        ? {
+            status: s.value.status,
+            code: s.value.body?.error?.code as string | undefined,
+            debug: s.value.body?.error?.details?.debug?.message as string | undefined,
+          }
+        : { status: 0, code: (s.reason as { code?: string })?.code, debug: String(s.reason) },
+    );
+    expect(outcomes).toEqual(Array.from({ length: 5 }, () => ({ status: 200, code: undefined, debug: undefined })));
     expect(await prisma.userProfile.count()).toBe(1);
   });
 

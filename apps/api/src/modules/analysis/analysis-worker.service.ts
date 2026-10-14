@@ -1,5 +1,11 @@
 import { hostname } from "node:os";
-import { Inject, Injectable, type OnApplicationBootstrap, type OnApplicationShutdown, Optional } from "@nestjs/common";
+import {
+  type BeforeApplicationShutdown,
+  Inject,
+  Injectable,
+  type OnApplicationBootstrap,
+  Optional,
+} from "@nestjs/common";
 import { SchedulerRegistry } from "@nestjs/schedule";
 import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 import { v7 as uuidv7 } from "uuid";
@@ -20,7 +26,7 @@ const SHUTDOWN_WAIT_MS = 10_000;
  * bounded concurrency. Failures follow `analysis-failure-policy.ts` (FR-113, doc 07 §8/§9).
  */
 @Injectable()
-export class AnalysisWorkerService implements OnApplicationBootstrap, OnApplicationShutdown {
+export class AnalysisWorkerService implements OnApplicationBootstrap, BeforeApplicationShutdown {
   readonly workerId = `${hostname()}:${process.pid}:${uuidv7().slice(-8)}`;
   private running: Promise<number> | null = null;
   /** In-memory auth pause (epoch ms) so the rest of the current batch is released immediately. */
@@ -67,7 +73,7 @@ export class AnalysisWorkerService implements OnApplicationBootstrap, OnApplicat
     this.logger.info({ workerId: this.workerId, pollMs: this.cfg.ANALYSIS_POLL_MS }, "analysis worker started");
   }
 
-  async onApplicationShutdown(): Promise<void> {
+  async beforeApplicationShutdown(): Promise<void> {
     if (this.scheduler.doesExist("interval", ANALYSIS_WORKER_INTERVAL)) {
       this.scheduler.deleteInterval(ANALYSIS_WORKER_INTERVAL);
     }

@@ -1,4 +1,4 @@
-import { Inject, Injectable, type OnApplicationShutdown, type OnModuleInit } from "@nestjs/common";
+import { Inject, Injectable, type BeforeApplicationShutdown, type OnModuleInit } from "@nestjs/common";
 import { SchedulerRegistry } from "@nestjs/schedule";
 import { CronJob } from "cron";
 import { randomUUID } from "node:crypto";
@@ -27,7 +27,7 @@ const describeScope = (s: PurgeScope) =>
  * purge is idempotent and empty batches write no audit (decision 5).
  */
 @Injectable()
-export class RetentionJobService implements OnModuleInit, OnApplicationShutdown {
+export class RetentionJobService implements OnModuleInit, BeforeApplicationShutdown {
   private current: Promise<void> | null = null;
 
   constructor(
@@ -104,7 +104,7 @@ export class RetentionJobService implements OnModuleInit, OnApplicationShutdown 
     );
   }
 
-  async onApplicationShutdown() {
+  async beforeApplicationShutdown() {
     if (this.registry.doesExist("cron", RETENTION_CRON_JOB)) {
       void this.registry.getCronJob(RETENTION_CRON_JOB).stop();
       this.registry.deleteCronJob(RETENTION_CRON_JOB);

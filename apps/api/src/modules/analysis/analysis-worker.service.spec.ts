@@ -200,7 +200,7 @@ describe("AnalysisWorkerService backoff sleep (FR-113)", () => {
       );
       let woke = false;
       const sleeping = svc.sleep(30_000).then(() => (woke = true));
-      await svc.onApplicationShutdown();
+      await svc.beforeApplicationShutdown();
       await sleeping;
       expect(woke).toBe(true);
       // After shutdown new sleeps return immediately.
