@@ -72,7 +72,7 @@ describe("ExportButton (T-147, FR-180/181)", () => {
     apiDownload.mockRejectedValue(new ApiError(413, "EXPORT_TOO_LARGE", "m", "r", { cap: 10000 }));
     fireEvent.click(setup());
     await waitFor(() => expect(toastError).toHaveBeenCalled());
-    expect(JSON.stringify(toastError.mock.calls[0])).toContain("10,000");
+    expect(JSON.stringify(toastError.mock.calls[0])).toContain("10.000");
   });
 
   it("429 RATE_LIMITED → toast with seconds", async () => {

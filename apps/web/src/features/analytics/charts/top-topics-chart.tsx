@@ -1,5 +1,6 @@
 "use client";
 
+import { displayLabel } from "@/lib/semantics/labels";
 import type { TopicsDistributionResponse } from "@how-about-me/contracts";
 import type { TopicLabel } from "@how-about-me/taxonomy";
 import type { QueryStateError } from "@/features/shared/query-state";
@@ -27,25 +28,25 @@ export function TopTopicsChart({
   onNavigate,
 }: TopTopicsChartProps) {
   const denominator = data?.denominator ?? 0;
-  const rows = toBarRows(data?.distribution ?? []);
+  const rows = toBarRows(data?.distribution ?? [], (k) => displayLabel("topic", k));
   const table = {
     rowHrefs: rows.map((r) => segmentHref(getHref, r)),
-    columns: ["Topic", "Count", "Share"],
+    columns: ["Chủ đề", "Số lượng", "Tỷ lệ"],
     rows: [
       ...rows.map((r) => [r.name, formatCount(r.count), formatRate(r.share)]),
-      ["Mentions with a topic", formatCount(denominator), "—"],
+      ["Lượt nhắc có chủ đề", formatCount(denominator), "—"],
     ],
   };
 
   return (
     <ChartCard
-      title="Top topics"
-      description="Top 12 topics by distinct mentions"
+      title="Chủ đề nổi bật"
+      description="12 chủ đề có nhiều lượt nhắc nhất"
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}
       isEmpty={!!data && (denominator === 0 || rows.length === 0)}
-      emptyTitle="No analysed mentions in this range"
+      emptyTitle="Chưa có lượt nhắc đã phân tích trong khoảng này"
       table={table}
       className={className}
     >
@@ -54,9 +55,9 @@ export function TopTopicsChart({
         getFill={(r) => (r.key === "other" ? "var(--color-utility-neutral-400)" : "var(--color-utility-brand-500)")}
         denominator={denominator}
         onSelect={drillSelect({ getHref, onNavigate })}
-        denominatorLabel="with a topic"
+        denominatorLabel="lượt nhắc có chủ đề"
       />
-      {sumShares(rows) > 1 ? <MultiLabelNote noun="topics" /> : null}
+      {sumShares(rows) > 1 ? <MultiLabelNote noun="chủ đề" /> : null}
     </ChartCard>
   );
 }

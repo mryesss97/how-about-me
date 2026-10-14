@@ -1,4 +1,4 @@
-import { relevanceBadge, safetyBadge, sentimentBadge, analysisStatusBadge } from "@/lib/semantics/badges";
+import { displayLabel } from "@/lib/semantics/labels";
 import { serializeFilters } from "./parsers";
 import { type ArrayFilterKey, DEFAULT_RELEVANCE, type Filters } from "./schema";
 import { resolveRange } from "./time-range";
@@ -75,33 +75,25 @@ export interface AppliedChip {
 }
 
 const LABEL_PREFIX: Record<ArrayFilterKey, string> = {
-  queryIds: "Query",
-  relevance: "Relevance",
-  sentiment: "Sentiment",
-  safety: "Safety",
-  intent: "Intent",
-  topic: "Topic",
-  language: "Language",
-  analysisStatus: "Status",
-  phrase: "Phrase",
+  queryIds: "Truy vấn",
+  relevance: "Mức liên quan",
+  sentiment: "Cảm xúc",
+  safety: "An toàn",
+  intent: "Ý định",
+  topic: "Chủ đề",
+  language: "Ngôn ngữ",
+  analysisStatus: "Trạng thái",
+  phrase: "Cụm từ",
 };
 
 function valueLabel(key: ArrayFilterKey, value: string, queryNames: Record<string, string>): string {
   switch (key) {
     case "queryIds":
       return queryNames[value] ?? value.slice(0, 8);
-    case "relevance":
-      return relevanceBadge[value as keyof typeof relevanceBadge]?.label ?? value;
-    case "sentiment":
-      return sentimentBadge[value as keyof typeof sentimentBadge]?.label ?? value;
-    case "safety":
-      return safetyBadge[value as keyof typeof safetyBadge]?.label ?? value;
-    case "analysisStatus":
-      return analysisStatusBadge[value as keyof typeof analysisStatusBadge]?.label ?? value;
     case "phrase":
       return value; // verbatim, no humanising (BR-041)
     default:
-      return value.replace(/_/g, " ");
+      return displayLabel(key, value);
   }
 }
 

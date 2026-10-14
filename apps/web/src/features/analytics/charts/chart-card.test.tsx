@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { ChartCard } from "./chart-card";
 
 const table = {
-  columns: ["Time", "Mentions"],
+  columns: ["Thời gian", "Lượt nhắc"],
   rows: [
     ["06/10", "5"],
     ["07/10", "0"],
@@ -21,21 +21,21 @@ async function press(el: HTMLElement, key: string) {
 describe("ChartCard", () => {
   it("TC-DASH-022 / NFR-032: keyboard toggles to a table with the same numbers and aria-pressed", async () => {
     render(
-      <ChartCard title="Mentions over time" table={table}>
+      <ChartCard title="Lượt nhắc theo thời gian" table={table}>
         <div>chart</div>
       </ChartCard>,
     );
-    const toggle = screen.getByRole("button", { name: "View as table" });
+    const toggle = screen.getByRole("button", { name: "Xem dạng bảng" });
     expect(toggle).toHaveAttribute("aria-pressed", "false");
     fireEvent.keyDown(document.body, { key: "Tab" });
     await act(async () => toggle.focus());
     expect(toggle).toHaveFocus();
     await press(toggle, "Enter");
     expect(toggle).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("grid", { name: "Mentions over time (table)" })).toBeInTheDocument();
+    expect(screen.getByRole("grid", { name: "Lượt nhắc theo thời gian (bảng)" })).toBeInTheDocument();
     expect(screen.getByText("07/10")).toBeInTheDocument();
     expect(screen.queryByText("chart")).not.toBeInTheDocument();
-    await press(screen.getByRole("button", { name: "View as table" }), " ");
+    await press(screen.getByRole("button", { name: "Xem dạng bảng" }), " ");
     expect(screen.getByText("chart")).toBeInTheDocument();
   });
 
@@ -45,8 +45,8 @@ describe("ChartCard", () => {
         <div>chart</div>
       </ChartCard>,
     );
-    expect(screen.getByText("No mentions in this range")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "View as table" })).not.toBeInTheDocument();
+    expect(screen.getByText("Không có lượt nhắc trong khoảng này")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Xem dạng bảng" })).not.toBeInTheDocument();
   });
 
   it("shows error with retry", async () => {
@@ -61,7 +61,7 @@ describe("ChartCard", () => {
         <div>chart</div>
       </ChartCard>,
     );
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: /retry/i })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /thử lại/i })));
     expect(retried).toBe(true);
   });
 });
@@ -72,17 +72,17 @@ describe("ChartCard viewToggle / toolbar / footer (#222)", () => {
       <ChartCard
         title="Map"
         table={table}
-        viewToggle={{ chart: "Bubbles", table: "Table" }}
+        viewToggle={{ chart: "Bong bóng", table: "Bảng dữ liệu" }}
         toolbar={<p>chips</p>}
         footer={<p>legend</p>}
       >
         <div>chart</div>
       </ChartCard>,
     );
-    expect(screen.queryByRole("button", { name: "View as table" })).toBeNull();
-    expect(screen.getByRole("radio", { name: "Bubbles" })).toHaveAttribute("aria-checked", "true");
-    await act(async () => fireEvent.click(screen.getByRole("radio", { name: "Table" })));
-    expect(screen.getByRole("grid", { name: "Map (table)" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Xem dạng bảng" })).toBeNull();
+    expect(screen.getByRole("radio", { name: "Bong bóng" })).toHaveAttribute("aria-checked", "true");
+    await act(async () => fireEvent.click(screen.getByRole("radio", { name: "Bảng dữ liệu" })));
+    expect(screen.getByRole("grid", { name: "Map (bảng)" })).toBeInTheDocument();
     expect(screen.getByText("chips")).toBeInTheDocument();
     expect(screen.getByText("legend")).toBeInTheDocument();
     rerender(
@@ -90,7 +90,7 @@ describe("ChartCard viewToggle / toolbar / footer (#222)", () => {
         title="Map"
         table={table}
         isLoading
-        viewToggle={{ chart: "Bubbles", table: "Table" }}
+        viewToggle={{ chart: "Bong bóng", table: "Bảng dữ liệu" }}
         toolbar={<p>chips</p>}
         footer={<p>legend</p>}
       >

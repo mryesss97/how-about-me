@@ -45,23 +45,23 @@ export function LanguageDistributionChart({
   const select = drillSelect({ getHref, onNavigate });
   const table = {
     rowHrefs: rows.map((s) => segmentHref(getHref, s)),
-    columns: ["Language", "Count", "Share"],
+    columns: ["Ngôn ngữ", "Số lượng", "Tỷ lệ"],
     rows: [
       ...rows.map((s) => [s.name, formatCount(s.count), formatRate(s.share)]),
-      ["Total", formatCount(denominator), denominator > 0 ? formatRate(1) : "—"],
+      ["Tổng", formatCount(denominator), denominator > 0 ? formatRate(1) : "—"],
     ],
   };
 
   return (
     <ChartCard
-      title="Language distribution"
-      description="Share of mentions with a detected language"
+      title="Phân bố ngôn ngữ"
+      description="Tỷ lệ trên lượt nhắc đã nhận diện ngôn ngữ"
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}
       // Denominator 0 → empty state, no division by zero (BR-032).
       isEmpty={!!data && denominator === 0}
-      emptyTitle="No mentions with a language in this range"
+      emptyTitle="Chưa có lượt nhắc nhận diện được ngôn ngữ trong khoảng này"
       table={table}
       className={className}
     >
@@ -77,7 +77,7 @@ export function LanguageDistributionChart({
                     title={s.name}
                     lines={[{ name: s.name, count: s.count, share: s.share, color: LANGUAGE_COLORS[s.key] }]}
                     denominator={denominator}
-                    denominatorLabel="with a language"
+                    denominatorLabel="lượt nhắc có ngôn ngữ"
                   />
                 );
               }}

@@ -33,7 +33,7 @@ describe("bubble-layout (#222)", () => {
   it("BR-032: toTopicBubbles drops topics without sentiment and keeps API order", () => {
     const data = toTopicBubbles(topicSentimentFixture().rows);
     expect(data.map((d) => d.key)).toEqual(["ticket", "price", "venue", "other"]);
-    expect(data[0]).toMatchObject({ name: "Ticket", total: 4, dominant: "negative", dominantShare: 0.5 });
+    expect(data[0]).toMatchObject({ name: "Vé", total: 4, dominant: "negative", dominantShare: 0.5 });
   });
 
   it("bubbleIntensity maps [1/3, 1] to [min, max], clamped and increasing", () => {

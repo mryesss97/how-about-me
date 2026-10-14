@@ -46,18 +46,18 @@ export function SentimentOverTimeChart({
     });
 
   const table = {
-    columns: ["Time", ...SENTIMENT_ORDER.map((k) => sentimentBadge[k].label), "Total"],
+    columns: ["Thời gian", ...SENTIMENT_ORDER.map((k) => sentimentBadge[k].label), "Tổng"],
     rows: rows.map((r) => [r.label, ...SENTIMENT_ORDER.map((k) => formatCount(r[k])), formatCount(r.total)]),
   };
 
   return (
     <ChartCard
-      title="Sentiment over time"
+      title="Cảm xúc theo thời gian"
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}
       isEmpty={!!data && rows.every((r) => r.total === 0)}
-      emptyTitle="No analysed mentions in this range"
+      emptyTitle="Chưa có lượt nhắc đã phân tích trong khoảng này"
       table={table}
       className={className}
     >
@@ -82,7 +82,7 @@ export function SentimentOverTimeChart({
                       color: SENTIMENT_COLORS[k],
                     }))}
                     denominator={row.total}
-                    denominatorLabel="analysed"
+                    denominatorLabel="lượt nhắc đã phân tích"
                   />
                 );
               }}

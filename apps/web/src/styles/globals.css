@@ -596,3 +596,73 @@ input[type="search"]::-webkit-search-cancel-button {
   outline: 2px solid #fff;
   outline-offset: 2px;
 }
+
+/* Operate boards (#275): KPI and chart cards are white enamel boards with a navy keyline, no shadow. */
+.operate-board {
+  position: relative;
+  border-radius: 3px;
+  background: var(--enamel-white);
+  color: var(--ink);
+}
+
+.operate-board .sign-keyline {
+  --line: var(--ink);
+}
+
+/* Linked boards (KPI drill-down): this unlayered rule beats utilities, so the hover tint lives here too. */
+.operate-board:has(> a:hover) {
+  background: #eef5fa;
+}
+
+/* Chart board title: condensed figure caps, 20px. */
+.operate-board-title {
+  font-family: var(--font-figure), sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+/* KPI label: condensed caps 17px (room for stacked Vietnamese marks); KPI value: painted figure 40px, tabular. */
+.kpi-label {
+  font-family: var(--font-figure), sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.kpi-figure {
+  font-family: var(--font-figure), sans-serif;
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Plaque button: white plate, 2px navy border, condensed caps; hover/selected invert to navy. */
+.plaque-button {
+  border: 2px solid var(--ink);
+  border-radius: 2px;
+  background: #fff;
+  color: var(--ink);
+  font-family: var(--font-figure), sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+  transition: background-color 160ms ease-out, color 160ms ease-out;
+}
+
+.plaque-button:hover,
+.plaque-button[data-selected] {
+  background: var(--ink);
+  color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plaque-button {
+    transition: none;
+  }
+}

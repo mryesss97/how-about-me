@@ -18,7 +18,13 @@ import {
 import { tzLabel } from "@/lib/time/format";
 
 const PINNED_TZ = ["Asia/Ho_Chi_Minh", "UTC"];
-const PRESET_LABEL: Record<Preset, string> = { "1h": "1h", "24h": "24h", "7d": "7d", "30d": "30d", custom: "Custom" };
+const PRESET_LABEL: Record<Preset, string> = {
+  "1h": "1 giờ",
+  "24h": "24 giờ",
+  "7d": "7 ngày",
+  "30d": "30 ngày",
+  custom: "Chọn ngày",
+};
 
 function timezoneItems() {
   const all = typeof Intl.supportedValuesOf === "function" ? Intl.supportedValuesOf("timeZone") : [];
@@ -56,7 +62,7 @@ export function TimeControls({ filters, setFilters }: TimeControlsProps) {
     <div className="flex flex-wrap items-end gap-3">
       <ButtonGroup
         size="sm"
-        aria-label="Time range preset"
+        aria-label="Khoảng thời gian"
         selectedKeys={new Set([filters.preset])}
         disallowEmptySelection
         onSelectionChange={(keys) => {
@@ -73,7 +79,7 @@ export function TimeControls({ filters, setFilters }: TimeControlsProps) {
         ))}
       </ButtonGroup>
       <div className="flex flex-col gap-1">
-        <DateRangePicker aria-label="Custom date range" value={pickerValue} onChange={onRangeChange} />
+        <DateRangePicker aria-label="Chọn khoảng ngày" value={pickerValue} onChange={onRangeChange} />
         {rangeError && (
           <p role="alert" className="text-xs text-error-primary">
             {rangeError}
@@ -82,7 +88,7 @@ export function TimeControls({ filters, setFilters }: TimeControlsProps) {
       </div>
       <ComboBox
         size="sm"
-        aria-label="Timezone"
+        aria-label="Múi giờ"
         placeholder={tzLabel(filters.tz)}
         shortcut={false}
         items={tzItems}

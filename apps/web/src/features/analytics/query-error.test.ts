@@ -16,6 +16,6 @@ describe("toQueryError (#252)", () => {
   });
 
   it("uses a generic message for other errors", () => {
-    expect(toQueryError(new Error("x"))).toEqual({ message: "Unexpected response from the server." });
+    expect(toQueryError(new Error("x"))).toEqual({ message: "Phản hồi không hợp lệ từ máy chủ." });
   });
 });

@@ -9,15 +9,15 @@ describe("IntentDistributionChart", () => {
   it("TC-DASH-016 / FR-139: every intent label appears, including zero counts", async () => {
     render(<IntentDistributionChart data={intentsFixture()} />);
     const [header, ...rows] = await openTable();
-    expect(header).toEqual(["Intent", "Count", "Share"]);
+    expect(header).toEqual(["Ý định", "Số lượng", "Tỷ lệ"]);
     expect(rows).toHaveLength(INTENT_LABELS.length + 1);
-    expect(rows.find((r) => r[0] === "Boycott")).toEqual(["Boycott", "0", "0.0%"]);
-    expect(rows.at(-1)).toEqual(["Mentions with an intent", "50", "—"]);
+    expect(rows.find((r) => r[0] === "Tẩy chay")).toEqual(["Tẩy chay", "0", "0,0%"]);
+    expect(rows.at(-1)).toEqual(["Lượt nhắc có ý định", "50", "—"]);
   });
 
   it("TC-DASH-016: shares may exceed 100% → note shown", () => {
     render(<IntentDistributionChart data={intentsFixture()} />);
-    expect(screen.getByText(/shares can add up to more than 100%/)).toBeInTheDocument();
+    expect(screen.getByText(/tổng tỷ lệ có thể vượt 100%/)).toBeInTheDocument();
   });
 
   it("error state shows request ID", () => {

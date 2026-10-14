@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { AlertCircle, AlertTriangle, InfoCircle } from "@untitledui/icons";
 import { cx } from "@/utils/cx";
+import { formatCount } from "@/lib/format/number";
 
 /**
  * Page-level banners — docs/01-product/09-ux-specification.md §2.3.
@@ -76,10 +77,10 @@ export function SyncFailedBanner({ href = "/system-status" }: { href?: string })
   return (
     <PageBanner
       tone="warning"
-      title="Latest Threads sync failed. Data may be incomplete."
+      title="Lần đồng bộ Threads gần nhất bị lỗi. Dữ liệu có thể chưa đầy đủ."
       action={
         <a href={href} className="text-sm font-semibold text-secondary underline underline-offset-2">
-          View System Status
+          Xem trạng thái hệ thống
         </a>
       }
     />
@@ -98,11 +99,11 @@ export function AnalysisPendingBanner({
   return (
     <PageBanner
       tone="info"
-      title={`${count.toLocaleString()} ${count === 1 ? "mention is" : "mentions are"} waiting for analysis.`}
-      description="Rates below only count mentions whose analysis has completed."
+      title={`${formatCount(count)} lượt nhắc đang chờ phân tích.`}
+      description="Các tỷ lệ bên dưới chỉ tính lượt nhắc đã phân tích xong."
       action={
         <a href={href} className="text-sm font-semibold text-secondary underline underline-offset-2">
-          View pending
+          Xem lượt nhắc đang chờ
         </a>
       }
     />
@@ -114,11 +115,11 @@ export function IntegrationExpiredBanner({ canManage = false }: { canManage?: bo
   return (
     <PageBanner
       tone="error"
-      title="Threads connection needs attention."
+      title="Kết nối Threads cần được xử lý."
       description={
         canManage
-          ? "Collection is paused until the access token is updated."
-          : "Collection is paused. Ask a project admin to update the Threads access token."
+          ? "Việc thu thập tạm dừng cho đến khi access token được cập nhật."
+          : "Việc thu thập đang tạm dừng. Hãy nhờ quản trị dự án cập nhật access token Threads."
       }
       action={
         canManage ? (
@@ -126,7 +127,7 @@ export function IntegrationExpiredBanner({ canManage = false }: { canManage?: bo
             href="/settings/integrations"
             className="text-sm font-semibold text-secondary underline underline-offset-2"
           >
-            Go to Integrations
+            Đến trang Tích hợp
           </a>
         ) : null
       }

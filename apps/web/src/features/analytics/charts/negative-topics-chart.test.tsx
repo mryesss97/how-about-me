@@ -9,12 +9,12 @@ describe("NegativeTopicsChart (T-149)", () => {
   it("FR-144: only topics with negative > 0, ranked negative desc then negativeShare desc", async () => {
     render(<NegativeTopicsChart data={topicSentimentFixture()} />);
     const [header, ...rows] = await openTable();
-    expect(header).toEqual(["Topic", "Negative", "With sentiment", "Negative share"]);
+    expect(header).toEqual(["Chủ đề", "Tiêu cực", "Có cảm xúc", "Tỷ lệ tiêu cực"]);
     expect(rows).toEqual([
-      ["Venue", "2", "2", "100.0%"],
-      ["Ticket", "2", "4", "50.0%"],
-      ["Other", "1", "1", "100.0%"],
-      ["Price", "1", "4", "25.0%"],
+      ["Địa điểm", "2", "2", "100,0%"],
+      ["Vé", "2", "4", "50,0%"],
+      ["Khác", "1", "1", "100,0%"],
+      ["Giá", "1", "4", "25,0%"],
     ]);
   });
 
@@ -22,7 +22,7 @@ describe("NegativeTopicsChart (T-149)", () => {
     const getHref = (t: string) => `/mentions?topic=${t}&sentiment=negative`;
     render(<NegativeTopicsChart data={topicSentimentFixture()} getHref={getHref} onNavigate={() => {}} />);
     await openTable();
-    expect(screen.getByRole("link", { name: "Other" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Khác" })).toHaveAttribute(
       "href",
       "/mentions?topic=other&sentiment=negative",
     );
@@ -35,17 +35,17 @@ describe("NegativeTopicsChart (T-149)", () => {
 
   it("BR-032: no negative mentions → empty state", () => {
     render(<NegativeTopicsChart data={emptyTopicSentiment()} />);
-    expect(screen.getByText("No negative mentions in this range")).toBeInTheDocument();
+    expect(screen.getByText("Không có lượt nhắc tiêu cực trong khoảng này")).toBeInTheDocument();
   });
 
   it("loading hides the table toggle; error shows request ID and Retry", () => {
     const { unmount } = render(<NegativeTopicsChart isLoading />);
-    expect(screen.queryByRole("button", { name: "View as table" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Xem dạng bảng" })).toBeNull();
     unmount();
     const onRetry = vi.fn();
     render(<NegativeTopicsChart error={{ code: "INTERNAL", message: "boom", requestId: "req-8" }} onRetry={onRetry} />);
     expect(screen.getByText(/req-8/)).toBeInTheDocument();
-    screen.getByRole("button", { name: /retry/i }).click();
+    screen.getByRole("button", { name: /thử lại/i }).click();
     expect(onRetry).toHaveBeenCalled();
   });
 });

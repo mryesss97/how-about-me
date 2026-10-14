@@ -9,36 +9,36 @@ export type BadgeColor = "gray" | "brand" | "error" | "warning" | "success" | "b
 export type BadgeSpec = { label: string; color: BadgeColor; icon: string; filled?: boolean };
 
 export const sentimentBadge: Record<SentimentLabel, BadgeSpec> = {
-  positive: { label: "Positive", color: "success", icon: "FaceSmile" },
-  neutral: { label: "Neutral", color: "gray", icon: "FaceNeutral" },
-  negative: { label: "Negative", color: "error", icon: "FaceFrown" },
+  positive: { label: "Tích cực", color: "success", icon: "FaceSmile" },
+  neutral: { label: "Trung tính", color: "gray", icon: "FaceNeutral" },
+  negative: { label: "Tiêu cực", color: "error", icon: "FaceFrown" },
 };
 
 export const safetyBadge: Record<SafetyLevel, BadgeSpec> = {
-  safe: { label: "Safe", color: "gray", icon: "ShieldTick" },
-  sensitive: { label: "Sensitive", color: "warning", icon: "AlertTriangle" },
-  severe: { label: "Severe", color: "error", icon: "AlertOctagon", filled: true },
+  safe: { label: "An toàn", color: "gray", icon: "ShieldTick" },
+  sensitive: { label: "Nhạy cảm", color: "warning", icon: "AlertTriangle" },
+  severe: { label: "Nghiêm trọng", color: "error", icon: "AlertOctagon", filled: true },
 };
 
 export const relevanceBadge: Record<RelevanceLabel, BadgeSpec> = {
-  relevant: { label: "Relevant", color: "brand", icon: "Target04" },
-  uncertain: { label: "Uncertain", color: "warning", icon: "HelpCircle" },
-  irrelevant: { label: "Irrelevant", color: "gray", icon: "MinusCircle" },
+  relevant: { label: "Liên quan", color: "brand", icon: "Target04" },
+  uncertain: { label: "Chưa chắc", color: "warning", icon: "HelpCircle" },
+  irrelevant: { label: "Không liên quan", color: "gray", icon: "MinusCircle" },
 };
 
 export const analysisStatusBadge: Record<AnalysisStatus, BadgeSpec> = {
-  pending: { label: "Pending analysis", color: "gray", icon: "Clock" },
-  processing: { label: "Analysing…", color: "blue", icon: "Loading02" },
-  completed: { label: "Analysed", color: "success", icon: "CheckCircle" },
-  failed: { label: "Analysis failed", color: "error", icon: "XCircle" },
-  skipped: { label: "Skipped", color: "gray", icon: "MinusCircle" },
-  stale: { label: "Stale", color: "warning", icon: "RefreshCw05" },
+  pending: { label: "Chờ phân tích", color: "gray", icon: "Clock" },
+  processing: { label: "Đang phân tích…", color: "blue", icon: "Loading02" },
+  completed: { label: "Đã phân tích", color: "success", icon: "CheckCircle" },
+  failed: { label: "Phân tích lỗi", color: "error", icon: "XCircle" },
+  skipped: { label: "Bỏ qua", color: "gray", icon: "MinusCircle" },
+  stale: { label: "Cũ", color: "warning", icon: "RefreshCw05" },
 };
 
 export const confidenceMarker: Record<ConfidenceBand, { label: string; show: boolean }> = {
-  high: { label: "High confidence", show: false },
-  medium: { label: "Medium confidence", show: true },
-  low: { label: "Low confidence", show: true },
+  high: { label: "Độ tin cậy cao", show: false },
+  medium: { label: "Độ tin cậy trung bình", show: true },
+  low: { label: "Độ tin cậy thấp", show: true },
 };
 
 /** Formats a KPI value; `null` denominators render as "—", `growthState=new` renders "New" (BR-030). */

@@ -23,17 +23,17 @@ describe("LanguageDistributionChart", () => {
   it("TC-DASH-027 / FR-143: table lists all 8 codes in API order + Total = denominator", async () => {
     render(<LanguageDistributionChart data={fixture()} />);
     const [header, ...rows] = await openTable();
-    expect(header).toEqual(["Language", "Count", "Share"]);
+    expect(header).toEqual(["Ngôn ngữ", "Số lượng", "Tỷ lệ"]);
     expect(rows.map((r) => r[0])).toEqual([
-      "Vietnamese",
-      "English",
-      "Unknown",
-      "Other",
-      "Korean",
-      "Japanese",
-      "Thai",
-      "Chinese",
-      "Total",
+      "Tiếng Việt",
+      "Tiếng Anh",
+      "Không xác định",
+      "Khác",
+      "Tiếng Hàn",
+      "Tiếng Nhật",
+      "Tiếng Thái",
+      "Tiếng Trung",
+      "Tổng",
     ]);
     const sum = rows.slice(0, 8).reduce((s, r) => s + Number(r[1]), 0);
     expect(rows[8]?.[1]).toBe(String(sum));
@@ -43,7 +43,7 @@ describe("LanguageDistributionChart", () => {
   it("NFR-030: legend shows only non-zero languages with share text", () => {
     render(<LanguageDistributionChart data={fixture()} />);
     const items = screen.getAllByRole("listitem").map((li) => li.textContent);
-    expect(items).toEqual(["Vietnamese · 70.0%", "English · 20.0%", "Unknown · 6.0%", "Other · 4.0%"]);
+    expect(items).toEqual(["Tiếng Việt · 70,0%", "Tiếng Anh · 20,0%", "Không xác định · 6,0%", "Khác · 4,0%"]);
   });
 
   it("BR-032: denominator 0 → empty state", () => {
@@ -55,7 +55,7 @@ describe("LanguageDistributionChart", () => {
         })}
       />,
     );
-    expect(screen.getByText("No mentions with a language in this range")).toBeInTheDocument();
+    expect(screen.getByText("Chưa có lượt nhắc nhận diện được ngôn ngữ trong khoảng này")).toBeInTheDocument();
   });
 
   it("error state shows request ID and Retry", () => {
@@ -64,7 +64,7 @@ describe("LanguageDistributionChart", () => {
       <LanguageDistributionChart error={{ code: "INTERNAL", message: "boom", requestId: "req-7" }} onRetry={onRetry} />,
     );
     expect(screen.getByText(/req-7/)).toBeInTheDocument();
-    screen.getByRole("button", { name: /retry/i }).click();
+    screen.getByRole("button", { name: /thử lại/i }).click();
     expect(onRetry).toHaveBeenCalled();
   });
 });

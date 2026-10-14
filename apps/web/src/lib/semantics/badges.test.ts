@@ -12,6 +12,11 @@ describe("semantic badges", () => {
       expect(spec.icon.length).toBeGreaterThan(0);
     }
   });
+  it("#275 / BR-017: labels are Vietnamese and sentiment ≠ safety wording", () => {
+    expect(sentimentBadge.negative.label).toBe("Tiêu cực");
+    expect(safetyBadge.severe.label).toBe("Nghiêm trọng");
+    expect(analysisStatusBadge.pending.label).toBe("Chờ phân tích");
+  });
   it("formats rates per metric rules", () => {
     expect(formatRate(0.6204)).toBe("62.0%");
     expect(formatRate(null)).toBe("—");

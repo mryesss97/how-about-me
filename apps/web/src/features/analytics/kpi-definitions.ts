@@ -9,40 +9,40 @@ export type KpiDefinition = { id: KpiId; label: string; definition: string; deno
 export const KPI_DEFINITIONS: readonly KpiDefinition[] = [
   {
     id: "mentions",
-    label: "Total Relevant Mentions",
-    definition: "Distinct posts in range matching the current filters.",
-    denominator: "distinct posts published in range with relevance = relevant",
+    label: "Tổng lượt nhắc liên quan",
+    definition: "Số bài viết (không trùng) trong khoảng thời gian, khớp bộ lọc hiện tại.",
+    denominator: "bài viết (không trùng) đăng trong khoảng thời gian có mức liên quan = liên quan",
   },
   {
     id: "growth",
-    label: "Mention Growth",
+    label: "Tăng trưởng lượt nhắc",
     definition:
-      "(current − previous) / previous over the previous equal-length window. Shows New when the previous period had 0 mentions.",
-    denominator: "mentions in the previous equal-length period",
+      "(kỳ này − kỳ trước) / kỳ trước, so với kỳ liền trước cùng độ dài. Hiện “Mới” khi kỳ trước có 0 lượt nhắc.",
+    denominator: "lượt nhắc trong kỳ liền trước cùng độ dài",
   },
   {
     id: "positive",
-    label: "Positive Rate",
-    definition: "Share of analysed mentions with sentiment = positive.",
-    denominator: "relevant mentions with a completed sentiment label",
+    label: "Tỷ lệ tích cực",
+    definition: "Tỷ lệ lượt nhắc đã phân tích có cảm xúc = tích cực.",
+    denominator: "lượt nhắc liên quan đã có nhãn cảm xúc",
   },
   {
     id: "negative",
-    label: "Negative Rate",
-    definition: "Share of analysed mentions with sentiment = negative.",
-    denominator: "relevant mentions with a completed sentiment label",
+    label: "Tỷ lệ tiêu cực",
+    definition: "Tỷ lệ lượt nhắc đã phân tích có cảm xúc = tiêu cực.",
+    denominator: "lượt nhắc liên quan đã có nhãn cảm xúc",
   },
   {
     id: "safety",
-    label: "Sensitive + Severe Rate",
-    definition: "Share of mentions with safety level sensitive or severe. Severe count shown separately when > 0.",
-    denominator: "relevant mentions with a completed safety level",
+    label: "Tỷ lệ nhạy cảm + nghiêm trọng",
+    definition: "Tỷ lệ lượt nhắc có mức an toàn là nhạy cảm hoặc nghiêm trọng. Số nghiêm trọng hiện riêng khi > 0.",
+    denominator: "lượt nhắc liên quan đã có mức an toàn",
   },
   {
     id: "complaint",
-    label: "Complaint Rate",
-    definition: "Share of mentions whose intents include complaint.",
-    denominator: "relevant mentions with at least one intent label",
+    label: "Tỷ lệ phàn nàn",
+    definition: "Tỷ lệ lượt nhắc có ý định gồm phàn nàn.",
+    denominator: "lượt nhắc liên quan có ít nhất một nhãn ý định",
   },
 ];
 

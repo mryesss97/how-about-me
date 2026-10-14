@@ -5,7 +5,7 @@ import { SentimentBubbleMap } from "./sentiment-bubble-map";
 import { emptyTopicSentiment, topicSentimentFixture } from "./topic-sentiment-fixture.test-utils";
 
 const getHref = (t: string, s: string | null) => `/mentions?topic=${t}${s ? `&sentiment=${s}` : ""}`;
-const TICKET = "Ticket, 50.0% negative, 4 mentions";
+const TICKET = "Vé, 50,0% tiêu cực, 4 lượt nhắc";
 
 function mockReducedMotion(matches: boolean) {
   vi.stubGlobal(
@@ -25,22 +25,22 @@ describe("SentimentBubbleMap (#222)", () => {
   it("NFR-030: each bubble is a named button; chips carry text and icon", () => {
     render(<SentimentBubbleMap data={topicSentimentFixture()} getHref={getHref} />);
     expect(screen.getByRole("button", { name: TICKET })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Price, 75.0% positive, 4 mentions" })).toBeInTheDocument();
-    const chip = screen.getByRole("radio", { name: /Negative \(3\)/ });
+    expect(screen.getByRole("button", { name: "Giá, 75,0% tích cực, 4 lượt nhắc" })).toBeInTheDocument();
+    const chip = screen.getByRole("radio", { name: /Tiêu cực \(3\)/ });
     expect(chip.querySelector("[data-icon=negative]")).not.toBeNull();
   });
 
   it("chips filter bubbles by dominant sentiment; neutral shows inline empty state", async () => {
     render(<SentimentBubbleMap data={topicSentimentFixture()} getHref={getHref} />);
-    expect(screen.getByText("4 topics")).toBeInTheDocument();
-    await click(screen.getByRole("radio", { name: /Positive \(1\)/ }));
-    expect(screen.getAllByRole("button", { name: /mentions$/ }).map((b) => b.getAttribute("aria-label"))).toEqual([
-      "Price, 75.0% positive, 4 mentions",
+    expect(screen.getByText("4 chủ đề")).toBeInTheDocument();
+    await click(screen.getByRole("radio", { name: /Tích cực \(1\)/ }));
+    expect(screen.getAllByRole("button", { name: /lượt nhắc$/ }).map((b) => b.getAttribute("aria-label"))).toEqual([
+      "Giá, 75,0% tích cực, 4 lượt nhắc",
     ]);
-    expect(screen.getByText("1 topic")).toBeInTheDocument();
-    await click(screen.getByRole("radio", { name: /Neutral \(0\)/ }));
-    expect(screen.getByText("No topics where neutral is dominant.")).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: /All/ })).toBeInTheDocument();
+    expect(screen.getByText("1 chủ đề")).toBeInTheDocument();
+    await click(screen.getByRole("radio", { name: /Trung tính \(0\)/ }));
+    expect(screen.getByText("Không có chủ đề nào mà cảm xúc trung tính chiếm ưu thế.")).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Tất cả/ })).toBeInTheDocument();
   });
 
   it("keyboard: Enter selects (aria-pressed), panel shows breakdown, Escape deselects; FR-142 links", async () => {
@@ -50,28 +50,28 @@ describe("SentimentBubbleMap (#222)", () => {
     await click(bubble); // native <button>: Enter/Space dispatch click
     expect(bubble).toHaveAttribute("aria-pressed", "true");
     const panel = screen.getByRole("complementary");
-    expect(within(panel).getAllByText("1 · 25.0%")).toHaveLength(2);
-    expect(within(panel).getByText("2 · 50.0%")).toBeInTheDocument();
-    expect(within(panel).getByRole("link", { name: "Negative" })).toHaveAttribute(
+    expect(within(panel).getAllByText("1 · 25,0%")).toHaveLength(2);
+    expect(within(panel).getByText("2 · 50,0%")).toBeInTheDocument();
+    expect(within(panel).getByRole("link", { name: "Tiêu cực" })).toHaveAttribute(
       "href",
       "/mentions?topic=ticket&sentiment=negative",
     );
-    expect(within(panel).getByRole("link", { name: "View all 4 mentions" })).toHaveAttribute(
+    expect(within(panel).getByRole("link", { name: "Xem tất cả 4 lượt nhắc" })).toHaveAttribute(
       "href",
       "/mentions?topic=ticket",
     );
     await act(async () => fireEvent.keyDown(bubble, { key: "Escape" }));
     expect(bubble).toHaveAttribute("aria-pressed", "false");
-    expect(within(panel).getByText(/Select a bubble/)).toBeInTheDocument();
+    expect(within(panel).getByText(/Chọn một bong bóng/)).toBeInTheDocument();
   });
 
   it("FR-142: zero-count rows are not links; `other` drills", async () => {
     render(<SentimentBubbleMap data={topicSentimentFixture()} getHref={getHref} />);
-    await click(screen.getByRole("button", { name: /^Venue/ }));
+    await click(screen.getByRole("button", { name: /^Địa điểm/ }));
     const panel = screen.getByRole("complementary");
-    expect(within(panel).queryByRole("link", { name: "Positive" })).toBeNull();
-    await click(screen.getByRole("button", { name: /^Other/ }));
-    expect(within(panel).getByRole("link", { name: "Negative" })).toHaveAttribute(
+    expect(within(panel).queryByRole("link", { name: "Tích cực" })).toBeNull();
+    await click(screen.getByRole("button", { name: /^Khác/ }));
+    expect(within(panel).getByRole("link", { name: "Tiêu cực" })).toHaveAttribute(
       "href",
       "/mentions?topic=other&sentiment=negative",
     );
@@ -79,43 +79,43 @@ describe("SentimentBubbleMap (#222)", () => {
 
   it("NFR-032: Bubbles | Table toggle; table respects the chip and links the topic", async () => {
     render(<SentimentBubbleMap data={topicSentimentFixture()} getHref={getHref} />);
-    await click(screen.getByRole("radio", { name: /Negative \(3\)/ }));
-    await click(screen.getByRole("radio", { name: "Table" }));
+    await click(screen.getByRole("radio", { name: /Tiêu cực \(3\)/ }));
+    await click(screen.getByRole("radio", { name: "Bảng dữ liệu" }));
     const rows = Array.from(screen.getByRole("grid").querySelectorAll("tr")).map((r) =>
       Array.from(r.querySelectorAll("th, td")).map((c) => (c.textContent ?? "").trim()),
     );
     expect(rows[0]).toEqual([
-      "Topic",
-      "Dominant sentiment",
-      "Dominant share",
-      "Positive",
-      "Neutral",
-      "Negative",
-      "With sentiment",
+      "Chủ đề",
+      "Cảm xúc chủ đạo",
+      "Tỷ lệ chủ đạo",
+      "Tích cực",
+      "Trung tính",
+      "Tiêu cực",
+      "Có cảm xúc",
     ]);
-    expect(rows[1]).toEqual(["Ticket", "Negative", "50.0%", "1", "1", "2", "4"]);
+    expect(rows[1]).toEqual(["Vé", "Tiêu cực", "50,0%", "1", "1", "2", "4"]);
     expect(rows).toHaveLength(4);
-    expect(screen.getByRole("link", { name: "Ticket" })).toHaveAttribute("href", "/mentions?topic=ticket");
+    expect(screen.getByRole("link", { name: "Vé" })).toHaveAttribute("href", "/mentions?topic=ticket");
   });
 
   it("NFR-031: data-motion follows prefers-reduced-motion", () => {
     mockReducedMotion(true);
     const { unmount } = render(<SentimentBubbleMap data={topicSentimentFixture()} />);
-    expect(screen.getByRole("group", { name: "Sentiment map bubbles" })).toHaveAttribute("data-motion", "reduced");
+    expect(screen.getByRole("group", { name: "Bong bóng bản đồ cảm xúc" })).toHaveAttribute("data-motion", "reduced");
     unmount();
     mockReducedMotion(false);
     render(<SentimentBubbleMap data={topicSentimentFixture()} />);
-    expect(screen.getByRole("group", { name: "Sentiment map bubbles" })).toHaveAttribute("data-motion", "full");
+    expect(screen.getByRole("group", { name: "Bong bóng bản đồ cảm xúc" })).toHaveAttribute("data-motion", "full");
   });
 
   it("BR-032: no sentiment → explicit empty state without chips or toggle; error shows retry", () => {
     const { unmount } = render(<SentimentBubbleMap data={emptyTopicSentiment()} />);
-    expect(screen.getByText("No analysed mentions in this range")).toBeInTheDocument();
+    expect(screen.getByText("Chưa có lượt nhắc đã phân tích trong khoảng này")).toBeInTheDocument();
     expect(screen.queryByRole("radio")).toBeNull();
     unmount();
     render(<SentimentBubbleMap error={{ message: "boom", requestId: "req-9" }} onRetry={() => {}} />);
     expect(screen.getByText(/req-9/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Retry/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Thử lại/ })).toBeInTheDocument();
   });
 
   it("BR-017: bubbles use sentiment hues only, never safety colours", () => {
@@ -144,30 +144,30 @@ describe("SentimentBubbleMap (#222)", () => {
       const { unmount } = render(
         <SentimentBubbleMap data={topicSentimentFixture()} mode="topics" onModeChange={onModeChange} />,
       );
-      const group = screen.getByRole("radiogroup", { name: "Group bubbles by" });
-      await click(within(group).getByRole("radio", { name: "Phrases" }));
+      const group = screen.getByRole("radiogroup", { name: "Nhóm bong bóng theo" });
+      await click(within(group).getByRole("radio", { name: "Cụm từ" }));
       expect(onModeChange).toHaveBeenCalledWith("phrases");
       unmount();
       render(<SentimentBubbleMap data={topicSentimentFixture()} />);
-      expect(screen.queryByRole("radiogroup", { name: "Group bubbles by" })).toBeNull();
+      expect(screen.queryByRole("radiogroup", { name: "Nhóm bong bóng theo" })).toBeNull();
     });
 
     it("phrase bubbles are named verbatim and drill to phrase=…; footer shows top N of total", async () => {
       render(
         <SentimentBubbleMap phraseData={phraseData()} mode="phrases" onModeChange={() => {}} getHref={phraseHref} />,
       );
-      const bubble = screen.getByRole("button", { name: "giá vé, 75.0% negative, 4 mentions" });
-      expect(screen.getByText("Top 2 of 40 phrases")).toBeInTheDocument();
-      expect(screen.getByText("Key phrases in analysed mentions")).toBeInTheDocument();
+      const bubble = screen.getByRole("button", { name: "giá vé, 75,0% tiêu cực, 4 lượt nhắc" });
+      expect(screen.getByText("Top 2 trên 40 cụm từ")).toBeInTheDocument();
+      expect(screen.getByText("Cụm từ chính trong các lượt nhắc đã phân tích")).toBeInTheDocument();
       await click(bubble);
       const panel = screen.getByRole("complementary");
-      expect(within(panel).getByRole("link", { name: "Negative" })).toHaveAttribute(
+      expect(within(panel).getByRole("link", { name: "Tiêu cực" })).toHaveAttribute(
         "href",
         `/mentions?phrase=${encodeURIComponent("giá vé")}&sentiment=negative`,
       );
-      await click(screen.getByRole("radio", { name: "Table" }));
+      await click(screen.getByRole("radio", { name: "Bảng dữ liệu" }));
       const head = screen.getByRole("grid").querySelector("tr")?.querySelector("th")?.textContent;
-      expect(head).toBe("Phrase");
+      expect(head).toBe("Cụm từ");
       expect(screen.getByRole("link", { name: "giá vé" })).toHaveAttribute(
         "href",
         `/mentions?phrase=${encodeURIComponent("giá vé")}`,
@@ -181,11 +181,11 @@ describe("SentimentBubbleMap (#222)", () => {
 
     it("empty states: no phrases yet / none reaching minMentions / 0 mentions (BR-032)", () => {
       const r1 = render(<SentimentBubbleMap mode="phrases" phraseData={phraseData({ phraseAnalyzed: 0, rows: [] })} />);
-      expect(screen.getByText("No phrases yet — re-analyse to extract phrases")).toBeInTheDocument();
-      expect(screen.getByText(/have no phrases until they are re-analysed/)).toBeInTheDocument();
+      expect(screen.getByText("Chưa có cụm từ — hãy phân tích lại để trích xuất cụm từ")).toBeInTheDocument();
+      expect(screen.getByText(/chưa có cụm từ cho tới khi được phân tích lại/)).toBeInTheDocument();
       r1.unmount();
       const r2 = render(<SentimentBubbleMap mode="phrases" phraseData={phraseData({ totalPhrases: 0, rows: [] })} />);
-      expect(screen.getByText("No phrase reaches 2 mentions")).toBeInTheDocument();
+      expect(screen.getByText("Không có cụm từ nào đạt 2 lượt nhắc")).toBeInTheDocument();
       r2.unmount();
       render(
         <SentimentBubbleMap
@@ -193,7 +193,7 @@ describe("SentimentBubbleMap (#222)", () => {
           phraseData={phraseData({ sentimentAnalyzed: 0, phraseAnalyzed: 0, totalPhrases: 0, rows: [] })}
         />,
       );
-      expect(screen.getByText("No analysed mentions in this range")).toBeInTheDocument();
+      expect(screen.getByText("Chưa có lượt nhắc đã phân tích trong khoảng này")).toBeInTheDocument();
     });
 
     it("QA #243: toggle stays reachable in phrase empty and error states", async () => {
@@ -205,7 +205,7 @@ describe("SentimentBubbleMap (#222)", () => {
           phraseData={phraseData({ phraseAnalyzed: 0, rows: [] })}
         />,
       );
-      await click(screen.getByRole("radio", { name: "Topics" }));
+      await click(screen.getByRole("radio", { name: "Chủ đề" }));
       expect(onModeChange).toHaveBeenCalledWith("topics");
       r1.unmount();
       onModeChange.mockClear();
@@ -217,7 +217,7 @@ describe("SentimentBubbleMap (#222)", () => {
           onRetry={() => {}}
         />,
       );
-      await click(screen.getByRole("radio", { name: "Topics" }));
+      await click(screen.getByRole("radio", { name: "Chủ đề" }));
       expect(onModeChange).toHaveBeenCalledWith("topics");
     });
   });

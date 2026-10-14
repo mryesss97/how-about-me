@@ -138,7 +138,7 @@ Illustrations (#245): `features/shared/state-illustration.tsx` (`empty | pending
 
 ## 8. Accessibility & i18n
 
-React Aria primitives; every icon-only button has `aria-label`; charts have table fallback. Copy in English for MVP; strings centralised in `features/*/copy.ts` to allow VI later (first one: `features/analytics/copy.ts`, #222, keeps the VI prototype labels as comments).
+React Aria primitives; every icon-only button has `aria-label`; charts have table fallback. Copy is Vietnamese, screen by screen as each screen is restyled (Overview + shared states/banners/badges in #275); strings centralised in `features/*/copy.ts` (e.g. `features/analytics/copy.ts`). Taxonomy display labels live in `lib/semantics/labels.ts` (`displayLabel`); numbers/dates format as `vi-VN` via `lib/format`.
 
 ## 9. Performance
 
