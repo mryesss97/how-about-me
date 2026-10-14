@@ -609,6 +609,11 @@ input[type="search"]::-webkit-search-cancel-button {
   --line: var(--ink);
 }
 
+/* Linked boards (KPI drill-down): this unlayered rule beats utilities, so the hover tint lives here too. */
+.operate-board:has(> a:hover) {
+  background: #eef5fa;
+}
+
 /* Chart board title: condensed figure caps, 20px. */
 .operate-board-title {
   font-family: var(--font-figure), sans-serif;
