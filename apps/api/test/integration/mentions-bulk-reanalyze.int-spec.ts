@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { INestApplication } from "@nestjs/common";
 import type { PrismaService } from "../../src/database/prisma.service";
 import { APP_CONFIG } from "../../src/config/config.module";
-import { loadEnv } from "../../src/config/env.schema";
+import { loadTestEnv } from "../helpers/test-env";
 import { AnalysisService } from "../../src/modules/analysis/analysis.service";
 import { api, createActor, createPost, createProject, createQuery, createTestApp, resetDb } from "../helpers";
 
@@ -27,7 +27,7 @@ describe("Bulk re-analysis + mark-stale (T-145)", () => {
   beforeAll(async () => {
     ({ app, prisma } = await createTestApp({
       customize: (b) =>
-        b.overrideProvider(APP_CONFIG).useFactory({ factory: () => ({ ...loadEnv(), ANALYSIS_BULK_MAX: CAP }) }),
+        b.overrideProvider(APP_CONFIG).useFactory({ factory: () => ({ ...loadTestEnv(), ANALYSIS_BULK_MAX: CAP }) }),
     }));
     // No analysis_settings row → v1 default policy (FR-190).
     current = app.get(AnalysisService).effectiveVersionOf("safety-policy-v1");

@@ -15,3 +15,4 @@ export {
   segmentDrill,
 } from "./analytics-fixtures";
 export type { AnalyticsFixture, DrillParams, FixturePostKey } from "./analytics-fixtures";
+export { loadTestEnv, stripDevAuthEnv, TEST_STRIPPED_AUTH_VARS } from "./test-env";

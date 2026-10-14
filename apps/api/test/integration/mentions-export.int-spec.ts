@@ -3,7 +3,7 @@ import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import type { PrismaService } from "../../src/database/prisma.service";
 import { APP_CONFIG } from "../../src/config/config.module";
-import { loadEnv } from "../../src/config/env.schema";
+import { loadTestEnv } from "../helpers/test-env";
 import {
   addMember,
   api,
@@ -64,7 +64,7 @@ describe("Mentions CSV export (T-147)", () => {
   beforeAll(async () => {
     ({ app, prisma } = await createTestApp({
       customize: (b) =>
-        b.overrideProvider(APP_CONFIG).useFactory({ factory: () => ({ ...loadEnv(), EXPORT_MAX_ROWS: CAP }) }),
+        b.overrideProvider(APP_CONFIG).useFactory({ factory: () => ({ ...loadTestEnv(), EXPORT_MAX_ROWS: CAP }) }),
     }));
   });
   afterAll(async () => {
