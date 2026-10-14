@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { AnalyticsQuerySchema, MentionsListQuerySchema } from "@how-about-me/contracts";
-import { appliedChips, removeFilterValue, toApiParams, toMentionsHref } from "./api-params";
+import { appliedChips, phraseMentionsHref, removeFilterValue, toApiParams, toMentionsHref } from "./api-params";
+import { filterParsers } from "./parsers";
 import { defaultFilters, type Filters } from "./schema";
 
 const now = new Date("2026-10-13T05:30:00.000Z");
@@ -97,5 +98,14 @@ describe("phrase filter (#243, FR-148, BR-041)", () => {
   it("has a verbatim chip and can be removed", () => {
     expect(appliedChips(f).map((c) => c.label)).toEqual(["Phrase: giá vé", "Phrase: xếp hàng"]);
     expect(removeFilterValue(f, "phrase", "giá vé")).toEqual({ phrase: ["xếp hàng"] });
+  });
+});
+
+describe("phraseMentionsHref (#250, FR-148, BR-041)", () => {
+  it.each(["giá vé", "check-in", "a/b"])("round-trips %s through the phrase parser", (p) => {
+    const url = new URL(phraseMentionsHref(p), "http://x");
+    expect(url.pathname).toBe("/mentions");
+    expect([...url.searchParams.keys()]).toEqual(["phrase"]);
+    expect(filterParsers.phrase.parse(url.searchParams.get("phrase") ?? "")).toEqual([p]);
   });
 });

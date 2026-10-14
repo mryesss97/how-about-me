@@ -98,4 +98,53 @@ describe("AnalysisCurrent", () => {
     expect(screen.getByText("Complaint")).toBeInTheDocument();
     expect(screen.getByText("AI value: Praise")).toBeInTheDocument();
   });
+
+  describe("key phrases (#250, FR-120, BR-041)", () => {
+    const versions = detailFixture().analysis.versions ?? {
+      classifierProvider: "openai",
+      classifierModel: "gpt-x",
+      promptVersion: "classifier-v2",
+      taxonomyVersion: "t2",
+      safetyProvider: "openai",
+      safetyModel: "omni-mod",
+      safetyPolicyVersion: "s1",
+    };
+    const V1_TEXT = "No phrases (analysed before phrase extraction)";
+
+    it("renders phrases in order as links to /mentions?phrase= only", () => {
+      render(
+        <AnalysisCurrent
+          mention={detailFixture({ analysis: { versions, phrases: ["giá vé", "check-in"] } })}
+          tz={TZ}
+        />,
+      );
+      const links = screen.getAllByRole("link", { name: /View mentions with phrase/ });
+      expect(links.map((l) => l.textContent)).toEqual(["giá vé", "check-in"]);
+      const url = new URL(links[0]?.getAttribute("href") ?? "", "http://x");
+      expect(url.pathname).toBe("/mentions");
+      expect(url.searchParams.get("phrase")).toBe("giá vé");
+      expect([...url.searchParams.keys()]).toEqual(["phrase"]);
+    });
+
+    it("shows the v1 text when phrases is null or missing on an analysed mention", () => {
+      const { unmount } = render(
+        <AnalysisCurrent mention={detailFixture({ analysis: { versions, phrases: null } })} tz={TZ} />,
+      );
+      expect(screen.getByText(V1_TEXT)).toBeInTheDocument();
+      unmount();
+      render(<AnalysisCurrent mention={detailFixture({ analysis: { versions, phrases: undefined } })} tz={TZ} />);
+      expect(screen.getByText(V1_TEXT)).toBeInTheDocument();
+    });
+
+    it("shows a dash for v2 without phrases", () => {
+      render(<AnalysisCurrent mention={detailFixture({ analysis: { versions, phrases: [] } })} tz={TZ} />);
+      expect(screen.queryByRole("link", { name: /View mentions with phrase/ })).toBeNull();
+      expect(screen.queryByText(V1_TEXT)).toBeNull();
+    });
+
+    it("does not show the v1 text when not analysed", () => {
+      render(<AnalysisCurrent mention={detailFixture({ analysis: { versions: null, phrases: null } })} tz={TZ} />);
+      expect(screen.queryByText(V1_TEXT)).toBeNull();
+    });
+  });
 });

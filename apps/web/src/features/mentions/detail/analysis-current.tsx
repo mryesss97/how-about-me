@@ -4,8 +4,15 @@ import type { MentionDetail } from "@how-about-me/contracts";
 import { useState, type ReactNode } from "react";
 import { Badge } from "@/components/base/badges/badges";
 import { Button } from "@/components/base/buttons/button";
-import { ConfidenceMarker, RelevanceBadge, SafetyBadge, SentimentBadge } from "@/features/shared/semantic-badge";
+import {
+  ConfidenceMarker,
+  RelevanceBadge,
+  SafetyBadge,
+  SentimentBadge,
+  ValueSourceBadge,
+} from "@/features/shared/semantic-badge";
 import { humanize, pct, usd } from "./format";
+import { KeyPhrases } from "./key-phrases";
 import { activeOverrides } from "./overrides";
 import { SafetyScoresTable } from "./safety-scores-table";
 import { ValueSource } from "./value-source";
@@ -114,6 +121,11 @@ export function AnalysisCurrent({ mention, tz, canOverride = false, onRevoke, is
           <Dash />
         )}
         {src("topics", a.topics.length > 0)}
+      </Row>
+      <Row label="Key phrases">
+        <KeyPhrases analysis={a} />
+        {/* Phrases are always AI values (not overridable), so the source is AI (UX §3.4). */}
+        {a.phrases?.length ? <ValueSourceBadge source="ai" /> : null}
       </Row>
       <Row label="Language">{a.language ? a.language.toUpperCase() : <Dash />}</Row>
       <Row label="Summary">{a.summary ?? <Dash />}</Row>

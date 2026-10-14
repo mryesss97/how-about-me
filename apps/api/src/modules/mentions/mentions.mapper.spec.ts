@@ -165,6 +165,51 @@ const detail = (over: Partial<MentionDetailRow>, runs: MentionRunRow[] = [run]) 
 
 /** T-096 projection — FR-154, BR-003, BR-017, BR-025; TC-MEN-010/011/012. */
 describe("toMentionDetail", () => {
+  describe("phrases (#250, FR-120, BR-041)", () => {
+    const withPhrases = (over: Partial<MentionDetailRow>, phrases: string[]) =>
+      MentionDetailSchema.parse(toMentionDetail({ ...detailBase, ...over }, empty, [run], [], phrases));
+
+    it("v2 → stored phrases in extraction order", () => {
+      expect(withPhrases({ prompt_version: "classifier-v2" }, ["giá vé", "check-in"]).analysis.phrases).toEqual([
+        "giá vé",
+        "check-in",
+      ]);
+    });
+    it("v2 without phrases → []", () => {
+      expect(withPhrases({ prompt_version: "classifier-v2" }, []).analysis.phrases).toEqual([]);
+    });
+    it.each(["classifier-v1", "prompt-v1", null])("prompt %s without phrases → null", (pv) => {
+      expect(withPhrases({ prompt_version: pv }, []).analysis.phrases).toBeNull();
+    });
+    it("v1 with stored rows (unexpected data) → returns them", () => {
+      expect(withPhrases({ prompt_version: "classifier-v1" }, ["a"]).analysis.phrases).toEqual(["a"]);
+    });
+    it("unanalysed → null", () => {
+      expect(withPhrases({ analysis_id: null, prompt_version: "classifier-v2" }, []).analysis.phrases).toBeNull();
+    });
+    it("BR-025: overrides do not change AI phrases", () => {
+      const o = {
+        id: "44444444-4444-4444-8444-444444444444",
+        field: "relevance" as const,
+        previousValue: "relevant",
+        value: "irrelevant",
+        reason: null,
+        reviewedBy: null,
+        createdAt: "2026-10-02T00:00:00.000Z",
+        revokedAt: null,
+        revokedBy: null,
+      };
+      const d = toMentionDetail(
+        { ...detailBase, prompt_version: "classifier-v2", has_override: true },
+        empty,
+        [],
+        [o],
+        ["giá vé"],
+      );
+      expect(d.analysis.phrases).toEqual(["giá vé"]);
+    });
+  });
+
   it("FR-193 / T-142: returns override history as given (incl. revoked)", () => {
     const o = {
       id: "44444444-4444-4444-8444-444444444444",
