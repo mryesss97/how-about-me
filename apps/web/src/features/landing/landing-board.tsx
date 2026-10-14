@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { CSSProperties } from "react";
 import { cx } from "@/utils/cx";
 import { landingCopy as copy } from "./copy";
@@ -8,8 +9,8 @@ type Props = { board: LandingBoard; rect: BoardRect; rank: number; index: number
 
 /**
  * One enamel signboard (#271): the phrase in straight quotes, its dominant share painted below, a house-number rank
- * plate, and a sub-sign with the full split that slides up on hover/focus. Not a link (no drill-down on the landing);
- * focusable `role="img"` whose name carries the full text (BR-017: colour always with words).
+ * plate, and a sub-sign with the full split that slides up on hover/focus. A link to the phrase's detail page (#276),
+ * named with the full text (BR-017: colour always with words).
  */
 export function SignBoard({ board, rect, rank, index }: Props) {
   const compact = rect.width < 96 || rect.height < 72;
@@ -28,9 +29,8 @@ export function SignBoard({ board, rect, rank, index }: Props) {
   }
   const swing = index % 2 === 0 ? -2.4 : 2.4;
   return (
-    <div
-      role="img"
-      tabIndex={0}
+    <Link
+      href={termHref(board.name)}
       aria-label={boardLabel(board)}
       data-tone={boardTone(board)}
       className="sign-board absolute"
@@ -72,9 +72,12 @@ export function SignBoard({ board, rect, rank, index }: Props) {
       <span aria-hidden className={cx("sign-sub", rect.height < 64 && "sign-sub-tight")}>
         {boardSplit(board)}
       </span>
-    </div>
+    </Link>
   );
 }
+
+/** Phrase detail over the same 30 days as the board (#276). */
+export const termHref = (name: string) => `/terms/${encodeURIComponent(name)}?preset=30d`;
 
 /** Saira Extra Condensed 700 caps, average advance per glyph incl. spaces and digits. */
 const FIGURE_EM = 0.5;
