@@ -191,3 +191,10 @@ input[type="search"]::-webkit-search-cancel-button {
 .bubble-map .bubble-pos:has(.bubble-3d:hover, .bubble-3d:focus-visible, .bubble-3d[aria-pressed="true"]) {
   z-index: 2;
 }
+
+/* Landing (#262): a configured term with 0 mentions — neutral grey, low tint, dashed rim. */
+.bubble-3d[data-empty="true"] {
+  --bubble-hue: var(--color-utility-neutral-400);
+  --bubble-mix: 6%;
+  border-style: dashed;
+}

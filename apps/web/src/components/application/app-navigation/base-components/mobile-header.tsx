@@ -9,6 +9,7 @@ import {
     Modal as AriaModal,
     ModalOverlay as AriaModalOverlay,
 } from "react-aria-components";
+import Link from "next/link";
 import { BrandLogo } from "@/features/shared/brand-logo";
 import { cx } from "@/utils/cx";
 
@@ -17,7 +18,10 @@ export const MobileNavigationHeader = ({ children }: PropsWithChildren) => {
         <AriaDialogTrigger>
             <header className="flex h-14 items-center justify-between border-b border-secondary bg-primary p-3 pl-4 lg:hidden">
                 {/* Brand guide v2: horizontal logo >= 180 px wide (#221). */}
-                <BrandLogo variant="horizontal" className="h-auto w-[180px]" />
+                {/* #262: logo links to the landing page. */}
+                <Link href="/" aria-label="How About Me home" className="self-start rounded-md outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2">
+                    <BrandLogo variant="horizontal" className="h-auto w-[180px]" />
+                </Link>
 
                 <AriaButton
                     aria-label="Expand navigation menu"

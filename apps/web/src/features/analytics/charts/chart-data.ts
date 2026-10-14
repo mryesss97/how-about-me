@@ -8,11 +8,7 @@ export type Interval = "hour" | "day";
 export const SENTIMENT_ORDER: readonly SentimentLabel[] = ["positive", "neutral", "negative"];
 
 /** Theme tokens that exist in styles/theme.css; hues match `sentimentBadge` (success / gray / error). */
-export const SENTIMENT_COLORS: Record<SentimentLabel, string> = {
-  positive: "var(--color-utility-green-500)",
-  neutral: "var(--color-utility-neutral-400)",
-  negative: "var(--color-utility-red-500)",
-};
+export { SENTIMENT_COLORS } from "@/features/shared/bubbles/sentiment-style";
 
 const pad = (n: string) => n.padStart(2, "0");
 

@@ -30,11 +30,11 @@ describe("LoginForm (FR-010)", () => {
     expect(replace).not.toHaveBeenCalled();
   });
 
-  it("TC-AUTH-001: success goes to /overview", async () => {
+  it("TC-AUTH-001: success goes to / (landing, #262)", async () => {
     signInWithPassword.mockResolvedValue({ error: null });
     render(<LoginForm googleEnabled={false} />);
     submit();
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/overview"));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/"));
     expect(signInWithPassword).toHaveBeenCalledWith({ email: "a@b.co", password: "secret123" });
   });
 
@@ -42,7 +42,7 @@ describe("LoginForm (FR-010)", () => {
     signInWithPassword.mockResolvedValue({ error: null });
     const { unmount } = render(<LoginForm googleEnabled={false} next="//evil.com" />);
     submit();
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/overview"));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/"));
     unmount();
     render(<LoginForm googleEnabled={false} next="/mentions?x=1" />);
     submit();
@@ -69,14 +69,14 @@ describe("LoginForm (FR-010)", () => {
 
 describe("safeNext", () => {
   it.each([
-    [undefined, "/overview"],
-    ["//evil.com", "/overview"],
-    ["https://evil.com", "/overview"],
-    ["/\\evil.com", "/overview"],
-    ["/\t/evil.com", "/overview"],
-    ["/login", "/overview"],
-    ["/login?next=/x", "/overview"],
-    ["/auth/callback", "/overview"],
+    [undefined, "/"],
+    ["//evil.com", "/"],
+    ["https://evil.com", "/"],
+    ["/\\evil.com", "/"],
+    ["/\t/evil.com", "/"],
+    ["/login", "/"],
+    ["/login?next=/x", "/"],
+    ["/auth/callback", "/"],
     ["/mentions", "/mentions"],
     ["/mentions?q=1&tz=Asia%2FHo_Chi_Minh", "/mentions?q=1&tz=Asia%2FHo_Chi_Minh"],
   ])("%s → %s", (input, out) => expect(safeNext(input)).toBe(out));

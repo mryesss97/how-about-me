@@ -7,9 +7,7 @@ const nextConfig: NextConfig = {
   agentRules: false,
   experimental: { optimizePackageImports: ["@untitledui/icons"] },
   // Workspace packages ship built `dist` (tsup); no transpilePackages needed.
-  async redirects() {
-    return [{ source: "/", destination: "/overview", permanent: false }];
-  },
+  // No `/` → `/overview` redirect: `/` is the landing page (#262).
 };
 
 export default nextConfig;

@@ -47,7 +47,7 @@ export async function proxy(request: NextRequest) {
   }
   if (user && pathname === "/login") {
     const url = request.nextUrl.clone();
-    url.pathname = "/overview";
+    url.pathname = "/"; // #262: landing is the signed-in home
     url.search = "";
     return redirectTo(url);
   }

@@ -1,5 +1,6 @@
 import type { SentimentLabel } from "@how-about-me/taxonomy";
-import { formatCount, formatRate } from "@/lib/format/number";
+import { formatCount } from "@/lib/format/number";
+import { bubbleCopy } from "@/features/shared/bubbles/sentiment-style";
 
 /**
  * UI copy for the sentiment bubble map (#222). English for MVP (docs 03 §8); Vietnamese labels from the brand
@@ -17,8 +18,8 @@ export const bubbleMapCopy = {
   emptyFiltered: (s: SentimentLabel) => `No topics where ${s} is dominant.`,
   legend: "Area = mentions with sentiment · Intensity = share of the dominant sentiment", // "Diện tích = số bài viết · Độ đậm = tỷ lệ cảm xúc chủ đạo"
   topicCount: (n: number) => `${formatCount(n)} ${n === 1 ? "topic" : "topics"}`, // "N cụm từ"
-  mentions: (n: number) => `${formatCount(n)} ${n === 1 ? "mention" : "mentions"}`, // "đề cập"
-  shareLine: (share: number, s: SentimentLabel) => `${formatRate(share)} ${s}`,
+  mentions: bubbleCopy.mentions,
+  shareLine: bubbleCopy.shareLine,
   hint: "Select a bubble to see its sentiment breakdown.",
   withSentiment: (n: number) => `${formatCount(n)} ${n === 1 ? "mention" : "mentions"} with sentiment`,
   viewAll: (n: number) => `View all ${formatCount(n)} ${n === 1 ? "mention" : "mentions"}`,
