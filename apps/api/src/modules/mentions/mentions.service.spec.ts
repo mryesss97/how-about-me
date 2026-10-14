@@ -212,6 +212,7 @@ describe("MentionsService.detail", () => {
         .fn()
         .mockResolvedValue({ matches: new Map(), intents: new Map(), topics: new Map(), errorCodes: new Map() }),
       listRuns: jest.fn().mockResolvedValue([]),
+      listPhrases: jest.fn().mockResolvedValue(["giá vé"]),
     };
     const overrides = { listForPost: jest.fn().mockResolvedValue([]) };
     const svc = new MentionsService(
@@ -250,6 +251,30 @@ describe("MentionsService.detail", () => {
     expect(repo.hydrate).toHaveBeenCalledWith([MID]);
     expect(overrides.listForPost).toHaveBeenCalledWith(MID);
     expect(repo.listRuns).toHaveBeenCalledWith(MID);
+    // #250: no analysis → no phrase lookup.
+    expect(repo.listPhrases).not.toHaveBeenCalled();
+  });
+
+  it("#250 / FR-120 / BR-026: reads phrases of the current analysis and returns them", async () => {
+    const AID = "55555555-5555-4555-8555-555555555555";
+    const row = {
+      post_id: MID,
+      analysis_id: AID,
+      prompt_version: "classifier-v2",
+      published_at: new Date(),
+      first_seen_at: new Date(),
+      last_seen_at: new Date(),
+      analyzed_at: new Date(),
+      safety_category_scores: null,
+      has_override: false,
+      high_band: 0.8,
+      medium_band: 0.6,
+      latest_run_status: "completed",
+    };
+    const { svc, repo } = mk(row);
+    const d = await svc.detail(PID, MID);
+    expect(repo.listPhrases).toHaveBeenCalledWith(AID);
+    expect(d.analysis.phrases).toEqual(["giá vé"]);
   });
 });
 

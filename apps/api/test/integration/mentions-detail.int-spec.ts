@@ -23,6 +23,7 @@ describe("Mention detail (T-096)", () => {
       completedAt?: Date;
       errorCode?: string;
       cost?: number;
+      promptVersion?: string;
     },
   ): Promise<string> {
     const id = randomUUID();
@@ -38,7 +39,7 @@ describe("Mention detail (T-096)", () => {
         effectiveVersion: "v1",
         classifierProvider: "openai",
         classifierModel: "gpt-x",
-        promptVersion: "prompt-v1",
+        promptVersion: over.promptVersion ?? "prompt-v1",
         taxonomyVersion: "taxonomy-v1",
         safetyProvider: "openai",
         safetyModel: "omni-moderation",
@@ -54,16 +55,28 @@ describe("Mention detail (T-096)", () => {
     return id;
   }
 
-  async function seedAnalysed(opts: { relevance?: "relevant" | "irrelevant"; publishedAt?: Date } = {}) {
-    const post = await createPost(prisma, {
-      projectId,
-      ...(opts.publishedAt ? { publishedAt: opts.publishedAt } : {}),
-    });
+  async function seedAnalysed(
+    opts: {
+      relevance?: "relevant" | "irrelevant";
+      publishedAt?: Date;
+      promptVersion?: string;
+      /** #250: [phrase, position] rows, inserted in the given order. */
+      phrases?: [string, number][];
+      postId?: string;
+    } = {},
+  ) {
+    const post = opts.postId
+      ? await prisma.socialPost.findUniqueOrThrow({ where: { id: opts.postId } })
+      : await createPost(prisma, {
+          projectId,
+          ...(opts.publishedAt ? { publishedAt: opts.publishedAt } : {}),
+        });
     const runId = await seedRun(post.id, post.contentHash, {
       status: "completed",
       createdAt: new Date("2026-10-01T00:00:00Z"),
       completedAt: new Date("2026-10-01T00:01:00Z"),
       cost: 0.0012,
+      ...(opts.promptVersion ? { promptVersion: opts.promptVersion } : {}),
     });
     const analysisId = randomUUID();
     await prisma.postAnalysis.create({
@@ -82,6 +95,11 @@ describe("Mention detail (T-096)", () => {
         overallModelConfidence: 0.85,
       },
     });
+    if (opts.phrases?.length) {
+      for (const [phrase, position] of opts.phrases) {
+        await prisma.analysisPhrase.create({ data: { analysisId, phrase, position } });
+      }
+    }
     await prisma.socialPost.update({
       where: { id: post.id },
       data: { currentAnalysisId: analysisId, latestRunStatus: "completed" },
@@ -184,6 +202,39 @@ describe("Mention detail (T-096)", () => {
       safetyTriggered: null,
     });
     expect(body.runs).toEqual([]);
+  });
+
+  describe("key phrases (#250, FR-120, BR-041, BR-026)", () => {
+    const get = async (id: string) => {
+      const { body } = await api(app, viewer).get(url(projectId, id)).expect(200);
+      return MentionDetailSchema.parse(body).analysis.phrases;
+    };
+
+    it("v2 → phrases ordered by position, not insert order", async () => {
+      const { post } = await seedAnalysed({
+        promptVersion: "classifier-v2",
+        phrases: [
+          ["check-in", 1],
+          ["giá vé", 0],
+        ],
+      });
+      expect(await get(post.id)).toEqual(["giá vé", "check-in"]);
+    });
+
+    it("v1 without phrases → null; v2 irrelevant without phrases → []; unanalysed → null", async () => {
+      const v1 = await seedAnalysed();
+      expect(await get(v1.post.id)).toBeNull();
+      const v2 = await seedAnalysed({ promptVersion: "classifier-v2", relevance: "irrelevant" });
+      expect(await get(v2.post.id)).toEqual([]);
+      const bare = await createPost(prisma, { projectId });
+      expect(await get(bare.id)).toBeNull();
+    });
+
+    it("BR-026: only phrases of the current analysis", async () => {
+      const old = await seedAnalysed({ promptVersion: "classifier-v2", phrases: [["a", 0]] });
+      await seedAnalysed({ postId: old.post.id, promptVersion: "classifier-v2", phrases: [["b", 0]] });
+      expect(await get(old.post.id)).toEqual(["b"]);
+    });
   });
 
   it("404 cross-project / unknown, 400 non-UUID, 403 non-member", async () => {

@@ -293,6 +293,16 @@ export class MentionsRepository {
     return row ? MentionDetailRowSchema.parse({ ...row, keys: [] }) : null;
   }
 
+  /** FR-120 / BR-026: phrases of one (current) analysis, extraction order. */
+  async listPhrases(analysisId: string): Promise<string[]> {
+    const rows = await this.prisma.analysisPhrase.findMany({
+      where: { analysisId },
+      orderBy: { position: "asc" },
+      select: { phrase: true },
+    });
+    return rows.map((r) => r.phrase);
+  }
+
   /** BR-003: run history (append-only), newest first, capped at MENTION_DETAIL_RUNS_LIMIT. */
   async listRuns(postId: string): Promise<MentionRunRow[]> {
     const runs = await this.prisma.analysisRun.findMany({

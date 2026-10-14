@@ -68,12 +68,14 @@ export class MentionsService {
   async detail(projectId: string, mentionId: string): Promise<MentionDetail> {
     const row = await this.repo.findDetail(projectId, mentionId);
     if (!row) throw AppError.notFound("Mention");
-    const [hydrated, runs, overrides] = await Promise.all([
+    const [hydrated, runs, overrides, phrases] = await Promise.all([
       this.repo.hydrate([row.post_id]),
       this.repo.listRuns(row.post_id),
       this.overrides.listForPost(row.post_id),
+      // #250: phrases of the current analysis only (BR-026).
+      row.analysis_id ? this.repo.listPhrases(row.analysis_id) : Promise.resolve([]),
     ]);
-    return toMentionDetail(row, hydrated, runs, overrides.map(toOverrideDto));
+    return toMentionDetail(row, hydrated, runs, overrides.map(toOverrideDto), phrases);
   }
 
   /**

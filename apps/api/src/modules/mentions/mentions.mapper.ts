@@ -2,6 +2,7 @@ import {
   type MentionDetail,
   type Override,
   type MentionListItem,
+  classifierSchemaVersionOf,
   LanguageCodeSchema,
   SafetyThresholdsSchema,
   IntentLabelSchema,
@@ -72,9 +73,19 @@ const ScoresSchema = z.record(z.string(), z.number());
 const StoredScoresSchema = z.union([z.object({ scores: ScoresSchema }).transform((v) => v.scores), ScoresSchema]);
 
 /**
+ * #250 / FR-120 / BR-041: null = analysed before phrase extraction (v1) or not analysed; [] = v2, none extracted.
+ * Stored rows always win (never throw / hide data on the read path). Phrases are AI values, not overridable.
+ */
+function detailPhrases(hasAnalysis: boolean, promptVersion: string | null, phrases: string[]): string[] | null {
+  if (!hasAnalysis) return null;
+  if (phrases.length > 0) return phrases;
+  return promptVersion && classifierSchemaVersionOf(promptVersion) === "v2" ? [] : null;
+}
+
+/**
  * T-096 / FR-154: list projection + source extras, current analysis details (explanation, category scores,
- * versions, tokens/cost of the run that produced the current analysis), run history (BR-003) and override
- * history incl. revoked ones (FR-193, T-142).
+ * versions, tokens/cost of the run that produced the current analysis, key phrases #250), run history (BR-003)
+ * and override history incl. revoked ones (FR-193, T-142).
  * Labels come from the effective view (BR-025); explanation/scores stay those of the AI analysis.
  */
 export function toMentionDetail(
@@ -82,6 +93,7 @@ export function toMentionDetail(
   h: HydratedMentions,
   runs: MentionRunRow[],
   overrides: Override[] = [],
+  phrases: string[] = [],
 ): MentionDetail {
   const item = toMentionListItem(row, h);
   const hasAnalysis = row.analysis_id != null;
@@ -126,6 +138,7 @@ export function toMentionDetail(
       analyzedAt: hasAnalysis && row.analyzed_at ? row.analyzed_at.toISOString() : null,
       tokens: hasAnalysis ? { input: row.input_tokens, output: row.output_tokens } : null,
       estimatedCostUsd: hasAnalysis ? row.estimated_cost_usd : null,
+      phrases: detailPhrases(hasAnalysis, row.prompt_version, phrases),
     },
     runs: runs.map((r) => ({
       id: r.id,

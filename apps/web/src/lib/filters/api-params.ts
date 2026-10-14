@@ -52,6 +52,14 @@ export function toMentionsHref(filters: Filters, extra: Partial<Filters> = {}, n
   })}`;
 }
 
+/**
+ * #250 / FR-148: plain `/mentions?phrase=<p>` link from mention detail (page defaults for range/relevance).
+ * The `phrase` parser re-normalises on read (BR-041), so the link always matches.
+ */
+export function phraseMentionsHref(phrase: string): string {
+  return `/mentions${serializeFilters({ phrase: [phrase] })}`;
+}
+
 export interface AppliedChip {
   key: ArrayFilterKey;
   value: string;

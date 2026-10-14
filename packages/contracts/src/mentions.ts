@@ -131,6 +131,12 @@ export const MentionDetailSchema = MentionListItemSchema.extend({
     analyzedAt: IsoDateTimeSchema.nullable(),
     tokens: z.object({ input: z.number().int().nullable(), output: z.number().int().nullable() }).nullable(),
     estimatedCostUsd: z.number().nullable(),
+    /**
+     * Additive (#250, FR-120/FR-154): key phrases of the current AI analysis in extraction order, normalised
+     * (BR-041). `null` = not analysed, or analysed by a prompt without phrase extraction (classifier-v1);
+     * `[]` = phrase-extracting prompt (v2) found none (e.g. irrelevant). Never affected by overrides (BR-025).
+     */
+    phrases: z.array(z.string()).nullable().optional(),
   }),
   overrides: z.array(OverrideSchema).optional(),
   runs: z.array(
