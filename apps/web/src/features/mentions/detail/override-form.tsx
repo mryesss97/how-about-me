@@ -19,8 +19,8 @@ import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { NativeSelect } from "@/components/base/select/select-native";
 import { TextArea } from "@/components/base/textarea/textarea";
 import { SettingsDialog } from "@/features/shared/settings-dialog";
-import { humanize } from "./format";
-import { activeOverrides, FIELD_LABELS } from "./overrides";
+import { displayLabel } from "@/lib/semantics/labels";
+import { activeOverrides, FIELD_KIND, FIELD_LABELS } from "./overrides";
 
 export const REASON_MAX = 500;
 const MULTI_MAX = 20;
@@ -69,7 +69,7 @@ type Props = {
  */
 export function OverrideDialog({ mention, isOpen, onClose, onSubmit, isPending }: Props) {
   return (
-    <SettingsDialog isOpen={isOpen} onClose={onClose} title="Override analysis">
+    <SettingsDialog isOpen={isOpen} onClose={onClose} title="Ghi đè kết quả phân tích">
       {isOpen ? <OverrideForm mention={mention} onClose={onClose} onSubmit={onSubmit} isPending={isPending} /> : null}
     </SettingsDialog>
   );
@@ -97,7 +97,7 @@ function OverrideForm({ mention, onClose, onSubmit, isPending }: Omit<Props, "is
   const submit = () => {
     const parsed = CreateOverrideBodySchema.safeParse({ field, value: multi ? values : values[0], reason: trimmed });
     if (!parsed.success) {
-      setError(multi ? `Choose up to ${MULTI_MAX} labels.` : "Choose a value.");
+      setError(multi ? `Chọn tối đa ${MULTI_MAX} nhãn.` : "Hãy chọn giá trị.");
       return;
     }
     onSubmit(parsed.data);
@@ -112,7 +112,7 @@ function OverrideForm({ mention, onClose, onSubmit, isPending }: Omit<Props, "is
       }}
     >
       <NativeSelect
-        label="Field"
+        label="Trường"
         size="sm"
         value={field}
         onChange={(e) => changeField(OverrideFieldSchema.parse(e.target.value))}
@@ -120,27 +120,32 @@ function OverrideForm({ mention, onClose, onSubmit, isPending }: Omit<Props, "is
       />
       {multi ? (
         <fieldset className="flex flex-col gap-2">
-          <legend className="mb-1.5 text-sm font-medium text-secondary">Value</legend>
+          <legend className="mb-1.5 text-sm font-medium text-secondary">Giá trị</legend>
           <div className="grid max-h-48 grid-cols-2 gap-2 overflow-y-auto">
             {OPTIONS[field].map((o) => (
-              <Checkbox key={o} label={humanize(o)} isSelected={values.includes(o)} onChange={(on) => toggle(o, on)} />
+              <Checkbox
+                key={o}
+                label={displayLabel(FIELD_KIND[field], o)}
+                isSelected={values.includes(o)}
+                onChange={(on) => toggle(o, on)}
+              />
             ))}
           </div>
         </fieldset>
       ) : (
         <NativeSelect
-          label="Value"
+          label="Giá trị"
           size="sm"
           value={values[0] ?? ""}
           onChange={(e) => setValues(e.target.value ? [e.target.value] : [])}
           options={[
-            { value: "", label: "Choose a value", disabled: true },
-            ...OPTIONS[field].map((o) => ({ value: o, label: humanize(o) })),
+            { value: "", label: "Chọn giá trị", disabled: true },
+            ...OPTIONS[field].map((o) => ({ value: o, label: displayLabel(FIELD_KIND[field], o) })),
           ]}
         />
       )}
       <TextArea
-        label="Reason"
+        label="Lý do"
         isRequired
         rows={3}
         value={reason}
@@ -148,7 +153,7 @@ function OverrideForm({ mention, onClose, onSubmit, isPending }: Omit<Props, "is
         maxLength={REASON_MAX}
         hint={`${trimmed.length}/${REASON_MAX}`}
       />
-      {replaces ? <p className="text-sm text-tertiary">Saving replaces the current analyst override.</p> : null}
+      {replaces ? <p className="text-sm text-tertiary">Lưu sẽ thay thế ghi đè hiện tại của chuyên viên.</p> : null}
       {error ? (
         <p role="alert" className="text-sm text-error-primary">
           {error}
@@ -156,10 +161,10 @@ function OverrideForm({ mention, onClose, onSubmit, isPending }: Omit<Props, "is
       ) : null}
       <div className="flex justify-end gap-2">
         <Button size="sm" color="secondary" onClick={onClose}>
-          Cancel
+          Huỷ
         </Button>
         <Button size="sm" type="submit" isDisabled={!reasonOk || unchanged || isPending} isLoading={isPending}>
-          Save override
+          Lưu ghi đè
         </Button>
       </div>
     </form>

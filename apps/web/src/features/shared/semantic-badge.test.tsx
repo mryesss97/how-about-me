@@ -82,6 +82,6 @@ describe("semantic badges (UX §2.2, NFR-035)", () => {
       </>,
     );
     expect(screen.getByText("AI")).toBeInTheDocument();
-    expect(screen.getByText("Analyst")).toBeInTheDocument();
+    expect(screen.getByText("Chuyên viên")).toBeInTheDocument();
   });
 });

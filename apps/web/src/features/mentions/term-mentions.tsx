@@ -37,7 +37,7 @@ export function TermMentions({ term }: { term: string }) {
           <h2 id="term-mentions" className="operate-board-title">
             Bài nhắc tới &quot;{term}&quot;
           </h2>
-          {total != null ? <p className="text-sm text-secondary">{formatCount(total)} bài</p> : null}
+          {total != null ? <p className="text-sm text-secondary">{formatCount(total)} bài nhắc</p> : null}
         </div>
         <MentionsList
           items={items}

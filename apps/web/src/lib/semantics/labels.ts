@@ -1,4 +1,4 @@
-import type { ReviewReason, UserRole } from "@how-about-me/contracts";
+import type { AnalysisTrigger, ReviewReason, UserRole } from "@how-about-me/contracts";
 import type { IntentLabel, LanguageCode, TopicLabel } from "@how-about-me/taxonomy";
 import { analysisStatusBadge, relevanceBadge, safetyBadge, sentimentBadge } from "./badges";
 
@@ -46,6 +46,16 @@ export const languageLabelVi: Record<LanguageCode, string> = {
   unknown: "Không xác định",
 };
 
+/** Analysis run trigger (#277, Mention detail → History). */
+export const analysisTriggerLabelVi: Record<AnalysisTrigger, string> = {
+  ingest: "Thu thập",
+  content_change: "Nội dung thay đổi",
+  manual: "Thủ công",
+  bulk: "Hàng loạt",
+  retry: "Thử lại",
+  version_change: "Đổi phiên bản",
+};
+
 /** Vietnamese role names (#274 shell, #281 settings). API values stay `admin|analyst|viewer`. */
 export const roleLabelVi: Record<UserRole, string> = { admin: "Quản trị", analyst: "Phân tích", viewer: "Chỉ xem" };
 
@@ -57,7 +67,15 @@ export const reviewReasonLabelVi: Record<ReviewReason, string> = {
 };
 
 export type LabelKind =
-  "intent" | "topic" | "language" | "sentiment" | "safety" | "relevance" | "analysisStatus" | "reviewReason";
+  | "intent"
+  | "topic"
+  | "language"
+  | "sentiment"
+  | "safety"
+  | "relevance"
+  | "analysisStatus"
+  | "analysisTrigger"
+  | "reviewReason";
 
 /** `customer_service` → "Customer service" — fallback for values outside the taxonomy. */
 export const humanizeLabel = (v: string) => v.charAt(0).toUpperCase() + v.slice(1).replace(/_/g, " ");
@@ -70,6 +88,7 @@ const TABLES: Record<LabelKind, Record<string, string>> = {
   safety: Object.fromEntries(Object.entries(safetyBadge).map(([k, v]) => [k, v.label])),
   relevance: Object.fromEntries(Object.entries(relevanceBadge).map(([k, v]) => [k, v.label])),
   analysisStatus: Object.fromEntries(Object.entries(analysisStatusBadge).map(([k, v]) => [k, v.label])),
+  analysisTrigger: analysisTriggerLabelVi,
   reviewReason: reviewReasonLabelVi,
 };
 

@@ -36,8 +36,8 @@ describe("OriginalPanel", () => {
 
   it("shows quote/repost indicators", () => {
     render(<OriginalPanel mention={detailFixture({ isQuotePost: true, repostedPostId: "r1" })} tz={TZ} />);
-    expect(screen.getByText("Quote post")).toBeInTheDocument();
-    expect(screen.getByText("Repost")).toBeInTheDocument();
+    expect(screen.getByText("Trích dẫn")).toBeInTheDocument();
+    expect(screen.getByText("Đăng lại")).toBeInTheDocument();
   });
 
   it("shows queries matched only via exclude terms, labelled excluded (FR-059, TC-MEN-021)", () => {
@@ -47,6 +47,6 @@ describe("OriginalPanel", () => {
     ];
     render(<OriginalPanel mention={detailFixture({ matchedQueries: mq })} tz={TZ} />);
     expect(screen.getByText("Concert")).toBeInTheDocument();
-    expect(screen.getByText("Ticket (excluded)")).toBeInTheDocument();
+    expect(screen.getByText("Ticket (đã loại trừ)")).toBeInTheDocument();
   });
 });

@@ -17,3 +17,10 @@ export function waitText(seconds: number | null): string {
   const m = Math.ceil(seconds / 60);
   return m === 1 ? "1 minute" : `${m} minutes`;
 }
+
+/** Vietnamese wait time for rate-limit messages on restyled screens (#277): "45 giây", "5 phút", "ít phút nữa". */
+export function waitTextVi(seconds: number | null): string {
+  if (seconds === null) return "ít phút nữa";
+  if (seconds < 60) return `${Math.max(1, Math.ceil(seconds))} giây`;
+  return `${Math.ceil(seconds / 60)} phút`;
+}

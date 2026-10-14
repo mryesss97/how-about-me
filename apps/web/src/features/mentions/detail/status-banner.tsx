@@ -13,23 +13,17 @@ type Props = {
 /** Analysis status banner — FR-156, TC-MEN-014. */
 export function StatusBanner({ analysis: a, canRetry, onRetry, isRetrying }: Props) {
   if (a.status === "pending" || a.status === "processing")
-    return (
-      <PageBanner
-        tone="info"
-        title="Analysis in progress"
-        description="Results refresh automatically when the run finishes."
-      />
-    );
+    return <PageBanner tone="info" title="Đang phân tích" description="Kết quả tự làm mới khi lượt chạy hoàn tất." />;
   if (a.status === "failed")
     return (
       <PageBanner
         tone="error"
-        title="Analysis failed"
-        description={a.errorCode ? `Error code: ${a.errorCode}` : "The last analysis run failed."}
+        title="Phân tích thất bại"
+        description={a.errorCode ? `Mã lỗi: ${a.errorCode}` : "Lượt phân tích gần nhất thất bại."}
         action={
           canRetry ? (
             <Button size="sm" color="secondary" onClick={onRetry} isLoading={isRetrying}>
-              Retry
+              Thử lại
             </Button>
           ) : undefined
         }
@@ -39,8 +33,8 @@ export function StatusBanner({ analysis: a, canRetry, onRetry, isRetrying }: Pro
     return (
       <PageBanner
         tone="warning"
-        title="Analysis is out of date"
-        description="The post or the analysis version changed since this result was produced."
+        title="Kết quả phân tích đã cũ"
+        description="Bài hoặc phiên bản phân tích đã thay đổi kể từ khi có kết quả này."
       />
     );
   return null;

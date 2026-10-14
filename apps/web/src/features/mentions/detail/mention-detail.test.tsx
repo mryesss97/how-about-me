@@ -56,15 +56,22 @@ describe("MentionDetail states (FR-154)", () => {
     let resolve: (v: unknown) => void = () => undefined;
     apiFetch.mockReturnValue(new Promise((r) => (resolve = r)));
     setup();
-    expect(screen.queryByText("Original post")).toBeNull();
+    expect(screen.queryByText("Bài gốc")).toBeNull();
     resolve(m);
-    expect(await screen.findByRole("region", { name: "Original post" })).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: "Bài gốc" })).toBeInTheDocument();
+  });
+
+  it("#277: the two columns are Operate boards titled Bài gốc / Phân tích", async () => {
+    apiFetch.mockResolvedValue(m);
+    setup();
+    expect(await screen.findByRole("heading", { level: 2, name: "Bài gốc" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Phân tích" })).toBeInTheDocument();
   });
 
   it("404 → Mention not found", async () => {
     apiFetch.mockRejectedValue(new ApiError(404, "NOT_FOUND", "nope", "req-1"));
     setup();
-    expect(await screen.findByText("Mention not found")).toBeInTheDocument();
+    expect(await screen.findByText("Không tìm thấy bài nhắc")).toBeInTheDocument();
   });
 
   it("other errors show code and requestId", async () => {
@@ -79,8 +86,8 @@ describe("Operations (FR-155, TC-MEN-013, TC-MEN-019)", () => {
     role = "viewer";
     apiFetch.mockResolvedValue(m);
     setup();
-    await screen.findByText("Copy post ID");
-    expect(screen.queryByRole("button", { name: "Re-analyze" })).toBeNull();
+    await screen.findByText("Sao chép ID bài");
+    expect(screen.queryByRole("button", { name: "Phân tích lại" })).toBeNull();
   });
 
   it("analyst sees Re-analyze only when the project allows it", async () => {
@@ -88,8 +95,8 @@ describe("Operations (FR-155, TC-MEN-013, TC-MEN-019)", () => {
     allow = false;
     apiFetch.mockResolvedValue(m);
     setup();
-    await screen.findByText("Copy post ID");
-    expect(screen.queryByRole("button", { name: "Re-analyze" })).toBeNull();
+    await screen.findByText("Sao chép ID bài");
+    expect(screen.queryByRole("button", { name: "Phân tích lại" })).toBeNull();
   });
 
   it("admin: confirm → POST reanalyze → toast + pending banner (BR-024)", async () => {
@@ -103,21 +110,21 @@ describe("Operations (FR-155, TC-MEN-013, TC-MEN-019)", () => {
       ),
     );
     setup();
-    fireEvent.click(await screen.findByRole("button", { name: "Re-analyze" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Phân tích lại" }));
     const dialog = await screen.findByRole("dialog");
     fireEvent.click(dialog.querySelector("button:last-of-type") as HTMLElement);
     await waitFor(() =>
       expect(apiFetch).toHaveBeenCalledWith(`/projects/${PID}/mentions/${m.id}/reanalyze`, { method: "POST" }),
     );
-    expect(toast.success).toHaveBeenCalledWith("Re-analysis queued");
-    expect(await screen.findByText("Analysis in progress")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Re-analyze" })).toBeDisabled();
+    expect(toast.success).toHaveBeenCalledWith("Đã xếp hàng phân tích lại");
+    expect(await screen.findByText("Đang phân tích")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Phân tích lại" })).toBeDisabled();
   });
 
   it("is disabled while the analysis is pending", async () => {
     apiFetch.mockResolvedValue(detailFixture({ ...m, analysis: { status: "processing" } }));
     setup();
-    expect(await screen.findByRole("button", { name: "Re-analyze" })).toBeDisabled();
+    expect(await screen.findByRole("button", { name: "Phân tích lại" })).toBeDisabled();
   });
 
   it("409 ANALYSIS_ALREADY_PENDING → info toast", async () => {
@@ -127,7 +134,7 @@ describe("Operations (FR-155, TC-MEN-013, TC-MEN-019)", () => {
         : Promise.resolve(m),
     );
     setup();
-    fireEvent.click(await screen.findByRole("button", { name: "Re-analyze" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Phân tích lại" }));
     const dialog = await screen.findByRole("dialog");
     fireEvent.click(dialog.querySelector("button:last-of-type") as HTMLElement);
     await waitFor(() => expect(toast.info).toHaveBeenCalled());
@@ -139,12 +146,12 @@ describe("Operations (FR-155, TC-MEN-013, TC-MEN-019)", () => {
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
     apiFetch.mockResolvedValue(m);
     setup();
-    fireEvent.click(await screen.findByRole("button", { name: "Copy post ID" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Sao chép ID bài" }));
     await waitFor(() => expect(writeText).toHaveBeenCalledWith("post-42"));
-    expect(toast.success).toHaveBeenCalledWith("Post ID copied");
-    fireEvent.click(screen.getByRole("button", { name: "Copy permalink" }));
+    expect(toast.success).toHaveBeenCalledWith("Đã sao chép ID bài");
+    fireEvent.click(screen.getByRole("button", { name: "Sao chép liên kết" }));
     await waitFor(() => expect(writeText).toHaveBeenCalledWith("https://www.threads.net/@alice/post/42"));
-    expect(screen.getByRole("link", { name: /Open on Threads/ })).toHaveAttribute("rel", "noopener noreferrer");
+    expect(screen.getByRole("link", { name: /Mở trên Threads/ })).toHaveAttribute("rel", "noopener noreferrer");
   });
 });
 
@@ -155,9 +162,9 @@ describe("Override (FR-191, FR-193, FR-015)", () => {
     role = "viewer";
     apiFetch.mockResolvedValue(detailFixture({ ...m, overrides: [ov] }));
     setup();
-    await screen.findByText("Copy post ID");
-    expect(screen.queryByRole("button", { name: "Override" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Revoke" })).toBeNull();
+    await screen.findByText("Sao chép ID bài");
+    expect(screen.queryByRole("button", { name: "Ghi đè" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Thu hồi" })).toBeNull();
   });
 
   it("analyst: Override → POST overrides → toast (TC-REV-001)", async () => {
@@ -166,19 +173,19 @@ describe("Override (FR-191, FR-193, FR-015)", () => {
       Promise.resolve(init?.method === "POST" ? ov : m),
     );
     setup();
-    fireEvent.click(await screen.findByRole("button", { name: "Override" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Ghi đè" }));
     const dialog = await screen.findByRole("dialog");
     const [, value] = dialog.querySelectorAll("select");
     fireEvent.change(value, { target: { value: "neutral" } });
     fireEvent.change(dialog.querySelector("textarea") as HTMLElement, { target: { value: "Sarcasm" } });
-    fireEvent.click(screen.getByRole("button", { name: /Save override/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Lưu ghi đè/ }));
     await waitFor(() =>
       expect(apiFetch).toHaveBeenCalledWith(`/projects/${PID}/mentions/${m.id}/overrides`, {
         method: "POST",
         body: JSON.stringify({ field: "sentiment", value: "neutral", reason: "Sarcasm" }),
       }),
     );
-    expect(toast.success).toHaveBeenCalledWith("Override saved");
+    expect(toast.success).toHaveBeenCalledWith("Đã lưu ghi đè");
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 
@@ -190,13 +197,13 @@ describe("Override (FR-191, FR-193, FR-015)", () => {
         : Promise.resolve(m),
     );
     setup();
-    fireEvent.click(await screen.findByRole("button", { name: "Override" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Ghi đè" }));
     const dialog = await screen.findByRole("dialog");
     fireEvent.change(dialog.querySelectorAll("select")[1], { target: { value: "neutral" } });
     fireEvent.change(dialog.querySelector("textarea") as HTMLElement, { target: { value: "x" } });
     const before = getCalls();
-    fireEvent.click(screen.getByRole("button", { name: /Save override/ }));
-    await waitFor(() => expect(toast.info).toHaveBeenCalledWith("Another override was saved at the same time"));
+    fireEvent.click(screen.getByRole("button", { name: /Lưu ghi đè/ }));
+    await waitFor(() => expect(toast.info).toHaveBeenCalledWith("Có ghi đè khác vừa được lưu cùng lúc"));
     await waitFor(() => expect(getCalls()).toBeGreaterThan(before));
     expect(toast.error).not.toHaveBeenCalled();
   });
@@ -206,13 +213,13 @@ describe("Override (FR-191, FR-193, FR-015)", () => {
       Promise.resolve(init?.method === "DELETE" ? undefined : detailFixture({ ...m, overrides: [ov] })),
     );
     setup();
-    fireEvent.click(await screen.findByRole("button", { name: "Revoke" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Revoke override" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Thu hồi" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Thu hồi ghi đè" }));
     await waitFor(() =>
       expect(apiFetch).toHaveBeenCalledWith(`/projects/${PID}/mentions/${m.id}/overrides/${ov.id}`, {
         method: "DELETE",
       }),
     );
-    expect(toast.success).toHaveBeenCalledWith("Override revoked");
+    expect(toast.success).toHaveBeenCalledWith("Đã thu hồi ghi đè");
   });
 });

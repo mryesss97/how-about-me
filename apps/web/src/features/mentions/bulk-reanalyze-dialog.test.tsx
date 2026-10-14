@@ -30,7 +30,7 @@ function open() {
       <BulkReanalyzeButton pid={PID} params={PARAMS} />
     </QueryClientProvider>,
   );
-  fireEvent.click(screen.getByRole("button", { name: /re-analyze/i }));
+  fireEvent.click(screen.getByRole("button", { name: /phân tích lại/i }));
 }
 
 beforeEach(() => {
@@ -49,9 +49,9 @@ describe("BulkReanalyzeDialog (T-146, FR-196)", () => {
   it("TC-REV-008: opening runs a dry run with the list filters and shows matched + cap", async () => {
     apiFetch.mockResolvedValueOnce({ matched: 42, enqueued: 0, cap: 500 });
     open();
-    await screen.findByText(/42 mentions match the current filters/);
-    expect(screen.getByText(/Up to 500 posts/)).toBeTruthy();
-    expect(screen.queryByText(/Narrow the filters/)).toBeNull();
+    await screen.findByText(/42 bài nhắc khớp bộ lọc hiện tại/);
+    expect(screen.getByText(/Tối đa 500 bài/)).toBeTruthy();
+    expect(screen.queryByText(/Thu hẹp bộ lọc/)).toBeNull();
     const [body] = bodies();
     // BR-016: relevance filter passes through unchanged; CSV params become arrays.
     expect(body).toMatchObject({ dryRun: true, relevance: ["relevant"], sentiment: ["negative", "neutral"] });
@@ -61,8 +61,8 @@ describe("BulkReanalyzeDialog (T-146, FR-196)", () => {
     apiFetch.mockResolvedValueOnce({ matched: 42, enqueued: 0, cap: 500 });
     apiFetch.mockResolvedValueOnce({ matched: 42, enqueued: 40, cap: 500 });
     open();
-    fireEvent.click(await screen.findByRole("button", { name: "Confirm" }));
-    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Re-analysis queued for 40 posts"));
+    fireEvent.click(await screen.findByRole("button", { name: "Xác nhận" }));
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Đã xếp hàng phân tích lại 40 bài"));
     const [dry, real] = bodies();
     expect(real).toEqual({ ...dry, dryRun: false });
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
@@ -72,32 +72,32 @@ describe("BulkReanalyzeDialog (T-146, FR-196)", () => {
     apiFetch.mockResolvedValueOnce({ matched: 3, enqueued: 0, cap: 500 });
     apiFetch.mockResolvedValueOnce({ matched: 3, enqueued: 0, cap: 500 });
     open();
-    fireEvent.click(await screen.findByRole("button", { name: "Confirm" }));
-    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("No posts needed re-analysis"));
+    fireEvent.click(await screen.findByRole("button", { name: "Xác nhận" }));
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Không có bài nào cần phân tích lại"));
   });
 
   it("matched=0 offers only Close and never runs for real", async () => {
     apiFetch.mockResolvedValueOnce({ matched: 0, enqueued: 0, cap: 500 });
     open();
-    await screen.findByText("No mentions match the current filters.");
-    expect(screen.queryByRole("button", { name: "Confirm" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    await screen.findByText("Không có bài nhắc nào khớp bộ lọc hiện tại.");
+    expect(screen.queryByRole("button", { name: "Xác nhận" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Đóng" }));
     expect(apiFetch).toHaveBeenCalledTimes(1);
   });
 
   it("matched > cap explains the limit", async () => {
     apiFetch.mockResolvedValueOnce({ matched: 1200, enqueued: 0, cap: 500 });
     open();
-    await screen.findByText(/Narrow the filters to re-analyze the rest/);
+    await screen.findByText(/Thu hẹp bộ lọc để phân tích lại phần còn lại/);
   });
 
   it("TC-REV-009: 429 shows the wait time and disables Confirm", async () => {
     apiFetch.mockResolvedValueOnce({ matched: 10, enqueued: 0, cap: 500 });
     apiFetch.mockRejectedValueOnce(new ApiError(429, "RATE_LIMITED", "slow down", "req-1", { retryAfterSeconds: 240 }));
     open();
-    fireEvent.click(await screen.findByRole("button", { name: "Confirm" }));
-    expect((await screen.findByRole("alert")).textContent).toContain("Try again in 4 minutes");
-    expect(screen.getByRole("button", { name: "Confirm" }).hasAttribute("disabled")).toBe(true);
+    fireEvent.click(await screen.findByRole("button", { name: "Xác nhận" }));
+    expect((await screen.findByRole("alert")).textContent).toContain("Thử lại sau 4 phút");
+    expect(screen.getByRole("button", { name: "Xác nhận" }).hasAttribute("disabled")).toBe(true);
   });
 
   it("a failed dry run shows the request ID and Retry", async () => {
@@ -105,13 +105,13 @@ describe("BulkReanalyzeDialog (T-146, FR-196)", () => {
     apiFetch.mockResolvedValueOnce({ matched: 5, enqueued: 0, cap: 500 });
     open();
     expect((await screen.findByRole("alert")).textContent).toContain("req-9");
-    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
-    await screen.findByText(/5 mentions match/);
+    fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+    await screen.findByText(/5 bài nhắc khớp/);
   });
 
   it("403 shows a permission message", async () => {
     apiFetch.mockRejectedValueOnce(new ApiError(403, "FORBIDDEN_ROLE", "no", "req-2"));
     open();
-    expect((await screen.findByRole("alert")).textContent).toContain("permission");
+    expect((await screen.findByRole("alert")).textContent).toContain("không có quyền");
   });
 });

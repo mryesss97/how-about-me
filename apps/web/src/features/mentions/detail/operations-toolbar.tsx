@@ -11,6 +11,9 @@ import { isInFlight } from "./api";
 import { OverrideDialog } from "./override-form";
 import { useCopy } from "./use-copy";
 
+const PLAQUE =
+  "plaque-button inline-flex items-center gap-2 px-3 py-1.5 outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+
 type Props = {
   mention: MentionDetail;
   /** `canReanalyze(role, settings)` — admin, or analyst when the project allows it (FR-155, BR-033). */
@@ -40,40 +43,42 @@ export function OperationsToolbar({
   const link = safePermalink(m.permalink);
   const busy = isReanalyzing || isInFlight(m.analysis.status);
   return (
-    <div className="flex flex-wrap items-center gap-2" role="toolbar" aria-label="Mention operations">
+    <div className="flex flex-wrap items-center gap-2" role="toolbar" aria-label="Thao tác">
       {canReanalyze ? (
         <RequireRole roles={["admin", "analyst"]} fallback={null}>
-          <Button
-            size="sm"
-            color="secondary"
-            iconLeading={RefreshCw01}
-            isDisabled={busy}
-            isLoading={isReanalyzing}
+          <button
+            type="button"
+            className={PLAQUE}
+            disabled={busy}
+            aria-busy={isReanalyzing}
             onClick={() => setConfirm(true)}
           >
-            Re-analyze
-          </Button>
+            <RefreshCw01 className="size-4" aria-hidden />
+            Phân tích lại
+          </button>
         </RequireRole>
       ) : null}
       {canOverride ? (
         <RequireRole roles={["admin", "analyst"]} fallback={null}>
-          <Button size="sm" color="secondary" iconLeading={UserCheck01} onClick={() => setOverriding(true)}>
-            Override
-          </Button>
+          <button type="button" className={PLAQUE} onClick={() => setOverriding(true)}>
+            <UserCheck01 className="size-4" aria-hidden />
+            Ghi đè
+          </button>
         </RequireRole>
       ) : null}
-      <Button size="sm" color="tertiary" iconLeading={Copy01} onClick={() => void copy(m.platformPostId, "Post ID")}>
-        Copy post ID
-      </Button>
-      <Button
-        size="sm"
-        color="tertiary"
-        iconLeading={Copy01}
-        isDisabled={!m.permalink}
-        onClick={() => m.permalink && void copy(m.permalink, "Permalink")}
+      <button type="button" className={PLAQUE} onClick={() => void copy(m.platformPostId, "ID bài")}>
+        <Copy01 className="size-4" aria-hidden />
+        Sao chép ID bài
+      </button>
+      <button
+        type="button"
+        className={PLAQUE}
+        disabled={!m.permalink}
+        onClick={() => m.permalink && void copy(m.permalink, "liên kết")}
       >
-        Copy permalink
-      </Button>
+        <Copy01 className="size-4" aria-hidden />
+        Sao chép liên kết
+      </button>
       {link ? (
         <a
           href={link}
@@ -81,17 +86,17 @@ export function OperationsToolbar({
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 px-2 text-sm font-semibold text-brand-secondary hover:underline"
         >
-          Open on Threads
+          Mở trên Threads
           <LinkExternal01 className="size-4" aria-hidden />
         </a>
       ) : null}
-      <SettingsDialog isOpen={confirm} onClose={() => setConfirm(false)} title="Re-analyze this mention?">
+      <SettingsDialog isOpen={confirm} onClose={() => setConfirm(false)} title="Phân tích lại bài nhắc này?">
         <p className="text-sm text-tertiary">
-          A new analysis run is queued. Previous results stay in History (append-only).
+          Một lượt phân tích mới sẽ được xếp hàng. Kết quả trước vẫn nằm trong Lịch sử (chỉ thêm, không ghi đè).
         </p>
         <div className="flex justify-end gap-2">
           <Button size="sm" color="secondary" onClick={() => setConfirm(false)}>
-            Cancel
+            Huỷ
           </Button>
           <Button
             size="sm"
@@ -100,7 +105,7 @@ export function OperationsToolbar({
               onReanalyze();
             }}
           >
-            Re-analyze
+            Phân tích lại
           </Button>
         </div>
       </SettingsDialog>

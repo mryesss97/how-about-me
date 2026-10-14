@@ -16,10 +16,10 @@ describe("AnalysisCurrent", () => {
     });
     render(<AnalysisCurrent mention={m} tz={TZ} />);
     expect(screen.queryByRole("table")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Show category scores" }));
-    const rows = within(screen.getByRole("table", { name: "Safety category scores" })).getAllByRole("row");
+    fireEvent.click(screen.getByRole("button", { name: "Hiện điểm theo hạng mục" }));
+    const rows = within(screen.getByRole("table", { name: "Điểm an toàn theo hạng mục" })).getAllByRole("row");
     expect(rows[1]).toHaveAttribute("data-triggered", "true");
-    expect(rows[1]).toHaveTextContent("Harassment0.812Sensitive");
+    expect(rows[1]).toHaveTextContent("Harassment0,812Nhạy cảm");
     expect(rows[2]).not.toHaveAttribute("data-triggered");
   });
 
@@ -40,7 +40,7 @@ describe("AnalysisCurrent", () => {
     render(<AnalysisCurrent mention={m} tz={TZ} />);
     for (const v of ["gpt-x", "p3", "t2", "omni-mod", "s1"]) expect(screen.getByText(v)).toBeInTheDocument();
     expect(screen.getAllByText("openai")).toHaveLength(2);
-    expect(screen.getByText("Analyzed at")).toBeInTheDocument();
+    expect(screen.getByText("Phân tích lúc")).toBeInTheDocument();
   });
 
   // TC-REV-001 / FR-194 / BR-025
@@ -50,42 +50,42 @@ describe("AnalysisCurrent", () => {
       overrides: [overrideFixture()],
     });
     const { container } = render(<AnalysisCurrent mention={m} tz={TZ} />);
-    expect(screen.getByText("Analyst")).toBeInTheDocument();
+    expect(screen.getByText("Chuyên viên")).toBeInTheDocument();
     const struck = container.querySelector("s");
-    expect(struck).toHaveTextContent("Negative");
+    expect(struck).toHaveTextContent("Tiêu cực");
     expect(struck).toHaveClass("line-through");
-    expect(screen.getByText("AI value: Negative")).toBeInTheDocument();
+    expect(screen.getByText("Giá trị AI: Tiêu cực")).toBeInTheDocument();
     expect(screen.getByTestId("analyst-source")).toHaveAttribute("title", expect.stringContaining("Ana Analyst"));
     expect(screen.getByTestId("analyst-source")).toHaveAttribute("title", expect.stringContaining("Sarcasm"));
     // Relevance is still AI and keeps its confidence.
     expect(screen.getAllByText("AI").length).toBeGreaterThan(0);
     expect(screen.getByText("90%")).toBeInTheDocument();
     expect(screen.queryByText("80%")).toBeNull();
-    expect(screen.getByText(/are AI values, not analyst overrides/)).toBeInTheDocument();
+    expect(screen.getByText(/là giá trị AI, không phải ghi đè của chuyên viên/)).toBeInTheDocument();
   });
 
   it("revoked override is ignored → AI badge only (FR-193)", () => {
     const m = detailFixture({ overrides: [overrideFixture({ revokedAt: "2026-10-13T06:00:00.000Z" })] });
     render(<AnalysisCurrent mention={m} tz={TZ} />);
-    expect(screen.queryByText("Analyst")).toBeNull();
+    expect(screen.queryByText("Chuyên viên")).toBeNull();
     expect(screen.getAllByText("AI").length).toBeGreaterThan(0);
   });
 
   it("AI value missing at override time shows a dash", () => {
     const m = detailFixture({ overrides: [overrideFixture({ previousValue: null })] });
     render(<AnalysisCurrent mention={m} tz={TZ} />);
-    expect(screen.getByText("AI value: —")).toBeInTheDocument();
+    expect(screen.getByText("Giá trị AI: —")).toBeInTheDocument();
   });
 
   it("Revoke only with canOverride; confirm calls onRevoke (FR-193)", () => {
     const m = detailFixture({ overrides: [overrideFixture()] });
     const { unmount } = render(<AnalysisCurrent mention={m} tz={TZ} />);
-    expect(screen.queryByRole("button", { name: "Revoke" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Thu hồi" })).toBeNull();
     unmount();
     const onRevoke = vi.fn();
     render(<AnalysisCurrent mention={m} tz={TZ} canOverride onRevoke={onRevoke} />);
-    fireEvent.click(screen.getByRole("button", { name: "Revoke" }));
-    fireEvent.click(screen.getByRole("button", { name: "Revoke override" }));
+    fireEvent.click(screen.getByRole("button", { name: "Thu hồi" }));
+    fireEvent.click(screen.getByRole("button", { name: "Thu hồi ghi đè" }));
     expect(onRevoke).toHaveBeenCalledWith(overrideFixture().id);
   });
 
@@ -95,8 +95,8 @@ describe("AnalysisCurrent", () => {
       overrides: [overrideFixture({ field: "intents", previousValue: ["praise"], value: ["complaint"] })],
     });
     render(<AnalysisCurrent mention={m} tz={TZ} />);
-    expect(screen.getByText("Complaint")).toBeInTheDocument();
-    expect(screen.getByText("AI value: Praise")).toBeInTheDocument();
+    expect(screen.getByText("Phàn nàn")).toBeInTheDocument();
+    expect(screen.getByText("Giá trị AI: Khen ngợi")).toBeInTheDocument();
   });
 
   describe("key phrases (#250, FR-120, BR-041)", () => {
@@ -109,7 +109,7 @@ describe("AnalysisCurrent", () => {
       safetyModel: "omni-mod",
       safetyPolicyVersion: "s1",
     };
-    const V1_TEXT = "No phrases (analysed before phrase extraction)";
+    const V1_TEXT = "Chưa có cụm từ (phân tích trước khi có trích xuất cụm từ)";
 
     it("renders phrases in order as links to /mentions?phrase= only", () => {
       render(
@@ -118,7 +118,7 @@ describe("AnalysisCurrent", () => {
           tz={TZ}
         />,
       );
-      const links = screen.getAllByRole("link", { name: /View mentions with phrase/ });
+      const links = screen.getAllByRole("link", { name: /Xem bài nhắc có cụm từ/ });
       expect(links.map((l) => l.textContent)).toEqual(["giá vé", "check-in"]);
       const url = new URL(links[0]?.getAttribute("href") ?? "", "http://x");
       expect(url.pathname).toBe("/mentions");
@@ -138,7 +138,7 @@ describe("AnalysisCurrent", () => {
 
     it("shows a dash for v2 without phrases", () => {
       render(<AnalysisCurrent mention={detailFixture({ analysis: { versions, phrases: [] } })} tz={TZ} />);
-      expect(screen.queryByRole("link", { name: /View mentions with phrase/ })).toBeNull();
+      expect(screen.queryByRole("link", { name: /Xem bài nhắc có cụm từ/ })).toBeNull();
       expect(screen.queryByText(V1_TEXT)).toBeNull();
     });
 

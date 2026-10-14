@@ -4,7 +4,6 @@ import type { ProjectSettings, UserRole } from "@how-about-me/contracts";
 import { useMutation } from "@tanstack/react-query";
 import { Download01 } from "@untitledui/icons";
 import { toast } from "sonner";
-import { Button } from "@/components/base/buttons/button";
 import { ApiError, apiDownload, type QueryParams } from "@/lib/api/client";
 import { formatCount } from "@/lib/format/number";
 
@@ -34,22 +33,22 @@ function detailNumber(err: ApiError, key: string): number | null {
 
 function showError(err: unknown) {
   if (!(err instanceof ApiError)) {
-    toast.error("Export failed. Please try again.");
+    toast.error("Xuất thất bại. Vui lòng thử lại.");
     return;
   }
   if (err.code === "EXPORT_TOO_LARGE") {
     const cap = detailNumber(err, "cap");
-    toast.error("Too many mentions to export", {
-      description: `Exports are limited to ${cap == null ? "the row cap" : `${formatCount(cap)} rows`}. Narrow the date range or filters.`,
+    toast.error("Quá nhiều bài nhắc để xuất", {
+      description: `Mỗi lần xuất tối đa ${cap == null ? "số dòng cho phép" : `${formatCount(cap)} dòng`}. Hãy thu hẹp khoảng thời gian hoặc bộ lọc.`,
     });
   } else if (err.code === "RATE_LIMITED") {
     const s = detailNumber(err, "retryAfterSeconds");
-    toast.error(`Export limit reached. Try again in ${s ?? 60} seconds.`);
+    toast.error(`Đã chạm giới hạn xuất. Thử lại sau ${s ?? 60} giây.`);
   } else if (err.code === "FORBIDDEN_ROLE") {
-    toast.error("You don't have permission to export.");
+    toast.error("Bạn không có quyền xuất dữ liệu.");
   } else {
-    toast.error("Export failed. Please try again.", {
-      description: err.requestId ? `Request ID: ${err.requestId}` : undefined,
+    toast.error("Xuất thất bại. Vui lòng thử lại.", {
+      description: err.requestId ? `Mã yêu cầu: ${err.requestId}` : undefined,
     });
   }
 }
@@ -61,7 +60,7 @@ export function useExportMentions(pid: string) {
       const { blob, filename } = await apiDownload(`/projects/${pid}/mentions/export.csv`, { params });
       saveBlob(blob, filename ?? "mentions.csv");
     },
-    onSuccess: () => toast.success("Export ready"),
+    onSuccess: () => toast.success("Đã xuất xong"),
     onError: showError,
   });
 }
@@ -70,15 +69,15 @@ export function useExportMentions(pid: string) {
 export function ExportButton({ pid, params }: { pid: string; params: QueryParams }) {
   const m = useExportMentions(pid);
   return (
-    <Button
-      color="secondary"
-      size="sm"
-      iconLeading={Download01}
-      isLoading={m.isPending}
-      isDisabled={m.isPending}
+    <button
+      type="button"
+      disabled={m.isPending}
+      aria-busy={m.isPending}
       onClick={() => m.mutate(params)}
+      className="plaque-button inline-flex items-center gap-2 px-3 py-1.5 outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60"
     >
-      Export CSV
-    </Button>
+      <Download01 className="size-4" aria-hidden />
+      Xuất CSV
+    </button>
   );
 }

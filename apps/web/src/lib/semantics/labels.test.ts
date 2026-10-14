@@ -1,6 +1,15 @@
+import { ANALYSIS_TRIGGERS } from "@how-about-me/contracts";
 import { INTENT_LABELS, LANGUAGE_CODES, TOPIC_LABELS } from "@how-about-me/taxonomy";
 import { describe, expect, it } from "vitest";
-import { displayLabel, intentLabelVi, languageLabelVi, reviewReasonLabelVi, roleLabelVi, topicLabelVi } from "./labels";
+import {
+  analysisTriggerLabelVi,
+  displayLabel,
+  intentLabelVi,
+  languageLabelVi,
+  reviewReasonLabelVi,
+  roleLabelVi,
+  topicLabelVi,
+} from "./labels";
 
 describe("Vietnamese taxonomy labels (#275)", () => {
   it("covers every intent, topic and language value", () => {
@@ -28,5 +37,12 @@ describe("Vietnamese taxonomy labels (#275)", () => {
 describe("roleLabelVi (#281)", () => {
   it("labels every role in Vietnamese, keyed by the API enum", () => {
     expect(roleLabelVi).toEqual({ admin: "Quản trị", analyst: "Phân tích", viewer: "Chỉ xem" });
+  });
+});
+
+describe("analysis trigger labels (#277)", () => {
+  it("covers every trigger and stays out of the URL (enum values unchanged)", () => {
+    for (const v of ANALYSIS_TRIGGERS) expect(analysisTriggerLabelVi[v]).toBeTruthy();
+    expect(displayLabel("analysisTrigger", "version_change")).toBe("Đổi phiên bản");
   });
 });

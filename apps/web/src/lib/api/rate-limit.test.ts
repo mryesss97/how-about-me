@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ApiError } from "./client";
-import { retryAfterSeconds, waitText } from "./rate-limit";
+import { retryAfterSeconds, waitText, waitTextVi } from "./rate-limit";
 
 describe("waitText", () => {
   it.each([
@@ -22,4 +22,14 @@ describe("retryAfterSeconds", () => {
     expect(retryAfterSeconds(new ApiError(403, "FORBIDDEN_ROLE", "x", "r", { retryAfterSeconds: 5 }))).toBeNull();
     expect(retryAfterSeconds(new ApiError(429, "RATE_LIMITED", "x", "r"))).toBeNull();
   });
+});
+
+describe("waitTextVi (#277)", () => {
+  it.each([
+    [null, "ít phút nữa"],
+    [0.2, "1 giây"],
+    [45, "45 giây"],
+    [60, "1 phút"],
+    [240, "4 phút"],
+  ] as const)("%s → %s", (s, text) => expect(waitTextVi(s)).toBe(text));
 });

@@ -23,7 +23,9 @@ describe("asLabel / asLabels / formatValue", () => {
     expect(asLabels(["praise", 1, "complaint"])).toEqual(["praise", "complaint"]);
     expect(asLabels("neutral")).toEqual(["neutral"]);
     expect(asLabels({})).toEqual([]);
-    expect(formatValue(["price_value", "praise"])).toBe("Price value, Praise");
-    expect(formatValue(null)).toBe("—");
+    // #277: Vietnamese labels per field; unknown values fall back to a humanised code.
+    expect(formatValue(["price_value", "praise"], "intents")).toBe("Price value, Khen ngợi");
+    expect(formatValue("negative", "sentiment")).toBe("Tiêu cực");
+    expect(formatValue(null, "topics")).toBe("—");
   });
 });

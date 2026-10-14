@@ -63,18 +63,18 @@ export function useReanalyze(pid: string | null | undefined, id: string) {
       qc.setQueryData<MentionDetail>(key, (old) =>
         old ? { ...old, analysis: { ...old.analysis, status: "pending", errorCode: null } } : old,
       );
-      toast.success("Re-analysis queued");
+      toast.success("Đã xếp hàng phân tích lại");
       void refresh();
     },
     onError: (err: unknown) => {
       if (err instanceof ApiError && err.code === "ANALYSIS_ALREADY_PENDING") {
-        toast.info("Analysis is already pending for this mention");
+        toast.info("Bài nhắc này đang chờ phân tích");
         void refresh();
         return;
       }
-      const msg = err instanceof ApiError ? err.message : "Could not queue re-analysis";
+      const msg = err instanceof ApiError ? err.message : "Không thể xếp hàng phân tích lại";
       toast.error(msg, {
-        description: err instanceof ApiError && err.requestId ? `Request ID: ${err.requestId}` : undefined,
+        description: err instanceof ApiError && err.requestId ? `Mã yêu cầu: ${err.requestId}` : undefined,
       });
     },
   });
@@ -100,13 +100,13 @@ function useOverrideRefresh(pid: string | null | undefined, id: string) {
 function overrideError(fallback: string, refresh: () => Promise<unknown>) {
   return (err: unknown) => {
     if (err instanceof ApiError && err.code === "OVERRIDE_CONFLICT") {
-      toast.info("Another override was saved at the same time");
+      toast.info("Có ghi đè khác vừa được lưu cùng lúc");
       void refresh();
       return;
     }
     const msg = err instanceof ApiError ? err.message : fallback;
     toast.error(msg, {
-      description: err instanceof ApiError && err.requestId ? `Request ID: ${err.requestId}` : undefined,
+      description: err instanceof ApiError && err.requestId ? `Mã yêu cầu: ${err.requestId}` : undefined,
     });
   };
 }
@@ -125,10 +125,10 @@ export function useCreateOverride(pid: string | null | undefined, id: string) {
       );
     },
     onSuccess: () => {
-      toast.success("Override saved");
+      toast.success("Đã lưu ghi đè");
       void refresh();
     },
-    onError: overrideError("Could not save override", refresh),
+    onError: overrideError("Không lưu được ghi đè", refresh),
   });
 }
 
@@ -141,9 +141,9 @@ export function useRevokeOverride(pid: string | null | undefined, id: string) {
       await apiFetch<unknown>(`/projects/${pid}/mentions/${id}/overrides/${overrideId}`, { method: "DELETE" });
     },
     onSuccess: () => {
-      toast.success("Override revoked");
+      toast.success("Đã thu hồi ghi đè");
       void refresh();
     },
-    onError: overrideError("Could not revoke override", refresh),
+    onError: overrideError("Không thu hồi được ghi đè", refresh),
   });
 }
