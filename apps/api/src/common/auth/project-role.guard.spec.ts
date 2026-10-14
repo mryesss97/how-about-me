@@ -82,7 +82,7 @@ describe("ProjectRoleGuard (FR-014, FR-015, FR-016)", () => {
     expect(r.project).toEqual({
       projectId: PID,
       role: "viewer",
-      settings: { allowAnalystReanalyze: true, allowViewerExport: false },
+      settings: { allowAnalystReanalyze: true, allowViewerExport: false, phraseMinMentions: 2 },
     });
   });
 
@@ -98,6 +98,13 @@ describe("ProjectRoleGuard (FR-014, FR-015, FR-016)", () => {
     ["viewer export enabled", exportGate, "viewer", { allowViewerExport: true }, true],
     ["garbage settings → defaults (deny export)", exportGate, "viewer", "garbage", "FORBIDDEN_ROLE"],
     ["null settings → defaults", reanalyze, "analyst", null, true],
+    [
+      "#251: malformed phraseMinMentions does not affect gates",
+      exportGate,
+      "viewer",
+      { allowViewerExport: true, phraseMinMentions: "x" },
+      true,
+    ],
     ["wrong-typed value → defaults", exportGate, "viewer", { allowViewerExport: "yes" }, "FORBIDDEN_ROLE"],
     [
       "one bad key keeps the other valid key",

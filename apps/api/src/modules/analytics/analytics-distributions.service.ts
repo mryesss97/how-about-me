@@ -11,6 +11,7 @@ import type {
   TopicsDistributionResponse,
 } from "@how-about-me/contracts";
 import { INTENT_LABELS, LANGUAGE_CODES, SAFETY_LEVELS, SENTIMENT_LABELS, TOPIC_LABELS } from "@how-about-me/taxonomy";
+import { parseProjectSettings } from "../../common/auth/project-settings";
 import { AppError } from "../../common/errors/app.error";
 import { type AnalyticsScope, resolveAnalyticsQuery } from "./analytics-filters";
 import { AnalyticsDistributionsRepository } from "./analytics-distributions.repository";
@@ -73,8 +74,13 @@ export class AnalyticsDistributionsService {
 
   /** FR-148 — phrase × sentiment for the bubble map (phrases mode); drill-down via `phrase=` (FR-142). */
   async phrases(projectId: string, query: PhrasesQuery): Promise<PhraseSentimentResponse> {
-    const { limit, minMentions } = query;
-    const r = await this.repo.phraseSentimentCounts(await this.scope(projectId, query), { limit, minMentions });
+    const project = await this.repo.findProjectWithSettings(projectId);
+    if (!project) throw new AppError("NOT_FOUND", "Project not found");
+    const scope = resolveAnalyticsQuery(query, project).scope;
+    const { limit } = query;
+    // FR-148 / #251: the query param overrides the project setting `phraseMinMentions` (FR-032, default 2).
+    const minMentions = query.minMentions ?? parseProjectSettings(project.settings).phraseMinMentions;
+    const r = await this.repo.phraseSentimentCounts(scope, { limit, minMentions });
     return {
       sentimentAnalyzed: r.sentimentAnalyzed,
       phraseAnalyzed: r.phraseAnalyzed,

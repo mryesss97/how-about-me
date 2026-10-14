@@ -24,13 +24,13 @@ describe("usePhraseSentiment (#243)", () => {
     expect(apiFetch).not.toHaveBeenCalled();
   });
 
-  it("sends limit=30, minMentions=2 and drops compare when enabled", async () => {
+  it("#251: sends limit=30 without minMentions (server applies the project setting) and drops compare when enabled", async () => {
     apiFetch.mockReset();
     apiFetch.mockResolvedValue(response);
     const { result } = renderHook(() => usePhraseSentiment(PID, params, { enabled: true }), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(apiFetch).toHaveBeenCalledWith(`/projects/${PID}/analytics/phrases`, {
-      params: { from: "a", limit: "30", minMentions: "2", relevance: "relevant", timezone: "UTC", to: "b" },
+      params: { from: "a", limit: "30", relevance: "relevant", timezone: "UTC", to: "b" },
     });
   });
 });

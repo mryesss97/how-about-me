@@ -188,6 +188,22 @@ describe("Analytics phrase × sentiment (#223, FR-148)", () => {
     expect(cut.rows.map((r) => r.phrase)).toEqual(["a"]);
   });
 
+  it("FR-148 / #251: project setting phraseMinMentions is the default; query param overrides; response reports it", async () => {
+    await seedPost({ at: "2026-10-02T01:00:00Z", labels: { phrases: ["b", "a", "c"] } });
+    await seedPost({ at: "2026-10-02T02:00:00Z", labels: { phrases: ["b", "a", "d"] } });
+    await prisma.monitoringProject.update({ where: { id: projectId }, data: { settings: { phraseMinMentions: 1 } } });
+    const def = await phrases();
+    expect(def).toMatchObject({ minMentions: 1, totalPhrases: 4 });
+    expect(def.rows).toHaveLength(4);
+    const override = await phrases({ ...WEEK, minMentions: "2" });
+    expect(override).toMatchObject({ minMentions: 2, totalPhrases: 2 });
+  });
+
+  it("FR-032 / #251: malformed phraseMinMentions setting falls back to 2 (no 500)", async () => {
+    await prisma.monitoringProject.update({ where: { id: projectId }, data: { settings: { phraseMinMentions: "x" } } });
+    expect(await phrases()).toMatchObject({ minMentions: 2 });
+  });
+
   it("only phrases of the current analysis count (BR-026 old analyses keep theirs)", async () => {
     const p = await seedPost({ at: "2026-10-02T01:00:00Z", labels: { phrases: ["cũ"] } });
     await reanalyse(p, { sentiment: "negative", phrases: ["mới"] });

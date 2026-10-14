@@ -64,7 +64,44 @@ describe("Projects (T-034)", () => {
     const res = await http().patch(`/api/v1/projects/${p1}`).set(auth("admin")).send(body);
     expect(res.status).toBe(200);
     const me = await http().get("/api/v1/me").set(auth("analyst"));
-    expect(me.body.projects[0].settings).toEqual({ allowAnalystReanalyze: true, allowViewerExport: true });
+    expect(me.body.projects[0].settings).toEqual({
+      allowAnalystReanalyze: true,
+      allowViewerExport: true,
+      phraseMinMentions: 2,
+    });
+  });
+
+  it("TC-PROJ-015 / FR-032 (#251): admin PATCH phraseMinMentions → 200, audit, /me + GET reflect, toggles kept", async () => {
+    const res = await http()
+      .patch(`/api/v1/projects/${p1}`)
+      .set(auth("admin"))
+      .send({ settings: { phraseMinMentions: 5 } });
+    expect(res.status).toBe(200);
+    expect(res.body.settings).toEqual({ allowAnalystReanalyze: true, allowViewerExport: false, phraseMinMentions: 5 });
+    const logs = await prisma.auditLog.findMany({ where: { projectId: p1, action: "project.updated" } });
+    expect(logs[0]?.metadata).toEqual({ changes: { "settings.phraseMinMentions": { from: 2, to: 5 } } });
+    const get = await http().get(`/api/v1/projects/${p1}`).set(auth("analyst"));
+    expect(get.body.settings.phraseMinMentions).toBe(5);
+    const me = await http().get("/api/v1/me").set(auth("analyst"));
+    expect(me.body.projects[0].settings.phraseMinMentions).toBe(5);
+  });
+
+  it.each([0, 51, 2.5, "5"])("TC-PROJ-015 (#251): phraseMinMentions %p → 400 VALIDATION_ERROR", async (value) => {
+    const res = await http()
+      .patch(`/api/v1/projects/${p1}`)
+      .set(auth("admin"))
+      .send({ settings: { phraseMinMentions: value } });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("TC-PROJ-015 (#251): analyst PATCH phraseMinMentions → 403 FORBIDDEN_ROLE", async () => {
+    const res = await http()
+      .patch(`/api/v1/projects/${p1}`)
+      .set(auth("analyst"))
+      .send({ settings: { phraseMinMentions: 5 } });
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe("FORBIDDEN_ROLE");
   });
 
   it("FR-032: analyst PATCH → 403 FORBIDDEN_ROLE", async () => {
