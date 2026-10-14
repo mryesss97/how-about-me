@@ -124,7 +124,7 @@ Source: official brand pack v2 — guide in [`docs/assets/brand/brand-guide-v2.p
 | Ink (primary text)                  | `--color-text-primary`                                    | `#15344B` (≈ 12:1 on white)                |
 | Sidebar active item (#245)          | `nav-item.tsx` only (not `bg-active` / `bg-secondary`)    | brand-100 bg + brand-700 text/icon (5.2:1) |
 
-Page backgrounds: the login page and the sticky filter bar use `bg-secondary` (Mist); the app shell `<main>` (`(app)/layout.tsx`) stands on the signboard wall `--wall` (#274). Signboard tokens (`--wall`, `--ink`, `--sky-enamel`, `--red-enamel`, `--green-enamel`, `--enamel-white`) are on `:root` in `globals.css`; sign fonts (Bungee, Saira Extra Condensed) load once in the root layout from `src/lib/fonts/sign.ts`. Shell = sky enamel sign (`.shell-sign`), page titles via `features/shared/page-header.tsx` (see apps/web/DESIGN.md, Operate Surfaces). Cards and the sidebar stay `bg-primary` (white).
+Page backgrounds: the login page and the sticky filter bar use `bg-secondary` (Mist); the app shell `<main>` (`(app)/layout.tsx`) stands on the signboard wall `--wall` (#274). Signboard tokens (`--wall`, `--ink`, `--sky-enamel`, `--red-enamel`, `--green-enamel`, `--enamel-white`) are on `:root` in `globals.css`; sign fonts (Bungee, Saira Extra Condensed) load once in the root layout from `src/lib/fonts/sign.ts`. Shell = sky enamel sign (`.shell-sign`), page titles via `features/shared/page-header.tsx` (see apps/web/DESIGN.md, Operate Surfaces). Cards stay white enamel (`bg-primary`); the sidebar is the sky enamel sign.
 
 Error/success/warning, gray scale and the sentiment/safety palettes are not brand colours and are unchanged (BR-017). Charts using `utility-brand-*` follow the sky scale.
 

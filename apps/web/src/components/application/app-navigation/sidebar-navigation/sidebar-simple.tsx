@@ -21,8 +21,6 @@ interface SidebarNavigationProps {
     featureCard?: ReactNode;
     /** Whether to show the account card. */
     showAccountCard?: boolean;
-    /** Whether to hide the right side border. */
-    hideBorder?: boolean;
     /** Additional CSS classes to apply to the sidebar. */
     className?: string;
     /** Whether to round the account card avatar. */
@@ -35,7 +33,6 @@ export const SidebarNavigationSimple = ({
     footerItems = [],
     featureCard,
     showAccountCard = true,
-    hideBorder = false,
     className,
 }: SidebarNavigationProps) => {
     const MAIN_SIDEBAR_WIDTH = 280;
