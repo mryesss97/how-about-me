@@ -53,21 +53,20 @@ beforeEach(() => {
   reduced = false;
 });
 
-const boardsIn = () => screen.findAllByRole("img", { name: /^"/ });
+const boardsIn = () => screen.findAllByRole("link", { name: /^"/ });
 
 // #262, #271 — landing signboard wall (FR-020, FR-149, BR-042, BR-017)
 describe("LandingView", () => {
-  it("FR-149, BR-042: one board per configured phrase, incl. 0 mentions; full Vietnamese name; not links", async () => {
+  it("FR-149, BR-042, #276: one board per configured phrase incl. 0 mentions; each links to its detail page", async () => {
     setup();
     const boards = await boardsIn();
     expect(boards).toHaveLength(3);
-    expect(screen.getByRole("img", { name: '"giá vé" · 62,0% tích cực · 100 lượt nhắc' })).toHaveAttribute(
-      "tabindex",
-      "0",
+    expect(screen.getByRole("link", { name: '"giá vé" · 62,0% tích cực · 100 lượt nhắc' })).toHaveAttribute(
+      "href",
+      "/terms/gi%C3%A1%20v%C3%A9?preset=30d",
     );
-    expect(screen.getByRole("img", { name: '"im lặng" · chưa ai nhắc' })).toHaveAttribute("data-tone", "blank");
-    expect(screen.getByRole("img", { name: /dịch vụ/ })).toHaveAttribute("data-tone", "negative-solid");
-    expect(screen.queryByRole("link", { name: /giá vé/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: '"im lặng" · chưa ai nhắc' })).toHaveAttribute("data-tone", "blank");
+    expect(screen.getByRole("link", { name: /dịch vụ/ })).toHaveAttribute("data-tone", "negative-solid");
   });
 
   it("main sign: Vietnamese headline, logo plate, figures over the landing range, never safety (BR-017)", async () => {
@@ -109,7 +108,7 @@ describe("LandingView", () => {
   it("landing-terms error → blank placeholder boards only; figures fall back to a 30-day range", async () => {
     setup({ landing: "error" });
     expect(await screen.findByText("1.284")).toBeInTheDocument();
-    expect(screen.queryAllByRole("img", { name: /^"/ })).toHaveLength(0);
+    expect(screen.queryAllByRole("link", { name: /^"/ })).toHaveLength(0);
   });
 
   it("no phrase configured: admin gets a Settings link, viewers a neutral line", async () => {

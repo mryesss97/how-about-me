@@ -13,6 +13,7 @@ apps/web/src/
 ├─ app/
 │  ├─ layout.tsx                 fonts, Theme, RouteProvider, QueryProvider
 │  ├─ page.tsx                   landing `/` (#262): server session guard + AuthBridge + RequireProject, no shell
+│  ├─ (app)/terms/[term]/page.tsx phrase detail (#276): validates the term (BR-041), composes `features/analytics/term-detail-view` + `features/mentions/term-mentions`
 │  ├─ (public)/login/page.tsx
 │  └─ (app)/                     authenticated shell (sidebar + header), guards
 │     ├─ layout.tsx

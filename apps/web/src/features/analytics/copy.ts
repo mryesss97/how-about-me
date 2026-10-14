@@ -47,3 +47,14 @@ export const bubbleMapCopy = {
   ],
   tableColumns: ["Chủ đề", "Cảm xúc chủ đạo", "Tỷ lệ chủ đạo", "Tích cực", "Trung tính", "Tiêu cực", "Có cảm xúc"],
 } as const;
+
+/** Phrase detail page `/terms/[term]` (#276). */
+export const termDetailCopy = {
+  back: "Về bức tường cụm từ",
+  allMentions: "Xem tất cả trong Bài nhắc",
+  withSentiment: (n: string) => `${n} lượt nhắc có cảm xúc`,
+  none: "Chưa ai nhắc tới cụm từ này trong khoảng thời gian đã chọn.",
+  splitLabel: "Tỷ lệ cảm xúc",
+  sentiment: { positive: "Tích cực", neutral: "Trung tính", negative: "Tiêu cực" },
+  matchNote: "Đếm các bài có nội dung hoặc cụm từ khoá chứa cụm này (BR-042), giống biển ở trang chủ.",
+} as const;
