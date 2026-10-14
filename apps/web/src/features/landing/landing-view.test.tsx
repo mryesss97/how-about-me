@@ -69,7 +69,7 @@ describe("LandingView", () => {
   it("stats use the landing range with compare and never show safety (BR-017)", async () => {
     setup();
     expect(await screen.findByText("1,284")).toBeInTheDocument();
-    expect(screen.getByText("+12.0%")).toBeInTheDocument();
+    expect(screen.getByLabelText("+12.0%")).toHaveTextContent("↑ 12.0%");
     expect(screen.getByText("62.0%")).toBeInTheDocument();
     expect(screen.queryByText(/safety/i)).not.toBeInTheDocument();
     expect(apiFetch).toHaveBeenCalledWith(`/projects/${P1}/analytics/overview`, {
@@ -79,7 +79,7 @@ describe("LandingView", () => {
 
   it("Explore links to /overview", async () => {
     setup();
-    expect(await screen.findByRole("link", { name: "Explore" })).toHaveAttribute("href", "/overview");
+    expect(await screen.findByRole("link", { name: "Explore dashboard" })).toHaveAttribute("href", "/overview");
   });
 
   it("stats loading → skeleton", async () => {
@@ -93,7 +93,7 @@ describe("LandingView", () => {
     await screen.findAllByRole("img", { name: /mentions?$/ });
     await waitFor(() => expect(screen.queryAllByTestId("landing-stat-skeleton")).toHaveLength(0));
     expect(screen.queryByText("Mentions")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Explore" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Explore dashboard" })).toBeInTheDocument();
   });
 
   it("landing-terms error → no balloons; stats fall back to a 30-day range", async () => {
@@ -121,5 +121,44 @@ describe("LandingView", () => {
     setup();
     await screen.findAllByRole("img", { name: /mentions?$/ });
     expect(screen.getByRole("group", { name: /landing terms/ })).toHaveAttribute("data-motion", "reduced");
+  });
+
+  it("#267: two-line headline, no stacked logo in the hero, horizontal logo in the top bar", async () => {
+    setup();
+    expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent("See how Threadsfeels about you.");
+    const logos = screen.getAllByRole("img", { name: "How About Me" });
+    expect(logos).toHaveLength(1);
+    expect(logos[0]).toHaveAttribute("src", "/brand/logo-horizontal-primary.svg");
+    expect(screen.getByTestId("landing-top-bar")).toContainElement(logos[0] ?? null);
+  });
+
+  it("#267, FR-149: orb face shows term + share without the sentiment word; aria-label stays complete", async () => {
+    setup();
+    const orb = await screen.findByRole("img", { name: "giá vé · 62.0% positive · 100 mentions" });
+    const face = Array.from(orb.querySelectorAll("span"))
+      .filter((el) => !el.className.includes("opacity-0") && !el.closest(".opacity-0"))
+      .map((el) => el.textContent)
+      .join(" ");
+    expect(face).toContain("62%");
+    expect(face).not.toMatch(/positive|negative/);
+  });
+
+  it("#267: empty state shows 5 ghost circles and the pill", async () => {
+    setup({ role: "viewer", landing: { ...LANDING, rows: [] } });
+    expect(await screen.findByText("No landing phrases configured yet.")).toBeInTheDocument();
+    expect(screen.getAllByTestId("landing-ghost")).toHaveLength(5);
+  });
+
+  it("#267: stats show the legend caption and uppercase-by-CSS labels", async () => {
+    setup();
+    expect(await screen.findByText("1,284")).toBeInTheDocument();
+    expect(screen.getByText(/Orb size = mentions/)).toBeInTheDocument();
+    expect(screen.getByText("Updated")).toHaveClass("uppercase");
+  });
+
+  it("#267: Live eyebrow only after a sync", async () => {
+    setup({ overview: overviewFixture({ lastSyncAt: null }) });
+    expect(await screen.findByText("Not synced")).toBeInTheDocument();
+    expect(screen.queryByText(/^Live/)).not.toBeInTheDocument();
   });
 });

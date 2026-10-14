@@ -198,3 +198,119 @@ input[type="search"]::-webkit-search-cancel-button {
   --bubble-mix: 6%;
   border-style: dashed;
 }
+
+/* Landing (#267): soft glowing orbs on orbit rings. Separate from `.bubble-3d` (Overview sentiment map unchanged).
+   Only transform/opacity animate; the hover glow is a pre-rendered ::after faded in (no box-shadow animation). */
+@keyframes landing-orb-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+
+@keyframes landing-orb-drift {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  33% {
+    transform: translate(4px, -6px);
+  }
+  66% {
+    transform: translate(-5px, 3px);
+  }
+}
+
+@keyframes landing-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.landing-orb {
+  --orb-hue: var(--color-utility-neutral-400);
+  --orb-k: 1;
+  position: relative;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle at 50% 40%,
+    color-mix(in oklab, var(--orb-hue) calc(22% * var(--orb-k)), white) 0%,
+    color-mix(in oklab, var(--orb-hue) calc(10% * var(--orb-k)), white) 60%,
+    color-mix(in oklab, var(--orb-hue) calc(4% * var(--orb-k)), transparent) 100%
+  );
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--orb-hue) 35%, transparent),
+    0 0 0 6px color-mix(in oklab, var(--orb-hue) 6%, transparent),
+    0 12px 40px -12px color-mix(in oklab, var(--orb-hue) 45%, transparent);
+  transition: transform 200ms ease-out;
+}
+
+.landing-orb::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: 0 0 32px 4px color-mix(in oklab, var(--orb-hue) 40%, transparent);
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+}
+
+.landing-orb:hover,
+.landing-orb:focus-visible {
+  transform: scale(1.04);
+}
+
+.landing-orb:hover::after,
+.landing-orb:focus-visible::after {
+  opacity: 1;
+}
+
+.landing-orb[data-empty] {
+  --orb-hue: var(--color-utility-neutral-400);
+  box-shadow: none;
+  border: 1px dashed color-mix(in oklab, var(--orb-hue) 70%, transparent);
+  opacity: 0.6;
+}
+
+.landing-orbs[data-motion="full"] .landing-orb {
+  animation: landing-orb-in 500ms ease-out both;
+  animation-delay: calc(var(--orb-i, 0) * 40ms);
+}
+
+.landing-orbs[data-motion="full"] .landing-drift {
+  animation: landing-orb-drift var(--orb-dur, 9s) ease-in-out infinite;
+  animation-delay: var(--orb-phase, 0s);
+}
+
+.landing-orbs .landing-pos:has(.landing-orb:hover, .landing-orb:focus-visible) {
+  z-index: 5;
+}
+
+.landing-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--color-utility-sky-500) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--color-utility-sky-500) 4%, transparent) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+}
+
+.landing-orbs[data-motion="reduced"] .landing-orb,
+.landing-orbs[data-motion="reduced"] .landing-drift {
+  animation: none;
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-orb,
+  .landing-orb::after,
+  .landing-drift,
+  .landing-pulse {
+    animation: none !important;
+    transition: none !important;
+  }
+}

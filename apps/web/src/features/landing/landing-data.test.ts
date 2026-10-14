@@ -37,7 +37,7 @@ describe("formatLandingStats", () => {
   it("formats mentions + growth, rates and last updated; no safety stat (BR-017)", () => {
     const s = formatLandingStats(overviewFixture(), now);
     expect(s.map((x) => x.key)).toEqual(["mentions", "positive", "negative", "lastUpdated"]);
-    expect(s[0]).toMatchObject({ value: "1,284", hint: "+12.0%" });
+    expect(s[0]).toMatchObject({ value: "1,284", growth: { text: "12.0%", direction: "up", aria: "+12.0%" } });
     expect(s[1]?.value).toBe("62.0%");
     expect(s[2]?.value).toBe("10.0%");
     expect(s[3]?.value).toBe("30 min ago");
@@ -45,16 +45,29 @@ describe("formatLandingStats", () => {
   });
 
   it.each([
-    [{ growthPct: -5, growthState: "down" as const }, "−5.0%"],
-    [{ growthPct: null, growthState: "new" as const }, "New"],
-    [{ growthPct: 0, growthState: "flat" as const }, "0%"],
+    [
+      { growthPct: -5, growthState: "down" as const },
+      { text: "5.0%", direction: "down", aria: "−5.0%" },
+    ],
+    [
+      { growthPct: null, growthState: "new" as const },
+      { text: "New", direction: "new", aria: "New" },
+    ],
+    [
+      { growthPct: 0, growthState: "flat" as const },
+      { text: "0%", direction: "flat", aria: "0%" },
+    ],
+    [
+      { growthPct: 14150, growthState: "up" as const },
+      { text: ">999%", direction: "up", aria: "+14150.0%" },
+    ],
     [{ growthPct: null, growthState: "up" as const }, null],
-  ])("growth %o → %s", (over, hint) => {
-    expect(formatLandingStats(overviewFixture(over), now)[0]?.hint).toBe(hint);
+  ])("#267 growth %o → %o", (over, growth) => {
+    expect(formatLandingStats(overviewFixture(over), now)[0]?.growth).toEqual(growth);
   });
 
-  it("lastSyncAt null → Never synced", () => {
-    expect(formatLandingStats(overviewFixture({ lastSyncAt: null }), now)[3]?.value).toBe("Never synced");
+  it("#267: lastSyncAt null → Not synced", () => {
+    expect(formatLandingStats(overviewFixture({ lastSyncAt: null }), now)[3]?.value).toBe("Not synced");
   });
 });
 
