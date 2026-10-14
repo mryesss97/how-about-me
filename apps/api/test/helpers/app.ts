@@ -4,6 +4,7 @@ import { AppModule } from "../../src/app.module";
 import { APP_CONFIG, type AppConfig } from "../../src/config/config.module";
 import { PrismaService } from "../../src/database/prisma.service";
 import { configureApp } from "../../src/main";
+import { loadTestEnv } from "./test-env";
 
 export async function createTestApp(
   opts: {
@@ -12,7 +13,11 @@ export async function createTestApp(
   } = {},
 ): Promise<{ app: INestApplication; prisma: PrismaService }> {
   const { customize } = opts;
-  const builder = Test.createTestingModule({ imports: [AppModule, ...(opts.imports ?? [])] });
+  // #266: factory runs at compile(), after Prisma Client may have loaded apps/api/.env, so filtering here is final.
+  // Applied before `customize` so spec-level APP_CONFIG overrides still win.
+  const builder = Test.createTestingModule({ imports: [AppModule, ...(opts.imports ?? [])] })
+    .overrideProvider(APP_CONFIG)
+    .useFactory({ factory: () => loadTestEnv() });
   const moduleRef = await (customize ? customize(builder) : builder).compile();
   const app = moduleRef.createNestApplication({ logger: false });
   configureApp(app, app.get<AppConfig>(APP_CONFIG));

@@ -1,7 +1,10 @@
 import http from "node:http";
 import { resolveTestDatabaseUrl } from "./helpers/test-db";
+import { stripDevAuthEnv } from "./helpers/test-env";
 
 process.env.NODE_ENV = "test";
+// #266: tests must not inherit local Supabase auth from apps/api/.env (createTestApp also filters APP_CONFIG).
+stripDevAuthEnv();
 // Workers outside --runInBand may not inherit env set in globalSetup; derive the same URL deterministically (#189).
 process.env.DATABASE_URL = resolveTestDatabaseUrl();
 process.env.DIRECT_URL = process.env.DATABASE_URL;
