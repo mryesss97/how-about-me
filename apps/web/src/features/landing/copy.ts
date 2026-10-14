@@ -1,23 +1,24 @@
-/** Landing page copy (#262, #267). English for MVP (docs 03 §8). */
+/** Landing page copy (#262, #271). Vietnamese by owner decision 2026-10-14; the rest of the app stays English. */
 export const landingCopy = {
-  /** Two headline lines; `headlineAccent` is tinted brand on screen (#267). */
-  headlineLines: ["See how Threads", "feels about you."] as const,
-  headlineAccent: "feels",
-  tagline: "Listen. Understand.",
-  explore: "Explore dashboard",
-  /** Eyebrow pill (#267); "Live" only shows once a sync has happened (open question 2). */
-  eyebrow: { live: "Live", source: "Threads", range: "Last 30 days" },
-  legend: "Orb size = mentions · colour = dominant sentiment · last 30 days",
-  balloonsLabel: "Sentiment of landing terms, last 30 days",
-  statsLabel: "Last 30 days",
+  shopName: "How About Me",
+  headline: "Cộng đồng Threads nghĩ gì về bạn?",
+  tagline: "Lắng nghe. Thấu hiểu.",
+  explore: "Vào dashboard",
+  wallLabel: "Các cụm từ được nhắc trên Threads, 30 ngày qua",
+  legend: "Biển càng to, càng nhiều người nhắc. Màu biển là cảm xúc chủ đạo.",
+  statsLabel: "30 ngày qua",
   stats: {
-    mentions: "Mentions",
-    positive: "Positive",
-    negative: "Negative",
-    lastUpdated: "Updated",
+    mentions: "lượt nhắc · 30 ngày",
+    positive: "tích cực",
+    negative: "tiêu cực",
+    lastUpdated: "cập nhật",
   },
-  neverSynced: "Not synced",
-  emptyAdmin: "Add landing phrases in Settings",
-  emptyOther: "No landing phrases configured yet.",
-  noMentions: "no mentions",
+  growthNew: "Mới",
+  previous: (n: string) => `kỳ trước: ${n}`,
+  neverSynced: "Chưa đồng bộ",
+  emptyAdmin: "Thêm cụm từ cho landing trong Cài đặt",
+  emptyOther: "Chưa có cụm từ nào được cấu hình.",
+  sentiment: { positive: "tích cực", neutral: "trung tính", negative: "tiêu cực" },
+  mentions: (n: string) => `${n} lượt nhắc`,
+  noMentions: "chưa ai nhắc",
 };

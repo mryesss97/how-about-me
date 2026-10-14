@@ -50,3 +50,10 @@ docs/04-qa/datasets/*.jsonl
 # Next 16.3+ `next dev` agent files (#241) — never commit; disabled via agentRules:false
 apps/web/AGENTS.md
 apps/web/CLAUDE.md
+
+# Impeccable design workflow: review captures and decision-page state are local only (#271)
+apps/web/.impeccable/review/
+apps/web/.impeccable/questions/
+apps/web/.impeccable/mocks/
+apps/web/.impeccable/config.local.json
+apps/web/.impeccable/direction-payload.json

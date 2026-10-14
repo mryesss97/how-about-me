@@ -27,8 +27,8 @@ apps/web/src/
 ├─ features/                     product features (one folder per epic)
 │  ├─ auth/                      supabase client, session hooks, role helpers, <RequireRole>
 │  ├─ analytics/                 filter bar, KPI cards, charts, drill-down mapping
-│  ├─ landing/                   landing page `/` (#262): balloons, hero, stats, pure data/layout helpers
-│  ├─ shared/bubbles/            pseudo-3D bubble shell/label, bubble layout core, sentiment colours (#262; used by analytics + landing)
+│  ├─ landing/                   landing page `/` (#262, #271): signboard wall (`sign-wall-layout.ts` treemap, boards, main sign, sign fonts via next/font), pure data helpers; design brief in `apps/web/.impeccable/surfaces/`
+│  ├─ shared/bubbles/            pseudo-3D bubble shell/label, bubble layout core, sentiment colours (#262; Overview sentiment map)
 │  ├─ mentions/                  list, row, detail, badges mapping
 │  ├─ listening-queries/         table, drawer form
 │  ├─ system-status/
@@ -128,7 +128,7 @@ Page backgrounds use `bg-secondary` (Mist): the login page, the app shell `<main
 
 Error/success/warning, gray scale and the sentiment/safety palettes are not brand colours and are unchanged (BR-017). Charts using `utility-brand-*` follow the sky scale.
 
-Logo: `features/shared/brand-logo.tsx` (`horizontal | stacked | mark`) renders the official primary SVG only (no white variant, #260); files in `apps/web/public/brand/`. Used in the sidebar and mobile header (horizontal, 180 px wide — the guide minimum; wrapped in a link to `/`, #262), on the landing page (stacked) and on the login page (stacked). Icons use Next file conventions: `src/app/favicon.ico`, `icon.svg`, `apple-icon.png` (180). `viewport.themeColor` = Mist `#F5FBFF`.
+Logo: `features/shared/brand-logo.tsx` (`horizontal | stacked | mark`) renders the official primary SVG only (no white variant, #260); files in `apps/web/public/brand/`. Used in the sidebar and mobile header (horizontal, 180 px wide — the guide minimum; wrapped in a link to `/`, #262), on the landing main sign (horizontal, on a white plate, #271) and on the login page (stacked). Icons use Next file conventions: `src/app/favicon.ico`, `icon.svg`, `apple-icon.png` (180). `viewport.themeColor` = Mist `#F5FBFF`.
 
 Illustrations (#245): `features/shared/state-illustration.tsx` (`empty | pending | sync-attention`, 360×240) renders `public/brand/illustrations/{name}.svg` (no dark files, #260), decorative (`alt=""`, `aria-hidden`), max 240/280 px wide. The light files differ from the pack in one fill: the panel is Sky Tint `#E0F2FE` (brand-100) instead of Mist `#F5FBFF`, because Mist equals `bg-secondary` and the panel vanished on page backgrounds (#253). A tinted container behind the image was tried first and rejected: the 360×240 viewBox has transparent margins, so the container showed as a larger box around the panel. Opt-in via `EmptyState illustration` / `QueryState emptyIllustration`; the default (FeaturedIcon) stays for chart cards and widgets.
 

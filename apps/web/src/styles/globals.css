@@ -192,125 +192,317 @@ input[type="search"]::-webkit-search-cancel-button {
   z-index: 2;
 }
 
-/* Landing (#262): a configured term with 0 mentions — neutral grey, low tint, dashed rim. */
-.bubble-3d[data-empty="true"] {
-  --bubble-hue: var(--color-utility-neutral-400);
-  --bubble-mix: 6%;
+/* Landing (#271): a Saigon signboard wall. Flat enamel boards, one 2px keyline weight, no gradient, glow or shadow.
+   Boards are hung once with a short swing; reduced motion hangs them still. Overview's `.bubble-3d` is unrelated. */
+.sign-wall {
+  --wall: #d9e6ef;
+  --ink: #0c4a6e;
+  --sky-enamel: #0369a1;
+  --red-enamel: #b42318;
+  --green-enamel: #067647;
+  --enamel-white: #fbfdff;
+  background: var(--wall);
+  color: var(--ink);
+}
+
+.sign-wall ::selection {
+  background: #bae6fd;
+  color: var(--ink);
+}
+
+@keyframes sign-hang {
+  from {
+    opacity: 0.35;
+    transform: translateY(-10px) rotate(var(--swing-from, -2.4deg));
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(0) rotate(calc(var(--swing-from, -2.4deg) * -0.4));
+  }
+  to {
+    transform: none;
+  }
+}
+
+.sign-board {
+  --enamel: var(--enamel-white);
+  --letter: var(--ink);
+  --line: var(--ink);
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--enamel);
+  color: var(--letter);
+  transform-origin: 50% 0;
+  outline: none;
+}
+
+.sign-wall[data-motion="full"] .sign-board {
+  animation: sign-hang 720ms cubic-bezier(0.16, 1, 0.3, 1) var(--hang-delay, 0ms) both;
+}
+
+.sign-board[data-tone="negative-solid"] {
+  --enamel: var(--red-enamel);
+  --letter: #fff;
+  --line: rgb(255 255 255 / 0.85);
+}
+
+.sign-board[data-tone="positive-solid"] {
+  --enamel: var(--green-enamel);
+  --letter: #fff;
+  --line: rgb(255 255 255 / 0.85);
+}
+
+.sign-board[data-tone="negative-mixed"] {
+  --letter: var(--red-enamel);
+  --line: var(--red-enamel);
+}
+
+.sign-board[data-tone="positive-mixed"] {
+  --letter: var(--green-enamel);
+  --line: var(--green-enamel);
+}
+
+.sign-board[data-tone="blank"] {
+  --letter: #5b7083;
+  --line: #9fb3c2;
+}
+
+.sign-board[data-tone="blank"] .sign-keyline {
   border-style: dashed;
 }
 
-/* Landing (#267): soft glowing orbs on orbit rings. Separate from `.bubble-3d` (Overview sentiment map unchanged).
-   Only transform/opacity animate; the hover glow is a pre-rendered ::after faded in (no box-shadow animation). */
-@keyframes landing-orb-in {
-  from {
-    opacity: 0;
-    transform: scale(0.85);
-  }
+.sign-board:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+  z-index: 3;
 }
 
-@keyframes landing-orb-drift {
-  0%,
-  100% {
-    transform: translate(0, 0);
-  }
-  33% {
-    transform: translate(4px, -6px);
-  }
-  66% {
-    transform: translate(-5px, 3px);
-  }
+.sign-keyline {
+  position: absolute;
+  inset: 5px;
+  border: 2px solid var(--line);
+  border-radius: 2px;
+  pointer-events: none;
 }
 
-@keyframes landing-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.35;
-  }
+/* House-number rank plate: sky enamel, white figure, squared like Saigon số nhà plates. */
+.sign-plate {
+  position: absolute;
+  top: 11px;
+  left: 11px;
+  min-width: 26px;
+  padding: 1px 6px;
+  border-radius: 2px;
+  background: var(--sky-enamel);
+  color: #fff;
+  font-family: var(--font-figure), sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
-.landing-orb {
-  --orb-hue: var(--color-utility-neutral-400);
-  --orb-k: 1;
-  position: relative;
-  border-radius: 9999px;
-  background: radial-gradient(
-    circle at 50% 40%,
-    color-mix(in oklab, var(--orb-hue) calc(22% * var(--orb-k)), white) 0%,
-    color-mix(in oklab, var(--orb-hue) calc(10% * var(--orb-k)), white) 60%,
-    color-mix(in oklab, var(--orb-hue) calc(4% * var(--orb-k)), transparent) 100%
-  );
-  box-shadow:
-    0 0 0 1px color-mix(in oklab, var(--orb-hue) 35%, transparent),
-    0 0 0 6px color-mix(in oklab, var(--orb-hue) 6%, transparent),
-    0 12px 40px -12px color-mix(in oklab, var(--orb-hue) 45%, transparent);
-  transition: transform 200ms ease-out;
+.sign-plate-compact {
+  top: 9px;
+  left: 9px;
+  min-width: 18px;
+  padding: 0 4px;
+  font-size: 12px;
+  line-height: 15px;
 }
 
-.landing-orb::after {
-  content: "";
+.sign-board[data-tone="negative-solid"] .sign-plate,
+.sign-board[data-tone="positive-solid"] .sign-plate {
+  background: #fff;
+  color: var(--enamel);
+}
+
+.sign-content {
   position: absolute;
   inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  box-shadow: 0 0 32px 4px color-mix(in oklab, var(--orb-hue) 40%, transparent);
-  opacity: 0;
-  transition: opacity 200ms ease-out;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35em;
+  padding: 12px;
+  text-align: center;
 }
 
-.landing-orb:hover,
-.landing-orb:focus-visible {
-  transform: scale(1.04);
+.sign-phrase {
+  font-family: var(--font-sign), sans-serif;
+  /* Room for stacked Vietnamese marks (Ỗ, Ề) above a second line. */
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
 }
 
-.landing-orb:hover::after,
-.landing-orb:focus-visible::after {
-  opacity: 1;
+/* Width-bound boards: hand-ruled condensed caps (the sign painters' second alphabet). */
+.sign-phrase-condensed {
+  font-family: var(--font-figure), sans-serif;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
 }
 
-.landing-orb[data-empty] {
-  --orb-hue: var(--color-utility-neutral-400);
-  box-shadow: none;
-  border: 1px dashed color-mix(in oklab, var(--orb-hue) 70%, transparent);
-  opacity: 0.6;
+/* Blade sign: condensed caps turned along a tall, narrow board, read top to bottom. */
+.sign-phrase-sideways {
+  writing-mode: vertical-rl;
+  white-space: nowrap;
 }
 
-.landing-orbs[data-motion="full"] .landing-orb {
-  animation: landing-orb-in 500ms ease-out both;
-  animation-delay: calc(var(--orb-i, 0) * 40ms);
+/* Tall, narrow boards: letters stacked top to bottom like a vertical shop sign, columns left to right. */
+.sign-phrase-vertical {
+  writing-mode: vertical-lr;
+  text-orientation: upright;
+  line-height: 1.25;
+  letter-spacing: 0;
 }
 
-.landing-orbs[data-motion="full"] .landing-drift {
-  animation: landing-orb-drift var(--orb-dur, 9s) ease-in-out infinite;
-  animation-delay: var(--orb-phase, 0s);
+.sign-figure {
+  white-space: nowrap;
+  font-family: var(--font-figure), sans-serif;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
 }
 
-.landing-orbs .landing-pos:has(.landing-orb:hover, .landing-orb:focus-visible) {
-  z-index: 5;
+/* Sub-sign with the full split: slides up from the board's foot on hover/focus. */
+.sign-sub {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 7px 12px 8px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: center;
+  transform: translateY(101%);
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.landing-grid {
-  background-image:
-    linear-gradient(to right, color-mix(in oklab, var(--color-utility-sky-500) 4%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in oklab, var(--color-utility-sky-500) 4%, transparent) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+.sign-sub-tight {
+  padding: 3px 8px;
+  font-size: 11px;
 }
 
-.landing-orbs[data-motion="reduced"] .landing-orb,
-.landing-orbs[data-motion="reduced"] .landing-drift {
-  animation: none;
-  transition: none;
+.sign-board:hover .sign-sub,
+.sign-board:focus-visible .sign-sub {
+  transform: translateY(0);
+}
+
+.sign-board[data-tone="blank"] .sign-sub {
+  display: none;
+}
+
+/* The shop's main sign: sky enamel, white keyline, white lettering. */
+/* Position comes from utilities (relative on phones, absolute in the wall from `sm`): unlayered CSS would win. */
+.main-sign {
+  border-radius: 4px;
+  background: var(--sky-enamel);
+  color: #fff;
+}
+
+.main-sign .sign-keyline {
+  --line: rgb(255 255 255 / 0.9);
+  inset: 8px;
+}
+
+.main-sign-logo {
+  display: inline-flex;
+  padding: 8px 12px;
+  border-radius: 2px;
+  background: var(--enamel-white);
+}
+
+.main-sign-headline {
+  font-family: var(--font-sign), sans-serif;
+  font-size: clamp(26px, 3.1vw, 48px);
+  line-height: 1.16;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.main-sign-figures {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 20px;
+  padding-top: 16px;
+  border-top: 2px solid rgb(255 255 255 / 0.9);
+}
+
+@media (min-width: 1024px) {
+  .main-sign-figures {
+    grid-template-columns: repeat(4, minmax(0, auto));
+    justify-content: space-between;
+  }
+}
+
+.main-sign-figure {
+  font-family: var(--font-figure), sans-serif;
+  font-size: clamp(28px, 2.6vw, 40px);
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.main-sign-status {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.main-sign-growth {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--font-figure), sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Door plaque: the one way in. White enamel, ink lettering; inverts on hover. */
+.door-plaque {
+  display: inline-flex;
+  flex-shrink: 0;
+  white-space: nowrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border: 2px solid #fff;
+  border-radius: 2px;
+  background: var(--enamel-white);
+  color: var(--ink);
+  font-family: var(--font-sign), sans-serif;
+  font-size: 17px;
+  text-transform: uppercase;
+  transition:
+    background-color 160ms ease-out,
+    color 160ms ease-out;
+}
+
+.door-plaque:hover {
+  background: var(--ink);
+  color: #fff;
+}
+
+.door-plaque:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .landing-orb,
-  .landing-orb::after,
-  .landing-drift,
-  .landing-pulse {
-    animation: none !important;
-    transition: none !important;
+  .sign-wall .sign-board {
+    animation: none;
+  }
+
+  .sign-sub {
+    transition: none;
   }
 }
