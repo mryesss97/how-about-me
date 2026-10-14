@@ -19,17 +19,17 @@ import { qk } from "@/lib/query/keys";
 
 /** User-facing message for a mutation error; unknown codes keep the server message plus requestId. */
 export function errorMessage(err: unknown): string {
-  if (!(err instanceof ApiError)) return "Something went wrong. Please try again.";
+  if (!(err instanceof ApiError)) return "Đã có lỗi xảy ra. Vui lòng thử lại.";
   switch (err.code) {
     case "LAST_ADMIN":
-      return "Project must keep at least one admin.";
+      return "Dự án phải còn ít nhất một quản trị viên.";
     case "MEMBER_EXISTS":
-      return "This email is already a member.";
+      return "Email này đã là thành viên.";
     case "FORBIDDEN_ROLE":
     case "FORBIDDEN_PROJECT":
-      return "You don't have permission.";
+      return "Bạn không có quyền thực hiện thao tác này.";
     default:
-      return err.requestId ? `${err.message} (Request ID: ${err.requestId})` : err.message;
+      return err.requestId ? `${err.message} (Mã yêu cầu: ${err.requestId})` : err.message;
   }
 }
 

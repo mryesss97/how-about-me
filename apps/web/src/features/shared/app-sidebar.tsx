@@ -17,6 +17,7 @@ import { useSignOut } from "@/features/auth/use-sign-out";
 import { SidebarNavigationSimple } from "@/components/application/app-navigation/sidebar-navigation/sidebar-simple";
 import type { NavItemType } from "@/components/application/app-navigation/config";
 import { ProjectSwitcher } from "./project-switcher";
+import { roleLabelVi } from "@/lib/semantics/labels";
 
 /** Product navigation — docs/01-product/09-ux-specification.md §1. Filtered by role (FR-018); UX only, server enforces. */
 const items: NavItemType[] = [
@@ -27,9 +28,6 @@ const items: NavItemType[] = [
   { label: "Trạng thái hệ thống", href: "/system-status", icon: Activity },
 ];
 const footerItems: NavItemType[] = [{ label: "Cài đặt", href: "/settings/project", icon: Settings01 }];
-
-/** Role names on the account card (#274, Vietnamese shell). */
-const ROLE_LABEL = { admin: "Quản trị", analyst: "Phân tích", viewer: "Chỉ xem" } as const;
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -48,7 +46,7 @@ export function AppSidebar() {
       {me.data && (
         <div className="flex items-center gap-2">
           <p className="min-w-0 flex-1 truncate text-sm text-white">{me.data.email}</p>
-          {role && <span className="shell-role-plate">{ROLE_LABEL[role]}</span>}
+          {role && <span className="shell-role-plate">{roleLabelVi[role]}</span>}
         </div>
       )}
       <button type="button" className="shell-signout" onClick={() => void signOut()}>

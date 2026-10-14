@@ -6,18 +6,26 @@ import { toast } from "sonner";
 import { Button } from "@/components/base/buttons/button";
 import { ApiError } from "@/lib/api/client";
 import { SettingsDialog } from "@/features/shared/settings-dialog";
-import { retryAfterSeconds, waitText } from "@/lib/api/rate-limit";
+import { retryAfterSeconds } from "@/lib/api/rate-limit";
+import { formatCount } from "@/lib/format/number";
 import { useMarkStale } from "./api";
 
-const fmt = (n: number) => n.toLocaleString("en-US");
+const fmt = formatCount;
+
+/** Vietnamese wait phrase for `Retry-After` (the shared `waitText` is English). */
+function waitTextVi(seconds: number | null): string {
+  if (seconds === null) return "ít phút nữa";
+  if (seconds < 60) return `${Math.max(1, Math.ceil(seconds))} giây`;
+  return `${Math.ceil(seconds / 60)} phút`;
+}
 
 function errorText(err: unknown): string {
   if (err instanceof ApiError && err.code === "RATE_LIMITED")
-    return `Re-analysis was requested recently. Try again in ${waitText(retryAfterSeconds(err))}.`;
+    return `Vừa có yêu cầu phân tích lại. Thử lại sau ${waitTextVi(retryAfterSeconds(err))}.`;
   if (err instanceof ApiError && err.code === "VALIDATION_ERROR")
-    return "This version is already current; nothing to re-analyse.";
-  const rid = err instanceof ApiError && err.requestId ? ` (request ${err.requestId})` : "";
-  return `Could not start re-analysis${rid}.`;
+    return "Phiên bản này đang là phiên bản hiện tại; không có gì để phân tích lại.";
+  const rid = err instanceof ApiError && err.requestId ? ` (mã yêu cầu ${err.requestId})` : "";
+  return `Không thể bắt đầu phân tích lại${rid}.`;
 }
 
 /**
@@ -56,7 +64,9 @@ export function ReanalysisPromptDialog({
         onSuccess: (r) => {
           if (dryRun) return setPreview(r);
           toast.success(
-            r.enqueued > 0 ? `Re-analysis queued for ${fmt(r.enqueued)} posts` : "No posts needed re-analysis",
+            r.enqueued > 0
+              ? `Đã đưa ${fmt(r.enqueued)} bài vào hàng đợi phân tích lại`
+              : "Không có bài nào cần phân tích lại",
           );
           onClose();
         },
@@ -66,17 +76,19 @@ export function ReanalysisPromptDialog({
   };
 
   return (
-    <SettingsDialog isOpen={isOpen} onClose={onClose} title="Re-analyse older posts?">
+    <SettingsDialog isOpen={isOpen} onClose={onClose} title="Phân tích lại các bài cũ?">
       {nothingToDo ? (
-        <p className="text-sm text-secondary">No results of the older policy are left to re-analyse.</p>
+        <p className="text-sm text-secondary">Không còn kết quả nào của chính sách cũ cần phân tích lại.</p>
       ) : preview ? (
         <p className="text-sm text-secondary">
-          {fmt(preview.marked)} results will be marked stale; up to {fmt(preview.cap)} posts will be re-analysed now.
-          {preview.marked > preview.cap ? " Posts above this limit stay stale until the next bulk re-analysis." : null}
+          {fmt(preview.marked)} kết quả sẽ được đánh dấu cũ; tối đa {fmt(preview.cap)} bài sẽ được phân tích lại ngay.
+          {preview.marked > preview.cap
+            ? " Các bài vượt giới hạn này giữ trạng thái cũ cho tới lần phân tích lại hàng loạt tiếp theo."
+            : null}
         </p>
       ) : (
         <p className="text-sm text-secondary">
-          {fmt(outdatedCount)} posts were analysed with an older policy. Re-analyse them now?
+          {fmt(outdatedCount)} bài đã được phân tích bằng chính sách cũ. Phân tích lại ngay?
         </p>
       )}
       {error ? (
@@ -87,19 +99,19 @@ export function ReanalysisPromptDialog({
       <div className="flex justify-end gap-3">
         {terminal ? (
           <Button color="secondary" onClick={onClose}>
-            Close
+            Đóng
           </Button>
         ) : (
           <>
             <Button color="secondary" onClick={onClose}>
-              {preview ? "Cancel" : "Later"}
+              {preview ? "Huỷ" : "Để sau"}
             </Button>
             <Button
               isLoading={m.isPending}
               isDisabled={m.isPending || rateLimited}
               onClick={() => run(preview === null)}
             >
-              {preview ? "Confirm" : "Re-analyse"}
+              {preview ? "Xác nhận" : "Phân tích lại"}
             </Button>
           </>
         )}

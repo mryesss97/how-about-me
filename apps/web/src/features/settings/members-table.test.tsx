@@ -13,7 +13,8 @@ vi.mock("@/lib/api/client", async (orig) => ({
   ...(await orig<typeof ClientModule>()),
   apiFetch: (...a: unknown[]) => apiFetch(...a),
 }));
-vi.mock("sonner", () => ({ toast: { success: vi.fn() } }));
+const toastSuccess = vi.fn();
+vi.mock("sonner", () => ({ toast: { success: (...a: unknown[]) => toastSuccess(...a) } }));
 
 const OTHER_ADMIN = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 let qc: QueryClient;
@@ -36,7 +37,7 @@ describe("MembersTable", () => {
     apiFetch.mockResolvedValue(memberData(VIEWER_ID, "analyst", "v@x.co"));
     const invalidate = vi.spyOn(qc, "invalidateQueries");
     renderTable();
-    fireEvent.change(screen.getByLabelText("Role for v@x.co"), { target: { value: "analyst" } });
+    fireEvent.change(screen.getByLabelText("Vai trò của v@x.co"), { target: { value: "analyst" } });
     await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ["project", P1, "members"] }));
     const [path, init] = apiFetch.mock.calls[0] as [string, RequestInit];
     expect(path).toBe(`/projects/${P1}/members/${VIEWER_ID}`);
@@ -44,36 +45,45 @@ describe("MembersTable", () => {
     expect(JSON.parse(String(init.body))).toEqual({ role: "analyst" });
   });
 
+  it("#281: the role toast uses the Vietnamese label while the payload keeps the API enum", async () => {
+    apiFetch.mockResolvedValue(memberData(VIEWER_ID, "analyst", "v@x.co"));
+    renderTable();
+    fireEvent.change(screen.getByLabelText("Vai trò của v@x.co"), { target: { value: "analyst" } });
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("v@x.co giờ là Phân tích"));
+    const [, init] = apiFetch.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(String(init.body))).toEqual({ role: "analyst" });
+  });
+
   it("FR-035: 409 LAST_ADMIN on role change shows the error and reverts the select", async () => {
     apiFetch.mockRejectedValue(lastAdmin());
     const members = [memberData(ADMIN_ID, "admin", "a@x.co"), memberData(OTHER_ADMIN, "admin", "b@x.co")];
     renderTable(members);
-    const select = screen.getByLabelText("Role for b@x.co");
+    const select = screen.getByLabelText("Vai trò của b@x.co");
     fireEvent.change(select, { target: { value: "viewer" } });
-    expect(await screen.findByRole("alert")).toHaveTextContent("Project must keep at least one admin.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Dự án phải còn ít nhất một quản trị viên.");
     await waitFor(() => expect(select).toHaveValue("admin"));
   });
 
   it("locks the last admin's role and Remove as a hint", () => {
     renderTable();
-    expect(screen.getByLabelText("Role for a@x.co")).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Remove a@x.co" })).toBeDisabled();
+    expect(screen.getByLabelText("Vai trò của a@x.co")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Xoá a@x.co" })).toBeDisabled();
   });
 
   it("FR-034: Remove asks for confirmation; Cancel does not call DELETE", async () => {
     renderTable();
-    fireEvent.click(screen.getByRole("button", { name: "Remove v@x.co" }));
-    expect(await screen.findByText("Remove v@x.co?")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    await waitFor(() => expect(screen.queryByText("Remove v@x.co?")).not.toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "Xoá v@x.co" }));
+    expect(await screen.findByText("Xoá v@x.co?")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Huỷ" }));
+    await waitFor(() => expect(screen.queryByText("Xoá v@x.co?")).not.toBeInTheDocument());
     expect(apiFetch).not.toHaveBeenCalled();
   });
 
   it("FR-034: confirming Remove sends DELETE", async () => {
     apiFetch.mockResolvedValue(undefined);
     renderTable();
-    fireEvent.click(screen.getByRole("button", { name: "Remove v@x.co" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Remove" }));
+    fireEvent.click(screen.getByRole("button", { name: "Xoá v@x.co" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Xoá" }));
     await waitFor(() =>
       expect(apiFetch).toHaveBeenCalledWith(`/projects/${P1}/members/${VIEWER_ID}`, { method: "DELETE" }),
     );
@@ -82,8 +92,8 @@ describe("MembersTable", () => {
   it("FR-035: 409 LAST_ADMIN on remove shows the error", async () => {
     apiFetch.mockRejectedValue(lastAdmin());
     renderTable([memberData(ADMIN_ID, "admin", "a@x.co"), memberData(OTHER_ADMIN, "admin", "b@x.co")]);
-    fireEvent.click(screen.getByRole("button", { name: "Remove b@x.co" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Remove" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Project must keep at least one admin.");
+    fireEvent.click(screen.getByRole("button", { name: "Xoá b@x.co" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Xoá" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Dự án phải còn ít nhất một quản trị viên.");
   });
 });

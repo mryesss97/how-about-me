@@ -8,6 +8,7 @@ import { Badge } from "@/components/base/badges/badges";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { ApiError } from "@/lib/api/client";
+import { formatCount } from "@/lib/format/number";
 import { formatDateTime, formatRelativeOrAbsolute } from "@/lib/time/format";
 import { errorMessage } from "../api";
 import {
@@ -28,27 +29,27 @@ function PolicyHeader({ settings, timeZone }: { settings: AnalysisSettings; time
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-2">
-        <h2 className="text-md font-semibold text-primary">{settings.policyVersion}</h2>
+        <h3 className="text-md font-semibold text-primary">{settings.policyVersion}</h3>
         {settings.isDefault ? (
           <Badge size="sm" color="gray" type="pill-color">
-            Default
+            Mặc định
           </Badge>
         ) : null}
       </div>
       {settings.isDefault && !by ? (
-        <p className="text-sm text-tertiary">Default policy (taxonomy defaults)</p>
+        <p className="text-sm text-tertiary">Chính sách mặc định (theo taxonomy)</p>
       ) : settings.createdAt ? (
         <p className="text-sm text-tertiary">
-          Created{" "}
+          Tạo{" "}
           <time dateTime={settings.createdAt} title={formatDateTime(settings.createdAt, timeZone)}>
             {formatRelativeOrAbsolute(settings.createdAt, new Date(), timeZone)}
           </time>
-          {by ? ` by ${by}` : null}
+          {by ? ` bởi ${by}` : null}
         </p>
       ) : null}
       {settings.outdatedCount > 0 ? (
         <p className="text-sm text-tertiary">
-          {settings.outdatedCount.toLocaleString("en-US")} posts were analysed with an older policy.
+          {formatCount(settings.outdatedCount)} bài đã được phân tích bằng chính sách cũ.
         </p>
       ) : null}
     </div>
@@ -95,7 +96,7 @@ export function AnalysisSettingsForm({
     update.mutate(body, {
       onSuccess: (next) => {
         // "No changes" only happens on a race (another admin saved the same values first); the API creates no version.
-        toast.success(next.version !== settings.version ? `Created ${next.policyVersion}` : "No changes");
+        toast.success(next.version !== settings.version ? `Đã tạo ${next.policyVersion}` : "Không có thay đổi");
         onSaved?.(next);
       },
       onError: (err) => {
@@ -108,15 +109,15 @@ export function AnalysisSettingsForm({
   };
 
   return (
-    <form onSubmit={onSubmit} noValidate className="flex max-w-3xl flex-col gap-6" aria-label="Analysis settings">
+    <form onSubmit={onSubmit} noValidate className="flex max-w-3xl flex-col gap-6" aria-label="Cài đặt phân tích">
       <PolicyHeader settings={settings} timeZone={timeZone} />
       <fieldset className="flex flex-col gap-3">
-        <legend className="mb-2 text-sm font-semibold text-primary">Confidence bands</legend>
+        <legend className="mb-2 text-sm font-semibold text-primary">Ngưỡng độ tin cậy</legend>
         <div className="grid grid-cols-2 gap-4">
           {(["high", "medium"] as const).map((k) => (
             <Input
               key={k}
-              label={k === "high" ? "High (≥)" : "Medium (≥)"}
+              label={k === "high" ? "Cao (≥)" : "Trung bình (≥)"}
               type="number"
               value={draft.bands[k]}
               onChange={(v) => setBand(k, v)}
@@ -140,11 +141,11 @@ export function AnalysisSettingsForm({
         </p>
       ) : null}
       {readOnly ? (
-        <p className="text-sm text-tertiary">Only project admins can change these settings.</p>
+        <p className="text-sm text-tertiary">Chỉ quản trị viên dự án mới thay đổi được các cài đặt này.</p>
       ) : (
         <div>
           <Button type="submit" isDisabled={!dirty} isLoading={update.isPending}>
-            Create new policy version
+            Tạo phiên bản chính sách mới
           </Button>
         </div>
       )}

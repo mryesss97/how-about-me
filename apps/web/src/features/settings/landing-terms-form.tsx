@@ -10,10 +10,10 @@ import { ApiError } from "@/lib/api/client";
 import { errorMessage, useUpdateProject } from "./api";
 
 const HINT =
-  "Each phrase becomes a signboard on the landing page, coloured by the sentiment of mentions whose text or key phrases contain it. Up to 20 phrases, 1–60 characters.";
-const INVALID = "Enter 1–60 characters with a letter or digit.";
-const DUPLICATE = "Already in the list.";
-const TOO_MANY = "Up to 20 phrases.";
+  "Mỗi cụm từ thành một biển hiệu trên trang landing, tô màu theo cảm xúc của các bài nhắc có chứa cụm từ đó trong nội dung hoặc cụm từ khoá. Tối đa 20 cụm từ, mỗi cụm 1–60 ký tự.";
+const INVALID = "Nhập 1–60 ký tự, có ít nhất một chữ hoặc số.";
+const DUPLICATE = "Đã có trong danh sách.";
+const TOO_MANY = "Tối đa 20 cụm từ.";
 
 function sameList(a: readonly string[], b: readonly string[]): boolean {
   return a.length === b.length && a.every((v, i) => v === b[i]);
@@ -46,7 +46,7 @@ export function LandingTermsForm({ project, canEdit }: { project: Project; canEd
     update.mutate(
       { settings: { landingTerms: draft } },
       {
-        onSuccess: () => toast.success("Landing page settings saved"),
+        onSuccess: () => toast.success("Đã lưu cài đặt trang landing"),
         onError: (err) => {
           if (err instanceof ApiError && err.code === "VALIDATION_ERROR") {
             const details = ValidationErrorDetailsSchema.safeParse(err.details);
@@ -58,14 +58,13 @@ export function LandingTermsForm({ project, canEdit }: { project: Project; canEd
   };
 
   return (
-    <form onSubmit={onSubmit} noValidate className="flex max-w-xl flex-col gap-4" aria-label="Landing page settings">
-      <h2 className="text-md font-semibold text-primary">Landing page</h2>
+    <form onSubmit={onSubmit} noValidate className="flex max-w-xl flex-col gap-4" aria-label="Cài đặt trang landing">
       {!canEdit && current.length === 0 ? (
-        <p className="text-sm text-tertiary">No landing phrases yet.</p>
+        <p className="text-sm text-tertiary">Chưa có cụm từ nào.</p>
       ) : (
         <InputTags
-          label="Landing phrases"
-          placeholder={canEdit ? "Add a phrase and press Enter" : undefined}
+          label="Cụm từ trên landing"
+          placeholder={canEdit ? "Thêm cụm từ rồi nhấn Enter" : undefined}
           value={draft}
           allowDuplicates
           validate={(raw) => {
@@ -91,11 +90,11 @@ export function LandingTermsForm({ project, canEdit }: { project: Project; canEd
       {canEdit ? (
         <div>
           <Button type="submit" isDisabled={!dirty} isLoading={update.isPending}>
-            Save
+            Lưu
           </Button>
         </div>
       ) : (
-        <p className="text-sm text-tertiary">Only project admins can change these settings.</p>
+        <p className="text-sm text-tertiary">Chỉ quản trị viên dự án mới thay đổi được các cài đặt này.</p>
       )}
     </form>
   );
