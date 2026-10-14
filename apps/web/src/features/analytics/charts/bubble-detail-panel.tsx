@@ -1,6 +1,6 @@
 "use client";
 
-import type { SentimentLabel, TopicLabel } from "@how-about-me/taxonomy";
+import type { SentimentLabel } from "@how-about-me/taxonomy";
 import Link from "next/link";
 import { formatCount, formatRate } from "@/lib/format/number";
 import { sentimentBadge } from "@/lib/semantics/badges";
@@ -9,7 +9,7 @@ import type { BubbleDatum } from "./bubble-layout";
 import { SENTIMENT_COLORS, SENTIMENT_ORDER, shareOf } from "./chart-data";
 import { SentimentIcon } from "./sentiment-icon";
 
-export type BubbleHref = (topic: TopicLabel, sentiment: SentimentLabel | null) => string | null;
+export type BubbleHref = (key: string, sentiment: SentimentLabel | null) => string | null;
 
 const linkCx =
   "font-medium text-brand-secondary underline-offset-2 outline-focus-ring hover:underline focus-visible:outline-2";

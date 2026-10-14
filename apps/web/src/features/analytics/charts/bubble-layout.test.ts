@@ -7,7 +7,8 @@ import {
   filterBubbles,
   layoutBubbles,
   MIN_RADIUS_RATIO,
-  toBubbleData,
+  toPhraseBubbles,
+  toTopicBubbles,
 } from "./bubble-layout";
 import { topicSentimentFixture } from "./topic-sentiment-fixture.test-utils";
 
@@ -29,8 +30,8 @@ describe("bubble-layout (#222)", () => {
     expect(dominantSentiment(row(0, 0, 0))).toBeNull();
   });
 
-  it("BR-032: toBubbleData drops topics without sentiment and keeps API order", () => {
-    const data = toBubbleData(topicSentimentFixture().rows);
+  it("BR-032: toTopicBubbles drops topics without sentiment and keeps API order", () => {
+    const data = toTopicBubbles(topicSentimentFixture().rows);
     expect(data.map((d) => d.key)).toEqual(["ticket", "price", "venue", "other"]);
     expect(data[0]).toMatchObject({ name: "Ticket", total: 4, dominant: "negative", dominantShare: 0.5 });
   });
@@ -44,7 +45,7 @@ describe("bubble-layout (#222)", () => {
   });
 
   it("filterBubbles filters by dominant sentiment", () => {
-    const data = toBubbleData(topicSentimentFixture().rows);
+    const data = toTopicBubbles(topicSentimentFixture().rows);
     expect(filterBubbles(data, "all")).toHaveLength(4);
     expect(filterBubbles(data, "negative").map((d) => d.key)).toEqual(["ticket", "venue", "other"]);
     expect(filterBubbles(data, "positive").map((d) => d.key)).toEqual(["price"]);
@@ -93,5 +94,24 @@ describe("bubble-layout (#222)", () => {
     const [one] = layoutBubbles([{ key: "a", total: 3 }], size);
     expect(one).toMatchObject({ x: 500, y: 280 });
     expect(layoutBubbles([], size)).toEqual([]);
+  });
+});
+
+describe("toPhraseBubbles (#243, FR-148)", () => {
+  const prow = (phrase: string, p: number, n: number, neg: number) => ({
+    phrase,
+    positive: p,
+    neutral: n,
+    negative: neg,
+    total: p + n + neg,
+    negativeShare: p + n + neg ? neg / (p + n + neg) : 0,
+  });
+
+  it("keeps the phrase verbatim, drops total 0 (BR-032), ties go negative first", () => {
+    const data = toPhraseBubbles([prow("giá vé", 2, 0, 2), prow("empty_one", 0, 0, 0), prow("xếp hàng", 1, 3, 0)]);
+    expect(data.map((d) => [d.key, d.name, d.dominant])).toEqual([
+      ["giá vé", "giá vé", "negative"],
+      ["xếp hàng", "xếp hàng", "neutral"],
+    ]);
   });
 });

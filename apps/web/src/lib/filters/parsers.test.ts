@@ -37,3 +37,11 @@ describe("filter URL parsers (TC-DASH-005: reload preserves filters)", () => {
     expect(parsed.preset).toBe("7d");
   });
 });
+
+describe("phrase parser (#243, BR-041)", () => {
+  it("normalises like the API and drops empty / too long values", () => {
+    expect(load("?phrase=Gi%C3%A1%20V%C3%A9").phrase).toEqual(["giá vé"]);
+    expect(load(`?phrase=${"a".repeat(61)},ok`).phrase).toEqual(["ok"]);
+    expect(load("?phrase=%20,!!!").phrase).toEqual([]);
+  });
+});

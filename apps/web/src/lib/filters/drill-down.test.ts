@@ -2,7 +2,14 @@ import { MentionsListQuerySchema } from "@how-about-me/contracts";
 import { createLoader } from "nuqs/server";
 import { describe, expect, it } from "vitest";
 import { toApiParams, toMentionsHref } from "./api-params";
-import { bucketDrillDown, kpiDrillDown, queryDrillDown, segmentDrillDown, topicSentimentDrillDown } from "./drill-down";
+import {
+  bucketDrillDown,
+  kpiDrillDown,
+  phraseSentimentDrillDown,
+  queryDrillDown,
+  segmentDrillDown,
+  topicSentimentDrillDown,
+} from "./drill-down";
 import { filterParsers } from "./parsers";
 import { defaultFilters, type Filters } from "./schema";
 
@@ -150,5 +157,24 @@ describe("topicSentimentDrillDown (T-149, FR-144/FR-142)", () => {
     expect(q.get("topic")).toBe("ticket");
     expect(q.get("sentiment")).toBe("negative");
     expect(q.get("language")).toBe("vi");
+  });
+});
+
+describe("phraseSentimentDrillDown (#243, FR-148, FR-142)", () => {
+  it("maps phrase with/without sentiment", () => {
+    expect(phraseSentimentDrillDown("giá vé")).toEqual({ phrase: ["giá vé"] });
+    expect(phraseSentimentDrillDown("giá vé", "negative")).toEqual({ phrase: ["giá vé"], sentiment: ["negative"] });
+  });
+
+  it("toMentionsHref keeps global filters + range and round-trips an accented phrase; valid for the API", () => {
+    const f = base({ topic: ["price"], phrase: ["old"] });
+    const href = toMentionsHref(f, phraseSentimentDrillDown("giá vé", "negative"), now);
+    const parsed = parseFilters(query(href));
+    expect(parsed.phrase).toEqual(["giá vé"]);
+    expect(parsed.sentiment).toEqual(["negative"]);
+    expect(parsed.topic).toEqual(["price"]);
+    expect(parsed.preset).toBe("custom");
+    const api = MentionsListQuerySchema.parse(toApiParams(parsed, { target: "mentions", now }));
+    expect(api.phrase).toEqual(["giá vé"]);
   });
 });

@@ -81,3 +81,21 @@ describe("appliedChips / removeFilterValue", () => {
     });
   });
 });
+
+describe("phrase filter (#243, FR-148, BR-041)", () => {
+  const f = base({ phrase: ["giá vé", "xếp hàng"] });
+
+  it("is sent to analytics and mentions as CSV", () => {
+    expect(toApiParams(f, { target: "analytics", now }).phrase).toBe("giá vé,xếp hàng");
+    expect(toApiParams(f, { target: "mentions", now }).phrase).toBe("giá vé,xếp hàng");
+    expect(AnalyticsQuerySchema.parse(toApiParams(f, { target: "analytics", now })).phrase).toEqual([
+      "giá vé",
+      "xếp hàng",
+    ]);
+  });
+
+  it("has a verbatim chip and can be removed", () => {
+    expect(appliedChips(f).map((c) => c.label)).toEqual(["Phrase: giá vé", "Phrase: xếp hàng"]);
+    expect(removeFilterValue(f, "phrase", "giá vé")).toEqual({ phrase: ["xếp hàng"] });
+  });
+});

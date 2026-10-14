@@ -1,14 +1,17 @@
-import type { TopicSentimentResponse } from "@how-about-me/contracts";
-import type { SentimentLabel, TopicLabel } from "@how-about-me/taxonomy";
+import type { PhraseSentimentResponse, TopicSentimentResponse } from "@how-about-me/contracts";
+import type { SentimentLabel } from "@how-about-me/taxonomy";
 import { packSiblings } from "d3-hierarchy";
 import { humanizeLabel } from "./chart-data";
 
 /** Pure data + layout helpers for the sentiment bubble map (#222) — no React, unit-testable. */
 
 type Row = TopicSentimentResponse["rows"][number];
+type PhraseRow = PhraseSentimentResponse["rows"][number];
+type Counts = Pick<Row, "positive" | "neutral" | "negative" | "total">;
 
 export type BubbleDatum = {
-  key: TopicLabel;
+  /** Topic label or phrase (#243). */
+  key: string;
   name: string;
   positive: number;
   neutral: number;
@@ -22,33 +25,28 @@ export type BubbleDatum = {
 export const DOMINANT_TIE_ORDER: readonly SentimentLabel[] = ["negative", "positive", "neutral"];
 
 /** FR-144, doc 07 §3 (#222): argmax sentiment and its share of the row total; null when total = 0 (BR-032). */
-export function dominantSentiment(
-  row: Pick<Row, "positive" | "neutral" | "negative" | "total">,
-): { dominant: SentimentLabel; share: number } | null {
+export function dominantSentiment(row: Counts): { dominant: SentimentLabel; share: number } | null {
   if (row.total <= 0) return null;
   let dominant: SentimentLabel = "negative";
   for (const s of DOMINANT_TIE_ORDER) if (row[s] > row[dominant]) dominant = s;
   return { dominant, share: row[dominant] / row.total };
 }
 
+function toBubble(key: string, name: string, r: Counts): BubbleDatum[] {
+  const d = dominantSentiment(r);
+  if (!d) return []; // BR-032: no sentiment → no bubble
+  const { positive, neutral, negative, total } = r;
+  return [{ key, name, positive, neutral, negative, total, dominant: d.dominant, dominantShare: d.share }];
+}
+
 /** Drops topics with no sentiment (no bubble, BR-032) and keeps API order (total DESC, `other` last). */
-export function toBubbleData(rows: readonly Row[]): BubbleDatum[] {
-  return rows.flatMap((r) => {
-    const d = dominantSentiment(r);
-    if (!d) return [];
-    return [
-      {
-        key: r.topic,
-        name: humanizeLabel(r.topic),
-        positive: r.positive,
-        neutral: r.neutral,
-        negative: r.negative,
-        total: r.total,
-        dominant: d.dominant,
-        dominantShare: d.share,
-      },
-    ];
-  });
+export function toTopicBubbles(rows: readonly Row[]): BubbleDatum[] {
+  return rows.flatMap((r) => toBubble(r.topic, humanizeLabel(r.topic), r));
+}
+
+/** #243 (FR-148): phrase rows → bubbles; the phrase is shown verbatim (BR-041 normalised), API order kept. */
+export function toPhraseBubbles(rows: readonly PhraseRow[]): BubbleDatum[] {
+  return rows.flatMap((r) => toBubble(r.phrase, r.phrase, r));
 }
 
 /** Tint level of the bubble body: dominant share [1/3, 1] → [0.1, 0.4]; light so dark text stays AA. */

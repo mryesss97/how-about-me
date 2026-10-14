@@ -1,7 +1,6 @@
 "use client";
 
-import type { TopicSentimentResponse } from "@how-about-me/contracts";
-import type { TopicLabel } from "@how-about-me/taxonomy";
+import type { PhraseSentimentResponse, TopicSentimentResponse } from "@how-about-me/contracts";
 import { useMemo, useState } from "react";
 import { ButtonGroup, ButtonGroupItem } from "@/components/base/button-group/button-group";
 import type { QueryStateError } from "@/features/shared/query-state";
@@ -10,44 +9,71 @@ import { formatCount, formatRate } from "@/lib/format/number";
 import { sentimentBadge } from "@/lib/semantics/badges";
 import { bubbleMapCopy as copy } from "../copy";
 import { BubbleCanvas } from "./bubble-canvas";
+import { type BubbleMode, BubbleModeToggle, emptyState } from "./bubble-mode";
 import { type BubbleHref, BubbleDetailPanel } from "./bubble-detail-panel";
-import { type BubbleFilter, filterBubbles, toBubbleData } from "./bubble-layout";
+import { type BubbleFilter, filterBubbles, toPhraseBubbles, toTopicBubbles } from "./bubble-layout";
 import { ChartCard } from "./chart-card";
 import { SENTIMENT_COLORS } from "./chart-data";
 import { MultiLabelNote } from "./horizontal-bar-chart";
 import { SentimentIcon } from "./sentiment-icon";
 
 export type SentimentBubbleMapProps = {
+  /** Topics mode data (topic-sentiment). */
   data?: TopicSentimentResponse;
+  /** #243: Phrases mode data (analytics/phrases, FR-148). */
+  phraseData?: PhraseSentimentResponse;
+  /** #243: controlled Topics | Phrases toggle (local state of the parent, not in the URL). Default topics. */
+  mode?: BubbleMode;
+  /** Toggle is shown only when provided. */
+  onModeChange?: (mode: BubbleMode) => void;
+  /** Loading / error / retry of the query behind the current mode. */
   isLoading?: boolean;
   error?: QueryStateError | null;
   onRetry?: () => void;
   className?: string;
-  /** FR-142: (topic, sentiment) → `topic=t&sentiment=s`; sentiment null drills the whole topic. */
+  /**
+   * FR-142: (key, sentiment) → `topic=t&sentiment=s` (Topics) or `phrase=p&sentiment=s` (Phrases); sentiment null
+   * drills the whole key. The parent picks the mapping for the current mode.
+   */
   getHref?: BubbleHref;
 };
 
 /** Chip order follows the brand guide v2 prototype. */
 const FILTERS: readonly BubbleFilter[] = ["all", "negative", "positive", "neutral"];
-
 /**
  * Sentiment map (#222, FR-144): one bubble per topic with sentiment. Area ∝ mentions with sentiment, colour =
  * dominant sentiment (tie: negative > positive > neutral), tint + % = dominant share. Chips filter by dominant
  * sentiment (local state, not in the URL) and apply to both bubbles and table. Multi-label: no totals.
  */
-export function SentimentBubbleMap({ data, isLoading, error, onRetry, className, getHref }: SentimentBubbleMapProps) {
+export function SentimentBubbleMap({
+  data,
+  phraseData,
+  mode = "topics",
+  onModeChange,
+  isLoading,
+  error,
+  onRetry,
+  className,
+  getHref,
+}: SentimentBubbleMapProps) {
   const reducedMotion = usePrefersReducedMotion();
   const [filter, setFilter] = useState<BubbleFilter>("all");
-  const [selectedKey, setSelectedKey] = useState<TopicLabel | null>(null);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const phrases = mode === "phrases";
 
-  const all = useMemo(() => toBubbleData(data?.rows ?? []), [data]);
+  const all = useMemo(
+    () => (phrases ? toPhraseBubbles(phraseData?.rows ?? []) : toTopicBubbles(data?.rows ?? [])),
+    [phrases, phraseData, data],
+  );
+  const current = phrases ? phraseData : data;
+  const empty = current ? emptyState(mode, all, phraseData) : null;
   const shown = useMemo(() => filterBubbles(all, filter), [all, filter]);
   const visible = useMemo(() => new Set(shown.map((d) => d.key)), [shown]);
   // A selected bubble that is filtered out is deselected.
   const selected = shown.find((d) => d.key === selectedKey) ?? null;
 
   const table = {
-    columns: copy.tableColumns,
+    columns: phrases ? copy.phraseTableColumns : copy.tableColumns,
     rows: shown.map((d) => [
       d.name,
       sentimentBadge[d.dominant].label,
@@ -60,7 +86,7 @@ export function SentimentBubbleMap({ data, isLoading, error, onRetry, className,
     rowHrefs: shown.map((d) => getHref?.(d.key, null) ?? null),
   };
 
-  const toolbar = (
+  const filterChips = (
     <ButtonGroup
       size="sm"
       aria-label={copy.filterLabel}
@@ -88,27 +114,48 @@ export function SentimentBubbleMap({ data, isLoading, error, onRetry, className,
     </ButtonGroup>
   );
 
+  const toolbar = <div className="flex flex-wrap items-center gap-2">{filterChips}</div>;
+
+  // #243: mode switch lives in the header so it stays reachable in empty/error states (QA blocker).
+  const modeToggle = onModeChange ? (
+    <BubbleModeToggle
+      mode={mode}
+      onChange={(m) => {
+        setSelectedKey(null); // keys can collide across modes (topic "price" vs phrase "price")
+        onModeChange(m);
+      }}
+    />
+  ) : null;
+
+  const count = !phrases
+    ? copy.topicCount(shown.length)
+    : phraseData && filter === "all" && phraseData.totalPhrases > shown.length
+      ? copy.phraseTop(shown.length, phraseData.totalPhrases)
+      : copy.phraseCount(shown.length);
+
   const footer = (
     <div className="flex flex-col gap-1">
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-tertiary">
         <span>{copy.legend}</span>
-        <span className="tabular-nums">{copy.topicCount(shown.length)}</span>
+        <span className="tabular-nums">{count}</span>
       </div>
-      <MultiLabelNote noun="topics" />
+      <MultiLabelNote noun={phrases ? "phrases" : "topics"} />
     </div>
   );
 
   return (
     <ChartCard
       title={copy.title}
-      description={copy.description}
+      description={phrases ? copy.descriptionPhrases : copy.description}
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}
-      isEmpty={!!data && all.length === 0}
-      emptyTitle={copy.empty}
+      isEmpty={!!empty}
+      emptyTitle={empty?.title ?? copy.empty}
+      emptyDescription={empty?.description}
       viewToggle={{ chart: copy.viewChart, table: copy.viewTable }}
       toolbar={toolbar}
+      headerAction={modeToggle}
       footer={footer}
       table={table}
       className={className}
@@ -116,6 +163,7 @@ export function SentimentBubbleMap({ data, isLoading, error, onRetry, className,
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
         <div className="relative">
           <BubbleCanvas
+            key={mode} // remount → grow-in again when switching mode
             all={all}
             visible={visible}
             selected={selected?.key ?? null}
@@ -124,7 +172,7 @@ export function SentimentBubbleMap({ data, isLoading, error, onRetry, className,
           />
           {filter !== "all" && shown.length === 0 ? (
             <p className="absolute inset-0 flex items-center justify-center text-sm text-tertiary">
-              {copy.emptyFiltered(filter)}
+              {phrases ? copy.emptyFilteredPhrases(filter) : copy.emptyFiltered(filter)}
             </p>
           ) : null}
         </div>

@@ -1,7 +1,8 @@
 "use client";
 
+import type { TopicLabel } from "@how-about-me/taxonomy";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useCurrentProject } from "@/features/auth/use-current-project";
 import { useRole } from "@/features/auth/use-role";
 import { ApiError } from "@/lib/api/client";
@@ -13,6 +14,7 @@ import {
   kpiDrillDown,
   queryDrillDown,
   segmentDrillDown,
+  phraseSentimentDrillDown,
   topicSentimentDrillDown,
 } from "@/lib/filters/drill-down";
 import type { Filters } from "@/lib/filters/schema";
@@ -26,6 +28,7 @@ import {
   useSafetyDistribution,
   useQueryShare,
   useSentiment,
+  usePhraseSentiment,
   useTopicSentiment,
   useTopicsDistribution,
 } from "./api";
@@ -42,6 +45,7 @@ import {
   SentimentBubbleMap,
   TopicSentimentHeatmap,
 } from "./charts";
+import type { BubbleMode } from "./charts/bubble-mode";
 import { FilterBar } from "./filter-bar";
 import { KpiCards, KpiCardsSkeleton } from "./kpi-cards";
 import { OverviewBanners } from "@/features/shared/overview-banners";
@@ -76,6 +80,10 @@ export function OverviewView() {
   const languages = useLanguagesDistribution(project?.id, apiParams);
   const queryShare = useQueryShare(project?.id, apiParams);
   const topicSentiment = useTopicSentiment(project?.id, apiParams);
+  // #243: Topics | Phrases toggle is local state; the phrases request only runs in Phrases mode.
+  const [bubbleMode, setBubbleMode] = useState<BubbleMode>("topics");
+  const phrases = usePhraseSentiment(project?.id, apiParams, { enabled: bubbleMode === "phrases" });
+  const bubbleQuery = bubbleMode === "phrases" ? phrases : topicSentiment;
 
   // FR-142 drill-down: pin the exact range sent to analytics (not a fresh "now"), so the list matches the counts.
   const queriedTo = apiParams.to;
@@ -151,12 +159,21 @@ export function OverviewView() {
           onRetry={() => void safety.refetch()}
         />
         <SentimentBubbleMap
-          getHref={(t, s) => href(topicSentimentDrillDown(t, s ?? undefined))}
+          getHref={(k, s) =>
+            href(
+              bubbleMode === "phrases"
+                ? phraseSentimentDrillDown(k, s ?? undefined)
+                : topicSentimentDrillDown(k as TopicLabel, s ?? undefined),
+            )
+          }
+          mode={bubbleMode}
+          onModeChange={setBubbleMode}
           className="lg:col-span-12"
           data={topicSentiment.data}
-          isLoading={!project || topicSentiment.isLoading}
-          error={toQueryError(topicSentiment.error)}
-          onRetry={() => void topicSentiment.refetch()}
+          phraseData={phrases.data}
+          isLoading={!project || bubbleQuery.isLoading}
+          error={toQueryError(bubbleQuery.error)}
+          onRetry={() => void bubbleQuery.refetch()}
         />
         <TopTopicsChart
           getHref={(k) => href(segmentDrillDown("topic", k))}

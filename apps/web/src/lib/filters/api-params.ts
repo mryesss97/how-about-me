@@ -14,6 +14,7 @@ const ARRAY_KEYS: ArrayFilterKey[] = [
   "topic",
   "language",
   "analysisStatus",
+  "phrase",
 ];
 
 /**
@@ -66,6 +67,7 @@ const LABEL_PREFIX: Record<ArrayFilterKey, string> = {
   topic: "Topic",
   language: "Language",
   analysisStatus: "Status",
+  phrase: "Phrase",
 };
 
 function valueLabel(key: ArrayFilterKey, value: string, queryNames: Record<string, string>): string {
@@ -80,6 +82,8 @@ function valueLabel(key: ArrayFilterKey, value: string, queryNames: Record<strin
       return safetyBadge[value as keyof typeof safetyBadge]?.label ?? value;
     case "analysisStatus":
       return analysisStatusBadge[value as keyof typeof analysisStatusBadge]?.label ?? value;
+    case "phrase":
+      return value; // verbatim, no humanising (BR-041)
     default:
       return value.replace(/_/g, " ");
   }

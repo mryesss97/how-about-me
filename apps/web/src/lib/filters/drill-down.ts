@@ -57,6 +57,14 @@ export function topicSentimentDrillDown(topic: TopicLabel, sentiment?: Sentiment
 }
 
 /**
+ * Phrase bubble / table row (FR-148, FR-142) → `phrase=[p]` (+ `sentiment=[s]`). Overrides any global `phrase`
+ * like `topicSentimentDrillDown` does for `topic`.
+ */
+export function phraseSentimentDrillDown(phrase: string, sentiment?: SentimentLabel): Partial<Filters> {
+  return sentiment ? { phrase: [phrase], sentiment: [sentiment] } : { phrase: [phrase] };
+}
+
+/**
  * Keyword share bar (FR-145, T-150) → `queryIds=[id]`. Replaces any global `queryIds`, so the list is exactly the
  * posts with a non-excluded match for that query within the other filters (doc 07 §6).
  */
