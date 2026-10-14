@@ -661,6 +661,11 @@ input[type="search"]::-webkit-search-cancel-button {
   color: #fff;
 }
 
+.plaque-button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .plaque-button {
     transition: none;

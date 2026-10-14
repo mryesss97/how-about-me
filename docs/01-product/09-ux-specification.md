@@ -111,7 +111,11 @@ Opened from a landing board (last 30 days) or any `/terms/<term>` URL; inside th
 
 ### 3.1 Login (`/login`)
 
-Centered card: logo, email + password, "Continue with Google" (if enabled), error text. No sign-up link. Footer: "Ask an admin for access." After sign-in → `/` (landing, #262) unless a safe `next` is given; a signed-in visit to `/login` → `/`.
+Centered white enamel board on the wall (signboard style, #286): logo, title "Đăng nhập" (Bungee caps), "E-mail công việc" + "Mật khẩu", "Tiếp tục", "Tiếp tục với Google" (if enabled), generic error "E-mail hoặc mật khẩu không đúng". Banners: `?reason=expired` → "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."; `?reason=forbidden` → "Tài khoản không có quyền truy cập. Liên hệ quản trị viên." (render only; no flow sends it yet). No sign-up link. Footer: "Chưa có tài khoản? Nhờ quản trị viên cấp quyền." After sign-in → `/` (landing, #262) unless a safe `next` is given; a signed-in visit to `/login` → `/`.
+
+### 3.1a Not found (404, `not-found`)
+
+Same wall + white enamel board: "Lỗi 404", title "Không tìm thấy trang", short description; plaque buttons "Quay lại" (browser back) and "Về trang chủ" (→ `/`). Title tab: "Không tìm thấy trang".
 
 ### 3.2 Overview (`/overview`) — P0
 
