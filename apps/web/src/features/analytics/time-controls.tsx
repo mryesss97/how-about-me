@@ -12,6 +12,7 @@ import {
   instantsToCalendarRange,
   PRESETS,
   type Preset,
+  timezoneChangePatch,
   validateRange,
 } from "@/lib/filters";
 import { tzLabel } from "@/lib/time/format";
@@ -86,7 +87,11 @@ export function TimeControls({ filters, setFilters }: TimeControlsProps) {
         shortcut={false}
         items={tzItems}
         selectedKey={filters.tz}
-        onSelectionChange={(key) => key && setFilters({ tz: String(key) })}
+        onSelectionChange={(key) => {
+          if (!key) return;
+          setRangeError(null);
+          setFilters(timezoneChangePatch(filters, String(key)));
+        }}
         className="w-64"
       >
         {(item) => <SelectItem id={item.id} label={item.label} />}
