@@ -1,8 +1,6 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { SearchLg } from "@untitledui/icons";
-import { Input } from "@/components/base/input/input";
 import Link from "next/link";
 import { BrandLogo } from "@/features/shared/brand-logo";
 import { cx } from "@/utils/cx";
@@ -23,8 +21,6 @@ interface SidebarNavigationProps {
     featureCard?: ReactNode;
     /** Whether to show the account card. */
     showAccountCard?: boolean;
-    /** Whether to hide the right side border. */
-    hideBorder?: boolean;
     /** Additional CSS classes to apply to the sidebar. */
     className?: string;
     /** Whether to round the account card avatar. */
@@ -37,7 +33,6 @@ export const SidebarNavigationSimple = ({
     footerItems = [],
     featureCard,
     showAccountCard = true,
-    hideBorder = false,
     className,
 }: SidebarNavigationProps) => {
     const MAIN_SIDEBAR_WIDTH = 280;
@@ -50,28 +45,22 @@ export const SidebarNavigationSimple = ({
                 } as React.CSSProperties
             }
             className={cx(
-                "flex h-full w-full max-w-full flex-col justify-between overflow-auto bg-primary pt-4 lg:w-(--width) lg:pt-5",
-                !hideBorder && "border-secondary md:border-r",
+                // #274: the shell is the shop's vertical sign (sky enamel + keyline, `.shell-sign`).
+                "shell-sign flex h-full w-full max-w-full flex-col justify-between overflow-auto pt-5 lg:w-(--width) lg:pt-6",
                 className,
             )}
         >
-            <div className="flex flex-col gap-5 px-4 lg:px-5">
+            <div className="flex flex-col gap-5 px-5 lg:px-6">
                 {/* Brand guide v2: horizontal logo >= 180 px wide (#221). */}
                 {/* #262: logo links to the landing page. */}
-                <Link href="/" aria-label="How About Me home" className="self-start rounded-md outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2">
+                <Link href="/" aria-label="How About Me — trang chủ" className="shell-logo-plate self-start outline-white focus-visible:outline-2 focus-visible:outline-offset-2">
                     <BrandLogo variant="horizontal" className="h-auto w-[180px]" />
                 </Link>
-
-                {/* Mobile search input */}
-                <Input size="md" aria-label="Search" placeholder="Search" icon={SearchLg} className="md:hidden" />
-
-                {/* Desktop search input */}
-                <Input shortcut size="sm" aria-label="Search" placeholder="Search" icon={SearchLg} className="max-md:hidden" />
             </div>
 
             <NavList activeUrl={activeUrl} items={items} />
 
-            <div className="mt-auto flex flex-col gap-3 px-4 py-4 lg:py-5">
+            <div className="mt-auto flex flex-col gap-3 px-5 py-5 lg:px-6 lg:py-6">
                 {footerItems.length > 0 && (
                     <ul className="flex flex-col">
                         {footerItems.map((item) => (

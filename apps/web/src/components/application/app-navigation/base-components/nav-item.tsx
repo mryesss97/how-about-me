@@ -7,8 +7,9 @@ import { Badge } from "@/components/base/badges/badges";
 import { cx, sortCx } from "@/utils/cx";
 
 const styles = sortCx({
-    root: "group relative flex max-h-9 w-full cursor-pointer items-center rounded-md bg-primary outline-focus-ring transition duration-100 ease-linear select-none hover:bg-primary_hover focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2",
-    rootSelected: "bg-brand-100 hover:bg-brand-100 dark:bg-brand-500/15 dark:hover:bg-brand-500/20",
+    // #274: items on the sky sign — white lettering, hover tint, the current item is a white enamel plate.
+    root: "group relative flex min-h-10 w-full cursor-pointer items-center rounded-[2px] outline-white transition duration-100 ease-linear select-none hover:bg-white/12 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2",
+    rootSelected: "bg-[var(--enamel-white)] hover:bg-[var(--enamel-white)]",
 });
 
 interface NavItemBaseProps {
@@ -39,9 +40,9 @@ export const NavItemBase = ({ current, type, badge, href, icon: Icon, children, 
         <Icon
             aria-hidden="true"
             className={cx(
-                "mr-2 size-5 shrink-0 text-fg-quaternary transition-inherit-all group-hover/item:text-fg-quaternary_hover",
-                // #245: Sky Tint active item, brand-700 on brand-100 = 5.2:1, brand-300 on dark tint ≈ 9.5:1 (AA).
-                current && "text-brand-700 group-hover/item:text-brand-700 dark:text-brand-300 dark:group-hover/item:text-brand-300",
+                "mr-2.5 size-5 shrink-0 text-white transition-inherit-all",
+                // #274: navy on the white plate (9.3:1); white on sky enamel (5.9:1).
+                current && "text-[var(--ink)]",
             )}
         />
     );
@@ -58,9 +59,9 @@ export const NavItemBase = ({ current, type, badge, href, icon: Icon, children, 
     const labelElement = (
         <span
             className={cx(
-                "flex-1 text-sm font-semibold text-secondary transition-inherit-all group-hover/item:text-secondary_hover",
+                "shell-nav-label flex-1 text-white transition-inherit-all",
                 truncate && "truncate",
-                current && "text-brand-700 group-hover/item:text-brand-700 dark:text-brand-300 dark:group-hover/item:text-brand-300",
+                current && "text-[var(--ink)]",
             )}
         >
             {children}
@@ -68,7 +69,7 @@ export const NavItemBase = ({ current, type, badge, href, icon: Icon, children, 
     );
 
     const isExternal = href && href.startsWith("http");
-    const externalIcon = isExternal && <Share04 className="size-4 stroke-[2.5px] text-fg-quaternary" />;
+    const externalIcon = isExternal && <Share04 className="size-4 stroke-[2.5px] text-white" />;
 
     if (type === "collapsible") {
         return (
@@ -79,7 +80,7 @@ export const NavItemBase = ({ current, type, badge, href, icon: Icon, children, 
 
                 {badgeElement}
 
-                <ChevronDown aria-hidden="true" className="ml-3 size-4 shrink-0 stroke-[2.5px] text-fg-quaternary in-open:-scale-y-100" />
+                <ChevronDown aria-hidden="true" className="ml-3 size-4 shrink-0 stroke-[2.5px] text-white in-open:-scale-y-100" />
             </summary>
         );
     }

@@ -1,0 +1,28 @@
+import type { ReactNode } from "react";
+
+/**
+ * Page fascia (#274): every working screen opens under a white enamel board with a navy keyline and its title
+ * painted in sign lettering (DESIGN.md, Operate surfaces). The description stays Inter for reading.
+ */
+export function PageHeader({
+  title,
+  description,
+  actions,
+}: {
+  title: string;
+  description?: ReactNode;
+  actions?: ReactNode;
+}) {
+  return (
+    <header className="page-fascia">
+      <span aria-hidden className="sign-keyline" />
+      <div className="relative flex flex-wrap items-center justify-between gap-3 px-6 py-5">
+        <div className="flex min-w-0 flex-col gap-1">
+          <h1 className="page-fascia-title">{title}</h1>
+          {description ? <p className="text-sm text-secondary">{description}</p> : null}
+        </div>
+        {actions}
+      </div>
+    </header>
+  );
+}

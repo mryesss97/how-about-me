@@ -262,6 +262,17 @@ The shop's sign, sky enamel with a white keyline: the logo on a white enamel pla
 
 The one call to action: white enamel plaque, 2px white border, 2px corners, Bungee 17px navy caps with a 20px drawn right arrow, 10px gap. Hover inverts to navy with white lettering (160ms ease-out on colour only); focus is a 3px white outline 3px off.
 
+## Operate Surfaces (dashboard, #274)
+
+The signboard world reaches the working screens as **accents** (owner decision 2026-10-14): the visitor works here daily, so scanning and long reading come first.
+
+- **Shell = the shop's vertical sign.** The sidebar and the mobile header are Sky Enamel with a 2px white keyline (an inset ring, never a glow); the logo sits on a white plate; nav labels are Saira Extra Condensed 700 caps, 18px, white; the current item is a white enamel plate with navy lettering (9.3:1), hover is white at 12%. Account: e-mail in Inter, role on a small white plate (Quản trị / Phân tích / Chỉ xem), "Đăng xuất" as a white-keyline plaque that fills white on hover.
+- **Ground = the wall.** `(app)` pages stand on Wall Concrete `#D9E6EF`; cards are white enamel boards.
+- **Page fascia.** Every page opens under a white enamel board with a navy keyline (`PageHeader`): title in Bungee caps (22–32px), optional description in Inter.
+- **What stays Inter:** tables, form controls, filters, chart axes, post text, descriptions and help text. Sign lettering is for titles, figures and short labels only.
+- **Copy:** Vietnamese, screen by screen as each screen is restyled (#275, #277–#281).
+- Tokens live on `:root` (`--wall`, `--ink`, `--sky-enamel`, `--red-enamel`, `--green-enamel`, `--enamel-white`); the sign fonts load once in the root layout (`src/lib/fonts/sign.ts`).
+
 ## Do's and Don'ts
 
 ### Do:

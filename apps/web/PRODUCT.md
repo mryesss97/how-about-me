@@ -32,7 +32,7 @@ Built on the brands' own Threads conversation with classification tuned to their
 
 - Next.js 16 + Untitled UI (React Aria, Tailwind v4). **Light mode only** (owner decision 2026-10-14, #260).
 - Docs in `docs/` are the source of truth; business rules BR-xxx, requirements FR-xxx.
-- The app UI copy is English (MVP). **The landing page copy is Vietnamese** (owner decision 2026-10-14).
+- **Copy is Vietnamese**: the landing (owner decision 2026-10-14) and, screen by screen as each is restyled in the signboard world, the dashboard (owner decision 2026-10-14, #274). Screens not yet restyled are still English.
 - Sentiment colours always come with text (BR-017); safety numbers are never shown on the landing.
 
 ## Brand Commitments

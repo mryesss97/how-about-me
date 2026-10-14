@@ -20,12 +20,12 @@ export const NavList = ({ activeUrl, items, className }: NavListProps) => {
     const [currentItem, setCurrentItem] = useState(activeItem);
 
     return (
-        <ul className={cx("flex flex-col px-4 pt-5", className)}>
+        <ul className={cx("flex flex-col px-5 pt-6 lg:px-6", className)}>
             {items.map((item, index) => {
                 if (item.divider) {
                     return (
                         <li key={index} className="w-full px-0.5 py-2">
-                            <hr className="h-px w-full border-none bg-border-secondary" />
+                            <hr className="h-px w-full border-none bg-white/40" />
                         </li>
                     );
                 }

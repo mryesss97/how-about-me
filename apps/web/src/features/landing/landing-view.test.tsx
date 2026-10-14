@@ -9,8 +9,6 @@ vi.mock("@/lib/api/client", () => ({ apiFetch: (...a: unknown[]) => apiFetch(...
 let reduced = false;
 vi.mock("@/hooks/use-prefers-reduced-motion", () => ({ usePrefersReducedMotion: () => reduced }));
 vi.mock("@/hooks/use-breakpoint", () => ({ useBreakpoint: () => true }));
-// next/font is a build-time loader; give the test the shape it returns.
-vi.mock("./landing-fonts", () => ({ signFont: { variable: "font-sign" }, figureFont: { variable: "font-figure" } }));
 
 const LANDING = {
   range: { from: "2026-09-14T12:00:00+07:00", to: "2026-10-14T12:00:00+07:00", timezone: "Asia/Ho_Chi_Minh" },

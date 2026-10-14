@@ -194,13 +194,17 @@ input[type="search"]::-webkit-search-cancel-button {
 
 /* Landing (#271): a Saigon signboard wall. Flat enamel boards, one 2px keyline weight, no gradient, glow or shadow.
    Boards are hung once with a short swing; reduced motion hangs them still. Overview's `.bubble-3d` is unrelated. */
-.sign-wall {
+/* Signboard world tokens (DESIGN.md; landing #271, app-wide accents since #274). */
+:root {
   --wall: #d9e6ef;
   --ink: #0c4a6e;
   --sky-enamel: #0369a1;
   --red-enamel: #b42318;
   --green-enamel: #067647;
   --enamel-white: #fbfdff;
+}
+
+.sign-wall {
   background: var(--wall);
   color: var(--ink);
 }
@@ -505,4 +509,90 @@ input[type="search"]::-webkit-search-cancel-button {
   .sign-sub {
     transition: none;
   }
+}
+
+/* ── App shell in the signboard world (#274) ───────────────────────────────────────────────────────────────── */
+
+/* The sidebar is the shop's vertical sign: sky enamel with a white keyline drawn as an inset ring (a border, not a
+   glow: no blur, no offset). */
+.shell-sign {
+  background: var(--sky-enamel);
+  color: #fff;
+  box-shadow:
+    inset 0 0 0 8px var(--sky-enamel),
+    inset 0 0 0 10px rgb(255 255 255 / 0.9);
+}
+
+.shell-logo-plate {
+  display: inline-flex;
+  padding: 8px 12px;
+  border-radius: 2px;
+  background: var(--enamel-white);
+}
+
+/* Nav labels in the painters' condensed alphabet: legible at small size, still lettering. */
+.shell-nav-label {
+  font-family: var(--font-figure), sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+/* Page fascia: every working screen opens under a white enamel board with a navy keyline and a painted title. */
+.page-fascia {
+  position: relative;
+  border-radius: 3px;
+  background: var(--enamel-white);
+  color: var(--ink);
+}
+
+.page-fascia .sign-keyline {
+  --line: var(--ink);
+}
+
+.page-fascia-title {
+  font-family: var(--font-sign), sans-serif;
+  font-size: clamp(22px, 2.3vw, 32px);
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.shell-role-plate {
+  padding: 1px 6px;
+  border-radius: 2px;
+  background: var(--enamel-white);
+  color: var(--ink);
+  font-family: var(--font-figure), sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.shell-signout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 2px solid #fff;
+  border-radius: 2px;
+  color: #fff;
+  font-family: var(--font-figure), sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  transition: background-color 160ms ease-out, color 160ms ease-out;
+}
+
+.shell-signout:hover {
+  background: var(--enamel-white);
+  color: var(--ink);
+}
+
+.shell-signout:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
 }
