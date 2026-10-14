@@ -8,6 +8,7 @@ import {
   parseAsStringLiteral,
 } from "nuqs";
 import { isValidTimezone, MENTION_SORTS, UuidSchema } from "@how-about-me/contracts";
+import { normalizePhrase } from "@how-about-me/taxonomy";
 import { env } from "@/lib/env";
 import { DEFAULT_PRESET, DEFAULT_RELEVANCE, ENUM_FILTERS, PRESETS } from "./schema";
 
@@ -22,6 +23,12 @@ const parseAsTimezone = createParser({
 /** Only well-formed UUIDs survive hand-edited URLs. */
 const parseAsUuid = createParser({
   parse: (v: string) => (UuidSchema.safeParse(v).success ? v : null),
+  serialize: (v: string) => v,
+});
+
+/** BR-041: same normalisation as the API, so hand-edited URLs match stored phrases; invalid → dropped. */
+const parseAsPhrase = createParser({
+  parse: (v: string) => normalizePhrase(v),
   serialize: (v: string) => v,
 });
 
@@ -43,6 +50,7 @@ export const filterParsers = {
   topic: enumArray(ENUM_FILTERS.topic),
   language: enumArray(ENUM_FILTERS.language),
   analysisStatus: enumArray(ENUM_FILTERS.analysisStatus),
+  phrase: parseAsArrayOf(parseAsPhrase).withDefault([]),
   q: parseAsString,
   sort: parseAsStringLiteral(MENTION_SORTS).withDefault("newest"),
   compare: parseAsBoolean.withDefault(false),

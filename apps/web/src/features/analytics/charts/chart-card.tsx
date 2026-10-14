@@ -48,12 +48,16 @@ export type ChartCardProps = {
   /** No data in range — an explicit empty state, never a blank chart (BR-032). */
   isEmpty?: boolean;
   emptyTitle?: string;
+  /** #243: optional empty-state description (QueryState default otherwise). */
+  emptyDescription?: string;
   table: ChartTable;
   className?: string;
   /** #222: segmented "chart | table" toggle labels instead of the "View as table" button. */
   viewToggle?: { chart: string; table: string };
   /** #222: controls shown above the content in both chart and table mode (only when ready). */
   toolbar?: ReactNode;
+  /** #243: header control shown in every state (loading/empty/error too), e.g. a mode switch the user must reach to leave an empty state. */
+  headerAction?: ReactNode;
   /** #222: content below the chart/table (only when ready). */
   footer?: ReactNode;
   children: ReactNode;
@@ -72,10 +76,12 @@ export function ChartCard({
   onRetry,
   isEmpty,
   emptyTitle = "No mentions in this range",
+  emptyDescription,
   table,
   className,
   viewToggle,
   toolbar,
+  headerAction,
   footer,
   children,
 }: ChartCardProps) {
@@ -89,27 +95,30 @@ export function ChartCard({
           <h3 className="text-md font-semibold text-primary">{title}</h3>
           {description ? <p className="text-sm text-tertiary">{description}</p> : null}
         </div>
-        {ready && viewToggle ? (
-          <ButtonGroup
-            size="sm"
-            aria-label="View"
-            disallowEmptySelection
-            selectedKeys={[asTable ? "table" : "chart"]}
-            onSelectionChange={(keys) => setAsTable(keys.has("table"))}
-            className="shrink-0"
-          >
-            <ButtonGroupItem id="chart">{viewToggle.chart}</ButtonGroupItem>
-            <ButtonGroupItem id="table">{viewToggle.table}</ButtonGroupItem>
-          </ButtonGroup>
-        ) : ready ? (
-          <AriaToggleButton
-            isSelected={asTable}
-            onChange={setAsTable}
-            className="shrink-0 rounded-lg px-3 py-2 text-sm font-semibold text-secondary shadow-xs ring-1 ring-primary outline-focus-ring hover:bg-primary_hover focus-visible:outline-2 focus-visible:outline-offset-2 selected:bg-active"
-          >
-            View as table
-          </AriaToggleButton>
-        ) : null}
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          {headerAction}
+          {ready && viewToggle ? (
+            <ButtonGroup
+              size="sm"
+              aria-label="View"
+              disallowEmptySelection
+              selectedKeys={[asTable ? "table" : "chart"]}
+              onSelectionChange={(keys) => setAsTable(keys.has("table"))}
+              className="shrink-0"
+            >
+              <ButtonGroupItem id="chart">{viewToggle.chart}</ButtonGroupItem>
+              <ButtonGroupItem id="table">{viewToggle.table}</ButtonGroupItem>
+            </ButtonGroup>
+          ) : ready ? (
+            <AriaToggleButton
+              isSelected={asTable}
+              onChange={setAsTable}
+              className="shrink-0 rounded-lg px-3 py-2 text-sm font-semibold text-secondary shadow-xs ring-1 ring-primary outline-focus-ring hover:bg-primary_hover focus-visible:outline-2 focus-visible:outline-offset-2 selected:bg-active"
+            >
+              View as table
+            </AriaToggleButton>
+          ) : null}
+        </div>
       </header>
       {ready && toolbar ? toolbar : null}
       <QueryState
@@ -118,6 +127,7 @@ export function ChartCard({
         onRetry={onRetry}
         isEmpty={isEmpty}
         emptyTitle={emptyTitle}
+        {...(emptyDescription ? { emptyDescription } : {})}
         skeleton={<ChartSkeleton />}
       >
         {asTable ? (

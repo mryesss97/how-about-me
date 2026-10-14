@@ -1,6 +1,5 @@
 "use client";
 
-import type { TopicLabel } from "@how-about-me/taxonomy";
 import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useResizeObserver } from "@/hooks/use-resize-observer";
 import { formatRate } from "@/lib/format/number";
@@ -21,9 +20,9 @@ export const bubbleAriaLabel = (d: BubbleDatum) =>
 
 type Props = {
   all: readonly BubbleDatum[];
-  visible: ReadonlySet<TopicLabel>;
-  selected: TopicLabel | null;
-  onSelect: (key: TopicLabel | null) => void;
+  visible: ReadonlySet<string>;
+  selected: string | null;
+  onSelect: (key: string | null) => void;
   reducedMotion: boolean;
 };
 

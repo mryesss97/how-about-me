@@ -36,7 +36,8 @@ export const ENUM_FILTERS = {
   analysisStatus: ANALYSIS_STATUSES,
 } as const;
 export type EnumFilterKey = keyof typeof ENUM_FILTERS;
-export type ArrayFilterKey = EnumFilterKey | "queryIds";
+/** `phrase` (FR-148) is a free-text array: chip only, no picker in the filter bar. */
+export type ArrayFilterKey = EnumFilterKey | "queryIds" | "phrase";
 
 /** FE filter state as kept in the URL. `tz` maps to API `timezone`; `preset` never reaches the API. */
 export interface Filters {
@@ -52,6 +53,8 @@ export interface Filters {
   topic: TopicLabel[];
   language: LanguageCode[];
   analysisStatus: AnalysisStatus[];
+  /** Key phrases, normalised with BR-041. */
+  phrase: string[];
   q: string | null;
   sort: MentionSort;
   compare: boolean;
@@ -71,6 +74,7 @@ export function defaultFilters(tz: string): Filters {
     topic: [],
     language: [],
     analysisStatus: [],
+    phrase: [],
     q: null,
     sort: "newest",
     compare: false,
