@@ -1,22 +1,13 @@
-import { TermFilterSchema } from "@how-about-me/contracts";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { TermDetailView } from "@/features/analytics/term-detail-view";
 import { TermMentions } from "@/features/mentions/term-mentions";
+import { parseTermSegment } from "@/lib/filters/term-segment";
 
 type Params = { params: Promise<{ term: string }> };
 
-/** The route segment arrives percent-encoded or decoded depending on the caller; normalise like the API (BR-041). */
 async function readTerm(params: Params["params"]): Promise<string | null> {
-  const { term: raw } = await params;
-  let value = raw;
-  try {
-    value = decodeURIComponent(raw);
-  } catch {
-    // Already decoded and containing a bare "%".
-  }
-  const parsed = TermFilterSchema.safeParse(value);
-  return parsed.success ? parsed.data : null;
+  return parseTermSegment((await params).term);
 }
 
 export async function generateMetadata({ params }: Params) {

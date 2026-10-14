@@ -178,6 +178,28 @@ describe("Term filter (#273, BR-042)", () => {
     expect(await mentionCount({ term: "app" })).toBe(rows[1]?.total);
   });
 
+  it("#276: sentiment denominator with term = landing board total (the phrase detail header equals the board)", async () => {
+    await setTerms(["giá vé"]);
+    await seedPost({ text: "giá vé", labels: { sentiment: "negative" } });
+    await seedPost({ text: "x", labels: { sentiment: "positive", phrases: ["giá vé"] } });
+    await seedPost({ text: "giá vé", labels: { sentiment: "neutral" } });
+    await seedPost({ text: "giá vé", labels: { sentiment: null } });
+    await seedPost({ text: "giá vé", labels: null });
+    await seedPost({ text: "giá vé", labels: { relevance: "irrelevant", sentiment: "neutral" } });
+    const landing = await http("analytics/landing-terms");
+    const total = (landing.body as { rows: Row[] }).rows[0]?.total;
+    const sentiment = await http("analytics/sentiment", { term: "giá vé" });
+    expect(sentiment.status).toBe(200);
+    const body = sentiment.body as { denominator: number; distribution: { label: string; count: number }[] };
+    expect(body.denominator).toBe(total);
+    expect(body.denominator).toBe(3);
+    expect(Object.fromEntries(body.distribution.map((d) => [d.label, d.count]))).toMatchObject({
+      negative: 1,
+      positive: 1,
+      neutral: 1,
+    });
+  });
+
   it("mentions export honours term", async () => {
     await seedPost({ text: "giá vé tăng", labels: {} });
     await seedPost({ text: "khác", labels: {} });
