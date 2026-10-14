@@ -55,15 +55,15 @@ export const TimeseriesQuerySchema = withDateRange(
 );
 export type TimeseriesQuery = z.infer<typeof TimeseriesQuerySchema>;
 
-/** Default minimum DISTINCT posts for a phrase row (FR-148, configurable per request via `minMentions`). */
+/** Default of the project setting `phraseMinMentions` (FR-148, #251); a `minMentions` query param overrides it. */
 export const DEFAULT_PHRASE_MIN_MENTIONS = 2;
 export const DEFAULT_PHRASE_LIMIT = 30;
 
-/** `GET …/analytics/phrases` (FR-148): shared filters + top-N `limit` and `minMentions` threshold. `compare` ignored. */
+/** `GET …/analytics/phrases` (FR-148): shared filters + top-N `limit` and `minMentions` threshold (omitted → project setting `phraseMinMentions`, default 2; #251). `compare` ignored. */
 export const PhrasesQuerySchema = withDateRange(
   AnalyticsQueryBaseSchema.extend({
     limit: queryInt(1, 100).default(DEFAULT_PHRASE_LIMIT),
-    minMentions: queryInt(1, 1000).default(DEFAULT_PHRASE_MIN_MENTIONS),
+    minMentions: queryInt(1, 1000).optional(),
   }),
 );
 export type PhrasesQuery = z.infer<typeof PhrasesQuerySchema>;

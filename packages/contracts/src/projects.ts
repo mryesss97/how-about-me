@@ -1,16 +1,28 @@
 import { z } from "zod";
 import { IanaTimezoneSchema, IsoDateTimeSchema, UuidSchema } from "./common.js";
 import { UserRoleSchema } from "./enums.js";
+import { DEFAULT_PHRASE_MIN_MENTIONS } from "./filters.js";
+
+/** FR-032, FR-148 (#251): per-project bubble-map phrase threshold — integer 1–50, default 2. */
+export const PHRASE_MIN_MENTIONS_SETTING_MIN = 1;
+export const PHRASE_MIN_MENTIONS_SETTING_MAX = 50;
+export const PhraseMinMentionsSettingSchema = z
+  .number()
+  .int()
+  .min(PHRASE_MIN_MENTIONS_SETTING_MIN)
+  .max(PHRASE_MIN_MENTIONS_SETTING_MAX);
 
 export const ProjectSettingsSchema = z.object({
   allowAnalystReanalyze: z.boolean().default(true),
   allowViewerExport: z.boolean().default(false),
+  phraseMinMentions: PhraseMinMentionsSettingSchema.default(DEFAULT_PHRASE_MIN_MENTIONS),
 });
 export type ProjectSettings = z.infer<typeof ProjectSettingsSchema>;
-/** PATCH shape: optional booleans, no defaults (a partial patch must not reset unsent settings). */
+/** PATCH shape: optional keys, no defaults (a partial patch must not reset unsent settings). */
 export const ProjectSettingsPatchSchema = z.object({
   allowAnalystReanalyze: z.boolean().optional(),
   allowViewerExport: z.boolean().optional(),
+  phraseMinMentions: PhraseMinMentionsSettingSchema.optional(),
 });
 
 export const ProjectSchema = z.object({

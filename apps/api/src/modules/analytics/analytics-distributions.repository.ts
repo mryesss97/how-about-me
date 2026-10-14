@@ -20,6 +20,14 @@ export class AnalyticsDistributionsRepository {
     return this.prisma.monitoringProject.findUnique({ where: { id: projectId }, select: { id: true, timezone: true } });
   }
 
+  /** FR-148 / #251 — the phrases endpoint also needs `settings.phraseMinMentions`. */
+  findProjectWithSettings(projectId: string): Promise<{ id: string; timezone: string; settings: unknown } | null> {
+    return this.prisma.monitoringProject.findUnique({
+      where: { id: projectId },
+      select: { id: true, timezone: true, settings: true },
+    });
+  }
+
   /** §3.2 — denominator is the sum (= sentimentAnalyzed); NULL labels (pending/failed) drop out. */
   sentimentCounts(scope: AnalyticsScope): Promise<LabelCount[]> {
     return this.prisma.$queryRaw<LabelCount[]>(

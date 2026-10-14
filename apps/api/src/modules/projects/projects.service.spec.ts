@@ -38,9 +38,9 @@ describe("ProjectsService.update", () => {
     const { svc, repo } = setup(row());
     const res = await svc.update(PID, { settings: { allowViewerExport: true } }, ACTOR, "admin", "req-1");
     expect(repo.update.mock.calls[0]?.[1]).toEqual({
-      settings: { allowAnalystReanalyze: false, allowViewerExport: true },
+      settings: { allowAnalystReanalyze: false, allowViewerExport: true, phraseMinMentions: 2 },
     });
-    expect(res.settings).toEqual({ allowAnalystReanalyze: false, allowViewerExport: true });
+    expect(res.settings).toEqual({ allowAnalystReanalyze: false, allowViewerExport: true, phraseMinMentions: 2 });
     expect(res.role).toBe("admin");
   });
 
@@ -65,6 +65,25 @@ describe("ProjectsService.update", () => {
     const { svc, repo, audit } = setup(row());
     const res = await svc.update(PID, { name: "P1", settings: { allowViewerExport: false } }, ACTOR, "admin", null);
     expect(res.name).toBe("P1");
+    expect(repo.update).not.toHaveBeenCalled();
+    expect(audit.record).not.toHaveBeenCalled();
+  });
+
+  it("FR-032 / #251: phraseMinMentions patch merges and audits settings.phraseMinMentions", async () => {
+    const { svc, repo, audit } = setup(row());
+    await svc.update(PID, { settings: { phraseMinMentions: 5 } }, ACTOR, "admin", "req-1");
+    expect(repo.update.mock.calls[0]?.[1]).toEqual({
+      settings: { allowAnalystReanalyze: false, allowViewerExport: false, phraseMinMentions: 5 },
+    });
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({ metadata: { changes: { "settings.phraseMinMentions": { from: 2, to: 5 } } } }),
+      expect.anything(),
+    );
+  });
+
+  it("FR-032 / #251: same phraseMinMentions value is a no-op without audit", async () => {
+    const { svc, repo, audit } = setup(row());
+    await svc.update(PID, { settings: { phraseMinMentions: 2 } }, ACTOR, "admin", null);
     expect(repo.update).not.toHaveBeenCalled();
     expect(audit.record).not.toHaveBeenCalled();
   });

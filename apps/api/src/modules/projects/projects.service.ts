@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import type { Project, ProjectSettings, UpdateProjectBody, UserRole } from "@how-about-me/contracts";
-import { ProjectSettingsSchema } from "@how-about-me/contracts";
+import { parseProjectSettings } from "../../common/auth/project-settings";
 import { AppError } from "../../common/errors/app.error";
 import { AuditService } from "../audit/audit.service";
 import { toProject } from "./projects.mapper";
@@ -27,7 +27,7 @@ export class ProjectsService {
   }
 
   /**
-   * FR-032: admin edits name/timezone/settings. Settings are merged (unsent keys keep their value).
+   * FR-032: admin edits name/timezone/settings (toggles + `phraseMinMentions`, #251). Settings are merged (unsent keys keep their value).
    * FR-200: `project.updated` is audited in the same transaction with only the changed fields; no-op → no audit.
    */
   update(
@@ -40,7 +40,7 @@ export class ProjectsService {
     return this.repo.transaction(async (tx) => {
       const current = await this.repo.findById(projectId, tx);
       if (!current) throw AppError.notFound("Project");
-      const currentSettings = ProjectSettingsSchema.parse(current.settings ?? {});
+      const currentSettings = parseProjectSettings(current.settings);
       const changes: Record<string, Change> = {};
       const data: ProjectUpdateData = {};
 
@@ -53,14 +53,15 @@ export class ProjectsService {
         data.timezone = body.timezone;
       }
       if (body.settings) {
-        const merged: ProjectSettings = { ...currentSettings };
+        // Keys mix booleans and numbers (#251); values are already schema-validated per key.
+        const merged: Record<keyof ProjectSettings, ProjectSettings[keyof ProjectSettings]> = { ...currentSettings };
         for (const key of Object.keys(body.settings) as (keyof ProjectSettings)[]) {
           const next = body.settings[key];
           if (next === undefined || next === currentSettings[key]) continue;
           merged[key] = next;
           changes[`settings.${key}`] = { from: currentSettings[key], to: next };
         }
-        if (Object.keys(changes).some((k) => k.startsWith("settings."))) data.settings = merged;
+        if (Object.keys(changes).some((k) => k.startsWith("settings."))) data.settings = merged as ProjectSettings;
       }
 
       if (Object.keys(changes).length === 0) return toProject(current, role);

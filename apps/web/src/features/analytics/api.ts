@@ -2,7 +2,6 @@
 
 import {
   DEFAULT_PHRASE_LIMIT,
-  DEFAULT_PHRASE_MIN_MENTIONS,
   IntentsDistributionResponseSchema,
   PhraseSentimentResponseSchema,
   LanguagesDistributionResponseSchema,
@@ -96,8 +95,8 @@ export const useTopicSentiment = (pid: string | null | undefined, params: Record
   useDistribution("topic-sentiment", pid, params);
 
 /**
- * GET /projects/:projectId/analytics/phrases (FR-148, BR-041) — top 30 phrases with ≥ 2 mentions. Only enabled in
- * the bubble map's Phrases mode (#243). `compare` is ignored by the API, so it is dropped to keep the key stable.
+ * GET /projects/:projectId/analytics/phrases (FR-148, BR-041) — top 30 phrases reaching the project's
+ * `phraseMinMentions` (server default, #251; no `minMentions` sent). Only enabled in the bubble map's Phrases mode (#243). `compare` is ignored by the API, so it is dropped to keep the key stable.
  */
 export function usePhraseSentiment(
   pid: string | null | undefined,
@@ -108,7 +107,6 @@ export function usePhraseSentiment(
     const out: Record<string, string> = {
       ...apiParams,
       limit: String(DEFAULT_PHRASE_LIMIT),
-      minMentions: String(DEFAULT_PHRASE_MIN_MENTIONS),
     };
     delete out.compare;
     return Object.fromEntries(Object.entries(out).sort(([a], [b]) => a.localeCompare(b)));

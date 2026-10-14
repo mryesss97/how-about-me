@@ -56,6 +56,9 @@ export function useUpdateProject(pid: string) {
       void qc.invalidateQueries({ queryKey: qk.me() });
       // Analytics buckets depend on the project timezone (metric definitions).
       if (body.timezone) void qc.invalidateQueries({ queryKey: ["project", pid, "analytics"] });
+      // FR-148 / #251: the phrases query key does not carry the threshold, so refetch the bubble map's phrases.
+      else if (body.settings?.phraseMinMentions !== undefined)
+        void qc.invalidateQueries({ queryKey: ["project", pid, "analytics", "phrases"] });
     },
   });
 }

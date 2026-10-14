@@ -5,6 +5,7 @@ import { useCurrentProject } from "@/features/auth/use-current-project";
 import { QueryState } from "@/features/shared/query-state";
 import { useAnalysisSettings } from "./api";
 import { AnalysisSettingsForm } from "./analysis-settings-form";
+import { PhraseThresholdSettings } from "./phrase-threshold-form";
 import { ReanalysisPromptDialog } from "./reanalysis-prompt-dialog";
 
 /** Loaded view; the re-analysis prompt lives here because the form remounts on a new policy version. */
@@ -55,5 +56,14 @@ export function AnalysisSettingsPanel({
 export function AnalysisSettings() {
   const { project, isLoading } = useCurrentProject();
   if (isLoading || !project) return <QueryState isLoading>{null}</QueryState>;
-  return <AnalysisSettingsPanel pid={project.id} canEdit={project.role === "admin"} timeZone={project.timezone} />;
+  const canEdit = project.role === "admin";
+  return (
+    <div className="flex flex-col gap-8">
+      <AnalysisSettingsPanel pid={project.id} canEdit={canEdit} timeZone={project.timezone} />
+      {/* #251: separate form + Save; a display threshold, not a policy version. */}
+      <div className="border-t border-secondary pt-8">
+        <PhraseThresholdSettings pid={project.id} canEdit={canEdit} />
+      </div>
+    </div>
+  );
 }

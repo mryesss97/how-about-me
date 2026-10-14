@@ -38,7 +38,7 @@ describe("ProjectSettingsForm", () => {
   });
 
   it("FR-032: PATCHes only the changed setting, toasts and refreshes /me", async () => {
-    apiFetch.mockResolvedValue(projectData({ settings: { allowAnalystReanalyze: true, allowViewerExport: true } }));
+    apiFetch.mockResolvedValue(projectData({ settings: { ...projectData().settings, allowViewerExport: true } }));
     const invalidate = vi.spyOn(qc, "invalidateQueries");
     render(<ProjectSettingsForm project={projectData()} canEdit />, { wrapper });
     const save = screen.getByRole("button", { name: "Save" });
@@ -51,6 +51,8 @@ describe("ProjectSettingsForm", () => {
     expect(init.method).toBe("PATCH");
     expect(JSON.parse(String(init.body))).toEqual({ settings: { allowViewerExport: true } });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ["me"] });
+    // #251: a toggle-only PATCH never sends phraseMinMentions nor refetches analytics.
+    expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ["project", P1, "analytics", "phrases"] });
   });
 
   it("BR-033: non-admins get a disabled form without Save", () => {
@@ -61,7 +63,7 @@ describe("ProjectSettingsForm", () => {
   });
 
   it("TC-PROJ-006 / FR-032: turning re-analyze off PATCHes only that setting and refreshes /me", async () => {
-    apiFetch.mockResolvedValue(projectData({ settings: { allowAnalystReanalyze: false, allowViewerExport: false } }));
+    apiFetch.mockResolvedValue(projectData({ settings: { ...projectData().settings, allowAnalystReanalyze: false } }));
     const invalidate = vi.spyOn(qc, "invalidateQueries");
     render(<ProjectSettingsForm project={projectData()} canEdit />, { wrapper });
     fireEvent.click(screen.getByRole("switch", { name: /^Allow analysts to re-analyze/ }));
@@ -73,7 +75,7 @@ describe("ProjectSettingsForm", () => {
   });
 
   it("FR-032: toggling both sends both settings and no name/timezone", async () => {
-    apiFetch.mockResolvedValue(projectData({ settings: { allowAnalystReanalyze: true, allowViewerExport: true } }));
+    apiFetch.mockResolvedValue(projectData({ settings: { ...projectData().settings, allowViewerExport: true } }));
     render(<ProjectSettingsForm project={projectData()} canEdit />, { wrapper });
     fireEvent.click(screen.getByRole("switch", { name: /^Allow analysts to re-analyze/ }));
     fireEvent.click(screen.getByRole("switch", { name: /^Allow viewers to export/ }));

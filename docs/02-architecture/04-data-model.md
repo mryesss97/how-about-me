@@ -59,16 +59,16 @@ erDiagram
 
 ### 4.1 `monitoring_projects`
 
-| Column                  | Type                               | Notes                                        |
-| ----------------------- | ---------------------------------- | -------------------------------------------- |
-| id                      | uuid PK                            |                                              |
-| name                    | text NN                            |                                              |
-| slug                    | text UNIQUE NN                     | `1zone-eventista`                            |
-| description             | text                               |                                              |
-| timezone                | text NN default `Asia/Ho_Chi_Minh` | IANA                                         |
-| settings                | jsonb NN default `{}`              | `allowAnalystReanalyze`, `allowViewerExport` |
-| is_active               | boolean NN default true            |                                              |
-| created_at / updated_at | timestamptz NN                     |                                              |
+| Column                  | Type                               | Notes                                                                                         |
+| ----------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------- |
+| id                      | uuid PK                            |                                                                                               |
+| name                    | text NN                            |                                                                                               |
+| slug                    | text UNIQUE NN                     | `1zone-eventista`                                                                             |
+| description             | text                               |                                                                                               |
+| timezone                | text NN default `Asia/Ho_Chi_Minh` | IANA                                                                                          |
+| settings                | jsonb NN default `{}`              | `allowAnalystReanalyze`, `allowViewerExport`, `phraseMinMentions` (int 1–50, default 2, #251) |
+| is_active               | boolean NN default true            |                                                                                               |
+| created_at / updated_at | timestamptz NN                     |                                                                                               |
 
 ### 4.2 `user_profiles`
 
