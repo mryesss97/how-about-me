@@ -62,7 +62,7 @@ export function DetailSlideout({
             className="inline-flex items-center gap-1 text-sm font-semibold text-brand-secondary hover:underline"
           >
             <Expand06 className="size-4" aria-hidden />
-            Open full page
+            Mở trang đầy đủ
           </a>
           {actions ? <div className="ml-auto">{actions}</div> : null}
         </div>
