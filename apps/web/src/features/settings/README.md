@@ -9,3 +9,4 @@ Settings (UX §3.7, T-036):
 - Dialogs use `SettingsDialog` from `features/shared/settings-dialog`. `test-fixtures.ts` — test data.
 - T-107: project permission toggles (`allowAnalystReanalyze`, `allowViewerExport`) show a short explanation; Save invalidates `/me` so the new permissions apply immediately.
 - `analysis/` — `/settings/analysis` (FR-190, T-151b): bands + safety thresholds form (diff-only PATCH, per-cell errors), current versions, re-analysis prompt (admin only: dryRun preview → confirm mark-stale, FR-196); `phrase-threshold-form.tsx` "Sentiment map" section (`phraseMinMentions` via project PATCH, #251).
+- `landing-terms-form.tsx` — Settings → Project "Landing page" section (`landingTerms` via project PATCH, FR-149, BR-042, #261); balloons data via `features/shared/use-landing-terms.ts`.

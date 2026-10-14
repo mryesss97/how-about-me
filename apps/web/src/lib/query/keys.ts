@@ -4,6 +4,7 @@ export const qk = {
   projects: () => ["projects"] as const,
   project: (pid: string) => ["project", pid] as const,
   overview: (pid: string, filters: unknown) => ["project", pid, "analytics", "overview", filters] as const,
+  landingTerms: (pid: string, filters: unknown) => ["project", pid, "analytics", "landing-terms", filters] as const,
   timeseries: (pid: string, filters: unknown) => ["project", pid, "analytics", "timeseries", filters] as const,
   distribution: (pid: string, kind: string, filters: unknown) => ["project", pid, "analytics", kind, filters] as const,
   mentions: (pid: string, filters: unknown) => ["project", pid, "mentions", filters] as const,

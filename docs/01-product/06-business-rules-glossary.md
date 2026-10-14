@@ -48,6 +48,7 @@ Rules are normative and referenced by code comments (`// BR-007`) and tests.
 - **BR-026** Re-analysis creates a new run; previous runs are retained for audit/comparison.
 - **BR-027** Hidden model reasoning (chain-of-thought) is never stored; only a short user-facing explanation.
 - **BR-041** Key phrases (classifier-v2+, FR-120) are normalised before storage and filtering: Unicode NFC, lowercase, `, ; |` and line breaks → space, quotes/punctuation stripped at both ends (inner `-` and `/` kept, e.g. `check-in`), whitespace collapsed and trimmed. Empty, letter/digit-free or > 60-character phrases are dropped; duplicates after normalisation collapse; at most 5 per post. Vietnamese accents are **not** stripped and synonyms are **not** merged (`gia ve` ≠ `giá vé`). Phrases are stored append-only per analysis (`analysis_phrases`), never updated; irrelevant posts have none.
+- **BR-042** Landing terms (#261, FR-149): the project setting `landingTerms` holds at most 20 terms, each normalised like key phrases (BR-041, 1–60 characters, needs a letter or digit) and de-duplicated after normalisation (first occurrence order kept). A post mentions a term when its text — Unicode NFC, lowercased, with whitespace and `, ; |` collapsed to one space — contains the term, or when a key phrase of its **current** analysis contains the term (substring; case-insensitive; accents significant; `%`/`_` literal). A post matching both ways counts once per term; a post may count under several terms. Lowercasing relies on the database ctype (UTF-8 locale).
 
 ### Analytics
 

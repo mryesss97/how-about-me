@@ -7,7 +7,7 @@ import { AppError } from "../errors/app.error";
 export type Range = { from: Date; to: Date };
 export type ResolvedRange = Range & { timezone: string; previous?: Range };
 
-const DAY_MS = 86_400_000;
+export const DAY_MS = 86_400_000;
 /** Default window when from/to are omitted — matches FE preset `7d` (api-contract §6). */
 export const DEFAULT_RANGE_MS = 7 * DAY_MS;
 
@@ -46,14 +46,19 @@ export type RangeInput = { from?: string; to?: string; timezone?: string; compar
 /**
  * Resolves query from/to/timezone into a concrete range (api-contract §6):
  * missing both → [now − 7×24h, now); only one → the other is derived ±7×24h.
+ * `defaultRangeMs` overrides the 7-day default (landing terms use 30 days — FR-149, #261).
  * Re-checks `to > from` and span ≤ MAX_RANGE_DAYS after derivation.
  */
-export function resolveRange(input: RangeInput, ctx: { projectTimezone: string; now: Date }): ResolvedRange {
+export function resolveRange(
+  input: RangeInput,
+  ctx: { projectTimezone: string; now: Date; defaultRangeMs?: number },
+): ResolvedRange {
+  const defaultMs = ctx.defaultRangeMs ?? DEFAULT_RANGE_MS;
   const timezone = input.timezone ?? ctx.projectTimezone;
   const givenFrom = input.from ? new Date(input.from) : undefined;
   const givenTo = input.to ? new Date(input.to) : givenFrom ? undefined : ctx.now;
-  const from = givenFrom ?? new Date((givenTo ?? ctx.now).getTime() - DEFAULT_RANGE_MS);
-  const to = givenTo ?? new Date(from.getTime() + DEFAULT_RANGE_MS);
+  const from = givenFrom ?? new Date((givenTo ?? ctx.now).getTime() - defaultMs);
+  const to = givenTo ?? new Date(from.getTime() + defaultMs);
   const range = { from, to };
   if (to.getTime() <= from.getTime()) throw new AppError("VALIDATION_ERROR", "to must be after from");
   if (rangeDays(range) > MAX_RANGE_DAYS)

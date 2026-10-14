@@ -6,6 +6,7 @@ export * from "./integrations.js";
 export * from "./listening-queries.js";
 export * from "./filters.js";
 export * from "./analytics.js";
+export * from "./landing.js";
 export * from "./mentions.js";
 export * from "./analysis-runs.js";
 export * from "./sync-jobs.js";

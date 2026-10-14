@@ -23,6 +23,13 @@ describe("sanitizeAuditMetadata (FR-200)", () => {
     expect(out?.changes).toEqual({ a: {} }); // top-level → changes → a = 3 levels
   });
 
+  it("#261: a list of scalars at the max depth is kept (setting diffs); a list of objects there is still dropped", () => {
+    const out = sanitizeAuditMetadata({
+      changes: { "settings.landingTerms": { from: [], to: ["giá vé", "app"] }, x: { y: [{ z: 1 }] } },
+    });
+    expect(out?.changes).toEqual({ "settings.landingTerms": { from: [], to: ["giá vé", "app"] }, x: {} });
+  });
+
   it("replaces oversized metadata with { truncated: true }", () => {
     const postIds = Array.from({ length: 200 }, (_, i) => `00000000-0000-7000-8000-${String(i).padStart(12, "0")}`);
     expect(sanitizeAuditMetadata({ postIds })).toEqual({ truncated: true });

@@ -31,6 +31,14 @@ describe("resolveRange", () => {
     expect(r.previous).toBeUndefined();
   });
 
+  it("FR-149 (#261): defaultRangeMs overrides the window (30 days for landing terms)", () => {
+    const r = resolveRange({}, { ...ctx, defaultRangeMs: 30 * 86_400_000 });
+    expect(iso(r.from)).toBe("2026-09-13T05:30:00.000Z");
+    expect(iso(resolveRange({ from: "2026-09-01T00:00:00Z" }, { ...ctx, defaultRangeMs: 30 * 86_400_000 }).to)).toBe(
+      "2026-10-01T00:00:00.000Z",
+    );
+  });
+
   it("derives the missing end ±7×24h", () => {
     expect(iso(resolveRange({ from: "2026-09-01T00:00:00Z" }, ctx).to)).toBe("2026-09-08T00:00:00.000Z");
     expect(iso(resolveRange({ to: "2026-09-08T00:00:00Z" }, ctx).from)).toBe("2026-09-01T00:00:00.000Z");

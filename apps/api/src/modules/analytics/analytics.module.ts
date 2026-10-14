@@ -3,6 +3,9 @@ import { PrismaModule } from "../../database/prisma.module";
 import { AnalyticsDistributionsController } from "./analytics-distributions.controller";
 import { AnalyticsDistributionsRepository } from "./analytics-distributions.repository";
 import { AnalyticsDistributionsService } from "./analytics-distributions.service";
+import { AnalyticsLandingController } from "./analytics-landing.controller";
+import { AnalyticsLandingRepository } from "./analytics-landing.repository";
+import { AnalyticsLandingService } from "./analytics-landing.service";
 import { AnalyticsQueryShareController } from "./analytics-query-share.controller";
 import { AnalyticsQueryShareRepository } from "./analytics-query-share.repository";
 import { AnalyticsQueryShareService } from "./analytics-query-share.service";
@@ -21,6 +24,7 @@ import { OverviewService } from "./overview.service";
     AnalyticsTimeseriesController,
     AnalyticsDistributionsController,
     AnalyticsQueryShareController,
+    AnalyticsLandingController,
   ],
   providers: [
     OverviewService,
@@ -31,6 +35,8 @@ import { OverviewService } from "./overview.service";
     AnalyticsDistributionsRepository,
     AnalyticsQueryShareService,
     AnalyticsQueryShareRepository,
+    AnalyticsLandingService,
+    AnalyticsLandingRepository,
   ],
   exports: [AnalyticsTimeseriesService],
 })

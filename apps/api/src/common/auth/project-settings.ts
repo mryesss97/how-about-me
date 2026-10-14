@@ -7,7 +7,7 @@ export type ProjectToggleSetting = {
 
 /**
  * FR-032 — malformed settings never cause a 500: each key that is missing, has the wrong type or is out of range falls
- * back to its own schema default (deny-safe for allowViewerExport, 2 for phraseMinMentions); valid keys are kept, so
+ * back to its own schema default (deny-safe for allowViewerExport, 2 for phraseMinMentions, `[]` for landingTerms); valid keys are kept, so
  * one bad key does not reset the others.
  */
 export function parseProjectSettings(raw: unknown): ProjectSettings {

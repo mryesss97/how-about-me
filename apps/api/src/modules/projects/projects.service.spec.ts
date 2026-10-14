@@ -38,9 +38,14 @@ describe("ProjectsService.update", () => {
     const { svc, repo } = setup(row());
     const res = await svc.update(PID, { settings: { allowViewerExport: true } }, ACTOR, "admin", "req-1");
     expect(repo.update.mock.calls[0]?.[1]).toEqual({
-      settings: { allowAnalystReanalyze: false, allowViewerExport: true, phraseMinMentions: 2 },
+      settings: { allowAnalystReanalyze: false, allowViewerExport: true, phraseMinMentions: 2, landingTerms: [] },
     });
-    expect(res.settings).toEqual({ allowAnalystReanalyze: false, allowViewerExport: true, phraseMinMentions: 2 });
+    expect(res.settings).toEqual({
+      allowAnalystReanalyze: false,
+      allowViewerExport: true,
+      phraseMinMentions: 2,
+      landingTerms: [],
+    });
     expect(res.role).toBe("admin");
   });
 
@@ -73,7 +78,7 @@ describe("ProjectsService.update", () => {
     const { svc, repo, audit } = setup(row());
     await svc.update(PID, { settings: { phraseMinMentions: 5 } }, ACTOR, "admin", "req-1");
     expect(repo.update.mock.calls[0]?.[1]).toEqual({
-      settings: { allowAnalystReanalyze: false, allowViewerExport: false, phraseMinMentions: 5 },
+      settings: { allowAnalystReanalyze: false, allowViewerExport: false, phraseMinMentions: 5, landingTerms: [] },
     });
     expect(audit.record).toHaveBeenCalledWith(
       expect.objectContaining({ metadata: { changes: { "settings.phraseMinMentions": { from: 2, to: 5 } } } }),
@@ -86,6 +91,29 @@ describe("ProjectsService.update", () => {
     await svc.update(PID, { settings: { phraseMinMentions: 2 } }, ACTOR, "admin", null);
     expect(repo.update).not.toHaveBeenCalled();
     expect(audit.record).not.toHaveBeenCalled();
+  });
+
+  it("FR-032 / BR-042 (#261): landingTerms patch merges and audits settings.landingTerms", async () => {
+    const { svc, repo, audit } = setup(row());
+    await svc.update(PID, { settings: { landingTerms: ["giá vé", "app"] } }, ACTOR, "admin", "req-1");
+    expect(repo.update.mock.calls[0]?.[1]).toMatchObject({ settings: { landingTerms: ["giá vé", "app"] } });
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: { changes: { "settings.landingTerms": { from: [], to: ["giá vé", "app"] } } },
+      }),
+      expect.anything(),
+    );
+  });
+
+  it("FR-032 (#261): same landingTerms list (new array) is a no-op without audit; order change is a change", async () => {
+    const current = row({ settings: { landingTerms: ["a", "b"] } });
+    const same = setup(current);
+    await same.svc.update(PID, { settings: { landingTerms: ["a", "b"] } }, ACTOR, "admin", null);
+    expect(same.repo.update).not.toHaveBeenCalled();
+    expect(same.audit.record).not.toHaveBeenCalled();
+    const reordered = setup(current);
+    await reordered.svc.update(PID, { settings: { landingTerms: ["b", "a"] } }, ACTOR, "admin", null);
+    expect(reordered.repo.update).toHaveBeenCalled();
   });
 
   it("404 when project does not exist", async () => {

@@ -73,11 +73,15 @@ export type AuditMetadata = Record<string, unknown>;
 const isPlainObject = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v) && !(v instanceof Date);
 
+const isScalar = (v: unknown) => v === null || ["string", "number", "boolean"].includes(typeof v);
+
 function clean(value: unknown, depth: number): unknown {
   if (value === undefined) return undefined;
   if (value === null || typeof value === "number" || typeof value === "boolean") return value;
   if (typeof value === "string") return value.length > AUDIT_MAX_STRING ? value.slice(0, AUDIT_MAX_STRING) : value;
   if (value instanceof Date) return value.toISOString();
+  // A list of scalars is a leaf value (e.g. `changes["settings.landingTerms"].to`, #261), kept at the max depth.
+  if (Array.isArray(value) && value.every(isScalar)) return value.map((v) => clean(v, depth));
   if (depth >= AUDIT_MAX_DEPTH) return undefined;
   if (Array.isArray(value)) return value.map((v) => clean(v, depth + 1)).filter((v) => v !== undefined);
   if (isPlainObject(value)) {
@@ -95,7 +99,7 @@ function clean(value: unknown, depth: number): unknown {
 
 /**
  * Sanitizes audit metadata (FR-200): top-level keys must be allow-listed, secret-like keys are dropped at any depth,
- * depth ≤ 3, strings ≤ 500 chars, total JSON ≤ 4 KB (otherwise `{ truncated: true }`).
+ * depth ≤ 3 (a list of scalars counts as a leaf), strings ≤ 500 chars, total JSON ≤ 4 KB (otherwise `{ truncated: true }`).
  */
 export function sanitizeAuditMetadata(input: unknown): AuditMetadata | null {
   if (!isPlainObject(input)) return null;

@@ -1,6 +1,6 @@
 import { parseProjectSettings } from "./project-settings";
 
-const DEFAULTS = { allowAnalystReanalyze: true, allowViewerExport: false, phraseMinMentions: 2 };
+const DEFAULTS = { allowAnalystReanalyze: true, allowViewerExport: false, phraseMinMentions: 2, landingTerms: [] };
 
 describe("parseProjectSettings (FR-032, #251)", () => {
   it("fills defaults for missing keys and non-objects", () => {
@@ -23,4 +23,14 @@ describe("parseProjectSettings (FR-032, #251)", () => {
       phraseMinMentions: 7,
     });
   });
+
+  it.each(["x", [1], Array.from({ length: 21 }, (_, i) => `t${i}`)])(
+    "BR-042 (#261): malformed landingTerms %p falls back to [] and keeps other keys",
+    (bad) => {
+      expect(parseProjectSettings({ phraseMinMentions: 7, landingTerms: bad })).toEqual({
+        ...DEFAULTS,
+        phraseMinMentions: 7,
+      });
+    },
+  );
 });

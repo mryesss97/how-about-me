@@ -18,9 +18,13 @@ export function resolveAnalyticsQuery(
   query: AnalyticsQuery,
   project: { id: string; timezone: string },
   now: Date = new Date(),
+  opts: { defaultRangeMs?: number } = {},
 ): ResolvedAnalyticsQuery {
   const { from, to, timezone, compare, ...filters } = query;
-  const r = resolveRange({ from, to, timezone, compare }, { projectTimezone: project.timezone, now });
+  const r = resolveRange(
+    { from, to, timezone, compare },
+    { projectTimezone: project.timezone, now, defaultRangeMs: opts.defaultRangeMs },
+  );
   const scope: AnalyticsScope = {
     projectId: project.id,
     range: { from: r.from, to: r.to },

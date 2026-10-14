@@ -1,3 +1,4 @@
+import { normalizePhrase, PHRASE_MAX_LENGTH } from "@how-about-me/taxonomy";
 import { z } from "zod";
 import { IanaTimezoneSchema, IsoDateTimeSchema, UuidSchema } from "./common.js";
 import { UserRoleSchema } from "./enums.js";
@@ -12,10 +13,27 @@ export const PhraseMinMentionsSettingSchema = z
   .min(PHRASE_MIN_MENTIONS_SETTING_MIN)
   .max(PHRASE_MIN_MENTIONS_SETTING_MAX);
 
+/** FR-032, FR-149, BR-042 (#261): landing-page balloon phrases — ≤ 20 per project, each 1–60 chars, normalised like key phrases (BR-041). */
+export const LANDING_TERMS_MAX = 20;
+export const LANDING_TERM_MAX_LENGTH = PHRASE_MAX_LENGTH;
+export const LandingTermSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(LANDING_TERM_MAX_LENGTH)
+  .transform((v) => normalizePhrase(v))
+  .pipe(z.string({ error: "Enter 1–60 characters with a letter or digit" }));
+/** BR-042: de-duplicated after normalisation, first occurrence order kept. Max applies to the submitted list. */
+export const LandingTermsSettingSchema = z
+  .array(LandingTermSchema)
+  .max(LANDING_TERMS_MAX)
+  .transform((terms) => [...new Set(terms)]);
+
 export const ProjectSettingsSchema = z.object({
   allowAnalystReanalyze: z.boolean().default(true),
   allowViewerExport: z.boolean().default(false),
   phraseMinMentions: PhraseMinMentionsSettingSchema.default(DEFAULT_PHRASE_MIN_MENTIONS),
+  landingTerms: LandingTermsSettingSchema.default([]),
 });
 export type ProjectSettings = z.infer<typeof ProjectSettingsSchema>;
 /** PATCH shape: optional keys, no defaults (a partial patch must not reset unsent settings). */
@@ -23,6 +41,7 @@ export const ProjectSettingsPatchSchema = z.object({
   allowAnalystReanalyze: z.boolean().optional(),
   allowViewerExport: z.boolean().optional(),
   phraseMinMentions: PhraseMinMentionsSettingSchema.optional(),
+  landingTerms: LandingTermsSettingSchema.optional(),
 });
 
 export const ProjectSchema = z.object({

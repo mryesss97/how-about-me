@@ -37,3 +37,9 @@ Design: see docs/02-architecture/02-backend-design.md §3 and the related pipeli
 - `GET …/analytics/topic-sentiment` — in the distributions group (`analytics-distributions.{controller,service,repository}.ts`), pure helper `toTopicSentimentRows` in `distributions.ts`.
 - `GET …/analytics/phrases` (#223, FR-148) — same group; repository `phraseSentimentCounts` (join `analysis_phrases` on the current analysis, threshold + top-N in SQL, scalars as sentinel rows), pure helper `toPhraseSentimentRows`. `minMentions` defaults to the project setting `phraseMinMentions` (via `findProjectWithSettings`, #251); the query param overrides. `phrase[]` filter lives in `buildBaseSetCte` (ignorable as `"phrase"`).
 - One SQL: DISTINCT posts per (effective topic, effective sentiment) over `B`; posts without sentiment drop out, labels outside the taxonomy ignored. Row denominator = `total`; always 12 rows, `total` desc, `other` (real label) last.
+
+## Landing terms (#261)
+
+- `GET …/analytics/landing-terms` (FR-149, BR-042) — `analytics-landing.{controller,service,repository}.ts`, pure helper `landing-terms.ts` (`toLandingTermRows`).
+- Terms = project setting `landingTerms` (≤ 20, normalised BR-041). A post matches when its lowercased text (whitespace and `, ; |` collapsed) or a key phrase of its current analysis contains the term (`strpos`, no wildcards). DISTINCT (term, post) per effective sentiment over `B`; one row per term in setting order, zero-filled; `dominant` tie-break negative > positive > neutral.
+- Default range 30 days (`resolveAnalyticsQuery(..., { defaultRangeMs })`); no `compare`; no drill-down (exception to FR-142).
