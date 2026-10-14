@@ -1,4 +1,4 @@
-import { multiLabelMetrics, percentile, safetyMetrics, singleLabelMetrics } from "./metrics";
+import { multiLabelMetrics, percentile, phraseMetrics, safetyMetrics, singleLabelMetrics } from "./metrics";
 
 describe("eval metrics (T-079)", () => {
   it("computes accuracy, per-label P/R/F1 and confusion by hand-checked numbers", () => {
@@ -64,5 +64,27 @@ describe("eval metrics (T-079)", () => {
   it("nearest-rank percentile", () => {
     expect(percentile([5, 1, 3, 2, 4], 50)).toBe(3);
     expect(percentile([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 95)).toBe(10);
+  });
+});
+
+// FR-120, BR-041: phrase metrics are exact-match on normalised strings.
+describe("phraseMetrics (FR-120)", () => {
+  it("computes coverage over relevant items and micro P/R/F1 over gold items", () => {
+    const m = phraseMetrics([
+      { relevant: true, pred: ["giá vé", "thất vọng"], gold: ["giá vé"] },
+      { relevant: true, pred: [] },
+      { relevant: false, pred: [] },
+    ]);
+    expect(m).toMatchObject({
+      n: 2,
+      coverage: 0.5,
+      avgPhrasesPerPost: 1,
+      goldN: 1,
+      microPrecision: 0.5,
+      microRecall: 1,
+    });
+  });
+  it("returns nulls on empty input", () => {
+    expect(phraseMetrics([])).toMatchObject({ n: 0, coverage: null, goldN: 0, microF1: null });
   });
 });

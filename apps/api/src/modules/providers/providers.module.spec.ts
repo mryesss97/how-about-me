@@ -91,6 +91,17 @@ describe("ProvidersModule (PROVIDERS_MODE wiring, FR-112, FR-047)", () => {
       });
       expect(c).toBeInstanceOf(OpenAiStructuredClassifier);
       expect(c.model).toBe("m-test");
+      expect(c.promptVersion).toBe("classifier-v2");
+    });
+
+    it("FR-120: ANALYSIS_PROMPT_VERSION selects the prompt (classifier-v1 rollback)", () => {
+      const c = createContentClassifier({
+        ...fakeCfg,
+        PROVIDERS_MODE: "real",
+        OPENAI_API_KEY: "sk-test",
+        ANALYSIS_CLASSIFIER_MODEL: "m-test",
+        ANALYSIS_PROMPT_VERSION: "classifier-v1",
+      });
       expect(c.promptVersion).toBe("classifier-v1");
     });
 

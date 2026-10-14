@@ -60,6 +60,8 @@ export const EnvSchema = z
     SAFETY_MODEL: z.string().default("omni-moderation-latest"),
     ANALYSIS_CLASSIFIER_PROVIDER: z.string().default("openai"),
     ANALYSIS_CLASSIFIER_MODEL: z.string().default(""),
+    // FR-120 / BR-023: prompt for the real classifier; classifier-v1 kept frozen for rollback / eval.
+    ANALYSIS_PROMPT_VERSION: z.enum(["classifier-v1", "classifier-v2"]).default("classifier-v2"),
     ANALYSIS_PRICE_INPUT_PER_1M: num(0),
     ANALYSIS_PRICE_OUTPUT_PER_1M: num(0),
     ANALYSIS_BRAND_CONTEXT: z

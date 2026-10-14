@@ -126,6 +126,30 @@ export const TopicSentimentResponseSchema = z.object({
 });
 export type TopicSentimentResponse = z.infer<typeof TopicSentimentResponseSchema>;
 
+/**
+ * GET …/analytics/phrases (FR-148, BR-041) — metric-definitions §4 "Phrase × sentiment". DISTINCT posts per
+ * (phrase of the current analysis, effective sentiment); rows with total ≥ minMentions, total desc then phrase,
+ * cut at `limit`. No `other` bucket. `totalPhrases` counts rows meeting the threshold before the cut.
+ */
+export const PhraseSentimentResponseSchema = z.object({
+  sentimentAnalyzed: z.number().int(),
+  phraseAnalyzed: z.number().int(),
+  totalPhrases: z.number().int(),
+  minMentions: z.number().int(),
+  limit: z.number().int(),
+  rows: z.array(
+    z.object({
+      phrase: z.string(),
+      positive: z.number().int(),
+      neutral: z.number().int(),
+      negative: z.number().int(),
+      total: z.number().int(),
+      negativeShare: z.number().min(0).max(1).nullable(),
+    }),
+  ),
+});
+export type PhraseSentimentResponse = z.infer<typeof PhraseSentimentResponseSchema>;
+
 /** P1 — GET …/analytics/query-share. Shares overlap (one post may match several queries). */
 export const QueryShareResponseSchema = z.object({
   denominator: z.number().int(),

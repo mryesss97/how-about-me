@@ -59,6 +59,7 @@ describe("Retention job (T-153, NFR-054)", () => {
     });
     await prisma.analysisIntent.create({ data: { analysisId, label: "question" } });
     await prisma.analysisTopic.create({ data: { analysisId, label: "price" } });
+    await prisma.analysisPhrase.create({ data: { analysisId, phrase: "giá vé", position: 0 } });
     return { runId: id, analysisId };
   }
 
@@ -97,14 +98,14 @@ describe("Retention job (T-153, NFR-054)", () => {
     const h = await history(p.id);
     const scope: PurgeScope = { scope: "runs", projectId: p.id, before: BEFORE };
     const dry = await countPurge(prisma, scope);
-    expect(dry).toEqual({ runs: 1, analyses: 1, intents: 1, topics: 1 });
+    expect(dry).toEqual({ runs: 1, analyses: 1, intents: 1, topics: 1, phrases: 1 });
     expect(await applyPurge(prisma, audit, scope, { requestId: "r-1" })).toEqual(dry);
     const left = (await prisma.analysisRun.findMany({ select: { id: true } })).map((r) => r.id).sort();
     expect(left).toEqual([h.r2.runId, h.r3.runId, h.r4.runId, h.r5.runId, h.r6.runId].sort());
     const [row] = await auditRows();
     expect(row).toMatchObject({ projectId: p.id, entityType: "analysis_run", actorUserId: null, requestId: "r-1" });
     expect(row?.metadata).toEqual({ scope: "runs", count: 1, counts: dry, before: BEFORE.toISOString() });
-    expect(await applyPurge(prisma, audit, scope)).toEqual({ runs: 0, analyses: 0, intents: 0, topics: 0 });
+    expect(await applyPurge(prisma, audit, scope)).toEqual({ runs: 0, analyses: 0, intents: 0, topics: 0, phrases: 0 });
     expect(await auditRows()).toHaveLength(1);
   });
 

@@ -28,6 +28,7 @@ erDiagram
     analysis_runs ||--o| post_analyses : result
     post_analyses ||--o{ analysis_intents : labels
     post_analyses ||--o{ analysis_topics : labels
+    post_analyses ||--o{ analysis_phrases : phrases
     social_posts ||--o{ analysis_overrides : overridden
     monitoring_projects ||--o{ audit_logs : logs
     user_profiles ||--o{ audit_logs : acts
@@ -175,6 +176,12 @@ Indexes: `(post_id)`, `(project_id, relevance_label)`, `(project_id, sentiment_l
 
 | analysis_id uuid FK · label text NN · confidence numeric(5,4) · **PK (analysis_id, label)** · index `(label, analysis_id)` |
 
+### 4.12b `analysis_phrases` (#223, FR-120)
+
+| analysis_id uuid FK → `post_analyses` (cascade) · phrase text NN · position smallint NN · **PK (analysis_id, phrase)** · index `(phrase, analysis_id)` · CHECK `char_length(phrase) BETWEEN 1 AND 60`, no `,` in phrase, `position BETWEEN 0 AND 4` |
+
+Key phrases of one analysis, normalised per BR-041 (≤ 5, order = model order in `position`). Append-only: inserted in the same transaction as `post_analyses`, never updated; re-analysis writes new rows for the new analysis. No override and no effective view: analytics join the **current** analysis (`effective_post_analysis.analysis_id`). Retention follows `post_analyses` (purge counts `phrases`). Analyses from `classifier-v1` / `fake-v1` have no rows.
+
 ### 4.13 `analysis_overrides` (P1)
 
 | id uuid PK · post_id FK NN · project_id FK NN · analysis_id FK · field override_field NN · previous_value jsonb · override_value jsonb NN · reason text · reviewed_by uuid NN · created_at NN · revoked_at · revoked_by |
@@ -238,7 +245,7 @@ LEFT JOIN analysis_overrides o_saf ON o_saf.post_id = p.id AND o_saf.field='safe
 
 ## 7. Sizing & retention
 
-Plan single-digit KB per post incl. analysis + indexes; measure `average_storage_bytes_per_post` monthly. Measured at 100k posts / 120k analyses (T-097): 264 MB total, ≈ 2.6 KB per post incl. analysis rows and indexes; the current index set meets NFR-001…003 with no additions — [12-performance-report.md](12-performance-report.md). Retention & purge in [../05-operations/04-data-retention-purge.md](../05-operations/04-data-retention-purge.md).
+Plan single-digit KB per post incl. analysis + indexes; measure `average_storage_bytes_per_post` monthly. Measured at 100k posts / 120k analyses (T-097): 264 MB total, ≈ 2.6 KB per post incl. analysis rows and indexes; the current index set meets NFR-001…003 with no additions — [12-performance-report.md](12-performance-report.md). `analysis_phrases` adds ≤ 5 short rows per analysis (classifier-v2+). Retention & purge in [../05-operations/04-data-retention-purge.md](../05-operations/04-data-retention-purge.md).
 
 ## 8. Migration policy
 

@@ -145,16 +145,16 @@ model MonitoringProject {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  members         ProjectMember[]
-  queries         ListeningQuery[]
-  integrations    IntegrationConnection[]
-  posts           SocialPost[]
-  syncJobs        SyncJob[]
-  analysisRuns    AnalysisRun[]
-  analyses        PostAnalysis[]
-  overrides       AnalysisOverride[]
-  auditLogs       AuditLog[]
-  collectorStates CollectorState[]
+  members          ProjectMember[]
+  queries          ListeningQuery[]
+  integrations     IntegrationConnection[]
+  posts            SocialPost[]
+  syncJobs         SyncJob[]
+  analysisRuns     AnalysisRun[]
+  analyses         PostAnalysis[]
+  overrides        AnalysisOverride[]
+  auditLogs        AuditLog[]
+  collectorStates  CollectorState[]
   analysisSettings AnalysisSetting[]
 
   @@map("monitoring_projects")
@@ -169,8 +169,8 @@ model UserProfile {
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  memberships ProjectMember[]
-  auditLogs   AuditLog[]
+  memberships      ProjectMember[]
+  auditLogs        AuditLog[]
   analysisSettings AnalysisSetting[]
 
   @@map("user_profiles")
@@ -282,19 +282,19 @@ model SocialPost {
   platformPostId String   @map("platform_post_id")
 
   username          String?
-  ownerId           String? @map("owner_id")
+  ownerId           String?  @map("owner_id")
   text              String?
   permalink         String?
   shortcode         String?
-  mediaType         String? @map("media_type")
-  mediaUrl          String? @map("media_url")
-  thumbnailUrl      String? @map("thumbnail_url")
-  altText           String? @map("alt_text")
-  linkAttachmentUrl String? @map("link_attachment_url")
+  mediaType         String?  @map("media_type")
+  mediaUrl          String?  @map("media_url")
+  thumbnailUrl      String?  @map("thumbnail_url")
+  altText           String?  @map("alt_text")
+  linkAttachmentUrl String?  @map("link_attachment_url")
   isQuotePost       Boolean? @map("is_quote_post")
   hasReplies        Boolean? @map("has_replies")
-  quotedPostId      String? @map("quoted_post_id")
-  repostedPostId    String? @map("reposted_post_id")
+  quotedPostId      String?  @map("quoted_post_id")
+  repostedPostId    String?  @map("reposted_post_id")
 
   publishedAt  DateTime @map("published_at") @db.Timestamptz(6)
   contentHash  String   @map("content_hash")
@@ -302,11 +302,11 @@ model SocialPost {
   rawData      Json?    @map("raw_data")
   rawTruncated Boolean  @default(false) @map("raw_truncated")
 
-  currentAnalysisId String?         @map("current_analysis_id") @db.Uuid
-  latestRunStatus   AnalysisStatus? @map("latest_run_status")
+  currentAnalysisId String?                  @map("current_analysis_id") @db.Uuid
+  latestRunStatus   AnalysisStatus?          @map("latest_run_status")
   /// Review queue marker (T-144, BR-040): reviewed while reviewed_at >= latest run created_at. No FK (like analysis_overrides.reviewed_by).
-  reviewedAt        DateTime?       @map("reviewed_at") @db.Timestamptz(6)
-  reviewedBy        String?         @map("reviewed_by") @db.Uuid
+  reviewedAt        DateTime?                @map("reviewed_at") @db.Timestamptz(6)
+  reviewedBy        String?                  @map("reviewed_by") @db.Uuid
   /// Generated column + GIN index created in raw SQL (init_extras); dbgenerated default mirrors the expression so `migrate diff` stays empty (T-007, FR-161).
   searchVector      Unsupported("tsvector")? @default(dbgenerated("to_tsvector('simple'::regconfig, COALESCE(text, ''::text))")) @map("search_vector")
 
@@ -362,22 +362,22 @@ model SyncJob {
   startedAt   DateTime? @map("started_at") @db.Timestamptz(6)
   completedAt DateTime? @map("completed_at") @db.Timestamptz(6)
 
-  pagesFetched      Int @default(0) @map("pages_fetched")
-  recordsFetched    Int @default(0) @map("records_fetched")
-  recordsInserted   Int @default(0) @map("records_inserted")
-  recordsUpdated    Int @default(0) @map("records_updated")
-  recordsDuplicated Int @default(0) @map("records_duplicated")
-  recordsInvalid    Int @default(0) @map("records_invalid")
-  recordsExcluded   Int @default(0) @map("records_excluded")
-  providerRequests  Int @default(0) @map("provider_requests")
-  rateLimitEvents   Int @default(0) @map("rate_limit_events")
+  pagesFetched      Int   @default(0) @map("pages_fetched")
+  recordsFetched    Int   @default(0) @map("records_fetched")
+  recordsInserted   Int   @default(0) @map("records_inserted")
+  recordsUpdated    Int   @default(0) @map("records_updated")
+  recordsDuplicated Int   @default(0) @map("records_duplicated")
+  recordsInvalid    Int   @default(0) @map("records_invalid")
+  recordsExcluded   Int   @default(0) @map("records_excluded")
+  providerRequests  Int   @default(0) @map("provider_requests")
+  rateLimitEvents   Int   @default(0) @map("rate_limit_events")
   providerUsage     Json? @map("provider_usage")
 
-  lastCursor   String? @map("last_cursor")
-  errorCode    String? @map("error_code")
-  errorMessage String? @map("error_message")
-  requestedBy  String? @map("requested_by") @db.Uuid
-  lockedBy     String? @map("locked_by")
+  lastCursor   String?  @map("last_cursor")
+  errorCode    String?  @map("error_code")
+  errorMessage String?  @map("error_message")
+  requestedBy  String?  @map("requested_by") @db.Uuid
+  lockedBy     String?  @map("locked_by")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   project MonitoringProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -454,25 +454,26 @@ model PostAnalysis {
   postId        String @map("post_id") @db.Uuid
   projectId     String @map("project_id") @db.Uuid
 
-  relevanceLabel       RelevanceLabel? @map("relevance_label")
-  relevanceConfidence  Decimal?        @map("relevance_confidence") @db.Decimal(5, 4)
-  relevanceExplanation String?         @map("relevance_explanation")
-  sentimentLabel       SentimentLabel? @map("sentiment_label")
-  sentimentConfidence  Decimal?        @map("sentiment_confidence") @db.Decimal(5, 4)
-  safetyLevel          SafetyLevel?    @map("safety_level")
-  safetyFlagged        Boolean?        @map("safety_flagged")
-  safetyCategoryScores Json?           @map("safety_category_scores")
-  languageCode         String?         @map("language_code")
-  summary              String?
-  overallModelConfidence Decimal?      @map("overall_model_confidence") @db.Decimal(5, 4)
-  createdAt            DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  relevanceLabel         RelevanceLabel? @map("relevance_label")
+  relevanceConfidence    Decimal?        @map("relevance_confidence") @db.Decimal(5, 4)
+  relevanceExplanation   String?         @map("relevance_explanation")
+  sentimentLabel         SentimentLabel? @map("sentiment_label")
+  sentimentConfidence    Decimal?        @map("sentiment_confidence") @db.Decimal(5, 4)
+  safetyLevel            SafetyLevel?    @map("safety_level")
+  safetyFlagged          Boolean?        @map("safety_flagged")
+  safetyCategoryScores   Json?           @map("safety_category_scores")
+  languageCode           String?         @map("language_code")
+  summary                String?
+  overallModelConfidence Decimal?        @map("overall_model_confidence") @db.Decimal(5, 4)
+  createdAt              DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  run       AnalysisRun       @relation(fields: [analysisRunId], references: [id], onDelete: Cascade)
-  post      SocialPost        @relation("PostAnalyses", fields: [postId], references: [id], onDelete: Cascade)
-  project   MonitoringProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  run       AnalysisRun        @relation(fields: [analysisRunId], references: [id], onDelete: Cascade)
+  post      SocialPost         @relation("PostAnalyses", fields: [postId], references: [id], onDelete: Cascade)
+  project   MonitoringProject  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   intents   AnalysisIntent[]
   topics    AnalysisTopic[]
-  currentOf SocialPost[]      @relation("CurrentAnalysis")
+  phrases   AnalysisPhrase[]
+  currentOf SocialPost[]       @relation("CurrentAnalysis")
   overrides AnalysisOverride[]
 
   @@index([postId])
@@ -505,6 +506,19 @@ model AnalysisTopic {
   @@id([analysisId, label])
   @@index([label, analysisId])
   @@map("analysis_topics")
+}
+
+/// Key phrases of one analysis (FR-120, BR-041): normalised, ≤ 5 per analysis, append-only with post_analyses.
+model AnalysisPhrase {
+  analysisId String @map("analysis_id") @db.Uuid
+  phrase     String
+  position   Int    @db.SmallInt
+
+  analysis PostAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@id([analysisId, phrase])
+  @@index([phrase, analysisId])
+  @@map("analysis_phrases")
 }
 
 /// P1 — analyst overrides; effective value = active override > latest AI (BR-025).

@@ -127,7 +127,7 @@ Behaviour notes (T-042, FR-051…FR-057):
 
 ## 6. Analytics
 
-Common query params (all optional): `from`, `to` (defaults last 7 d), `timezone` (default project tz), `queryIds[]`, `relevance[]` (default `relevant`), `sentiment[]`, `safety[]`, `intent[]`, `topic[]`, `language[]`, `analysisStatus[]`, `compare=false`, `timeField=published_at`. `language[]=other` matches stored `other` plus any non-NULL code outside the taxonomy (same fold as `/analytics/languages`; applies to the mentions list too, whose `analysis.language` also returns `other` for such codes) — #201.
+Common query params (all optional): `from`, `to` (defaults last 7 d), `timezone` (default project tz), `queryIds[]`, `relevance[]` (default `relevant`), `sentiment[]`, `safety[]`, `intent[]`, `topic[]`, `phrase[]`, `language[]`, `analysisStatus[]`, `compare=false`, `timeField=published_at`. `phrase[]` (#223, FR-148) keeps posts whose current analysis has one of the key phrases; values are normalised server-side per BR-041 (`Giá Vé` → `giá vé`), max 60 chars each; a value that normalises to empty → `400 VALIDATION_ERROR`. `language[]=other` matches stored `other` plus any non-NULL code outside the taxonomy (same fold as `/analytics/languages`; applies to the mentions list too, whose `analysis.language` also returns `other` for such codes) — #201.
 
 - Default range = `[now − 7×24h, now)` (same as the web `7d` preset). Only `from` sent → `to = from + 7×24h`; only `to` → `from = to − 7×24h`; the derived range is still checked (`to > from`, ≤ 366 d → `400 VALIDATION_ERROR`).
 - With `queryIds` empty, the base set uses matches of every project query, soft-deleted included (BR-010); matches with `excluded_by_terms=true` never count.
@@ -231,6 +231,25 @@ Topic × sentiment matrix and negative-topic contributors (FR-144, T-149). Roles
 { "rows": [{ "topic": "ticket", "positive": 1, "neutral": 1, "negative": 2, "total": 4, "negativeShare": 0.5 }] }
 ```
 
+### `GET …/analytics/phrases` (P1) → `{ sentimentAnalyzed, phraseAnalyzed, totalPhrases, minMentions, limit, rows:[{phrase, positive, neutral, negative, total, negativeShare}] }`
+
+Phrase × sentiment for the sentiment map in phrases mode (FR-148, #223; metric-definitions §4). Roles admin/analyst/viewer; same analytics params as the other widgets (`compare` ignored) plus `limit` (int 1–100, default 30) and `minMentions` (int 1–1000, default 2). Errors: `400 VALIDATION_ERROR`, `403`, `404 NOT_FOUND`.
+
+- Cells = `COUNT(DISTINCT post_id)` in `B` with that key phrase in the **current** analysis (`analysis_phrases`) and that effective sentiment; posts without a sentiment are not counted.
+- Rows with `total ≥ minMentions`, sorted `total DESC, phrase ASC` (code point), first `limit`. No `other` row. `totalPhrases` = rows meeting the threshold before the cut.
+- Drill-down: `/mentions?phrase=<phrase>[&sentiment=s]`.
+
+```json
+{
+  "sentimentAnalyzed": 120,
+  "phraseAnalyzed": 96,
+  "totalPhrases": 41,
+  "minMentions": 2,
+  "limit": 30,
+  "rows": [{ "phrase": "giá vé", "positive": 3, "neutral": 4, "negative": 11, "total": 18, "negativeShare": 0.611 }]
+}
+```
+
 ### `GET …/analytics/query-share` (P1) → `{ denominator, distribution:[{queryId, displayName, count, share}] , note:"overlapping" }`
 
 Keyword share (FR-145, T-150). Roles admin/analyst/viewer; same analytics params as the other widgets.
@@ -245,7 +264,7 @@ Keyword share (FR-145, T-150). Roles admin/analyst/viewer; same analytics params
 
 ### `GET /projects/:projectId/mentions`
 
-Query: `from,to,timezone,queryIds[],q,relevance[] (default relevant),sentiment[],safety[],intent[],topic[],language[],analysisStatus[],reviewStatus[] (P1),sort=newest|oldest|safety_desc|confidence_asc|relevance_desc,cursor,limit=25 (max 100),count=false`.
+Query: `from,to,timezone,queryIds[],q,relevance[] (default relevant),sentiment[],safety[],intent[],topic[],phrase[],language[],analysisStatus[],reviewStatus[] (P1),sort=newest|oldest|safety_desc|confidence_asc|relevance_desc,cursor,limit=25 (max 100),count=false`.
 
 ```json
 {

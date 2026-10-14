@@ -69,4 +69,33 @@ describe("runEval / summarize (T-079)", () => {
     expect(neg?.prediction?.safetyLevel).toBe("safe");
     expect(summarize(neg ? [neg] : []).safety.agreement).toBe(1);
   });
+
+  // FR-120, BR-041: phrase metrics (informational).
+  it("FR-120: phrase coverage and P/R vs normalised gold; null for a classifier without phrases", async () => {
+    const results = await runEval(
+      [
+        item("a", "Giá vé 1zone chát quá, thất vọng", { keyPhrases: ["Giá Vé", "app lỗi"] }),
+        item("b", "1zone concert hôm nay mấy giờ vậy mọi người"),
+        item("c", "time zone 1zone", { relevance: "irrelevant" }),
+      ],
+      opts(),
+    );
+    const s = summarize(results);
+    expect(s.phrases).toMatchObject({ n: 2, coverage: 0.5, avgPhrasesPerPost: 1, goldN: 1 });
+    expect(s.phrases?.microPrecision).toBe(0.5); // pred [giá vé, thất vọng], gold [giá vé, app lỗi]
+    expect(s.phrases?.microRecall).toBe(0.5);
+
+    const real = new FakeContentClassifier();
+    const v1: ContentClassifier = {
+      provider: real.provider,
+      model: real.model,
+      promptVersion: "classifier-v1",
+      relevance: (i, c) => real.relevance(i, c),
+      classify: async (i, c) => {
+        const { keyPhrases: _k, ...rest } = await real.classify(i, c);
+        return rest;
+      },
+    };
+    expect(summarize(await runEval([item("a", "Giá vé chát")], opts(v1))).phrases).toBeNull();
+  });
 });

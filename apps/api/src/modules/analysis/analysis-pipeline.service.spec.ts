@@ -39,6 +39,7 @@ function make(opts: { text?: string | null; revision?: number; twoStep?: boolean
     postAnalysis: { create: jest.fn(async () => ({})) },
     analysisIntent: { createMany: jest.fn(async () => ({ count: 1 })) },
     analysisTopic: { createMany: jest.fn(async () => ({ count: 1 })) },
+    analysisPhrase: { createMany: jest.fn(async () => ({ count: 1 })) },
   };
   const prisma = {
     socialPost: {
@@ -138,6 +139,28 @@ describe("AnalysisPipelineService (T-074)", () => {
       data: expect.objectContaining({ relevanceLabel: "irrelevant", summary: "" }),
     });
     expect(m.tx.analysisTopic.createMany).not.toHaveBeenCalled();
+    expect(m.tx.analysisPhrase.createMany).not.toHaveBeenCalled(); // FR-120: irrelevant → no phrases
+  });
+
+  // FR-120, BR-041, BR-026: key phrases persisted with position, in the same transaction.
+  it("FR-120: relevant post → key phrases stored with position", async () => {
+    const m = make({ text: "Giá vé 1zone chát quá, check-in thì xếp hàng mãi, thất vọng" });
+    await m.svc.process(run);
+    expect(m.tx.analysisPhrase.createMany).toHaveBeenCalledWith({
+      data: [
+        { analysisId: expect.any(String), phrase: "giá vé", position: 0 },
+        { analysisId: expect.any(String), phrase: "check-in", position: 1 },
+        { analysisId: expect.any(String), phrase: "xếp hàng", position: 2 },
+        { analysisId: expect.any(String), phrase: "thất vọng", position: 3 },
+      ],
+    });
+  });
+
+  it("FR-120: no phrase rows when the classifier returns []", async () => {
+    const m = make({ text: "1zone concert tối nay mấy giờ bắt đầu vậy mọi người" });
+    await m.svc.process(run);
+    expect(m.tx.analysisTopic.createMany).toHaveBeenCalled();
+    expect(m.tx.analysisPhrase.createMany).not.toHaveBeenCalled();
   });
 
   it("FR-103 / BR-023: relevant post → safety + labels persisted, 7 versions stamped, pointer set", async () => {
@@ -184,6 +207,7 @@ describe("AnalysisPipelineService corrective retry (FR-113, FR-119, T-075)", () 
     topics: [{ label: "ticket" as const, confidence: 0.9 }],
     language: "vi" as const,
     summary: "s",
+    keyPhrases: ["giá vé"],
     usage,
   };
   const ticketing = { ...valid, intents: [{ label: "ticketing", confidence: 0.9 }] } as unknown as typeof valid;
@@ -258,5 +282,29 @@ describe("AnalysisPipelineService corrective retry (FR-113, FR-119, T-075)", () 
     expect(m.spies.classify.mock.calls[0]?.[0].confidenceBands).toEqual({ high: 0.8, medium: 0.6 });
     const opts = m.analysis.markCompleted.mock.calls[0] as unknown[];
     expect(opts[4]).toMatchObject({ versions: { safetyPolicyVersion: "safety-policy-v1" } });
+  });
+});
+
+describe("AnalysisPipelineService key phrases retry (FR-113, FR-120)", () => {
+  it("v2 output without keyPhrases → corrective retry naming keyPhrases", async () => {
+    const usage = { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 };
+    const v1Only = {
+      relevance: { label: "relevant" as const, confidence: 0.9, explanation: "x" },
+      sentiment: { label: "positive" as const, confidence: 0.9 },
+      intents: [{ label: "praise" as const, confidence: 0.9 }],
+      topics: [{ label: "ticket" as const, confidence: 0.9 }],
+      language: "vi" as const,
+      summary: "s",
+      usage,
+    };
+    const m = make();
+    m.spies.classify.mockResolvedValueOnce(v1Only).mockResolvedValueOnce({ ...v1Only, keyPhrases: ["giá vé"] });
+    await m.svc.process(run);
+    expect(m.spies.classify).toHaveBeenCalledTimes(2);
+    const second = m.spies.classify.mock.calls[1]?.[0];
+    expect(second?.correction?.issues.some((i) => i.startsWith("keyPhrases"))).toBe(true);
+    expect(m.tx.analysisPhrase.createMany).toHaveBeenCalledWith({
+      data: [{ analysisId: expect.any(String), phrase: "giá vé", position: 0 }],
+    });
   });
 });

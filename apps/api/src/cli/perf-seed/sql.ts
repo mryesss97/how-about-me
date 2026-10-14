@@ -313,6 +313,7 @@ export const ANALYZE_TABLES = [
   "post_analyses",
   "analysis_intents",
   "analysis_topics",
+  "analysis_phrases",
   "analysis_overrides",
   "audit_logs",
   "sync_jobs",

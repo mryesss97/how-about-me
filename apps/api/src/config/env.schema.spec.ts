@@ -21,6 +21,14 @@ describe("loadEnv fail-fast", () => {
     expect(env.OPENAI_MAX_RETRIES).toBe(2);
   });
 
+  it("FR-120: ANALYSIS_PROMPT_VERSION defaults to classifier-v2, accepts v1, rejects unknown", () => {
+    expect(loadEnv(base).ANALYSIS_PROMPT_VERSION).toBe("classifier-v2");
+    expect(loadEnv({ ...base, ANALYSIS_PROMPT_VERSION: "classifier-v1" }).ANALYSIS_PROMPT_VERSION).toBe(
+      "classifier-v1",
+    );
+    expect(() => loadEnv({ ...base, ANALYSIS_PROMPT_VERSION: "classifier-v9" })).toThrow(/ANALYSIS_PROMPT_VERSION/);
+  });
+
   it("retention job defaults to off, Sunday 03:00 Asia/Ho_Chi_Minh (T-153, NFR-054)", () => {
     const env = loadEnv(base);
     expect(env.RETENTION_JOB_MODE).toBe("off");

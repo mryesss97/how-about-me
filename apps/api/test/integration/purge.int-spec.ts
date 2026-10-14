@@ -48,6 +48,8 @@ describe("Purge (T-126)", () => {
       ],
     });
     await prisma.analysisTopic.create({ data: { analysisId, label: "price" } });
+    // BR-041: phrase rows are purged with their analysis.
+    await prisma.analysisPhrase.create({ data: { analysisId, phrase: "giá vé", position: 0 } });
     await prisma.socialPost.update({ where: { id: post.id }, data: { currentAnalysisId: analysisId } });
     await prisma.analysisOverride.create({
       data: {
@@ -82,7 +84,16 @@ describe("Purge (T-126)", () => {
     const { a, newA, oldB } = await fixture();
     const scope: PurgeScope = { scope: "project", projectId: a.id, before: BEFORE };
     const dry = await countPurge(prisma, scope);
-    expect(dry).toEqual({ posts: 3, matches: 3, overrides: 3, intents: 6, topics: 3, analyses: 3, runs: 3 });
+    expect(dry).toEqual({
+      posts: 3,
+      matches: 3,
+      overrides: 3,
+      intents: 6,
+      topics: 3,
+      phrases: 3,
+      analyses: 3,
+      runs: 3,
+    });
     // Dry run deletes nothing and writes no audit.
     expect(await prisma.socialPost.count()).toBe(5);
     expect(await auditRows()).toHaveLength(0);
@@ -104,7 +115,7 @@ describe("Purge (T-126)", () => {
     expect(await auditRows()).toHaveLength(1);
   });
 
-  const zeroPosts = { posts: 0, matches: 0, overrides: 0, intents: 0, topics: 0, analyses: 0, runs: 0 };
+  const zeroPosts = { posts: 0, matches: 0, overrides: 0, intents: 0, topics: 0, phrases: 0, analyses: 0, runs: 0 };
 
   it("small batch size gives the same totals, one audit row per batch sharing requestId", async () => {
     const { a } = await fixture();
@@ -121,7 +132,16 @@ describe("Purge (T-126)", () => {
     const { oldB, b, reviewer } = await fixture();
     const scope: PurgeScope = { scope: "post", platform: "threads", platformPostId: oldB.platformPostId };
     const dry = await countPurge(prisma, scope);
-    expect(dry).toEqual({ posts: 1, matches: 1, overrides: 1, intents: 2, topics: 1, analyses: 1, runs: 1 });
+    expect(dry).toEqual({
+      posts: 1,
+      matches: 1,
+      overrides: 1,
+      intents: 2,
+      topics: 1,
+      phrases: 1,
+      analyses: 1,
+      runs: 1,
+    });
     expect(await applyPurge(prisma, audit, scope, { actorUserId: reviewer.id })).toEqual(dry);
     expect(await prisma.socialPost.count()).toBe(4);
     const [row] = await auditRows();

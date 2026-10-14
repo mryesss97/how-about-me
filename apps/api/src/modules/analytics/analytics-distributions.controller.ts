@@ -5,6 +5,9 @@ import {
   AnalyticsQuerySchema,
   type IntentsDistributionResponse,
   type LanguagesDistributionResponse,
+  type PhraseSentimentResponse,
+  type PhrasesQuery,
+  PhrasesQuerySchema,
   type SafetyDistributionResponse,
   type SentimentResponse,
   type TopicSentimentResponse,
@@ -14,7 +17,7 @@ import { Roles } from "../../common/auth/roles.decorator";
 import { zod } from "../../common/pipes/zod-validation.pipe";
 import { AnalyticsDistributionsService } from "./analytics-distributions.service";
 
-/** docs/02-architecture/05-api-contract.md §6 — FR-136…FR-140, FR-143, FR-144. Read-only, every project role. */
+/** docs/02-architecture/05-api-contract.md §6 — FR-136…FR-140, FR-143, FR-144, FR-148. Read-only, every project role. */
 @ApiTags("analytics")
 @ApiBearerAuth()
 @Controller("projects/:projectId/analytics")
@@ -73,5 +76,15 @@ export class AnalyticsDistributionsController {
     @Query(zod(AnalyticsQuerySchema)) query: AnalyticsQuery,
   ): Promise<TopicSentimentResponse> {
     return this.svc.topicSentiment(projectId, query);
+  }
+
+  /** FR-148 — phrase × sentiment (key phrases of the current analysis, BR-041). */
+  @Get("phrases")
+  @Roles("admin", "analyst", "viewer")
+  phrases(
+    @Param("projectId", ParseUUIDPipe) projectId: string,
+    @Query(zod(PhrasesQuerySchema)) query: PhrasesQuery,
+  ): Promise<PhraseSentimentResponse> {
+    return this.svc.phrases(projectId, query);
   }
 }

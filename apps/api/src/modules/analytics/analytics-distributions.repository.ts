@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { LANGUAGE_CODES, TOPIC_LABELS } from "@how-about-me/taxonomy";
 import { PrismaService } from "../../database/prisma.service";
 import { type AnalyticsScope, withBase } from "./analytics-filters";
-import { type LabelCount, TOP_TOPICS, type TopicSentimentCount } from "./distributions";
+import { type LabelCount, type PhraseSentimentCounts, TOP_TOPICS, type TopicSentimentCount } from "./distributions";
 
 export type TaggedCounts = { rows: LabelCount[]; denominator: number };
 export type TopicCounts = { top: LabelCount[]; otherCount: number; denominator: number };
@@ -118,6 +118,47 @@ export class AnalyticsDistributionsRepository {
                     GROUP BY 1, 2`,
       ),
     );
+  }
+
+  /**
+   * §4 Phrase × sentiment (FR-148, BR-041) — DISTINCT posts per (phrase of the current analysis, effective
+   * sentiment). DISTINCT (post, phrase) and one sentiment per post ⇒ COUNT(*) per cell = DISTINCT posts (FR-147).
+   * Threshold `minMentions` on the row total, then top-N by total desc, phrase (C collation) asc. Scalars ride
+   * along as sentinel rows in the same snapshot.
+   */
+  async phraseSentimentCounts(
+    scope: AnalyticsScope,
+    opts: { limit: number; minMentions: number },
+  ): Promise<PhraseSentimentCounts> {
+    type Row = { kind: string; phrase: string | null; sentiment: string | null; count: number };
+    const rows = await this.prisma.$queryRaw<Row[]>(
+      withBase(
+        scope,
+        Prisma.sql`, tagged AS (
+              SELECT DISTINCT b.post_id, b.sentiment_label::text AS sentiment, ap.phrase
+                FROM base b JOIN analysis_phrases ap ON ap.analysis_id = b.analysis_id
+               WHERE b.sentiment_label IS NOT NULL),
+            counts AS (SELECT phrase, sentiment, COUNT(*)::int AS n FROM tagged GROUP BY 1, 2),
+            totals AS (SELECT phrase, SUM(n)::int AS total FROM counts GROUP BY 1 HAVING SUM(n) >= ${opts.minMentions}),
+            top AS (SELECT phrase FROM totals ORDER BY total DESC, phrase COLLATE "C" ASC LIMIT ${opts.limit})
+          SELECT 'cell' AS kind, c.phrase, c.sentiment, c.n AS count FROM counts c JOIN top t ON t.phrase = c.phrase
+          UNION ALL SELECT 'sentimentAnalyzed', NULL, NULL,
+                           (SELECT COUNT(DISTINCT post_id)::int FROM base WHERE sentiment_label IS NOT NULL)
+          UNION ALL SELECT 'phraseAnalyzed', NULL, NULL, (SELECT COUNT(DISTINCT post_id)::int FROM tagged)
+          UNION ALL SELECT 'totalPhrases', NULL, NULL, (SELECT COUNT(*)::int FROM totals)`,
+      ),
+    );
+    const scalar = (k: string) => rows.find((r) => r.kind === k)?.count ?? 0;
+    return {
+      cells: rows.flatMap((r) =>
+        r.kind === "cell" && r.phrase !== null && r.sentiment !== null
+          ? [{ phrase: r.phrase, sentiment: r.sentiment, count: r.count }]
+          : [],
+      ),
+      sentimentAnalyzed: scalar("sentimentAnalyzed"),
+      phraseAnalyzed: scalar("phraseAnalyzed"),
+      totalPhrases: scalar("totalPhrases"),
+    };
   }
 }
 

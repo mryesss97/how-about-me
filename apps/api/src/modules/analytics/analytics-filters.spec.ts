@@ -96,6 +96,21 @@ describe("buildBaseSetCte", () => {
     );
   });
 
+  // FR-148, BR-041: phrase filter on the current analysis, normalised server-side, bound values.
+  it("phrase filter → EXISTS on analysis_phrases of the current analysis, normalised, ignorable", () => {
+    const scope = scopeOf({ phrase: "Giá Vé,check-in" });
+    expect(scope.filters.phrase).toEqual(["giá vé", "check-in"]);
+    const s = buildBaseSetCte(scope);
+    const sql = norm(s);
+    expect(sql).toContain(
+      "AND EXISTS (SELECT 1 FROM analysis_phrases ap WHERE ap.analysis_id = e.analysis_id AND ap.phrase = ANY(?::text[]))",
+    );
+    expect(sql).not.toContain("giá vé");
+    expect(s.values).toContainEqual(["giá vé", "check-in"]);
+    expect(norm(buildBaseSetCte(scope, { ignore: ["phrase"] }))).not.toContain("analysis_phrases");
+    expect(norm(buildBaseSetCte(scopeOf({})))).not.toContain("analysis_phrases");
+  });
+
   it("ignore drops the relevance filter (coverage)", () => {
     expect(norm(buildBaseSetCte(scopeOf({}), { ignore: ["relevance"] }))).not.toContain("relevance_label = ANY");
   });

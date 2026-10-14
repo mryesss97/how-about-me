@@ -1,5 +1,13 @@
 import { z } from "zod";
-import { normalizeMultiLabel, INTENT_LABELS, TOPIC_LABELS } from "@how-about-me/taxonomy";
+import {
+  normalizeMultiLabel,
+  normalizePhrases,
+  INTENT_LABELS,
+  MAX_PHRASES_PER_POST,
+  PHRASE_MAX_LENGTH,
+  PHRASE_PROMPT_VERSIONS,
+  TOPIC_LABELS,
+} from "@how-about-me/taxonomy";
 import {
   IntentLabelSchema,
   LanguageCodeSchema,
@@ -29,7 +37,25 @@ export const ClassifierOutputSchema = z
     summary: z.string().max(240),
   })
   .strict();
-export type ClassifierOutput = z.infer<typeof ClassifierOutputSchema>;
+/** Frozen v1 shape (classifier-v1 / fake-v1); never gains keys — its JSON schema is sent as is to the provider. */
+export const ClassifierOutputV1Schema = ClassifierOutputSchema;
+export type ClassifierOutputV1 = z.infer<typeof ClassifierOutputV1Schema>;
+
+/** v2 (classifier-v2 / fake-v2): v1 + 0–5 key phrases (FR-120, BR-041). Empty array is valid. */
+export const ClassifierOutputV2Schema = ClassifierOutputSchema.extend({
+  keyPhrases: z.array(z.string().max(PHRASE_MAX_LENGTH)).max(MAX_PHRASES_PER_POST),
+}).strict();
+export type ClassifierOutputV2 = z.infer<typeof ClassifierOutputV2Schema>;
+
+/** Pipeline-wide output type; `keyPhrases` is undefined when the prompt version does not extract phrases. */
+export type ClassifierOutput = ClassifierOutputV1 & { keyPhrases?: string[] };
+
+export type ClassifierSchemaVersion = "v1" | "v2";
+
+/** Maps a prompt version to its output schema version (BR-023): phrase prompts → v2, everything else → v1. */
+export function classifierSchemaVersionOf(promptVersion: string): ClassifierSchemaVersion {
+  return (PHRASE_PROMPT_VERSIONS as readonly string[]).includes(promptVersion) ? "v2" : "v1";
+}
 
 /** Clamp to [0,1]; non-finite (NaN/Infinity) becomes 0. Defensive only — schema already enforces range. */
 function clampConfidence(c: number): number {
@@ -61,6 +87,8 @@ export function normalizeClassifierOutput(out: ClassifierOutput): ClassifierOutp
       explanation: out.relevance.explanation.trim(),
     },
     sentiment: { ...out.sentiment, confidence: clampConfidence(out.sentiment.confidence) },
+    // BR-041: only touched when present (v2); a v1 output never gains the key.
+    ...(out.keyPhrases !== undefined ? { keyPhrases: normalizePhrases(out.keyPhrases) } : {}),
   };
 }
 
@@ -72,8 +100,8 @@ const MAX_ISSUES = 10;
  * Validate raw provider output (strict, unknown labels rejected — FR-119) then normalise.
  * On failure returns short `path: message` lines for the corrective retry prompt / run error_message (FR-113).
  */
-export function parseClassifierOutput(raw: unknown): ClassifierParseResult {
-  const r = ClassifierOutputSchema.safeParse(raw);
+export function parseClassifierOutput(raw: unknown, version: ClassifierSchemaVersion = "v1"): ClassifierParseResult {
+  const r = (version === "v2" ? ClassifierOutputV2Schema : ClassifierOutputV1Schema).safeParse(raw);
   if (!r.success) {
     const issues = r.error.issues
       .slice(0, MAX_ISSUES)
@@ -88,3 +116,6 @@ export function parseClassifierOutput(raw: unknown): ClassifierParseResult {
  * Includes a top-level `$schema` key; provider adapters (e.g. OpenAI strict mode) may strip it.
  */
 export const ClassifierOutputJsonSchema = z.toJSONSchema(ClassifierOutputSchema, { target: "draft-2020-12" });
+
+/** JSON Schema for the v2 output (`keyPhrases` added). The v1 schema above stays byte-identical. */
+export const ClassifierOutputJsonSchemaV2 = z.toJSONSchema(ClassifierOutputV2Schema, { target: "draft-2020-12" });

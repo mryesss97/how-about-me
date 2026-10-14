@@ -78,3 +78,16 @@ describe("bulk/retry bodies", () => {
     expect(RetryFailedBodySchema.safeParse({ limit: 501 }).success).toBe(false);
   });
 });
+
+// FR-148, BR-041: `phrase` filter is normalised server-side and shared by analytics + mentions.
+describe("phrase filter (FR-148, BR-041)", () => {
+  it("normalises CSV values and defaults to []", () => {
+    expect(AnalysisFiltersSchema.parse({}).phrase).toEqual([]);
+    expect(AnalyticsQuerySchema.parse({ phrase: "Giá Vé,check-in" }).phrase).toEqual(["giá vé", "check-in"]);
+    expect(MentionsListQuerySchema.parse({ phrase: "  App   Lỗi " }).phrase).toEqual(["app lỗi"]);
+  });
+  it("rejects too long or empty-after-normalise values", () => {
+    expect(AnalysisFiltersSchema.safeParse({ phrase: "a".repeat(61) }).success).toBe(false);
+    expect(AnalysisFiltersSchema.safeParse({ phrase: "🔥" }).success).toBe(false);
+  });
+});

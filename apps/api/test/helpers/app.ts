@@ -27,6 +27,6 @@ export async function createTestApp(
 /** Truncates business tables between tests (order respects FKs via CASCADE). */
 export async function resetDb(prisma: PrismaService) {
   await prisma.$executeRawUnsafe(
-    `TRUNCATE TABLE audit_logs, analysis_settings, analysis_overrides, analysis_topics, analysis_intents, post_analyses, analysis_runs, post_query_matches, social_posts, sync_jobs, collector_state, integration_secrets, integration_connections, listening_queries, project_members, user_profiles, monitoring_projects RESTART IDENTITY CASCADE`,
+    `TRUNCATE TABLE audit_logs, analysis_settings, analysis_overrides, analysis_phrases, analysis_topics, analysis_intents, post_analyses, analysis_runs, post_query_matches, social_posts, sync_jobs, collector_state, integration_secrets, integration_connections, listening_queries, project_members, user_profiles, monitoring_projects RESTART IDENTITY CASCADE`,
   );
 }

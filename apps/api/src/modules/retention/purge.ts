@@ -20,11 +20,12 @@ export type PostPurgeCounts = {
   overrides: number;
   intents: number;
   topics: number;
+  phrases: number;
   analyses: number;
   runs: number;
 };
 export type SyncJobPurgeCounts = { syncJobs: number };
-export type RunPurgeCounts = { runs: number; analyses: number; intents: number; topics: number };
+export type RunPurgeCounts = { runs: number; analyses: number; intents: number; topics: number; phrases: number };
 export type PurgeCounts = PostPurgeCounts | SyncJobPurgeCounts | RunPurgeCounts;
 
 export const DEFAULT_PURGE_BATCH_SIZE = 1000;
@@ -40,6 +41,7 @@ const emptyPostCounts = (): PostPurgeCounts => ({
   overrides: 0,
   intents: 0,
   topics: 0,
+  phrases: 0,
   analyses: 0,
   runs: 0,
 });
@@ -76,14 +78,17 @@ function eligibleRunsSql(s: RunScope, opts: { onlyIds?: string[]; limit?: number
 }
 
 async function countRuns(prisma: PrismaClient, s: RunScope): Promise<RunPurgeCounts> {
-  const rows = await prisma.$queryRaw<{ runs: bigint; analyses: bigint; intents: bigint; topics: bigint }[]>(
+  const rows = await prisma.$queryRaw<
+    { runs: bigint; analyses: bigint; intents: bigint; topics: bigint; phrases: bigint }[]
+  >(
     Prisma.sql`
       WITH e AS (${eligibleRunsSql(s)}),
            an AS (SELECT a.id FROM post_analyses a JOIN e ON e.id = a.analysis_run_id)
       SELECT (SELECT count(*) FROM e) AS runs,
              (SELECT count(*) FROM an) AS analyses,
              (SELECT count(*) FROM analysis_intents i JOIN an ON an.id = i.analysis_id) AS intents,
-             (SELECT count(*) FROM analysis_topics t JOIN an ON an.id = t.analysis_id) AS topics`,
+             (SELECT count(*) FROM analysis_topics t JOIN an ON an.id = t.analysis_id) AS topics,
+             (SELECT count(*) FROM analysis_phrases ph JOIN an ON an.id = ph.analysis_id) AS phrases`,
   );
   const r = rows[0];
   return {
@@ -91,6 +96,7 @@ async function countRuns(prisma: PrismaClient, s: RunScope): Promise<RunPurgeCou
     analyses: Number(r?.analyses ?? 0),
     intents: Number(r?.intents ?? 0),
     topics: Number(r?.topics ?? 0),
+    phrases: Number(r?.phrases ?? 0),
   };
 }
 
@@ -113,16 +119,17 @@ export async function countPurge(prisma: PrismaClient, s: PurgeScope): Promise<P
   if (s.scope === "sync-jobs") return { syncJobs: await prisma.syncJob.count({ where: syncJobWhere(s) }) };
   if (s.scope === "runs") return countRuns(prisma, s);
   const post = postWhere(s);
-  const [posts, matches, overrides, intents, topics, analyses, runs] = await Promise.all([
+  const [posts, matches, overrides, intents, topics, phrases, analyses, runs] = await Promise.all([
     prisma.socialPost.count({ where: post }),
     prisma.postQueryMatch.count({ where: { post } }),
     prisma.analysisOverride.count({ where: { post } }),
     prisma.analysisIntent.count({ where: { analysis: { post } } }),
     prisma.analysisTopic.count({ where: { analysis: { post } } }),
+    prisma.analysisPhrase.count({ where: { analysis: { post } } }),
     prisma.postAnalysis.count({ where: { post } }),
     prisma.analysisRun.count({ where: { post } }),
   ]);
-  return { posts, matches, overrides, intents, topics, analyses, runs };
+  return { posts, matches, overrides, intents, topics, phrases, analyses, runs };
 }
 
 export type ApplyPurgeOptions = {
@@ -182,18 +189,19 @@ export async function applyPurge(
   }
 
   if (s.scope === "runs") {
-    const total: RunPurgeCounts = { runs: 0, analyses: 0, intents: 0, topics: 0 };
+    const total: RunPurgeCounts = { runs: 0, analyses: 0, intents: 0, topics: 0, phrases: 0 };
     for (;;) {
       const ids = (await prisma.$queryRaw<{ id: string }[]>(eligibleRunsSql(s, { limit: batchSize }))).map((r) => r.id);
       if (ids.length === 0) break;
       const c = await prisma.$transaction(async (tx) => {
         // Re-check eligibility inside the transaction (a run may have become current meanwhile).
         const ok = (await tx.$queryRaw<{ id: string }[]>(eligibleRunsSql(s, { onlyIds: ids }))).map((r) => r.id);
-        const b: RunPurgeCounts = { runs: 0, analyses: 0, intents: 0, topics: 0 };
+        const b: RunPurgeCounts = { runs: 0, analyses: 0, intents: 0, topics: 0, phrases: 0 };
         if (ok.length === 0) return b;
         const inRuns = { analysisRunId: { in: ok } };
         b.intents = (await tx.analysisIntent.deleteMany({ where: { analysis: inRuns } })).count;
         b.topics = (await tx.analysisTopic.deleteMany({ where: { analysis: inRuns } })).count;
+        b.phrases = (await tx.analysisPhrase.deleteMany({ where: { analysis: inRuns } })).count;
         b.analyses = (await tx.postAnalysis.deleteMany({ where: inRuns })).count;
         b.runs = (await tx.analysisRun.deleteMany({ where: { id: { in: ok } } })).count;
         if (b.runs === 0) return b;
@@ -236,6 +244,7 @@ export async function applyPurge(
       c.overrides = (await tx.analysisOverride.deleteMany({ where: inIds })).count;
       c.intents = (await tx.analysisIntent.deleteMany({ where: { analysis: inIds } })).count;
       c.topics = (await tx.analysisTopic.deleteMany({ where: { analysis: inIds } })).count;
+      c.phrases = (await tx.analysisPhrase.deleteMany({ where: { analysis: inIds } })).count;
       c.analyses = (await tx.postAnalysis.deleteMany({ where: inIds })).count;
       c.runs = (await tx.analysisRun.deleteMany({ where: inIds })).count;
       c.posts = (await tx.socialPost.deleteMany({ where: { id: { in: ids } } })).count;

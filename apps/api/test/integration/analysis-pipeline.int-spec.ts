@@ -142,6 +142,35 @@ describe("Analysis pipeline (T-074)", () => {
     expect(latest.analysisRunId).toBe((await runs())[1]?.id);
   });
 
+  // FR-120, BR-041, BR-026: fake-v2 key phrases persisted with the analysis; re-analysis appends new rows.
+  it("TC-ANA-030 / FR-120: key phrases stored per analysis; edit appends, old phrases kept; irrelevant none", async () => {
+    await ingest.ingestPage(q, [post("p", "1zone giá vé chát quá, check-in xếp hàng mãi")]);
+    await w.tick();
+    const [r] = await runs();
+    expect(r?.promptVersion).toBe("fake-v2");
+    const first = (await onlyPost()).currentAnalysisId ?? "";
+    const rows = await prisma.analysisPhrase.findMany({ where: { analysisId: first }, orderBy: { position: "asc" } });
+    expect(rows.map((x) => [x.phrase, x.position])).toEqual([
+      ["giá vé", 0],
+      ["check-in", 1],
+      ["xếp hàng", 2],
+    ]);
+    await ingest.ingestPage(q, [post("p", "1zone hoàn tiền chậm quá, nhân viên không trả lời")]);
+    await w.tick();
+    const second = (await onlyPost()).currentAnalysisId ?? "";
+    expect(second).not.toBe(first);
+    expect((await prisma.analysisPhrase.findMany({ where: { analysisId: second } })).map((x) => x.phrase)).toEqual([
+      "hoàn tiền",
+      "nhân viên",
+    ]);
+    expect(await prisma.analysisPhrase.count({ where: { analysisId: first } })).toBe(3);
+
+    await ingest.ingestPage(q, [post("z", "1zone: đổi time zone check-in trên điện thoại sao vậy")]);
+    await w.tick();
+    const irr = await prisma.postAnalysis.findFirstOrThrow({ where: { relevanceLabel: "irrelevant" } });
+    expect(await prisma.analysisPhrase.count({ where: { analysisId: irr.id } })).toBe(0);
+  });
+
   it("TC-ANA-026 / BR-027: no raw response or reasoning stored; explanation ≤ 200", async () => {
     await ingest.ingestPage(q, [post("f", "1zone concert hay quá")]);
     await w.tick();

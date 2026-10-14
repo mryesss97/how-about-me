@@ -1,5 +1,11 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { ClassifierOutputSchema, parseClassifierOutput, type ClassifierOutput } from "@how-about-me/contracts";
+import {
+  ClassifierOutputSchema,
+  classifierSchemaVersionOf,
+  parseClassifierOutput,
+  type ClassifierOutput,
+  type ClassifierSchemaVersion,
+} from "@how-about-me/contracts";
 import type { AnalysisPolicy } from "@how-about-me/taxonomy";
 import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 import { v7 as uuidv7 } from "uuid";
@@ -45,10 +51,13 @@ function zodIssues(issues: readonly { path: readonly PropertyKey[]; message: str
   return issues.slice(0, 10).map((i) => `${i.path.map(String).join(".") || "(root)"}: ${i.message}`);
 }
 
-function validateClassify(out: ClassifierOutput & { usage: Usage }): string[] | null {
-  const { usage: _usage, ...rest } = out;
-  const r = parseClassifierOutput(rest);
-  return r.ok ? null : r.issues;
+/** Validates against the schema of the classifier's prompt version (v2 requires `keyPhrases`, FR-120). */
+function validateClassifyFor(version: ClassifierSchemaVersion) {
+  return (out: ClassifierOutput & { usage: Usage }): string[] | null => {
+    const { usage: _usage, ...rest } = out;
+    const r = parseClassifierOutput(rest, version);
+    return r.ok ? null : r.issues;
+  };
 }
 
 function validateRelevance(out: { relevance: ClassifierOutput["relevance"] }): string[] | null {
@@ -92,6 +101,10 @@ export class AnalysisPipelineService implements RunProcessor {
     @InjectPinoLogger(AnalysisPipelineService.name) private readonly logger: PinoLogger,
     private readonly policies: AnalysisPolicyService,
   ) {}
+
+  private get validateClassify() {
+    return validateClassifyFor(classifierSchemaVersionOf(this.classifier.promptVersion));
+  }
 
   async process(run: ClaimedRun): Promise<void> {
     const post = await this.prisma.socialPost.findUnique({
@@ -144,7 +157,7 @@ export class AnalysisPipelineService implements RunProcessor {
       const safety = await this.safety.moderate({ text: input.text }, ctx);
       const { usage: _cu, ...output } = await this.withCorrection(
         (i) => this.classifier.classify(i, ctx),
-        validateClassify,
+        this.validateClassify,
         { ...input, languageHint: rel.language },
         ctx,
         usage,
@@ -154,7 +167,7 @@ export class AnalysisPipelineService implements RunProcessor {
     // Single-step: classify first, gate on its relevance, then moderate (sequential, saves moderation calls).
     const { usage: _cu, ...output } = await this.withCorrection(
       (i) => this.classifier.classify(i, ctx),
-      validateClassify,
+      this.validateClassify,
       input,
       ctx,
       usage,
@@ -247,6 +260,12 @@ export class AnalysisPipelineService implements RunProcessor {
         await tx.analysisTopic.createMany({
           data: o.topics.map((t) => ({ analysisId, label: t.label, confidence: conf(t.confidence) })),
         });
+        // FR-120 / BR-041: normalised key phrases, append-only with this analysis (BR-026). Irrelevant → none.
+        if (o.keyPhrases && o.keyPhrases.length > 0) {
+          await tx.analysisPhrase.createMany({
+            data: o.keyPhrases.map((phrase, position) => ({ analysisId, phrase, position })),
+          });
+        }
       }
       const ok = await this.analysis.markCompleted(run.id, run.lockedBy, sumUsage(outcome.usage), tx, {
         // BR-023: the 7 fields match the run's effective_version.

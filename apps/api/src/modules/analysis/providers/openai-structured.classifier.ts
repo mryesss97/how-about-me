@@ -1,9 +1,12 @@
 import { z } from "zod";
 import {
   ClassifierOutputJsonSchema,
+  ClassifierOutputJsonSchemaV2,
   ClassifierOutputSchema,
+  classifierSchemaVersionOf,
   parseClassifierOutput,
   type ClassifierOutput,
+  type ClassifierSchemaVersion,
 } from "@how-about-me/contracts";
 import {
   CONFIDENCE_BANDS,
@@ -23,7 +26,8 @@ import { postOpenAiJson, type FetchFn } from "./openai-http";
  * Real classifier over OpenAI `/chat/completions` with strict JSON-schema structured outputs, temperature 0
  * (T-072; FR-106..110, FR-112, FR-117) — docs/02-architecture/07-analysis-pipeline.md §3–§5.
  *
- * - Prompt text is read from the versioned `prompts/classifier-v1.md`; `promptVersion` is persisted (BR-023).
+ * - Prompt text is read from the versioned `prompts/<promptVersion>.md`; `promptVersion` is persisted (BR-023).
+ *   The output schema follows the prompt: classifier-v1 → v1 (frozen), classifier-v2 → v2 with `keyPhrases` (FR-120).
  * - Sentiment only; safety is a separate provider and is never inferred here (BR-017).
  * - Low-confidence relevance (< 0.60) is stored as `uncertain` via `effectiveRelevance` (BR-021, doc 08 §8).
  * - Invalid output → `ANALYSIS_SCHEMA_INVALID` with Zod path/message only, never post text. The corrective
@@ -93,7 +97,11 @@ export function toOpenAiStrictSchema(schema: unknown): unknown {
   return out;
 }
 
-const FULL_SCHEMA = toOpenAiStrictSchema(ClassifierOutputJsonSchema);
+/** Built once per version; v1 stays byte-identical to the pre-#223 request (BR-023 golden test). */
+const FULL_SCHEMAS: Record<ClassifierSchemaVersion, unknown> = {
+  v1: toOpenAiStrictSchema(ClassifierOutputJsonSchema),
+  v2: toOpenAiStrictSchema(ClassifierOutputJsonSchemaV2),
+};
 const RELEVANCE_SCHEMA = toOpenAiStrictSchema(z.toJSONSchema(RelevanceOutputSchema, { target: "draft-2020-12" }));
 
 /**
@@ -115,12 +123,14 @@ export class OpenAiStructuredClassifier implements ContentClassifier {
   readonly model: string;
   readonly promptVersion: string;
   private readonly prompt: ClassifierPrompt;
+  private readonly schemaVersion: ClassifierSchemaVersion;
 
   constructor(private readonly opts: OpenAiClassifierOptions) {
     this.model = opts.model;
     this.promptVersion = opts.promptVersion ?? DEFAULT_PROMPT_VERSION;
     // Fail fast at boot if the prompt file is missing or its few-shot outputs are invalid.
     this.prompt = loadPrompt(this.promptVersion);
+    this.schemaVersion = classifierSchemaVersionOf(this.promptVersion);
   }
 
   /** Cheap relevance gate for `ANALYSIS_TWO_STEP` (doc 07 §2): only `{ relevance, language }`. */
@@ -141,9 +151,14 @@ export class OpenAiStructuredClassifier implements ContentClassifier {
   }
 
   async classify(input: ClassifierInput, _ctx: AnalysisContext): Promise<ClassifierOutput & { usage: Usage }> {
-    if (input.text.trim() === "") return { ...EMPTY_OUTPUT, usage: ZERO_USAGE };
-    const { content, usage } = await this.complete(input, "classifier_output_v1", FULL_SCHEMA);
-    const parsed = parseClassifierOutput(content);
+    if (input.text.trim() === "")
+      return { ...EMPTY_OUTPUT, ...(this.schemaVersion === "v2" ? { keyPhrases: [] } : {}), usage: ZERO_USAGE };
+    const { content, usage } = await this.complete(
+      input,
+      `classifier_output_${this.schemaVersion}`,
+      FULL_SCHEMAS[this.schemaVersion],
+    );
+    const parsed = parseClassifierOutput(content, this.schemaVersion);
     if (!parsed.ok)
       throw new ProviderError("ANALYSIS_SCHEMA_INVALID", `Classifier output invalid: ${parsed.issues.join("; ")}`, {
         details: { issues: parsed.issues },
@@ -153,7 +168,9 @@ export class OpenAiStructuredClassifier implements ContentClassifier {
     const dropSummary =
       out.relevance.label === "irrelevant" ||
       (this.opts.skipSummaryForSpam && out.intents.some((i) => i.label === "spam"));
-    return { ...out, summary: dropSummary ? "" : out.summary, usage };
+    // FR-120: an irrelevant post has no key phrases (v2 only; v1 output never gains the key).
+    const noPhrases = out.relevance.label === "irrelevant" && out.keyPhrases !== undefined;
+    return { ...out, summary: dropSummary ? "" : out.summary, ...(noPhrases ? { keyPhrases: [] } : {}), usage };
   }
 
   private async complete(input: ClassifierInput, name: string, schema: unknown) {

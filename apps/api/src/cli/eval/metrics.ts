@@ -139,6 +139,42 @@ export function safetyMetrics(
   };
 }
 
+export type PhraseMetrics = {
+  /** Items predicted relevant/uncertain with phrase extraction on (denominator of coverage). */
+  n: number;
+  /** Share of those items with ≥ 1 phrase. */
+  coverage: number | null;
+  avgPhrasesPerPost: number | null;
+  /** Items with gold phrases (P/R/F1 denominator). */
+  goldN: number;
+  microPrecision: number | null;
+  microRecall: number | null;
+  microF1: number | null;
+};
+
+/**
+ * Key phrase metrics (FR-120, BR-041) — informational only, never part of the freeze gate.
+ * Exact match on already-normalised strings; micro P/R/F1 reuses `multiLabelMetrics`.
+ */
+export function phraseMetrics(
+  items: readonly { relevant: boolean; gold?: readonly string[]; pred: readonly string[] }[],
+): PhraseMetrics {
+  const scoped = items.filter((x) => x.relevant);
+  const withPhrase = scoped.filter((x) => x.pred.length > 0).length;
+  const total = scoped.reduce((a, x) => a + x.pred.length, 0);
+  const gold = items.flatMap((x) => (x.gold ? [{ gold: x.gold, pred: x.pred }] : []));
+  const m = multiLabelMetrics(gold, []);
+  return {
+    n: scoped.length,
+    coverage: ratio(withPhrase, scoped.length),
+    avgPhrasesPerPost: ratio(total, scoped.length),
+    goldN: gold.length,
+    microPrecision: m.microPrecision,
+    microRecall: m.microRecall,
+    microF1: m.microF1,
+  };
+}
+
 /** Nearest-rank percentile; null on empty input. */
 export function percentile(values: readonly number[], p: number): number | null {
   if (values.length === 0) return null;

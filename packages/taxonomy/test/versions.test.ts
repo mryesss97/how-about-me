@@ -6,7 +6,7 @@ describe("versions (BR-023)", () => {
   it("exports v1 version strings from index", () => {
     expect(taxonomy.TAXONOMY_VERSION).toBe("taxonomy-v1");
     expect(taxonomy.SAFETY_POLICY_VERSION).toBe("safety-policy-v1");
-    expect(taxonomy.DEFAULT_PROMPT_VERSION).toBe("classifier-v1");
+    expect(taxonomy.DEFAULT_PROMPT_VERSION).toBe("classifier-v2");
     expect(taxonomy.METRICS_VERSION).toBe("metrics-v1");
   });
 });
