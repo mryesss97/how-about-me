@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Toaster } from "sonner";
+import { figureFont, signFont } from "@/lib/fonts/sign";
 import { QueryProvider } from "@/lib/query/provider";
 import { RouteProvider } from "@/providers/router-provider";
 import "@/styles/globals.css";
@@ -22,8 +23,8 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body className={cx(inter.variable, "bg-primary antialiased")}>
+    <html lang="vi">
+      <body className={cx(inter.variable, signFont.variable, figureFont.variable, "bg-primary antialiased")}>
         <RouteProvider>
           <NuqsAdapter>
             <QueryProvider>{children}</QueryProvider>

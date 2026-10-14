@@ -9,11 +9,9 @@ import { useBreakpoint } from "@/hooks/use-breakpoint";
 import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
 import { useResizeObserver } from "@/hooks/use-resize-observer";
 import { env } from "@/lib/env";
-import { cx } from "@/utils/cx";
 import { landingCopy as copy } from "./copy";
 import { BlankBoard, SignBoard } from "./landing-board";
 import { boardRanks, fallbackRange, formatLandingStats, toLandingBoards } from "./landing-data";
-import { figureFont, signFont } from "./landing-fonts";
 import { MainSign } from "./landing-main-sign";
 import { type Rect, WALL_GAP, layoutSignWall, phoneWallHeight } from "./sign-wall-layout";
 
@@ -87,11 +85,7 @@ export function LandingView() {
   return (
     <main
       data-motion={reducedMotion ? "reduced" : "full"}
-      className={cx(
-        signFont.variable,
-        figureFont.variable,
-        "sign-wall relative min-h-dvh overflow-x-hidden sm:h-dvh sm:overflow-hidden",
-      )}
+      className="sign-wall relative min-h-dvh overflow-x-hidden sm:h-dvh sm:overflow-hidden"
     >
       {/* Same DOM at every width (SSR-safe); CSS moves the main sign into the wall from `sm` up. */}
       <div className="p-1.5 sm:p-0">

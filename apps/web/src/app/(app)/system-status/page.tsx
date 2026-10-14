@@ -1,10 +1,10 @@
 import { PagePlaceholder } from "@/features/shared/page-placeholder";
-export const metadata = { title: "System Status" };
+export const metadata = { title: "Trạng thái hệ thống" };
 export default function SystemStatusPage() {
   return (
     <PagePlaceholder
-      title="System Status"
-      description="Threads connection, collector, analyzer and database health; sync jobs, analysis failures and audit log tabs (UX §3.6)."
+      title="Trạng thái hệ thống"
+      description="Kết nối Threads, bộ thu thập, bộ phân tích và cơ sở dữ liệu; lịch sử đồng bộ, lỗi phân tích và nhật ký (UX §3.6)."
       tasks={["T-060 v1", "T-061 audit tab", "T-106 analyzer & failures"]}
     />
   );

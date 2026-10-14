@@ -16,16 +16,16 @@ import { cx } from "@/utils/cx";
 export const MobileNavigationHeader = ({ children }: PropsWithChildren) => {
     return (
         <AriaDialogTrigger>
-            <header className="flex h-14 items-center justify-between border-b border-secondary bg-primary p-3 pl-4 lg:hidden">
+            <header className="flex h-16 items-center justify-between bg-[var(--sky-enamel)] p-3 pl-3 lg:hidden">
                 {/* Brand guide v2: horizontal logo >= 180 px wide (#221). */}
                 {/* #262: logo links to the landing page. */}
-                <Link href="/" aria-label="How About Me home" className="self-start rounded-md outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2">
-                    <BrandLogo variant="horizontal" className="h-auto w-[180px]" />
+                <Link href="/" aria-label="How About Me — trang chủ" className="shell-logo-plate outline-white focus-visible:outline-2 focus-visible:outline-offset-2">
+                    <BrandLogo variant="horizontal" className="h-auto w-[150px]" />
                 </Link>
 
                 <AriaButton
-                    aria-label="Expand navigation menu"
-                    className="group flex items-center justify-center rounded-lg bg-primary p-2 text-fg-secondary outline-focus-ring hover:bg-primary_hover hover:text-fg-secondary_hover focus-visible:outline-2 focus-visible:outline-offset-2"
+                    aria-label="Mở menu điều hướng"
+                    className="group flex items-center justify-center rounded-[2px] p-2 text-white outline-white hover:bg-white/12 focus-visible:outline-2 focus-visible:outline-offset-2"
                 >
                     <Menu02 className="size-6 transition duration-200 ease-in-out group-aria-expanded:opacity-0" />
                     <CloseIcon className="absolute size-6 opacity-0 transition duration-200 ease-in-out group-aria-expanded:opacity-100" />
@@ -45,7 +45,7 @@ export const MobileNavigationHeader = ({ children }: PropsWithChildren) => {
                 {({ state }) => (
                     <>
                         <AriaButton
-                            aria-label="Close navigation menu"
+                            aria-label="Đóng menu điều hướng"
                             onPress={() => state.close()}
                             className="fixed top-2.5 right-3 flex cursor-pointer items-center justify-center rounded-lg p-2 text-fg-white/70 outline-focus-ring hover:bg-white/10 hover:text-fg-white focus-visible:outline-2 focus-visible:outline-offset-2"
                         >

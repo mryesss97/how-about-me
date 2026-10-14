@@ -25,7 +25,7 @@
    └─ /settings/analysis        Thresholds & versions (P1)
 ```
 
-Sidebar (Untitled UI `sidebar-simple`): logo links to `/` (landing, #262) · Overview · Mentions · Listening Queries · Reviews (P1) · System Status · Settings. Footer: account card (name, role badge, sign out). Project switcher appears only with ≥ 2 projects.
+Sidebar (Untitled UI `sidebar-simple`, signboard style #274 — sky enamel sign, white logo plate, condensed caps labels, current item as a white plate): logo links to `/` (landing, #262) · Tổng quan · Bài nhắc · Truy vấn theo dõi · Cần xem lại (P1) · Trạng thái hệ thống · Cài đặt. Footer: account card (e-mail, role plate Quản trị / Phân tích / Chỉ xem, Đăng xuất). Project switcher appears only with ≥ 2 projects. Every page opens with a page fascia (white enamel board, navy keyline, title in sign lettering). Copy moves to Vietnamese screen by screen (#274, #275, #277–#281).
 
 ### Brand (v2)
 
