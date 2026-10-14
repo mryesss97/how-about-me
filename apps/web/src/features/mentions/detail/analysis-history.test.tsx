@@ -22,14 +22,14 @@ describe("AnalysisHistory (TC-MEN-012)", () => {
         ]}
       />,
     );
-    expect(screen.getByText("Manual")).toBeInTheDocument();
+    expect(screen.getByText("Thủ công")).toBeInTheDocument();
     expect(screen.getByText("p3/t2/s1")).toBeInTheDocument();
-    expect(screen.getByText("$0.0012")).toBeInTheDocument();
+    expect(screen.getByText("$0,0012")).toBeInTheDocument();
     expect(screen.getByText("PROVIDER_TIMEOUT")).toBeInTheDocument();
   });
 
   it("shows an empty message", () => {
     render(<AnalysisHistory tz="UTC" runs={[]} />);
-    expect(screen.getByText("No analysis runs yet.")).toBeInTheDocument();
+    expect(screen.getByText("Chưa có lượt phân tích nào.")).toBeInTheDocument();
   });
 });

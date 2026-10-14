@@ -5,12 +5,12 @@ import { LinkExternal01 } from "@untitledui/icons";
 import { forwardRef, type KeyboardEvent } from "react";
 import { Badge } from "@/components/base/badges/badges";
 import { AnalysisStatusBadge, ConfidenceMarker, SafetyBadge, SentimentBadge } from "@/features/shared/semantic-badge";
+import { displayLabel, type LabelKind } from "@/lib/semantics/labels";
 import { formatDateTime, formatRelativeOrAbsolute, tzLabel } from "@/lib/time/format";
 import { cx } from "@/utils/cx";
 import { HighlightText } from "./highlight-text";
 
 const MAX_LABELS = 2;
-const humanize = (s: string) => s.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
 
 /** Only https links are rendered — defends against `javascript:` and other schemes (FR-157). */
 export function safePermalink(url: string | null): string | null {
@@ -22,14 +22,14 @@ export function safePermalink(url: string | null): string | null {
   }
 }
 
-function LabelList({ labels }: { labels: string[] }) {
+function LabelList({ labels, kind }: { labels: string[]; kind: LabelKind }) {
   if (labels.length === 0) return null;
   const rest = labels.length - MAX_LABELS;
   return (
     <>
       {labels.slice(0, MAX_LABELS).map((l) => (
         <Badge key={l} type="modern" color="gray" size="sm">
-          {humanize(l)}
+          {displayLabel(kind, l)}
         </Badge>
       ))}
       {rest > 0 ? (
@@ -63,7 +63,7 @@ export const MentionRow = forwardRef<HTMLElement, Props>(function MentionRow(
       ref={ref}
       tabIndex={0}
       data-testid="mention-row"
-      aria-label={`Mention by ${item.username ?? "unknown"}`}
+      aria-label={`Bài nhắc của ${item.username ? `@${item.username}` : "người dùng không rõ"}`}
       onClick={() => onOpen(item.id)}
       onKeyDown={(e) => {
         if (e.key === "Enter" && e.target === e.currentTarget) onOpen(item.id);
@@ -92,7 +92,7 @@ export const MentionRow = forwardRef<HTMLElement, Props>(function MentionRow(
               href={link}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Open on Threads"
+              aria-label="Mở trên Threads"
               onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => e.stopPropagation()}
               className="ml-auto text-tertiary hover:text-primary"
@@ -102,18 +102,18 @@ export const MentionRow = forwardRef<HTMLElement, Props>(function MentionRow(
           ) : null}
         </div>
         <p className={cx("line-clamp-2 text-sm", item.text ? "text-primary" : "text-quaternary")}>
-          {item.text ? <HighlightText text={item.text} query={query} /> : "No text"}
+          {item.text ? <HighlightText text={item.text} query={query} /> : "Không có nội dung"}
         </p>
         {a.summary ? <p className="line-clamp-1 text-xs text-tertiary">{a.summary}</p> : null}
       </div>
       <div className="flex flex-wrap content-start items-start gap-1.5 md:w-72 md:justify-end">
         {a.sentiment ? <SentimentBadge value={a.sentiment.label} /> : null}
         {a.safety ? <SafetyBadge value={a.safety.level} /> : null}
-        <LabelList labels={a.intents.map((i) => i.label)} />
-        <LabelList labels={a.topics.map((t) => t.label)} />
+        <LabelList kind="intent" labels={a.intents.map((i) => i.label)} />
+        <LabelList kind="topic" labels={a.topics.map((t) => t.label)} />
         {a.language ? (
           <Badge type="modern" color="gray" size="sm">
-            {a.language.toUpperCase()}
+            {displayLabel("language", a.language)}
           </Badge>
         ) : null}
         {a.confidenceBand ? <ConfidenceMarker band={a.confidenceBand} /> : null}

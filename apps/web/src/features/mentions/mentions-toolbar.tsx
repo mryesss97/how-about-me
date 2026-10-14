@@ -9,11 +9,11 @@ import { formatCount } from "@/lib/format/number";
 export const SEARCH_DEBOUNCE_MS = 400;
 
 export const SORT_OPTIONS: { value: MentionSort; label: string }[] = [
-  { value: "newest", label: "Newest" },
-  { value: "oldest", label: "Oldest" },
-  { value: "safety_desc", label: "Highest safety severity" },
-  { value: "confidence_asc", label: "Lowest confidence" },
-  { value: "relevance_desc", label: "Highest relevance" },
+  { value: "newest", label: "Mới nhất" },
+  { value: "oldest", label: "Cũ nhất" },
+  { value: "safety_desc", label: "Mức an toàn nghiêm trọng nhất" },
+  { value: "confidence_asc", label: "Độ tin cậy thấp nhất" },
+  { value: "relevance_desc", label: "Liên quan nhất" },
 ];
 
 const isSort = (v: string): v is MentionSort => SORT_OPTIONS.some((o) => o.value === v);
@@ -41,14 +41,16 @@ export function MentionsCount({
   showCount = true,
 }: Pick<Props, "total" | "loaded" | "hasMore" | "showCount">) {
   if (!showCount) return <span aria-hidden />;
-  if (total === undefined) return <span className="h-5 w-28 animate-pulse rounded-md bg-secondary" aria-hidden />;
+  if (total === undefined) return <span className="h-7 w-32 animate-pulse rounded-md bg-secondary" aria-hidden />;
   return (
-    <p className="text-sm font-medium text-secondary" data-testid="mentions-count">
-      {total !== null
-        ? `${formatCount(total)} mentions`
-        : hasMore
-          ? `${formatCount(loaded)}+ mentions loaded`
-          : `${formatCount(loaded)} mentions`}
+    // Text is "1.234 bài nhắc" / "Đã tải 3+ bài nhắc"; explicit spaces keep it readable for screen readers.
+    <p className="flex items-baseline gap-x-0.5 text-[var(--ink)]" data-testid="mentions-count">
+      {total === null && hasMore ? <span className="kpi-label">Đã tải </span> : null}
+      <span className="kpi-figure kpi-figure--sm">
+        {formatCount(total ?? loaded)}
+        {total === null && hasMore ? "+" : ""}
+      </span>
+      <span className="kpi-label"> bài nhắc</span>
     </p>
   );
 }
@@ -76,17 +78,17 @@ export function MentionsToolbar({ q, sort, onSearch, onSort, total, loaded, hasM
   }, [text, onSearch]);
 
   return (
-    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <div className="flex flex-col gap-3 border-b-2 border-[var(--ink)] bg-[var(--enamel-white)] py-3 md:flex-row md:items-center md:justify-between">
       <MentionsCount total={total} loaded={loaded} hasMore={hasMore} showCount={showCount} />
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         <label className="relative flex items-center">
-          <span className="sr-only">Search mentions</span>
+          <span className="sr-only">Tìm bài nhắc</span>
           <SearchLg className="pointer-events-none absolute left-3 size-4 text-fg-quaternary" aria-hidden />
           <input
             type="search"
             value={text}
             maxLength={200}
-            placeholder="Search text…"
+            placeholder="Tìm trong nội dung…"
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Escape") setText("");
@@ -95,9 +97,9 @@ export function MentionsToolbar({ q, sort, onSearch, onSort, total, loaded, hasM
           />
         </label>
         <NativeSelect
-          aria-label="Sort mentions"
+          aria-label="Sắp xếp bài nhắc"
           size="sm"
-          className="sm:w-56"
+          className="sm:w-64"
           value={sort}
           options={SORT_OPTIONS}
           onChange={(e) => {

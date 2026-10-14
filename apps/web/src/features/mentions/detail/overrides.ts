@@ -1,13 +1,22 @@
 import type { Override, OverrideField, UserRef } from "@how-about-me/contracts";
 import { formatDateTime } from "@/lib/time/format";
-import { humanize } from "./format";
+import { displayLabel, type LabelKind } from "@/lib/semantics/labels";
 
 export const FIELD_LABELS: Record<OverrideField, string> = {
-  relevance: "Relevance",
-  sentiment: "Sentiment",
-  safety_level: "Safety level",
-  intents: "Intents",
-  topics: "Topics",
+  relevance: "Mức liên quan",
+  sentiment: "Cảm xúc",
+  safety_level: "Mức an toàn",
+  intents: "Ý định",
+  topics: "Chủ đề",
+};
+
+/** Label table for each overridable field — enum values stay English, only the text is Vietnamese (#277). */
+export const FIELD_KIND: Record<OverrideField, LabelKind> = {
+  relevance: "relevance",
+  sentiment: "sentiment",
+  safety_level: "safety",
+  intents: "intent",
+  topics: "topic",
 };
 
 /**
@@ -37,16 +46,16 @@ export function asLabels(v: unknown): string[] {
 }
 
 /** Human text for an override value, single or multi. `null` / empty → "—". */
-export function formatValue(v: unknown): string {
+export function formatValue(v: unknown, field: OverrideField): string {
   const labels = asLabels(v);
-  return labels.length ? labels.map(humanize).join(", ") : "—";
+  return labels.length ? labels.map((l) => displayLabel(FIELD_KIND[field], l)).join(", ") : "—";
 }
 
-export const userName = (u: UserRef | null | undefined) => u?.displayName ?? u?.email ?? "Unknown user";
+export const userName = (u: UserRef | null | undefined) => u?.displayName ?? u?.email ?? "Người dùng không rõ";
 
-/** Tooltip text on the Analyst badge (FR-194). */
+/** Tooltip text on the "Chuyên viên" (analyst) badge (FR-194). */
 export function overrideTooltip(o: Override, tz: string): string {
-  const parts = [`Overridden by ${userName(o.reviewedBy)}`, formatDateTime(o.createdAt, tz)];
-  if (o.reason) parts.push(`Reason: ${o.reason}`);
+  const parts = [`Ghi đè bởi ${userName(o.reviewedBy)}`, formatDateTime(o.createdAt, tz)];
+  if (o.reason) parts.push(`Lý do: ${o.reason}`);
   return parts.join(" · ");
 }

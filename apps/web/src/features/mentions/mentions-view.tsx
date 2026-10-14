@@ -34,7 +34,7 @@ const toStateError = (err: unknown) =>
   err
     ? err instanceof ApiError
       ? { code: err.code, message: err.message, requestId: err.requestId }
-      : { message: "Unexpected response from the server." }
+      : { message: "Phản hồi không hợp lệ từ máy chủ." }
     : null;
 
 /** /mentions body (T-103): banners → toolbar → list. Filter bar is rendered by the page. */

@@ -75,7 +75,7 @@ describe("MentionsView (UX §3.3)", () => {
     apiFetch.mockResolvedValueOnce(page(1, null, 1));
     setup();
     await waitFor(() => expect(screen.getAllByTestId("mention-row")).toHaveLength(1));
-    expect(screen.queryByRole("button", { name: /re-analyze/i }) !== null).toBe(visible);
+    expect(screen.queryByRole("button", { name: /phân tích lại/i }) !== null).toBe(visible);
   });
 
   it.each([
@@ -87,7 +87,7 @@ describe("MentionsView (UX §3.3)", () => {
     apiFetch.mockResolvedValueOnce(page(1, null, 1));
     setup();
     await waitFor(() => expect(screen.getAllByTestId("mention-row")).toHaveLength(1));
-    expect(screen.queryByRole("button", { name: /export csv/i }) !== null).toBe(visible);
+    expect(screen.queryByRole("button", { name: /xuất csv/i }) !== null).toBe(visible);
   });
 
   it("TC-MEN-001 / BR-016: first page has 25 rows, count=true, relevance=relevant, sort=newest, total shown", async () => {
@@ -98,19 +98,19 @@ describe("MentionsView (UX §3.3)", () => {
     expect(path).toBe(`/projects/${PID}/mentions`);
     expect(params).toMatchObject({ limit: "25", count: "true", relevance: "relevant", sort: "newest" });
     expect(params.cursor).toBeUndefined();
-    expect(screen.getByTestId("mentions-count")).toHaveTextContent("1.234 mentions");
+    expect(screen.getByTestId("mentions-count")).toHaveTextContent("1.234 bài nhắc");
   });
 
   it("T-095: totalCount omitted → header shows loaded rows as a lower bound, no endless skeleton", async () => {
     apiFetch.mockResolvedValueOnce(page(3, "c1"));
     setup();
-    await waitFor(() => expect(screen.getByTestId("mentions-count")).toHaveTextContent("3+ mentions loaded"));
+    await waitFor(() => expect(screen.getByTestId("mentions-count")).toHaveTextContent("Đã tải 3+ bài nhắc"));
   });
 
   it("T-095: totalCount omitted on the last page → the loaded count is exact", async () => {
     apiFetch.mockResolvedValueOnce(page(3, null));
     setup();
-    await waitFor(() => expect(screen.getByTestId("mentions-count")).toHaveTextContent(/^3 mentions$/));
+    await waitFor(() => expect(screen.getByTestId("mentions-count")).toHaveTextContent(/^3 bài nhắc$/));
   });
 
   it("relative preset: a new minute does not reset loaded pages; Load more keeps the pinned window", async () => {
@@ -120,7 +120,7 @@ describe("MentionsView (UX §3.3)", () => {
       setup();
       await waitFor(() => expect(screen.getAllByTestId("mention-row")).toHaveLength(25));
       vi.setSystemTime(new Date("2026-10-13T09:03:00Z"));
-      await act(async () => fireEvent.click(screen.getByRole("button", { name: "Load more" })));
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: "Tải thêm" })));
       await waitFor(() => expect(screen.getAllByTestId("mention-row")).toHaveLength(30));
       expect(listCalls()).toHaveLength(2);
       const [first, second] = [nth(listCalls(), 0)[1].params, nth(listCalls(), 1)[1].params];
@@ -140,12 +140,12 @@ describe("MentionsView (UX §3.3)", () => {
       .mockResolvedValueOnce({ items: [dup, ...page(4, null).items], nextCursor: null });
     setup();
     await waitFor(() => expect(screen.getAllByTestId("mention-row")).toHaveLength(25));
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Load more" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Tải thêm" })));
     await waitFor(() => expect(screen.getAllByTestId("mention-row")).toHaveLength(29));
     const second = nth(listCalls(), 1)[1].params;
     expect(second.cursor).toBe("c1");
     expect(second.count).toBeUndefined();
-    expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Tải thêm" })).toBeNull();
   });
 
   it("TC-MEN-005: URL filters are sent to the API", async () => {
@@ -160,7 +160,7 @@ describe("MentionsView (UX §3.3)", () => {
     const { lastQuery } = setup();
     await waitFor(() => expect(listCalls()).toHaveLength(1));
     await act(async () =>
-      fireEvent.change(screen.getByLabelText("Sort mentions"), { target: { value: "safety_desc" } }),
+      fireEvent.change(screen.getByLabelText("Sắp xếp bài nhắc"), { target: { value: "safety_desc" } }),
     );
     // nuqs flushes URL updates via a timer queue → wait instead of asserting synchronously (#237)
     await waitFor(() => expect(lastQuery()).toContain("sort=safety_desc"));
@@ -195,7 +195,7 @@ describe("MentionsView (UX §3.3)", () => {
     apiFetch.mockResolvedValueOnce(page(0, null, 0));
     setup();
     expect(await screen.findByText("Không có lượt nhắc liên quan trong khoảng thời gian này.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Widen time range" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mở rộng khoảng thời gian" })).toBeInTheDocument();
     // #245: page-level empty state uses the brand v2 illustration (decorative).
     expect(document.querySelector('img[src="/brand/illustrations/empty.svg"]')).not.toBeNull();
   });
@@ -233,7 +233,7 @@ describe("MentionsView (UX §3.3)", () => {
       .mockRejectedValueOnce(new ApiError(503, "INTERNAL", "Boom", "req-77"));
     setup();
     await waitFor(() => expect(screen.getAllByTestId("mention-row")).toHaveLength(25));
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Load more" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Tải thêm" })));
     expect(await screen.findByTestId("request-id")).toHaveTextContent("req-77");
     expect(screen.getAllByTestId("mention-row")).toHaveLength(25);
     apiFetch.mockResolvedValueOnce(page(5, null));
@@ -249,14 +249,14 @@ describe("MentionsView (UX §3.3)", () => {
       .mockResolvedValueOnce(page(25, "fresh", 30));
     setup();
     await waitFor(() => expect(screen.getAllByTestId("mention-row")).toHaveLength(25));
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Load more" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Tải thêm" })));
     await waitFor(() => expect(listCalls()).toHaveLength(3));
     const third = nth(listCalls(), 2)[1].params;
     expect(third.cursor).toBeUndefined();
     expect(third.count).toBe("true");
     await waitFor(() => expect(screen.getAllByTestId("mention-row")).toHaveLength(25));
     expect(screen.queryByTestId("request-id")).toBeNull();
-    expect(screen.getByRole("button", { name: "Load more" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Tải thêm" })).toBeEnabled();
   });
 
   it("TC-MEN-020: ↑/↓ moves focus between rows, Enter opens detail keeping filters", async () => {

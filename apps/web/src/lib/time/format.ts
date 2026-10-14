@@ -1,24 +1,24 @@
 import { fromDate } from "@internationalized/date";
 import { env } from "@/lib/env";
 
-/** Absolute time in a timezone (default project/default tz) — ADR-0011. */
+/** Absolute time in a timezone (default project/default tz) — ADR-0011. vi-VN since #277. */
 export function formatDateTime(
   iso: string | Date,
   timeZone: string = env.NEXT_PUBLIC_DEFAULT_TIMEZONE,
   opts: Intl.DateTimeFormatOptions = {},
 ) {
   const d = typeof iso === "string" ? new Date(iso) : iso;
-  return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone, ...opts }).format(d);
+  return new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium", timeStyle: "short", timeZone, ...opts }).format(d);
 }
 
-/** Relative time for < 24h, else absolute. */
+/** Relative time for < 24h (Vietnamese, #277), else absolute. */
 export function formatRelativeOrAbsolute(iso: string | Date, now: Date = new Date(), timeZone?: string) {
   const d = typeof iso === "string" ? new Date(iso) : iso;
   const diffMin = Math.round((now.getTime() - d.getTime()) / 60_000);
-  if (diffMin < 1) return "just now";
-  if (diffMin < 60) return `${diffMin} min ago`;
+  if (diffMin < 1) return "vừa xong";
+  if (diffMin < 60) return `${diffMin} phút trước`;
   const h = Math.round(diffMin / 60);
-  if (h < 24) return `${h} h ago`;
+  if (h < 24) return `${h} giờ trước`;
   return formatDateTime(d, timeZone);
 }
 

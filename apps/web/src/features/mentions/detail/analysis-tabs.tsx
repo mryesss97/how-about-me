@@ -21,10 +21,10 @@ export function AnalysisTabs({ mention, tz, canOverride = false, onRevoke, isRev
       <Tabs.List
         type="underline"
         size="sm"
-        aria-label="Analysis"
+        aria-label="Phân tích"
         items={[
-          { id: "current", label: "Current" },
-          { id: "history", label: "History", badge: mention.runs.length || undefined },
+          { id: "current", label: "Hiện tại" },
+          { id: "history", label: "Lịch sử", badge: mention.runs.length || undefined },
         ]}
       />
       <Tabs.Panel id="current" className="pt-4">

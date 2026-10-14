@@ -19,11 +19,11 @@ describe("MentionRow (UX §3.3)", () => {
     expect(screen.getByText("@alice")).toBeInTheDocument();
     expect(container.querySelector("time")?.getAttribute("dateTime")).toBe(item.publishedAt);
     expect(screen.getByText("Giá vé concert quá cao")).toBeInTheDocument();
-    expect(screen.getByText("Complaint")).toBeInTheDocument();
-    expect(screen.getByText("Question")).toBeInTheDocument();
-    expect(screen.queryByText("Boycott")).toBeNull();
+    expect(screen.getByText("Phàn nàn")).toBeInTheDocument();
+    expect(screen.getByText("Câu hỏi")).toBeInTheDocument();
+    expect(screen.queryByText("Tẩy chay")).toBeNull();
     expect(screen.getByText("+1")).toBeInTheDocument();
-    expect(screen.getByText("Price")).toBeInTheDocument();
+    expect(screen.getByText("Giá")).toBeInTheDocument();
     expect(screen.queryByText(/^Completed$/i)).toBeNull();
   });
 
@@ -36,7 +36,7 @@ describe("MentionRow (UX §3.3)", () => {
   it("TC-MEN-015: external link opens a new tab safely and does not open detail", () => {
     const onOpen = vi.fn();
     render(<MentionRow item={mentionFixture()} tz={TZ} onOpen={onOpen} />);
-    const a = screen.getByRole("link", { name: "Open on Threads" });
+    const a = screen.getByRole("link", { name: "Mở trên Threads" });
     expect(a).toHaveAttribute("target", "_blank");
     expect(a).toHaveAttribute("rel", "noopener noreferrer");
     fireEvent.click(a);

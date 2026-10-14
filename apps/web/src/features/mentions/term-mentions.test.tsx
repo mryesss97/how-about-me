@@ -33,7 +33,7 @@ describe("TermMentions", () => {
         </NuqsTestingAdapter>
       </QueryClientProvider>,
     );
-    expect(await screen.findByText("1 bài")).toBeInTheDocument();
+    expect(await screen.findByText("1 bài nhắc")).toBeInTheDocument();
     expect(apiFetch).toHaveBeenCalledWith(`/projects/${PID}/mentions`, {
       params: expect.objectContaining({ term: "giá vé", count: "true" }),
     });

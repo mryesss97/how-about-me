@@ -23,8 +23,8 @@ export function MentionDetailSlideout({
 }) {
   return (
     <DetailSlideout
-      title="Mention detail"
-      regionLabel="Mention detail"
+      title="Chi tiết bài nhắc"
+      regionLabel="Chi tiết bài nhắc"
       fullPageHref={(qs) => fullPageHref ?? `/mentions/${mentionId}${qs ? `?${qs}` : ""}`}
       fallbackHref="/mentions"
       onClose={onClose}

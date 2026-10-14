@@ -8,11 +8,11 @@ import { toast } from "sonner";
 import { Dialog, Modal, ModalOverlay } from "@/components/application/modals/modal";
 import { Button } from "@/components/base/buttons/button";
 import { ApiError } from "@/lib/api/client";
-import { retryAfterSeconds, waitText } from "@/lib/api/rate-limit";
+import { retryAfterSeconds, waitTextVi } from "@/lib/api/rate-limit";
 import { formatCount } from "@/lib/format/number";
 import { useBulkReanalyze } from "./api";
 
-const TITLE = "Re-analyze mentions?";
+const TITLE = "Phân tích lại các bài nhắc?";
 
 /** personas §3: admin only, even with `allowAnalystReanalyze` — UX only, the API enforces it (FR-015). */
 export function canBulkReanalyze(role: UserRole | null): boolean {
@@ -21,10 +21,10 @@ export function canBulkReanalyze(role: UserRole | null): boolean {
 
 function errorText(err: unknown): string {
   if (err instanceof ApiError && err.code === "RATE_LIMITED")
-    return `Re-analysis was requested recently. Try again in ${waitText(retryAfterSeconds(err))}.`;
-  if (err instanceof ApiError && err.code === "FORBIDDEN_ROLE") return "You don't have permission to re-analyze.";
-  const rid = err instanceof ApiError && err.requestId ? ` (request ${err.requestId})` : "";
-  return `Could not start re-analysis${rid}.`;
+    return `Vừa có yêu cầu phân tích lại. Thử lại sau ${waitTextVi(retryAfterSeconds(err))}.`;
+  if (err instanceof ApiError && err.code === "FORBIDDEN_ROLE") return "Bạn không có quyền phân tích lại.";
+  const rid = err instanceof ApiError && err.requestId ? ` (mã yêu cầu ${err.requestId})` : "";
+  return `Không thể bắt đầu phân tích lại${rid}.`;
 }
 
 /**
@@ -52,7 +52,9 @@ export function BulkReanalyzeDialog({
           if (dryRun) return setPreview(r);
           // BR-024: enqueued can be below min(matched, cap) — current or pending runs are skipped.
           toast.success(
-            r.enqueued > 0 ? `Re-analysis queued for ${formatCount(r.enqueued)} posts` : "No posts needed re-analysis",
+            r.enqueued > 0
+              ? `Đã xếp hàng phân tích lại ${formatCount(r.enqueued)} bài`
+              : "Không có bài nào cần phân tích lại",
           );
           onClose();
         },
@@ -79,16 +81,16 @@ export function BulkReanalyzeDialog({
               {TITLE}
             </AriaHeading>
             {nothingToDo ? (
-              <p className="text-sm text-secondary">No mentions match the current filters.</p>
+              <p className="text-sm text-secondary">Không có bài nhắc nào khớp bộ lọc hiện tại.</p>
             ) : preview ? (
               <p className="text-sm text-secondary">
-                {formatCount(preview.matched)} mentions match the current filters. Up to {formatCount(preview.cap)}{" "}
-                posts will be re-analyzed now; posts that already have a current analysis or a pending run are skipped.
-                {preview.matched > preview.cap ? " Narrow the filters to re-analyze the rest." : null}
+                {formatCount(preview.matched)} bài nhắc khớp bộ lọc hiện tại. Tối đa {formatCount(preview.cap)} bài sẽ
+                được phân tích lại ngay; bài đã có kết quả hiện hành hoặc đang chờ sẽ được bỏ qua.
+                {preview.matched > preview.cap ? " Thu hẹp bộ lọc để phân tích lại phần còn lại." : null}
               </p>
             ) : !previewFailed ? (
               <p className="text-sm text-tertiary" aria-busy="true">
-                Counting matching mentions…
+                Đang đếm bài nhắc khớp…
               </p>
             ) : null}
             {error ? (
@@ -99,16 +101,16 @@ export function BulkReanalyzeDialog({
             <div className="flex justify-end gap-3">
               {nothingToDo ? (
                 <Button color="secondary" onClick={onClose}>
-                  Close
+                  Đóng
                 </Button>
               ) : (
                 <>
                   <Button color="secondary" onClick={onClose}>
-                    Cancel
+                    Huỷ
                   </Button>
                   {previewFailed && !rateLimited ? (
                     <Button isLoading={m.isPending} isDisabled={m.isPending} onClick={() => run(true)}>
-                      Retry
+                      Thử lại
                     </Button>
                   ) : (
                     <Button
@@ -116,7 +118,7 @@ export function BulkReanalyzeDialog({
                       isDisabled={m.isPending || rateLimited || preview === null}
                       onClick={() => run(false)}
                     >
-                      Confirm
+                      Xác nhận
                     </Button>
                   )}
                 </>
@@ -135,9 +137,14 @@ export function BulkReanalyzeButton({ pid, params }: { pid: string; params: Reco
   const [snapshot, setSnapshot] = useState<Record<string, string> | null>(null);
   return (
     <>
-      <Button color="secondary" size="sm" iconLeading={RefreshCw01} onClick={() => setSnapshot(params)}>
-        Re-analyze
-      </Button>
+      <button
+        type="button"
+        onClick={() => setSnapshot(params)}
+        className="plaque-button inline-flex items-center gap-2 px-3 py-1.5 outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2"
+      >
+        <RefreshCw01 className="size-4" aria-hidden />
+        Phân tích lại
+      </button>
       {snapshot ? <BulkReanalyzeDialog pid={pid} params={snapshot} onClose={() => setSnapshot(null)} /> : null}
     </>
   );

@@ -18,8 +18,8 @@ export function KeyPhrases({ analysis }: { analysis: Analysis }) {
           <Link
             key={p}
             href={phraseMentionsHref(p)}
-            aria-label={`View mentions with phrase "${p}"`}
-            title={`View mentions with phrase "${p}"`}
+            aria-label={`Xem bài nhắc có cụm từ "${p}"`}
+            title={`Xem bài nhắc có cụm từ "${p}"`}
             className="rounded-md outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             <Badge type="modern" color="gray" size="sm" className="hover:bg-primary_hover">
@@ -31,7 +31,7 @@ export function KeyPhrases({ analysis }: { analysis: Analysis }) {
     );
   }
   if (phrases == null && analysis.versions != null) {
-    return <span className="text-sm text-tertiary">No phrases (analysed before phrase extraction)</span>;
+    return <span className="text-sm text-tertiary">Chưa có cụm từ (phân tích trước khi có trích xuất cụm từ)</span>;
   }
   return <span className="text-quaternary">—</span>;
 }

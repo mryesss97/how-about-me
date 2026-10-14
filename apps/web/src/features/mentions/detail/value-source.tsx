@@ -25,30 +25,30 @@ type Props = {
 export function ValueSource({ override: o, hasValue, tz, canRevoke, onRevoke, isRevoking }: Props) {
   const [confirm, setConfirm] = useState(false);
   if (!o) return hasValue ? <ValueSourceBadge source="ai" /> : null;
-  const ai = formatValue(o.previousValue);
+  const ai = formatValue(o.previousValue, o.field);
   return (
     <>
       <span title={overrideTooltip(o, tz)} data-testid="analyst-source">
         <ValueSourceBadge source="analyst" />
         <span className="sr-only">{overrideTooltip(o, tz)}</span>
       </span>
-      <span className="text-xs text-tertiary" title="AI value at override time">
+      <span className="text-xs text-tertiary" title="Giá trị AI lúc ghi đè">
         <span aria-hidden>AI: </span>
         <s aria-hidden className="line-through">
           {ai}
         </s>
-        <span className="sr-only">{`AI value: ${ai}`}</span>
+        <span className="sr-only">{`Giá trị AI: ${ai}`}</span>
       </span>
       {canRevoke && onRevoke ? (
         <>
           <Button color="link-color" size="sm" isDisabled={isRevoking} onClick={() => setConfirm(true)}>
-            Revoke
+            Thu hồi
           </Button>
-          <SettingsDialog isOpen={confirm} onClose={() => setConfirm(false)} title="Revoke this override?">
-            <p className="text-sm text-tertiary">The AI value applies again. The override stays in History.</p>
+          <SettingsDialog isOpen={confirm} onClose={() => setConfirm(false)} title="Thu hồi ghi đè này?">
+            <p className="text-sm text-tertiary">Giá trị AI được áp dụng lại. Ghi đè vẫn nằm trong Lịch sử.</p>
             <div className="flex justify-end gap-2">
               <Button size="sm" color="secondary" onClick={() => setConfirm(false)}>
-                Cancel
+                Huỷ
               </Button>
               <Button
                 size="sm"
@@ -57,7 +57,7 @@ export function ValueSource({ override: o, hasValue, tz, canRevoke, onRevoke, is
                   onRevoke(o.id);
                 }}
               >
-                Revoke override
+                Thu hồi ghi đè
               </Button>
             </div>
           </SettingsDialog>

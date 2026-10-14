@@ -1,6 +1,7 @@
+import { ANALYSIS_TRIGGERS } from "@how-about-me/contracts";
 import { INTENT_LABELS, LANGUAGE_CODES, TOPIC_LABELS } from "@how-about-me/taxonomy";
 import { describe, expect, it } from "vitest";
-import { displayLabel, intentLabelVi, languageLabelVi, topicLabelVi } from "./labels";
+import { analysisTriggerLabelVi, displayLabel, intentLabelVi, languageLabelVi, topicLabelVi } from "./labels";
 
 describe("Vietnamese taxonomy labels (#275)", () => {
   it("covers every intent, topic and language value", () => {
@@ -17,5 +18,12 @@ describe("Vietnamese taxonomy labels (#275)", () => {
   it("falls back to a humanised value for unknown keys", () => {
     expect(displayLabel("topic", "new_thing")).toBe("New thing");
     expect(displayLabel("intent", "purchase_intent")).toBe("Ý định mua");
+  });
+});
+
+describe("analysis trigger labels (#277)", () => {
+  it("covers every trigger and stays out of the URL (enum values unchanged)", () => {
+    for (const v of ANALYSIS_TRIGGERS) expect(analysisTriggerLabelVi[v]).toBeTruthy();
+    expect(displayLabel("analysisTrigger", "version_change")).toBe("Đổi phiên bản");
   });
 });

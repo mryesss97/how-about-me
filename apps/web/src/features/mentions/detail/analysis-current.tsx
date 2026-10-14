@@ -11,7 +11,8 @@ import {
   SentimentBadge,
   ValueSourceBadge,
 } from "@/features/shared/semantic-badge";
-import { humanize, pct, usd } from "./format";
+import { displayLabel } from "@/lib/semantics/labels";
+import { pct, usd } from "./format";
 import { KeyPhrases } from "./key-phrases";
 import { activeOverrides } from "./overrides";
 import { SafetyScoresTable } from "./safety-scores-table";
@@ -61,11 +62,12 @@ export function AnalysisCurrent({ mention, tz, canOverride = false, onRevoke, is
   const conf = (field: keyof typeof active, v: number | null | undefined) =>
     active[field] ? null : <span className="text-xs text-tertiary">{pct(v)}</span>;
   const chip = (field: "intents" | "topics", label: string, c: number | null | undefined) =>
-    active[field] ? humanize(label) : `${humanize(label)} · ${pct(c)}`;
+    active[field] ? displayLabel(kind(field), label) : `${displayLabel(kind(field), label)} · ${pct(c)}`;
+  const kind = (field: "intents" | "topics") => (field === "intents" ? "intent" : "topic");
   return (
     <div className="flex flex-col gap-4">
-      {notYet ? <p className="text-sm text-tertiary">Not analysed yet.</p> : null}
-      <Row label="Relevance">
+      {notYet ? <p className="text-sm text-tertiary">Chưa phân tích.</p> : null}
+      <Row label="Mức liên quan">
         {a.relevance ? (
           <>
             <RelevanceBadge value={a.relevance.label} />
@@ -77,7 +79,7 @@ export function AnalysisCurrent({ mention, tz, canOverride = false, onRevoke, is
         {src("relevance", !!a.relevance)}
       </Row>
       {a.relevanceExplanation ? <p className="text-sm text-secondary">{a.relevanceExplanation}</p> : null}
-      <Row label="Sentiment">
+      <Row label="Cảm xúc">
         {a.sentiment ? (
           <>
             <SentimentBadge value={a.sentiment.label} />
@@ -88,17 +90,17 @@ export function AnalysisCurrent({ mention, tz, canOverride = false, onRevoke, is
         )}
         {src("sentiment", !!a.sentiment)}
       </Row>
-      <Row label="Safety">
+      <Row label="An toàn">
         {a.safety ? <SafetyBadge value={a.safety.level} /> : <Dash />}
         {src("safety_level", !!a.safety)}
         {a.safetyCategoryScores ? (
           <Button color="link-color" size="sm" onClick={() => setShowScores((s) => !s)} aria-expanded={showScores}>
-            {showScores ? "Hide category scores" : "Show category scores"}
+            {showScores ? "Ẩn điểm theo hạng mục" : "Hiện điểm theo hạng mục"}
           </Button>
         ) : null}
       </Row>
       {showScores ? <SafetyScoresTable scores={a.safetyCategoryScores} triggered={a.safetyTriggered} /> : null}
-      <Row label="Intents">
+      <Row label="Ý định">
         {a.intents.length ? (
           a.intents.map((i) => (
             <Badge key={i.label} type="modern" color="gray" size="sm">
@@ -110,7 +112,7 @@ export function AnalysisCurrent({ mention, tz, canOverride = false, onRevoke, is
         )}
         {src("intents", a.intents.length > 0)}
       </Row>
-      <Row label="Topics">
+      <Row label="Chủ đề">
         {a.topics.length ? (
           a.topics.map((t) => (
             <Badge key={t.label} type="modern" color="gray" size="sm">
@@ -122,25 +124,26 @@ export function AnalysisCurrent({ mention, tz, canOverride = false, onRevoke, is
         )}
         {src("topics", a.topics.length > 0)}
       </Row>
-      <Row label="Key phrases">
+      <Row label="Cụm từ khoá">
         <KeyPhrases analysis={a} />
         {/* Phrases are always AI values (not overridable), so the source is AI (UX §3.4). */}
         {a.phrases?.length ? <ValueSourceBadge source="ai" /> : null}
       </Row>
-      <Row label="Language">{a.language ? a.language.toUpperCase() : <Dash />}</Row>
-      <Row label="Summary">{a.summary ?? <Dash />}</Row>
-      <Row label="Confidence">
+      <Row label="Ngôn ngữ">{a.language ? displayLabel("language", a.language) : <Dash />}</Row>
+      <Row label="Tóm tắt">{a.summary ?? <Dash />}</Row>
+      <Row label="Độ tin cậy">
         {a.confidenceBand ? <ConfidenceMarker band={a.confidenceBand} /> : <Dash />}
         <span className="text-xs text-tertiary">{pct(a.overallConfidence)}</span>
       </Row>
-      <Row label="Tokens / cost">
+      <Row label="Token / chi phí">
         <span className="text-xs">
-          {a.tokens ? `${a.tokens.input ?? "—"} in · ${a.tokens.output ?? "—"} out` : "—"} · {usd(a.estimatedCostUsd)}
+          {a.tokens ? `${a.tokens.input ?? "—"} vào · ${a.tokens.output ?? "—"} ra` : "—"} · {usd(a.estimatedCostUsd)}
         </span>
       </Row>
       {anyOverride ? (
         <p className="text-xs text-tertiary">
-          Overall confidence, relevance explanation and safety category scores are AI values, not analyst overrides.
+          Độ tin cậy tổng, giải thích mức liên quan và điểm an toàn theo hạng mục là giá trị AI, không phải ghi đè của
+          chuyên viên.
         </p>
       ) : null}
       <VersionsList analysis={a} tz={tz} />

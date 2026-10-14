@@ -26,7 +26,7 @@ function setup() {
       <ExportButton pid={PID} params={params} />
     </QueryClientProvider>,
   );
-  return screen.getByRole("button", { name: /export csv/i });
+  return screen.getByRole("button", { name: /xuất csv/i });
 }
 
 beforeEach(() => {
@@ -56,7 +56,7 @@ describe("ExportButton (T-147, FR-180/181)", () => {
   it("downloads with the list params and toasts success", async () => {
     apiDownload.mockResolvedValue({ blob: new Blob(["x"]), filename: "mentions-20261014-0030.csv" });
     fireEvent.click(setup());
-    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Export ready"));
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Đã xuất xong"));
     expect(apiDownload).toHaveBeenCalledWith(`/projects/${PID}/mentions/export.csv`, { params });
     expect(URL.createObjectURL).toHaveBeenCalled();
   });
@@ -78,6 +78,6 @@ describe("ExportButton (T-147, FR-180/181)", () => {
   it("429 RATE_LIMITED → toast with seconds", async () => {
     apiDownload.mockRejectedValue(new ApiError(429, "RATE_LIMITED", "m", "r", { retryAfterSeconds: 42 }));
     fireEvent.click(setup());
-    await waitFor(() => expect(toastError).toHaveBeenCalledWith("Export limit reached. Try again in 42 seconds."));
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith("Đã chạm giới hạn xuất. Thử lại sau 42 giây."));
   });
 });

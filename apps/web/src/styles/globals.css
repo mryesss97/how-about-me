@@ -641,6 +641,11 @@ input[type="search"]::-webkit-search-cancel-button {
   font-variant-numeric: tabular-nums;
 }
 
+/* Smaller figure for in-toolbar counts (#277 Mentions "N bài nhắc"). */
+.kpi-figure.kpi-figure--sm {
+  font-size: 28px;
+}
+
 /* Plaque button: white plate, 2px navy border, condensed caps; hover/selected invert to navy. */
 .plaque-button {
   border: 2px solid var(--ink);

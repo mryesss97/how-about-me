@@ -12,9 +12,9 @@ describe("OverrideHistory", () => {
       revokedBy: { id: uuid(3), displayName: "Adam Admin" },
     });
     render(<OverrideHistory overrides={[overrideFixture(), revoked]} tz="UTC" />);
-    const rows = within(screen.getByRole("table", { name: "Analyst overrides" })).getAllByRole("row");
-    expect(rows[1]).toHaveTextContent("Negative → Neutral");
-    expect(rows[1]).toHaveTextContent("Active");
+    const rows = within(screen.getByRole("table", { name: "Ghi đè của chuyên viên" })).getAllByRole("row");
+    expect(rows[1]).toHaveTextContent("Tiêu cực → Trung tính");
+    expect(rows[1]).toHaveTextContent("Đang hiệu lực");
     expect(rows[2]).toHaveTextContent("Adam Admin");
   });
   it("renders nothing without overrides", () => {

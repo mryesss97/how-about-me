@@ -8,9 +8,9 @@ export function useCopy() {
   return useCallback(async (value: string, label: string) => {
     try {
       await navigator.clipboard.writeText(value);
-      toast.success(`${label} copied`);
+      toast.success(`Đã sao chép ${label}`);
     } catch {
-      toast.error(`Could not copy ${label.toLowerCase()}`);
+      toast.error(`Không sao chép được ${label}`);
     }
   }, []);
 }

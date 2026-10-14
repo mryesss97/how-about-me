@@ -66,7 +66,7 @@ export function MentionsList(p: Props) {
       skeleton={<MentionsListSkeleton />}
       emptyAction={
         <Button color="secondary" size="sm" onClick={p.onWidenRange}>
-          Widen time range
+          Mở rộng khoảng thời gian
         </Button>
       }
     >
@@ -89,9 +89,14 @@ export function MentionsList(p: Props) {
         {nextPageError ? <ErrorState error={nextPageError} onRetry={fetchNextPage} /> : null}
         {hasNextPage && !nextPageError ? (
           <div ref={sentinel} className="flex justify-center">
-            <Button color="secondary" size="sm" isDisabled={isFetchingNextPage} onClick={fetchNextPage}>
-              {isFetchingNextPage ? "Loading…" : "Load more"}
-            </Button>
+            <button
+              type="button"
+              disabled={isFetchingNextPage}
+              onClick={fetchNextPage}
+              className="plaque-button px-4 py-2 outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60"
+            >
+              {isFetchingNextPage ? "Đang tải…" : "Tải thêm"}
+            </button>
           </div>
         ) : null}
       </div>

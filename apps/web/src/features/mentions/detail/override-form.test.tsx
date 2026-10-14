@@ -10,7 +10,7 @@ function setup(over: Parameters<typeof detailFixture>[0] = {}, isPending = false
   );
   const dialog = screen.getByRole("dialog");
   const selects = () => within(dialog).getAllByRole("combobox") as HTMLSelectElement[];
-  const save = () => within(dialog).getByRole("button", { name: /Save override/ });
+  const save = () => within(dialog).getByRole("button", { name: /Lưu ghi đè/ });
   const reason = () => within(dialog).getByRole("textbox") as HTMLTextAreaElement;
   return { dialog, selects, save, reason, onSubmit };
 }
@@ -43,8 +43,8 @@ describe("OverrideDialog (FR-191)", () => {
   it("intents use a multi-select checkbox list", () => {
     const { selects, dialog, reason, save, onSubmit } = setup();
     fireEvent.change(selects()[0], { target: { value: "intents" } });
-    fireEvent.click(within(dialog).getByRole("checkbox", { name: "Complaint" }));
-    fireEvent.click(within(dialog).getByRole("checkbox", { name: "Question" }));
+    fireEvent.click(within(dialog).getByRole("checkbox", { name: "Phàn nàn" }));
+    fireEvent.click(within(dialog).getByRole("checkbox", { name: "Câu hỏi" }));
     fireEvent.change(reason(), { target: { value: "both" } });
     fireEvent.click(save());
     expect(onSubmit).toHaveBeenCalledWith({ field: "intents", value: ["complaint", "question"], reason: "both" });
@@ -57,7 +57,7 @@ describe("OverrideDialog (FR-191)", () => {
 
   it("warns when an active override on the field will be replaced", () => {
     setup({ overrides: [overrideFixture()] });
-    expect(screen.getByText("Saving replaces the current analyst override.")).toBeInTheDocument();
+    expect(screen.getByText("Lưu sẽ thay thế ghi đè hiện tại của chuyên viên.")).toBeInTheDocument();
   });
 
   it("disables Save while pending", () => {

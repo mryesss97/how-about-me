@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { UuidSchema } from "@how-about-me/contracts";
 import { MentionDetail } from "@/features/mentions/detail/mention-detail";
 
-export const metadata = { title: "Mention detail" };
+export const metadata = { title: "Chi tiết bài nhắc" };
 
 /** Full-page mention detail — deep link / refresh (UX §3.4, FR-160). Auth redirect is handled by the proxy. */
 export default async function MentionDetailPage({
@@ -30,9 +30,9 @@ export default async function MentionDetailPage({
           className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-tertiary hover:text-primary"
         >
           <ArrowLeft className="size-4" aria-hidden />
-          Mentions
+          Quay lại danh sách
         </Link>
-        <h1 className="text-display-xs font-semibold text-primary">Mention detail</h1>
+        <h1 className="text-display-xs font-semibold text-primary">Chi tiết bài nhắc</h1>
       </header>
       <MentionDetail mentionId={id} variant="page" />
     </div>

@@ -1,3 +1,4 @@
+import type { AnalysisTrigger } from "@how-about-me/contracts";
 import type { IntentLabel, LanguageCode, TopicLabel } from "@how-about-me/taxonomy";
 import { analysisStatusBadge, relevanceBadge, safetyBadge, sentimentBadge } from "./badges";
 
@@ -45,7 +46,18 @@ export const languageLabelVi: Record<LanguageCode, string> = {
   unknown: "Không xác định",
 };
 
-export type LabelKind = "intent" | "topic" | "language" | "sentiment" | "safety" | "relevance" | "analysisStatus";
+/** Analysis run trigger (#277, Mention detail → History). */
+export const analysisTriggerLabelVi: Record<AnalysisTrigger, string> = {
+  ingest: "Thu thập",
+  content_change: "Nội dung thay đổi",
+  manual: "Thủ công",
+  bulk: "Hàng loạt",
+  retry: "Thử lại",
+  version_change: "Đổi phiên bản",
+};
+
+export type LabelKind =
+  "intent" | "topic" | "language" | "sentiment" | "safety" | "relevance" | "analysisStatus" | "analysisTrigger";
 
 /** `customer_service` → "Customer service" — fallback for values outside the taxonomy. */
 export const humanizeLabel = (v: string) => v.charAt(0).toUpperCase() + v.slice(1).replace(/_/g, " ");
@@ -58,6 +70,7 @@ const TABLES: Record<LabelKind, Record<string, string>> = {
   safety: Object.fromEntries(Object.entries(safetyBadge).map(([k, v]) => [k, v.label])),
   relevance: Object.fromEntries(Object.entries(relevanceBadge).map(([k, v]) => [k, v.label])),
   analysisStatus: Object.fromEntries(Object.entries(analysisStatusBadge).map(([k, v]) => [k, v.label])),
+  analysisTrigger: analysisTriggerLabelVi,
 };
 
 export function displayLabel(kind: LabelKind, value: string): string {

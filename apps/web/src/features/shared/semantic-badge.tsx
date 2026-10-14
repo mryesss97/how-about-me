@@ -110,7 +110,7 @@ export function ValueSourceBadge({ source, size = "sm" }: { source: "ai" | "anal
     </BadgeWithIcon>
   ) : (
     <BadgeWithIcon type="pill-color" color="brand" size={size} iconLeading={UserCheck01}>
-      Analyst
+      Chuyên viên
     </BadgeWithIcon>
   );
 }
