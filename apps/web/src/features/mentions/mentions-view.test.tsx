@@ -196,6 +196,8 @@ describe("MentionsView (UX §3.3)", () => {
     setup();
     expect(await screen.findByText("No relevant mentions found in this period.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Widen time range" })).toBeInTheDocument();
+    // #245: page-level empty state uses the brand v2 illustration (decorative).
+    expect(document.querySelector('img[src="/brand/illustrations/empty.svg"]')).not.toBeNull();
   });
 
   it("TC-MEN-017: error state shows requestId and Retry", async () => {

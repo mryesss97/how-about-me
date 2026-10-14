@@ -42,6 +42,7 @@ export function ReviewTable(p: Props) {
   };
   return (
     <QueryState
+      emptyIllustration="empty"
       isLoading={p.isLoading}
       error={p.error}
       onRetry={p.onRetry}
