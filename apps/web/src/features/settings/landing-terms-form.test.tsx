@@ -37,27 +37,27 @@ beforeEach(() => {
 describe("LandingTermsForm", () => {
   it("BR-042: landingTermError normalises, rejects invalid, duplicates and > 20", () => {
     expect(landingTermError("  Giá  Vé ", [])).toBeNull();
-    expect(landingTermError("!!!", [])).toMatch(/1–60 characters/);
-    expect(landingTermError("GIÁ VÉ", ["giá vé"])).toBe("Already in the list.");
+    expect(landingTermError("!!!", [])).toMatch(/1–60 ký tự/);
+    expect(landingTermError("GIÁ VÉ", ["giá vé"])).toBe("Đã có trong danh sách.");
     expect(
       landingTermError(
         "x",
         Array.from({ length: 20 }, (_, i) => `t${i}`),
       ),
-    ).toBe("Up to 20 phrases.");
+    ).toBe("Tối đa 20 cụm từ.");
   });
 
   it("admin: adds normalised term, Save disabled until changed, PATCHes only landingTerms and refetches balloons", async () => {
     apiFetch.mockResolvedValue(withTerms(["app", "giá vé"]));
     const invalidate = vi.spyOn(qc, "invalidateQueries");
     render(<LandingTermsForm project={withTerms(["app"])} canEdit />, { wrapper });
-    const save = screen.getByRole("button", { name: "Save" });
+    const save = screen.getByRole("button", { name: "Lưu" });
     expect(save).toBeDisabled();
     add("  Giá   VÉ ");
     expect(screen.getByText("giá vé")).toBeInTheDocument();
     expect(save).not.toBeDisabled();
     fireEvent.click(save);
-    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Landing page settings saved"));
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Đã lưu cài đặt trang landing"));
     const [path, init] = apiFetch.mock.calls[0] as [string, RequestInit];
     expect(path).toBe(`/projects/${P1}`);
     expect(JSON.parse(String(init.body))).toEqual({ settings: { landingTerms: ["app", "giá vé"] } });
@@ -67,10 +67,10 @@ describe("LandingTermsForm", () => {
   it("BR-042: duplicate after normalisation and invalid term show an error and are not added", () => {
     render(<LandingTermsForm project={withTerms(["app"])} canEdit />, { wrapper });
     add("APP");
-    expect(screen.getByText("Already in the list.")).toBeInTheDocument();
+    expect(screen.getByText("Đã có trong danh sách.")).toBeInTheDocument();
     add("!!!");
-    expect(screen.getByText(/Enter 1–60 characters/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
+    expect(screen.getByText(/Nhập 1–60 ký tự/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Lưu" })).toBeDisabled();
   });
 
   it("VALIDATION_ERROR from the server is shown on the field", async () => {
@@ -81,14 +81,14 @@ describe("LandingTermsForm", () => {
     );
     render(<LandingTermsForm project={withTerms([])} canEdit />, { wrapper });
     add("app");
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    fireEvent.click(screen.getByRole("button", { name: "Lưu" }));
     expect(await screen.findByText("Too many")).toBeInTheDocument();
   });
 
   it("non-admin: read only, no Save, empty copy", () => {
     render(<LandingTermsForm project={withTerms([])} canEdit={false} />, { wrapper });
-    expect(screen.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
-    expect(screen.getByText("No landing phrases yet.")).toBeInTheDocument();
-    expect(screen.getByText("Only project admins can change these settings.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Lưu" })).not.toBeInTheDocument();
+    expect(screen.getByText("Chưa có cụm từ nào.")).toBeInTheDocument();
+    expect(screen.getByText("Chỉ quản trị viên dự án mới thay đổi được các cài đặt này.")).toBeInTheDocument();
   });
 });

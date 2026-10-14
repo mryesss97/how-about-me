@@ -1,3 +1,4 @@
+import type { UserRole } from "@how-about-me/contracts";
 import type { IntentLabel, LanguageCode, TopicLabel } from "@how-about-me/taxonomy";
 import { analysisStatusBadge, relevanceBadge, safetyBadge, sentimentBadge } from "./badges";
 
@@ -44,6 +45,9 @@ export const languageLabelVi: Record<LanguageCode, string> = {
   other: "Khác",
   unknown: "Không xác định",
 };
+
+/** Vietnamese role names (#274 shell, #281 settings). API values stay `admin|analyst|viewer`. */
+export const roleLabelVi: Record<UserRole, string> = { admin: "Quản trị", analyst: "Phân tích", viewer: "Chỉ xem" };
 
 export type LabelKind = "intent" | "topic" | "language" | "sentiment" | "safety" | "relevance" | "analysisStatus";
 

@@ -79,10 +79,10 @@ export function ForbiddenState({ className, backHref = "/overview" }: { classNam
       <FeaturedIcon color="gray" theme="modern" icon={Lock01} size="lg" />
       <h2 className="text-lg font-semibold text-primary">Bạn không có quyền xem trang này.</h2>
       <p className="max-w-md text-sm text-tertiary">
-        Ask a project admin if you need access. Your role decides which screens are available.
+        Hãy hỏi quản trị viên dự án nếu bạn cần quyền truy cập. Vai trò của bạn quyết định những màn hình bạn xem được.
       </p>
       <Button href={backHref} color="secondary" size="sm">
-        Back to Overview
+        Về Tổng quan
       </Button>
     </div>
   );

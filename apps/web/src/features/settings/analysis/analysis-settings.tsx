@@ -7,6 +7,7 @@ import { useAnalysisSettings } from "./api";
 import { AnalysisSettingsForm } from "./analysis-settings-form";
 import { PhraseThresholdSettings } from "./phrase-threshold-form";
 import { ReanalysisPromptDialog } from "./reanalysis-prompt-dialog";
+import { SettingsBoard } from "../settings-board";
 
 /** Loaded view; the re-analysis prompt lives here because the form remounts on a new policy version. */
 export function AnalysisSettingsPanel({
@@ -58,12 +59,14 @@ export function AnalysisSettings() {
   if (isLoading || !project) return <QueryState isLoading>{null}</QueryState>;
   const canEdit = project.role === "admin";
   return (
-    <div className="flex flex-col gap-8">
-      <AnalysisSettingsPanel pid={project.id} canEdit={canEdit} timeZone={project.timezone} />
+    <div className="flex flex-col gap-6">
+      <SettingsBoard title="Chính sách phân tích">
+        <AnalysisSettingsPanel pid={project.id} canEdit={canEdit} timeZone={project.timezone} />
+      </SettingsBoard>
       {/* #251: separate form + Save; a display threshold, not a policy version. */}
-      <div className="border-t border-secondary pt-8">
+      <SettingsBoard title="Bản đồ cảm xúc">
         <PhraseThresholdSettings pid={project.id} canEdit={canEdit} />
-      </div>
+      </SettingsBoard>
     </div>
   );
 }

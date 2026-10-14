@@ -33,8 +33,8 @@ describe("InviteMemberDialog", () => {
   it("rejects an invalid email inline without calling the API", async () => {
     renderDialog();
     typeEmail("not-an-email");
-    fireEvent.click(screen.getByRole("button", { name: "Invite" }));
-    expect(await screen.findByText("Enter a valid email address.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Mời" }));
+    expect(await screen.findByText("Nhập địa chỉ email hợp lệ.")).toBeInTheDocument();
     expect(apiFetch).not.toHaveBeenCalled();
   });
 
@@ -42,8 +42,8 @@ describe("InviteMemberDialog", () => {
     apiFetch.mockResolvedValue(memberData(VIEWER_ID, "analyst", "new@x.co"));
     renderDialog();
     typeEmail("new@x.co");
-    fireEvent.change(screen.getByRole("combobox", { name: /Role/ }), { target: { value: "analyst" } });
-    fireEvent.click(screen.getByRole("button", { name: "Invite" }));
+    fireEvent.change(screen.getByRole("combobox", { name: /Vai trò/ }), { target: { value: "analyst" } });
+    fireEvent.click(screen.getByRole("button", { name: "Mời" }));
     await waitFor(() => expect(onClose).toHaveBeenCalled());
     const [path, init] = apiFetch.mock.calls[0] as [string, RequestInit];
     expect(path).toBe(`/projects/${P1}/members`);
@@ -55,8 +55,8 @@ describe("InviteMemberDialog", () => {
     apiFetch.mockRejectedValue(new ApiError(409, "MEMBER_EXISTS", "exists", "req-2"));
     renderDialog();
     typeEmail("dup@x.co");
-    fireEvent.click(screen.getByRole("button", { name: "Invite" }));
-    expect(await screen.findByText("This email is already a member.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Mời" }));
+    expect(await screen.findByText("Email này đã là thành viên.")).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
   });
 });

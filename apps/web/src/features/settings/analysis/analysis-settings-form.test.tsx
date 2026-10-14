@@ -23,7 +23,7 @@ const wrapper = ({ children }: { children: ReactNode }) => (
 const renderForm = (canEdit = true) =>
   render(<AnalysisSettingsForm pid={P1} settings={analysisSettingsData()} canEdit={canEdit} />, { wrapper });
 const cell = (name: string) => screen.getByRole("spinbutton", { name });
-const submit = () => screen.getByRole("button", { name: "Create new policy version" });
+const submit = () => screen.getByRole("button", { name: "Tạo phiên bản chính sách mới" });
 
 beforeEach(() => {
   apiFetch.mockReset();
@@ -41,9 +41,9 @@ describe("AnalysisSettingsForm", () => {
   it("FR-190: admin edits one cell → PATCH carries only that category", async () => {
     apiFetch.mockResolvedValue(analysisSettingsData({ version: 2, policyVersion: "safety-policy-v2" }));
     renderForm();
-    fireEvent.change(cell("Hate sensitive"), { target: { value: "0.4" } });
+    fireEvent.change(cell("Thù ghét – Nhạy cảm"), { target: { value: "0.4" } });
     fireEvent.click(submit());
-    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Created safety-policy-v2"));
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Đã tạo safety-policy-v2"));
     const [path, init] = apiFetch.mock.calls[0] as [string, RequestInit];
     expect(path).toBe(`/projects/${P1}/settings/analysis`);
     expect(init.method).toBe("PATCH");
@@ -52,9 +52,9 @@ describe("AnalysisSettingsForm", () => {
 
   it("FR-015: non-admins get disabled inputs and no submit button", () => {
     renderForm(false);
-    expect(cell("Hate sensitive")).toBeDisabled();
-    expect(screen.getByRole("spinbutton", { name: /High/ })).toBeDisabled();
-    expect(screen.queryByRole("button", { name: "Create new policy version" })).not.toBeInTheDocument();
+    expect(cell("Thù ghét – Nhạy cảm")).toBeDisabled();
+    expect(screen.getByRole("spinbutton", { name: /Cao/ })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Tạo phiên bản chính sách mới" })).not.toBeInTheDocument();
   });
 
   it("BR-018: server VALIDATION_ERROR shows under the matching cell", async () => {
@@ -64,15 +64,15 @@ describe("AnalysisSettingsForm", () => {
       }),
     );
     renderForm();
-    fireEvent.change(cell("Hate sensitive"), { target: { value: "0.4" } });
+    fireEvent.change(cell("Thù ghét – Nhạy cảm"), { target: { value: "0.4" } });
     fireEvent.click(submit());
     expect(await screen.findByText("server says no")).toBeInTheDocument();
-    expect(cell("Hate sensitive")).toHaveAttribute("aria-invalid", "true");
+    expect(cell("Thù ghét – Nhạy cảm")).toHaveAttribute("aria-invalid", "true");
   });
 
   it("BR-021: client blocks medium ≥ high without calling the API", () => {
     renderForm();
-    fireEvent.change(screen.getByRole("spinbutton", { name: /Medium/ }), { target: { value: "0.9" } });
+    fireEvent.change(screen.getByRole("spinbutton", { name: /Trung bình/ }), { target: { value: "0.9" } });
     fireEvent.click(submit());
     expect(screen.getByText("medium must be lower than high")).toBeInTheDocument();
     expect(apiFetch).not.toHaveBeenCalled();
@@ -81,8 +81,8 @@ describe("AnalysisSettingsForm", () => {
   it("FR-015: FORBIDDEN_ROLE shows the permission copy", async () => {
     apiFetch.mockRejectedValue(new ApiError(403, "FORBIDDEN_ROLE", "forbidden", "req-1"));
     renderForm();
-    fireEvent.change(cell("Hate sensitive"), { target: { value: "0.4" } });
+    fireEvent.change(cell("Thù ghét – Nhạy cảm"), { target: { value: "0.4" } });
     fireEvent.click(submit());
-    expect(await screen.findByRole("alert")).toHaveTextContent("You don't have permission.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Bạn không có quyền thực hiện thao tác này.");
   });
 });

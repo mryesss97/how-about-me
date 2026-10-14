@@ -46,8 +46,10 @@ async function saveWith(outdatedCount: number, canEdit = true) {
   });
   render(<AnalysisSettingsPanel pid={P1} canEdit={canEdit} />, { wrapper });
   if (!canEdit) return;
-  fireEvent.change(await screen.findByRole("spinbutton", { name: "Hate sensitive" }), { target: { value: "0.4" } });
-  fireEvent.click(screen.getByRole("button", { name: "Create new policy version" }));
+  fireEvent.change(await screen.findByRole("spinbutton", { name: "Thù ghét – Nhạy cảm" }), {
+    target: { value: "0.4" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Tạo phiên bản chính sách mới" }));
   await waitFor(() => expect(apiFetch).toHaveBeenCalledTimes(2));
 }
 
@@ -68,8 +70,8 @@ describe("Re-analysis prompt", () => {
   it("opens after save with outdatedCount 42; Later closes without calling mark-stale", async () => {
     await saveWith(42);
     const dialog = await screen.findByRole("dialog");
-    expect(dialog).toHaveTextContent("42 posts were analysed with an older policy");
-    fireEvent.click(screen.getByRole("button", { name: "Later" }));
+    expect(dialog).toHaveTextContent("42 bài đã được phân tích bằng chính sách cũ");
+    fireEvent.click(screen.getByRole("button", { name: "Để sau" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(apiFetch).toHaveBeenCalledTimes(2);
   });
@@ -83,16 +85,16 @@ describe("Re-analysis prompt", () => {
   // FR-196, BR-023: preview with the pre-save effectiveVersion, then confirm.
   it("previews with dryRun=true for the old effectiveVersion, then confirms and toasts enqueued", async () => {
     await saveWith(42);
-    fireEvent.click(await screen.findByRole("button", { name: "Re-analyse" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Phân tích lại" }));
     expect(await screen.findByRole("dialog")).toHaveTextContent(
-      "40 results will be marked stale; up to 500 posts will be re-analysed now.",
+      "40 kết quả sẽ được đánh dấu cũ; tối đa 500 bài sẽ được phân tích lại ngay.",
     );
     expect(markCalls()[0]?.[0]).toBe(`/projects/${P1}/analysis-runs/mark-stale`);
     expect(markCalls()[0]?.[1]).toMatchObject({ method: "POST", params: { version: OLD, dryRun: true } });
-    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+    fireEvent.click(screen.getByRole("button", { name: "Xác nhận" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(markCalls()[1]?.[1]).toMatchObject({ params: { version: OLD, dryRun: false } });
-    expect(toastSuccess).toHaveBeenCalledWith("Re-analysis queued for 40 posts");
+    expect(toastSuccess).toHaveBeenCalledWith("Đã đưa 40 bài vào hàng đợi phân tích lại");
   });
 
   it("429 RATE_LIMITED shows the retry wait and disables Confirm", async () => {
@@ -101,21 +103,21 @@ describe("Re-analysis prompt", () => {
         ? Promise.resolve({ marked: 40, enqueued: 0, cap: 500 })
         : Promise.reject(new ApiError(429, "RATE_LIMITED", "slow down", "r1", { retryAfterSeconds: 120 }));
     await saveWith(42);
-    fireEvent.click(await screen.findByRole("button", { name: "Re-analyse" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Confirm" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Try again in 2 minutes.");
-    expect(screen.getByRole("button", { name: "Confirm" })).toBeDisabled();
+    fireEvent.click(await screen.findByRole("button", { name: "Phân tích lại" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Xác nhận" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Thử lại sau 2 phút.");
+    expect(screen.getByRole("button", { name: "Xác nhận" })).toBeDisabled();
   });
 
   // BR-023: the current version cannot be staled.
   it("400 VALIDATION_ERROR says already current and leaves only Close", async () => {
     markStale = () => Promise.reject(new ApiError(400, "VALIDATION_ERROR", "current", "r2"));
     await saveWith(42);
-    fireEvent.click(await screen.findByRole("button", { name: "Re-analyse" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("already current");
-    expect(screen.queryByRole("button", { name: "Confirm" })).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "Phân tích lại" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("đang là phiên bản hiện tại");
+    expect(screen.queryByRole("button", { name: "Xác nhận" })).not.toBeInTheDocument();
     expect(markCalls()).toHaveLength(1);
-    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    fireEvent.click(screen.getByRole("button", { name: "Đóng" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 
@@ -125,21 +127,21 @@ describe("Re-analysis prompt", () => {
         init.params?.dryRun ? { marked: 900, enqueued: 0, cap: 500 } : { marked: 900, enqueued: 0, cap: 500 },
       );
     await saveWith(42);
-    fireEvent.click(await screen.findByRole("button", { name: "Re-analyse" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Phân tích lại" }));
     expect(await screen.findByRole("dialog")).toHaveTextContent(
-      "Posts above this limit stay stale until the next bulk re-analysis.",
+      "Các bài vượt giới hạn này giữ trạng thái cũ cho tới lần phân tích lại hàng loạt tiếp theo.",
     );
-    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
-    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("No posts needed re-analysis"));
+    fireEvent.click(screen.getByRole("button", { name: "Xác nhận" }));
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Không có bài nào cần phân tích lại"));
   });
 
   it("preview with marked 0 offers only Close and never makes the real call", async () => {
     markStale = () => Promise.resolve({ marked: 0, enqueued: 0, cap: 500 });
     await saveWith(42);
-    fireEvent.click(await screen.findByRole("button", { name: "Re-analyse" }));
-    expect(await screen.findByText("No results of the older policy are left to re-analyse.")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Confirm" })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Phân tích lại" }));
+    expect(await screen.findByText("Không còn kết quả nào của chính sách cũ cần phân tích lại.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Xác nhận" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Đóng" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(markCalls()).toHaveLength(1);
   });
@@ -147,16 +149,16 @@ describe("Re-analysis prompt", () => {
   it("other errors show a generic message with the requestId and allow retry", async () => {
     markStale = () => Promise.reject(new ApiError(500, "INTERNAL", "boom", "req-9"));
     await saveWith(42);
-    fireEvent.click(await screen.findByRole("button", { name: "Re-analyse" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Could not start re-analysis (request req-9).");
-    expect(screen.getByRole("button", { name: "Re-analyse" })).toBeEnabled();
+    fireEvent.click(await screen.findByRole("button", { name: "Phân tích lại" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Không thể bắt đầu phân tích lại (mã yêu cầu req-9).");
+    expect(screen.getByRole("button", { name: "Phân tích lại" })).toBeEnabled();
   });
 
   // FR-015: non-admins never get the prompt.
   it("non-admin (canEdit=false) has no Re-analyse button", async () => {
     await saveWith(42, false);
-    await screen.findByRole("spinbutton", { name: "Hate sensitive" });
-    expect(screen.queryByRole("button", { name: "Re-analyse" })).not.toBeInTheDocument();
+    await screen.findByRole("spinbutton", { name: "Thù ghét – Nhạy cảm" });
+    expect(screen.queryByRole("button", { name: "Phân tích lại" })).not.toBeInTheDocument();
   });
 });
 

@@ -5,12 +5,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/base/buttons/button";
 import { NativeSelect } from "@/components/base/select/select-native";
+import { roleLabelVi } from "@/lib/semantics/labels";
 import { formatDateTime } from "@/lib/time/format";
 import { errorMessage, useRemoveMember, useUpdateMemberRole } from "./api";
 import { ROLE_OPTIONS } from "./invite-member-dialog";
 import { SettingsDialog } from "@/features/shared/settings-dialog";
 
-const LAST_ADMIN_HINT = "Project must keep at least one admin.";
+const LAST_ADMIN_HINT = "Dự án phải còn ít nhất một quản trị viên.";
 
 type Props = { pid: string; members: Member[]; timezone: string; currentUserId?: string };
 
@@ -31,7 +32,7 @@ export function MembersTable({ pid, members, timezone, currentUserId }: Props) {
     updateRole.mutate(
       { userId: m.userId, role },
       {
-        onSuccess: () => toast.success(`${m.email} is now ${role}`),
+        onSuccess: () => toast.success(`${m.email} giờ là ${roleLabelVi[role]}`),
         onError: (err) => setError(errorMessage(err)),
         onSettled: () => setPending(null),
       },
@@ -43,7 +44,7 @@ export function MembersTable({ pid, members, timezone, currentUserId }: Props) {
     const m = toRemove;
     setError(undefined);
     remove.mutate(m.userId, {
-      onSuccess: () => toast.success(`Removed ${m.email}`),
+      onSuccess: () => toast.success(`Đã xoá ${m.email}`),
       onError: (err) => setError(errorMessage(err)),
       onSettled: () => setToRemove(null),
     });
@@ -60,11 +61,11 @@ export function MembersTable({ pid, members, timezone, currentUserId }: Props) {
         <table className="w-full text-left text-sm">
           <thead className="bg-secondary text-xs font-semibold text-tertiary">
             <tr>
-              <th className="px-4 py-3">Member</th>
-              <th className="px-4 py-3">Role</th>
-              <th className="px-4 py-3">Added</th>
+              <th className="px-4 py-3">Thành viên</th>
+              <th className="px-4 py-3">Vai trò</th>
+              <th className="px-4 py-3">Ngày thêm</th>
               <th className="px-4 py-3">
-                <span className="sr-only">Actions</span>
+                <span className="sr-only">Thao tác</span>
               </th>
             </tr>
           </thead>
@@ -81,7 +82,7 @@ export function MembersTable({ pid, members, timezone, currentUserId }: Props) {
                   <td className="px-4 py-3">
                     <NativeSelect
                       size="sm"
-                      aria-label={`Role for ${m.email}`}
+                      aria-label={`Vai trò của ${m.email}`}
                       value={busy && pending ? pending.role : m.role}
                       disabled={busy || isLastAdmin}
                       title={isLastAdmin ? LAST_ADMIN_HINT : undefined}
@@ -94,12 +95,12 @@ export function MembersTable({ pid, members, timezone, currentUserId }: Props) {
                     <Button
                       color="tertiary-destructive"
                       size="sm"
-                      aria-label={`Remove ${m.email}`}
+                      aria-label={`Xoá ${m.email}`}
                       isDisabled={isLastAdmin}
                       title={isLastAdmin ? LAST_ADMIN_HINT : undefined}
                       onClick={() => setToRemove(m)}
                     >
-                      Remove
+                      Xoá
                     </Button>
                   </td>
                 </tr>
@@ -108,14 +109,14 @@ export function MembersTable({ pid, members, timezone, currentUserId }: Props) {
           </tbody>
         </table>
       </div>
-      <SettingsDialog isOpen={!!toRemove} onClose={() => setToRemove(null)} title={`Remove ${toRemove?.email ?? ""}?`}>
-        <p className="text-sm text-tertiary">They will lose access to this project immediately.</p>
+      <SettingsDialog isOpen={!!toRemove} onClose={() => setToRemove(null)} title={`Xoá ${toRemove?.email ?? ""}?`}>
+        <p className="text-sm text-tertiary">Người này sẽ mất quyền truy cập dự án ngay lập tức.</p>
         <div className="flex justify-end gap-3">
           <Button color="secondary" onClick={() => setToRemove(null)}>
-            Cancel
+            Huỷ
           </Button>
           <Button color="primary-destructive" isLoading={remove.isPending} onClick={confirmRemove}>
-            Remove
+            Xoá
           </Button>
         </div>
       </SettingsDialog>
