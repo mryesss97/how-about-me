@@ -45,3 +45,11 @@ describe("phrase parser (#243, BR-041)", () => {
     expect(load("?phrase=%20,!!!").phrase).toEqual([]);
   });
 });
+
+describe("term parser (#273, BR-041/BR-042)", () => {
+  it("normalises and drops invalid values", () => {
+    expect(load("?term=%20Gi%C3%A1%20%20V%C3%A9").term).toBe("giá vé");
+    expect(load("?term=!!!").term).toBeNull();
+    expect(load("").term).toBeNull();
+  });
+});

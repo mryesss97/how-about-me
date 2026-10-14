@@ -150,20 +150,20 @@ Each requirement is atomic, testable and has a priority. "Verify" names the test
 
 ## FR-15x/16x · Mentions
 
-| ID     | Requirement                                                                                                                                                                             | Pri | Stories | Verify |
-| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- | ------- | ------ |
-| FR-150 | `GET …/mentions` SHALL return cursor-paginated items (default 25, max 100) with fields per API contract.                                                                                | P0  | US-110  | TC-MEN |
-| FR-151 | List rows SHALL show platform, username, time (tz), preview, matched queries, sentiment/safety badges, top intents/topics, language, confidence, external link.                         | P0  | US-110  | TC-MEN |
-| FR-152 | Filters: `from,to,queryIds[],q,relevance[],sentiment[],safety[],intent[],topic[],language[],analysisStatus[],reviewStatus[]`.                                                           | P0  | US-111  | TC-MEN |
-| FR-153 | Sort: `newest` (default), `oldest`, `safety_desc`, `confidence_asc`, `relevance_desc`.                                                                                                  | P0  | US-112  | TC-MEN |
-| FR-154 | `GET …/mentions/:id` SHALL return source, matches, current analysis (with category scores & versions, key phrases of the current analysis — #250), run history summary, overrides (P1). | P0  | US-113  | TC-MEN |
-| FR-155 | Detail SHALL provide actions: re-analyze (role-gated), copy id, open on Threads, override (P1).                                                                                         | P0  | US-113  | TC-MEN |
-| FR-156 | Analysis status badges SHALL show pending/processing/failed/stale; failed shows error code.                                                                                             | P0  | US-114  | TC-MEN |
-| FR-157 | External links SHALL use `target=_blank rel="noopener noreferrer"`.                                                                                                                     | P0  | US-115  | TC-MEN |
-| FR-158 | Post text SHALL be rendered as plain text; no HTML injection.                                                                                                                           | P0  | US-116  | TC-MEN |
-| FR-159 | Empty state SHALL distinguish no-data vs sync-failed vs analysis-pending.                                                                                                               | P0  | US-117  | TC-MEN |
-| FR-160 | Deep link `/mentions/:id` SHALL work directly (SSR/CSR) with auth.                                                                                                                      | P0  | US-121  | TC-MEN |
-| FR-161 | Text search `q` SHALL use Postgres FTS (`tsvector` GIN) with ILIKE fallback for short terms.                                                                                            | P0  | US-111  | TC-MEN |
+| ID     | Requirement                                                                                                                                                                                   | Pri | Stories | Verify |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- | ------- | ------ |
+| FR-150 | `GET …/mentions` SHALL return cursor-paginated items (default 25, max 100) with fields per API contract.                                                                                      | P0  | US-110  | TC-MEN |
+| FR-151 | List rows SHALL show platform, username, time (tz), preview, matched queries, sentiment/safety badges, top intents/topics, language, confidence, external link.                               | P0  | US-110  | TC-MEN |
+| FR-152 | Filters: `from,to,queryIds[],q,relevance[],sentiment[],safety[],intent[],topic[],language[],analysisStatus[],reviewStatus[],term` (`term`: one term, BR-042 match, also on analytics — #273). | P0  | US-111  | TC-MEN |
+| FR-153 | Sort: `newest` (default), `oldest`, `safety_desc`, `confidence_asc`, `relevance_desc`.                                                                                                        | P0  | US-112  | TC-MEN |
+| FR-154 | `GET …/mentions/:id` SHALL return source, matches, current analysis (with category scores & versions, key phrases of the current analysis — #250), run history summary, overrides (P1).       | P0  | US-113  | TC-MEN |
+| FR-155 | Detail SHALL provide actions: re-analyze (role-gated), copy id, open on Threads, override (P1).                                                                                               | P0  | US-113  | TC-MEN |
+| FR-156 | Analysis status badges SHALL show pending/processing/failed/stale; failed shows error code.                                                                                                   | P0  | US-114  | TC-MEN |
+| FR-157 | External links SHALL use `target=_blank rel="noopener noreferrer"`.                                                                                                                           | P0  | US-115  | TC-MEN |
+| FR-158 | Post text SHALL be rendered as plain text; no HTML injection.                                                                                                                                 | P0  | US-116  | TC-MEN |
+| FR-159 | Empty state SHALL distinguish no-data vs sync-failed vs analysis-pending.                                                                                                                     | P0  | US-117  | TC-MEN |
+| FR-160 | Deep link `/mentions/:id` SHALL work directly (SSR/CSR) with auth.                                                                                                                            | P0  | US-121  | TC-MEN |
+| FR-161 | Text search `q` SHALL use Postgres FTS (`tsvector` GIN) with ILIKE fallback for short terms.                                                                                                  | P0  | US-111  | TC-MEN |
 
 ## FR-17x · System Status & Observability
 

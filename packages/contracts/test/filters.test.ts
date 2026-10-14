@@ -91,3 +91,17 @@ describe("phrase filter (FR-148, BR-041)", () => {
     expect(AnalysisFiltersSchema.safeParse({ phrase: "🔥" }).success).toBe(false);
   });
 });
+
+// BR-042, #273: scalar `term` filter normalised with BR-041.
+describe("term filter (BR-042, #273)", () => {
+  it("normalises and is optional", () => {
+    expect(AnalysisFiltersSchema.parse({}).term).toBeUndefined();
+    expect(AnalyticsQuerySchema.parse({ term: "  Giá Vé " }).term).toBe("giá vé");
+    expect(MentionsListQuerySchema.parse({ term: "Giá,vé" }).term).toBe("giá vé");
+  });
+  it("rejects empty, no letter/digit, and >60 chars", () => {
+    for (const term of ["", "   ", "!!!", "a".repeat(61)]) {
+      expect(AnalysisFiltersSchema.safeParse({ term }).success).toBe(false);
+    }
+  });
+});

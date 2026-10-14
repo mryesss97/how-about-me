@@ -26,6 +26,15 @@ export const PhraseFilterSchema = z
   .transform((v) => normalizePhrase(v))
   .pipe(z.string({ error: "Invalid phrase" }));
 
+/** Term filter (BR-042, #273): one term, trimmed, 1–60 chars, normalised with BR-041 like landing terms. */
+export const TermFilterSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(PHRASE_MAX_LENGTH)
+  .transform((v) => normalizePhrase(v))
+  .pipe(z.string({ error: "Invalid term" }));
+
 /** Shared analytics/mentions filters — docs/02-architecture/05-api-contract.md §6–§7. Default relevance = relevant (BR-016).
  * Unrefined base so resources can `.extend()` it; wrap the final schema with `withDateRange`. */
 export const AnalysisFiltersBaseSchema = z.object({
@@ -39,6 +48,7 @@ export const AnalysisFiltersBaseSchema = z.object({
   intent: csvArray(IntentLabelSchema).default([]),
   topic: csvArray(TopicLabelSchema).default([]),
   phrase: csvArray(PhraseFilterSchema).default([]),
+  term: TermFilterSchema.optional(),
   language: csvArray(LanguageCodeSchema).default([]),
   analysisStatus: csvArray(AnalysisStatusSchema).default([]),
   timeField: z.enum(["published_at", "first_seen_at"]).default("published_at"),

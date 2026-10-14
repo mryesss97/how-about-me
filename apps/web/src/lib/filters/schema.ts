@@ -55,6 +55,8 @@ export interface Filters {
   analysisStatus: AnalysisStatus[];
   /** Key phrases, normalised with BR-041. */
   phrase: string[];
+  /** BR-042 term filter (#273), normalised with BR-041. */
+  term: string | null;
   q: string | null;
   sort: MentionSort;
   compare: boolean;
@@ -75,6 +77,7 @@ export function defaultFilters(tz: string): Filters {
     language: [],
     analysisStatus: [],
     phrase: [],
+    term: null,
     q: null,
     sort: "newest",
     compare: false,

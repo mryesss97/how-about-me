@@ -134,3 +134,19 @@ describe("sql helpers", () => {
     expect(s.values).toEqual(["UTC", "UTC"]);
   });
 });
+
+// BR-042, #273: term filter in the base set.
+describe("buildBaseSetCte term filter (BR-042)", () => {
+  it("adds a text-or-phrase EXISTS with the term as a bound param", () => {
+    const s = buildBaseSetCte(scopeOf({ term: "50% Giá" }));
+    const sql = norm(s);
+    expect(sql).toContain("FROM social_posts tp WHERE tp.id = e.post_id");
+    expect(sql).toContain("strpos(ap.phrase, ?::text) > 0");
+    expect(sql).not.toContain("50%");
+    expect(s.values).toContain("50% giá");
+  });
+  it("is absent when term is missing or ignored", () => {
+    expect(norm(buildBaseSetCte(scopeOf({})))).not.toContain("social_posts tp");
+    expect(norm(buildBaseSetCte(scopeOf({ term: "x" }), { ignore: ["term"] }))).not.toContain("social_posts tp");
+  });
+});
