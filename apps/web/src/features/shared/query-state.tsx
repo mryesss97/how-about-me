@@ -5,6 +5,7 @@ import { AlertCircle, Inbox01, Lock01, RefreshCcw01 } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
 import { FeaturedIcon } from "@/components/foundations/featured-icon/featured-icon";
 import { cx } from "@/utils/cx";
+import { StateIllustration, type StateIllustrationName } from "./state-illustration";
 
 /**
  * The four non-happy states every data widget must be able to show —
@@ -30,6 +31,8 @@ export type QueryStateProps = {
   emptyTitle?: string;
   emptyDescription?: string;
   emptyAction?: ReactNode;
+  /** Opt-in brand illustration for page-level empty states only; cards/widgets keep the FeaturedIcon. */
+  emptyIllustration?: StateIllustrationName;
   className?: string;
   children: ReactNode;
 };
@@ -44,6 +47,7 @@ export function QueryState({
   emptyTitle = "No relevant mentions found in this period.",
   emptyDescription = "Try widening the time range or clearing some filters.",
   emptyAction,
+  emptyIllustration,
   className,
   children,
 }: QueryStateProps) {
@@ -53,7 +57,15 @@ export function QueryState({
   if (isLoading) return <div className={className}>{skeleton ?? <SkeletonBlock />}</div>;
   if (error) return <ErrorState error={error} onRetry={onRetry} className={className} />;
   if (isEmpty)
-    return <EmptyState title={emptyTitle} description={emptyDescription} action={emptyAction} className={className} />;
+    return (
+      <EmptyState
+        title={emptyTitle}
+        description={emptyDescription}
+        action={emptyAction}
+        illustration={emptyIllustration}
+        className={className}
+      />
+    );
   return <>{children}</>;
 }
 
@@ -111,15 +123,21 @@ export function ErrorState({
   );
 }
 
+/**
+ * `illustration` is opt-in for states that fill the page / main content area (Mentions list, Reviews queue,
+ * no project). Without it the compact FeaturedIcon is kept — chart cards and widgets rely on that default.
+ */
 export function EmptyState({
   title,
   description,
   action,
+  illustration,
   className,
 }: {
   title: string;
   description?: string;
   action?: ReactNode;
+  illustration?: StateIllustrationName;
   className?: string;
 }) {
   return (
@@ -127,7 +145,11 @@ export function EmptyState({
       role="status"
       className={cx("flex flex-col items-center justify-center gap-3 px-4 py-12 text-center", className)}
     >
-      <FeaturedIcon color="gray" theme="modern" icon={Inbox01} size="lg" />
+      {illustration ? (
+        <StateIllustration name={illustration} />
+      ) : (
+        <FeaturedIcon color="gray" theme="modern" icon={Inbox01} size="lg" />
+      )}
       <h3 className="text-md font-semibold text-primary">{title}</h3>
       {description ? <p className="max-w-md text-sm text-tertiary">{description}</p> : null}
       {action}

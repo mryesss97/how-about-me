@@ -67,6 +67,8 @@ Concept: an ear + a speech bubble — "Lắng nghe. Thấu hiểu." Palette: Sky
 | Error               | Inline error card with `requestId` and "Retry"                                                                   |
 | Forbidden           | Full-page "You don't have permission to view this page." + back link                                             |
 
+Illustrations (#245): page-level empty states (Mentions list, Reviews queue, "not a member of any project") show the brand v2 `empty` illustration; card/widget states (chart cards, small panels) keep the compact icon. `pending` and `sync-attention` illustrations are reserved for page-level states: System Status (T-060) uses `sync-attention` for "connection needs attention / last sync failed", a future analysis-pending page uses `pending`. Banners above a page stay banners (no illustration). Illustrations are decorative (`alt=""`, `aria-hidden`); the heading carries the meaning.
+
 Rule: never render "0 negative mentions" when `sentimentAnalyzed = 0`; render "—" with tooltip "No analysed mentions in range".
 
 ### 2.4 Tooltips & definitions

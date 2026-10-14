@@ -6,7 +6,13 @@ import { useCurrentProject } from "./use-current-project";
 
 /** Signed in but not a member of any project: nothing to show (FR-018, FR-031). */
 export function NoProjectState() {
-  return <EmptyState title="You are not a member of any project." description="Ask an admin to invite you." />;
+  return (
+    <EmptyState
+      illustration="empty"
+      title="You are not a member of any project."
+      description="Ask an admin to invite you."
+    />
+  );
 }
 
 /**
