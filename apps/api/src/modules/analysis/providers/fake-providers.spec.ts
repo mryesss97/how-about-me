@@ -1,4 +1,4 @@
-import { ClassifierOutputSchema } from "@how-about-me/contracts";
+import { ClassifierOutputV2Schema } from "@how-about-me/contracts";
 import { mapSafetyLevel } from "@how-about-me/taxonomy";
 import { FakeContentClassifier } from "./fake-classifier.provider";
 import { FakeSafetyProvider } from "./fake-safety.provider";
@@ -27,7 +27,7 @@ describe("FakeContentClassifier (FR-112)", () => {
     ];
     for (const text of texts) {
       const out = await classifier.classify(input(text), CTX);
-      expect(() => ClassifierOutputSchema.parse(stripUsage(out))).not.toThrow();
+      expect(() => ClassifierOutputV2Schema.parse(stripUsage(out))).not.toThrow();
     }
   });
 
@@ -98,6 +98,24 @@ describe("FakeContentClassifier (FR-112)", () => {
     expect(classifier.provider).toBe("fake");
     expect(classifier.model).toContain("fake");
     expect(classifier.promptVersion).toContain("fake");
+  });
+
+  // FR-120, BR-041, BR-023: fake-v2 emits deterministic key phrases.
+  it("emits normalised key phrases under fake-v2, [] for irrelevant, at most 5", async () => {
+    expect(classifier.promptVersion).toBe("fake-v2");
+    const out = await classifier.classify(
+      input("Giá vé 1Zone chát, check-in xếp hàng lâu, app lỗi hoài, nhân viên không hỗ trợ, thất vọng"),
+      CTX,
+    );
+    expect(out.keyPhrases).toEqual(["giá vé", "check-in", "app lỗi", "xếp hàng", "nhân viên"]);
+    const again = await classifier.classify(
+      input("Giá vé 1Zone chát, check-in xếp hàng lâu, app lỗi hoài, nhân viên không hỗ trợ, thất vọng"),
+      CTX,
+    );
+    expect(again.keyPhrases).toEqual(out.keyPhrases);
+    const irrelevant = await classifier.classify(input("what time zone is the 1zone check-in livestream in?"), CTX);
+    expect(irrelevant.relevance.label).toBe("irrelevant");
+    expect(irrelevant.keyPhrases).toEqual([]);
   });
 });
 

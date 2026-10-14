@@ -1,4 +1,4 @@
-import type { TopicSentimentResponse } from "@how-about-me/contracts";
+import type { PhraseSentimentResponse, TopicSentimentResponse } from "@how-about-me/contracts";
 
 /**
  * Pure helpers for distribution endpoints (T-093) — docs/01-product/07-metric-definitions.md §3.2–3.6.
@@ -77,4 +77,50 @@ export function toTopicSentimentRows<L extends TopicSentimentRow["topic"]>(
     if (b.topic === "other") return -1;
     return b.total - a.total;
   });
+}
+
+export type PhraseSentimentCell = { phrase: string; sentiment: string; count: number };
+export type PhraseSentimentCounts = {
+  cells: PhraseSentimentCell[];
+  sentimentAnalyzed: number;
+  phraseAnalyzed: number;
+  totalPhrases: number;
+};
+type PhraseSentimentRow = PhraseSentimentResponse["rows"][number];
+
+/**
+ * FR-148, FR-140 — metric-definitions §4 Phrase × sentiment. One row per phrase present in `cells`;
+ * total = positive + neutral + negative; rows below `minMentions` dropped (defensive, SQL already filters);
+ * sorted total desc then phrase by code point (matches SQL `COLLATE "C"`), cut at `limit`.
+ */
+export function toPhraseSentimentRows(
+  cells: readonly PhraseSentimentCell[],
+  opts: { limit: number; minMentions: number },
+): PhraseSentimentRow[] {
+  const byPhrase = new Map<string, { positive: number; neutral: number; negative: number }>();
+  for (const c of cells) {
+    if (c.sentiment !== "positive" && c.sentiment !== "neutral" && c.sentiment !== "negative") continue;
+    const cell = byPhrase.get(c.phrase) ?? { positive: 0, neutral: 0, negative: 0 };
+    cell[c.sentiment] += c.count;
+    byPhrase.set(c.phrase, cell);
+  }
+  const rows = [...byPhrase].map(([phrase, { positive, neutral, negative }]) => {
+    const total = positive + neutral + negative;
+    return { phrase, positive, neutral, negative, total, negativeShare: share(negative, total) };
+  });
+  return rows
+    .filter((r) => r.total >= opts.minMentions)
+    .sort((a, b) => b.total - a.total || compareCodePoints(a.phrase, b.phrase))
+    .slice(0, opts.limit);
+}
+
+/** Code-point order = UTF-8 byte order = SQL `COLLATE "C"` (JS `<` compares UTF-16 units, which differs past the BMP). */
+export function compareCodePoints(a: string, b: string): number {
+  const x = Array.from(a, (c) => c.codePointAt(0) ?? 0);
+  const y = Array.from(b, (c) => c.codePointAt(0) ?? 0);
+  for (let i = 0; i < Math.min(x.length, y.length); i++) {
+    const d = (x[i] ?? 0) - (y[i] ?? 0);
+    if (d !== 0) return d;
+  }
+  return x.length - y.length;
 }

@@ -11,6 +11,7 @@ import relevanceOnly from "./__fixtures__/openai-classifier/relevance-only.json"
 import praise from "./__fixtures__/openai-classifier/relevant-praise.json";
 import spam from "./__fixtures__/openai-classifier/spam.json";
 import uncertain from "./__fixtures__/openai-classifier/uncertain.json";
+import v2KeyPhrases from "./__fixtures__/openai-classifier/v2-key-phrases.json";
 import type { FetchFn } from "./openai-http";
 import { OpenAiStructuredClassifier, toOpenAiStrictSchema } from "./openai-structured.classifier";
 
@@ -22,7 +23,11 @@ const input = { text: POST_TEXT, matchedTerms: ["1Zone"], brandContext: "BRAND-C
 const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", ...headers } });
 
-type Opts = { skipSummaryForSpam?: boolean; prices?: { inputPer1M: number; outputPer1M: number } };
+type Opts = {
+  skipSummaryForSpam?: boolean;
+  prices?: { inputPer1M: number; outputPer1M: number };
+  promptVersion?: string;
+};
 
 function setup(responses: (() => Response)[], opts: Opts = {}) {
   const slept: number[] = [];
@@ -36,6 +41,8 @@ function setup(responses: (() => Response)[], opts: Opts = {}) {
     maxRetries: 2,
     prices: opts.prices ?? { inputPer1M: 0, outputPer1M: 0 },
     skipSummaryForSpam: opts.skipSummaryForSpam ?? true,
+    // Existing fixtures are v1 outputs; v2 cases opt in explicitly.
+    promptVersion: opts.promptVersion ?? "classifier-v1",
     fetchFn,
     retry: { random: () => 1, sleep: async (ms) => void slept.push(ms) },
   });
@@ -355,6 +362,57 @@ describe("OpenAiStructuredClassifier (T-072, FR-106..110, FR-117)", () => {
       },
       additionalProperties: false,
       required: ["a"],
+    });
+  });
+
+  // FR-120, BR-041, BR-023: classifier-v2 asks for key phrases; v1 request stays unchanged.
+  describe("classifier-v2 key phrases (FR-120, BR-041)", () => {
+    const v2 = { promptVersion: "classifier-v2" };
+    const withContent = (patch: Record<string, unknown>) => {
+      const fx = structuredClone(v2KeyPhrases);
+      const choice = fx.choices[0];
+      if (!choice) throw new Error("fixture");
+      choice.message.content = JSON.stringify({ ...(JSON.parse(choice.message.content) as object), ...patch });
+      return fx;
+    };
+
+    it("v1 request schema has no keyPhrases; v2 lists it in required", async () => {
+      const a = setup([() => json(praise)]);
+      await a.classifier.classify(input, ctx);
+      expect(JSON.stringify(sentBody(a.fetchFn).response_format)).not.toContain("keyPhrases");
+      const b = setup([() => json(v2KeyPhrases)], v2);
+      await b.classifier.classify(input, ctx);
+      const rf = sentBody(b.fetchFn).response_format.json_schema;
+      expect(rf.name).toBe("classifier_output_v2");
+      expect(rf.schema.required).toContain("keyPhrases");
+    });
+
+    it("normalises and dedupes phrases", async () => {
+      const { classifier } = setup([() => json(v2KeyPhrases)], v2);
+      const out = await classifier.classify(input, ctx);
+      expect(classifier.promptVersion).toBe("classifier-v2");
+      expect(out.keyPhrases).toEqual(["hát live", "đỉnh quá"]);
+    });
+
+    it("forces [] for an irrelevant post", async () => {
+      const fx = withContent({ relevance: { label: "irrelevant", confidence: 0.95, explanation: "time zone" } });
+      const { classifier } = setup([() => json(fx)], v2);
+      const out = await classifier.classify(input, ctx);
+      expect(out.keyPhrases).toEqual([]);
+    });
+
+    it("missing keyPhrases → ANALYSIS_SCHEMA_INVALID", async () => {
+      const { classifier } = setup([() => json(praise)], v2);
+      const err = await errorOf(classifier.classify(input, ctx));
+      expect(err.code).toBe("ANALYSIS_SCHEMA_INVALID");
+      expect(err.message).toContain("keyPhrases");
+    });
+
+    it("empty text short-circuits with keyPhrases []", async () => {
+      const { classifier, fetchFn } = setup([], v2);
+      const out = await classifier.classify({ ...input, text: "  " }, ctx);
+      expect(out.keyPhrases).toEqual([]);
+      expect(fetchFn).not.toHaveBeenCalled();
     });
   });
 });

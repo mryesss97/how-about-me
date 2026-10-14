@@ -47,6 +47,7 @@ Rules are normative and referenced by code comments (`// BR-007`) and tests.
 - **BR-025** Effective value for analytics = active analyst override > latest completed AI analysis.
 - **BR-026** Re-analysis creates a new run; previous runs are retained for audit/comparison.
 - **BR-027** Hidden model reasoning (chain-of-thought) is never stored; only a short user-facing explanation.
+- **BR-041** Key phrases (classifier-v2+, FR-120) are normalised before storage and filtering: Unicode NFC, lowercase, `, ; |` and line breaks → space, quotes/punctuation stripped at both ends (inner `-` and `/` kept, e.g. `check-in`), whitespace collapsed and trimmed. Empty, letter/digit-free or > 60-character phrases are dropped; duplicates after normalisation collapse; at most 5 per post. Vietnamese accents are **not** stripped and synonyms are **not** merged (`gia ve` ≠ `giá vé`). Phrases are stored append-only per analysis (`analysis_phrases`), never updated; irrelevant posts have none.
 
 ### Analytics
 
@@ -72,33 +73,34 @@ Rules are normative and referenced by code comments (`// BR-007`) and tests.
 
 ## 2. Glossary
 
-| Term                      | Definition                                                                                                                           |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| **Mention**               | A stored `social_posts` row (a public Threads post discovered by a listening query).                                                 |
-| **Relevant mention**      | Mention whose effective relevance is `relevant`.                                                                                     |
-| **Listening query**       | A configured keyword or topic tag that the collector searches on a schedule.                                                         |
-| **Query match**           | Link between a post and a query that returned it (`post_query_matches`).                                                             |
-| **Monitoring project**    | Logical listening scope (brand/artist/event); MVP has one.                                                                           |
-| **Sync job**              | One execution of a query search window with counters (`sync_jobs`).                                                                  |
-| **Backfill**              | A manual sync over a historical window.                                                                                              |
-| **Overlap**               | Extra time re-fetched before `last_successful_sync_at` to catch late-indexed posts.                                                  |
-| **Collection lag**        | `now − max(last_successful_sync_at)` across enabled queries.                                                                         |
-| **Analysis run**          | One versioned execution of the analysis pipeline for a post revision (`analysis_runs`).                                              |
-| **Effective analysis**    | Latest completed run overlaid with active analyst overrides.                                                                         |
-| **Relevance**             | `relevant / uncertain / irrelevant` — is this post about 1Zone/Eventista?                                                            |
-| **Sentiment**             | `positive / neutral / negative` attitude expressed.                                                                                  |
-| **Safety level**          | `safe / sensitive / severe` product policy mapping over moderation categories.                                                       |
-| **Intent**                | Multi-label purpose of the post (complaint, question, purchase_intent…).                                                             |
-| **Topic**                 | Multi-label subject of the post (artist, ticket, price…).                                                                            |
-| **model_confidence**      | Estimated confidence from the classifier; prioritisation only.                                                                       |
-| **Taxonomy version**      | Version string of the label sets (e.g. `taxonomy-v1`).                                                                               |
-| **Prompt version**        | Version string of the classifier prompt (e.g. `classifier-v1`).                                                                      |
-| **Safety policy version** | Version string of the category→level mapping (e.g. `safety-policy-v1`).                                                              |
-| **Coverage**              | Share of relevant mentions in a range that have completed analysis.                                                                  |
-| **Drill-down**            | Navigating from an aggregate (KPI/chart segment) to the underlying mentions with equivalent filters.                                 |
-| **Circuit breaker**       | Temporary pause of provider calls after repeated failures.                                                                           |
-| **RECENT / TOP**          | Threads search types: chronological recent results vs ranked top results.                                                            |
-| **KEYWORD / TAG**         | Threads search modes: free-text keyword vs topic tag.                                                                                |
-| **Soft delete**           | Marking `deleted_at` instead of removing the row.                                                                                    |
-| **Audit log**             | Immutable record of who did what to which entity and when.                                                                           |
-| **Review queue**          | Mentions that are `uncertain`, low-confidence (< medium band of the run's policy) or failed, until marked reviewed (FR-195, BR-040). |
+| Term                      | Definition                                                                                                                               |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| **Key phrase**            | Short normalised phrase (1–4 words, BR-041) taken from a post by the classifier (classifier-v2+); not a taxonomy label (FR-120, FR-148). |
+| **Mention**               | A stored `social_posts` row (a public Threads post discovered by a listening query).                                                     |
+| **Relevant mention**      | Mention whose effective relevance is `relevant`.                                                                                         |
+| **Listening query**       | A configured keyword or topic tag that the collector searches on a schedule.                                                             |
+| **Query match**           | Link between a post and a query that returned it (`post_query_matches`).                                                                 |
+| **Monitoring project**    | Logical listening scope (brand/artist/event); MVP has one.                                                                               |
+| **Sync job**              | One execution of a query search window with counters (`sync_jobs`).                                                                      |
+| **Backfill**              | A manual sync over a historical window.                                                                                                  |
+| **Overlap**               | Extra time re-fetched before `last_successful_sync_at` to catch late-indexed posts.                                                      |
+| **Collection lag**        | `now − max(last_successful_sync_at)` across enabled queries.                                                                             |
+| **Analysis run**          | One versioned execution of the analysis pipeline for a post revision (`analysis_runs`).                                                  |
+| **Effective analysis**    | Latest completed run overlaid with active analyst overrides.                                                                             |
+| **Relevance**             | `relevant / uncertain / irrelevant` — is this post about 1Zone/Eventista?                                                                |
+| **Sentiment**             | `positive / neutral / negative` attitude expressed.                                                                                      |
+| **Safety level**          | `safe / sensitive / severe` product policy mapping over moderation categories.                                                           |
+| **Intent**                | Multi-label purpose of the post (complaint, question, purchase_intent…).                                                                 |
+| **Topic**                 | Multi-label subject of the post (artist, ticket, price…).                                                                                |
+| **model_confidence**      | Estimated confidence from the classifier; prioritisation only.                                                                           |
+| **Taxonomy version**      | Version string of the label sets (e.g. `taxonomy-v1`).                                                                                   |
+| **Prompt version**        | Version string of the classifier prompt (e.g. `classifier-v1`).                                                                          |
+| **Safety policy version** | Version string of the category→level mapping (e.g. `safety-policy-v1`).                                                                  |
+| **Coverage**              | Share of relevant mentions in a range that have completed analysis.                                                                      |
+| **Drill-down**            | Navigating from an aggregate (KPI/chart segment) to the underlying mentions with equivalent filters.                                     |
+| **Circuit breaker**       | Temporary pause of provider calls after repeated failures.                                                                               |
+| **RECENT / TOP**          | Threads search types: chronological recent results vs ranked top results.                                                                |
+| **KEYWORD / TAG**         | Threads search modes: free-text keyword vs topic tag.                                                                                    |
+| **Soft delete**           | Marking `deleted_at` instead of removing the row.                                                                                        |
+| **Audit log**             | Immutable record of who did what to which entity and when.                                                                               |
+| **Review queue**          | Mentions that are `uncertain`, low-confidence (< medium band of the run's policy) or failed, until marked reviewed (FR-195, BR-040).     |

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { parseClassifierOutput, type ClassifierOutput } from "@how-about-me/contracts";
+import { classifierSchemaVersionOf, parseClassifierOutput, type ClassifierOutput } from "@how-about-me/contracts";
 import { renderTaxonomyGuide } from "@how-about-me/taxonomy";
 import { z } from "zod";
 import type { ClassifierInput } from "../providers/interfaces";
@@ -8,7 +8,7 @@ import type { ClassifierInput } from "../providers/interfaces";
 /**
  * Loads a versioned classifier prompt (`prompts/<version>.md`, copied to `dist` by nest-cli assets) —
  * docs/02-architecture/07-analysis-pipeline.md §5. Each file is parsed once and cached; every few-shot output
- * is validated with `parseClassifierOutput` so a broken prompt fails fast at boot, not per post (BR-023).
+ * is validated with `parseClassifierOutput` against the schema of its version (v1 / v2, FR-120) so a broken prompt fails fast at boot, not per post (BR-023).
  */
 export type PromptExample = {
   input: { text: string; matchedTerms: string[]; username?: string };
@@ -40,6 +40,7 @@ export function parsePrompt(version: string, source: string): ClassifierPrompt {
   const system = sections.get("system")?.trim();
   const userTemplate = sections.get("user")?.trim();
   const examplesSrc = sections.get("examples");
+  const schemaVersion = classifierSchemaVersionOf(version);
   if (!system || !userTemplate || examplesSrc === undefined)
     throw new Error(`Prompt ${version}: missing ## system / ## user / ## examples section`);
 
@@ -50,7 +51,7 @@ export function parsePrompt(version: string, source: string): ClassifierPrompt {
       const parts = splitSections(chunk, /^#### (\w+)\s*$/m);
       const input = ExampleInputSchema.safeParse(readJsonBlock(parts.get("input"), version, i));
       if (!input.success) throw new Error(`Prompt ${version}: example ${i + 1} input invalid`);
-      const output = parseClassifierOutput(readJsonBlock(parts.get("output"), version, i));
+      const output = parseClassifierOutput(readJsonBlock(parts.get("output"), version, i), schemaVersion);
       if (!output.ok)
         throw new Error(`Prompt ${version}: example ${i + 1} output invalid: ${output.issues.join("; ")}`);
       return { input: input.data, output: output.value };

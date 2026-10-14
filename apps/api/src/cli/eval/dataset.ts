@@ -23,6 +23,8 @@ export const EvalItemSchema = z.object({
     topics: z.array(TopicLabelSchema).min(1).optional(),
     language: LanguageCodeSchema.optional(),
     safetyLevel: SafetyLevelSchema,
+    /** Gold key phrases (FR-120); compared after BR-041 normalisation. Informational, not a freeze gate. */
+    keyPhrases: z.array(z.string()).max(5).optional(),
   }),
   notes: z.string().optional(),
   labeler: z.string().optional(),

@@ -35,4 +35,5 @@ Design: see docs/02-architecture/02-backend-design.md §3 and the related pipeli
 ## Topic × sentiment (T-149)
 
 - `GET …/analytics/topic-sentiment` — in the distributions group (`analytics-distributions.{controller,service,repository}.ts`), pure helper `toTopicSentimentRows` in `distributions.ts`.
+- `GET …/analytics/phrases` (#223, FR-148) — same group; repository `phraseSentimentCounts` (join `analysis_phrases` on the current analysis, threshold + top-N in SQL, scalars as sentinel rows), pure helper `toPhraseSentimentRows`. `phrase[]` filter lives in `buildBaseSetCte` (ignorable as `"phrase"`).
 - One SQL: DISTINCT posts per (effective topic, effective sentiment) over `B`; posts without sentiment drop out, labels outside the taxonomy ignored. Row denominator = `total`; always 12 rows, `total` desc, `other` (real label) last.

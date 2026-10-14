@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { normalizeClassifierOutput, type ClassifierOutput } from "@how-about-me/contracts";
+import { normalizePhrases } from "@how-about-me/taxonomy";
 import type { IntentLabel, RelevanceLabel, SentimentLabel, TopicLabel } from "@how-about-me/taxonomy";
 import { detectLanguage, estimateCostUsd, estimateTokens, round2, seedFrom, seededFloat } from "./deterministic";
 import type { AnalysisContext, ClassifierInput, ContentClassifier, Usage } from "./interfaces";
@@ -48,13 +49,31 @@ const TOPIC_RULES: Rule<TopicLabel>[] = [
   { pattern: /(chỗ ngồi|địa điểm|bãi xe|nhà thi đấu|venue)/i, label: "venue" },
 ];
 
+/** FR-120 / BR-041: deterministic key phrases (brand guide v2 examples), in rule order, capped at 5. */
+const PHRASE_RULES: { pattern: RegExp; phrase: string }[] = [
+  { pattern: /giá vé|vé .*(chát|đắt|rẻ)/i, phrase: "giá vé" },
+  { pattern: /check-?in/i, phrase: "check-in" },
+  { pattern: /hoàn tiền|refund/i, phrase: "hoàn tiền" },
+  { pattern: /app .*lỗi|lỗi .*app|lỗi hoài/i, phrase: "app lỗi" },
+  { pattern: /đỉnh quá|đỉnh thật/i, phrase: "đỉnh quá" },
+  { pattern: /xếp hàng|queue/i, phrase: "xếp hàng" },
+  { pattern: /âm thanh/i, phrase: "âm thanh" },
+  { pattern: /trừ tiền/i, phrase: "trừ tiền" },
+  { pattern: /chỗ ngồi/i, phrase: "chỗ ngồi" },
+  { pattern: /nhân viên|staff/i, phrase: "nhân viên" },
+  { pattern: /lightstick/i, phrase: "lightstick" },
+  { pattern: /early bird/i, phrase: "early bird" },
+  { pattern: /thất vọng/i, phrase: "thất vọng" },
+];
+
 const MAX_LABELS = 4;
 
 @Injectable()
 export class FakeContentClassifier implements ContentClassifier {
   readonly provider = "fake";
   readonly model = "fake-classifier-v1";
-  readonly promptVersion = "fake-v1";
+  // BR-023: output shape gained `keyPhrases` (schema v2), so the version moved from fake-v1.
+  readonly promptVersion = "fake-v2";
 
   constructor(
     private readonly prices: { inputPer1M: number; outputPer1M: number } = { inputPer1M: 0, outputPer1M: 0 },
@@ -82,6 +101,12 @@ export class FakeContentClassifier implements ContentClassifier {
     const intents = matchAll(INTENT_RULES, text, "information");
     const topics = matchAll(TOPIC_RULES, text, "other");
 
+    // FR-120: no phrases for an irrelevant post.
+    const keyPhrases =
+      relevanceLabel === "irrelevant"
+        ? []
+        : normalizePhrases(PHRASE_RULES.filter((r) => r.pattern.test(text)).map((r) => r.phrase));
+
     return {
       relevance: {
         label: relevanceLabel,
@@ -96,6 +121,7 @@ export class FakeContentClassifier implements ContentClassifier {
       topics: topics.map((label, i) => ({ label, confidence: round2(seededFloat(seed, 20 + i, 0.55, 0.95)) })),
       language,
       summary: truncate(`Fake summary — ${intents.join(", ")} about ${topics.join(", ")} (${sentimentLabel}).`, 240),
+      keyPhrases,
     };
   }
 

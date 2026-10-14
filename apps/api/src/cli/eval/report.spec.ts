@@ -39,6 +39,9 @@ describe("renderReport (T-079)", () => {
     expect(md).toContain("giá chưa cấu hình");
     expect(md).not.toContain(SECRET_TEXT);
     expect(md).not.toContain("time zone 1zone");
+    // FR-120: phrase section is informational, never a gate row.
+    expect(md).toContain("## Key phrases (informational, not gated)");
+    expect(gateRows(s).some((g) => /phrase/i.test(g.metric))).toBe(false);
   });
 
   it("BR-018: severe gate fails when a severe item is missed", async () => {

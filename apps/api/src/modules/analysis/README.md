@@ -10,7 +10,7 @@ Design: see docs/02-architecture/02-backend-design.md §3 and the related pipeli
 - `safety/safety-mapping.ts` — `toSafetyAnalysis()` maps a provider result to the persisted safety fields (BR-017, BR-018).
 - `providers/openai-structured.classifier.ts` — real `ContentClassifier` over OpenAI `/chat/completions` with strict JSON-schema outputs (T-072); fixtures in `providers/__fixtures__/openai-classifier/` (hand-written until T-081).
 - `providers/adapter-retry.ts` — in-adapter retry policy shared by both OpenAI adapters.
-- `prompts/classifier-v1.md` + `prompts/prompt-loader.ts` — versioned prompt (frozen; edit → `classifier-v2`) and its loader/renderer.
+- `prompts/classifier-v1.md`, `prompts/classifier-v2.md` (default, adds `keyPhrases`, FR-120) + `prompts/prompt-loader.ts` — versioned prompts (frozen; edit → `classifier-v3`) and their loader/renderer; output schema version follows the prompt (`classifierSchemaVersionOf`).
 
 ## Runs (T-070)
 

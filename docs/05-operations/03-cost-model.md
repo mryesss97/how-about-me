@@ -28,6 +28,8 @@ cost           = input_tokens/1M × price_in + output_tokens/1M × price_out
 
 Illustrative (small structured-output model, price assumptions to be filled with the chosen model): 5 000 analysed posts/month ≈ 5.1 M input + 0.6 M output tokens → typically **< $5/month** at small-model prices; 50 000/month → tens of dollars. Two-step (relevance first) reduces classifier tokens for irrelevant posts by ~85 %.
 
+`classifier-v2` key phrases (#223, estimate to re-measure at T-081): about +150–250 input and +25–50 output tokens per post (≈ +10–15 % vs `classifier-v1`). Re-analysing posts first analysed with v1 costs one full classification per post (bounded by `ANALYSIS_BULK_MAX` per action and by `ANALYSIS_DAILY_BUDGET_USD`).
+
 Guardrails: `ANALYSIS_DAILY_BUDGET_USD`, version dedupe, relevance gate, spam summary skip.
 
 ## 3. Storage planning

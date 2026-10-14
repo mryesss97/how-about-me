@@ -85,6 +85,12 @@ Rules: ≥ 1 label; `other` exclusive.
 - Summary: one sentence, ≤ 240 chars, third person, no hashtags, in **English** (v1 decision for consistent scanning; VI display is a P2 option).
 - Relevance explanation: ≤ 200 chars, user-facing ("Complaint about ticket price."). No reasoning traces.
 
+## 7b. Key phrases (`classifier-v2`, FR-120, BR-041)
+
+Since `classifier-v2` the classifier also returns `keyPhrases`: 0–5 short phrases (1–4 words) taken verbatim or almost verbatim from the post, each naming one concrete aspect (product, service, experience) or a characteristic exclamation — e.g. `giá vé`, `check-in`, `hoàn tiền`, `app lỗi`, `đỉnh quá`. Rules: keep the post's language; Vietnamese written with standard diacritics even when the post has none (the model does this, code never strips accents); lowercase; never a brand name / matched term alone, hashtag, username or URL; `[]` for irrelevant, empty or emoji-only posts. Stored phrases are normalised per BR-041 (NFC, lowercase, edge punctuation stripped, ≤ 60 chars, ≤ 5, deduped; no synonym merging).
+
+Key phrases are **not** taxonomy labels: adding them does not change `taxonomy_version` (§10); the prompt version (`classifier-v2`) carries the change. Sentiment for a phrase is the post's overall sentiment (no aspect-level sentiment in v2). Used by the phrase × sentiment bubble map (FR-148).
+
 ## 8. Confidence policy (v1)
 
 | Band   | Range     | Behaviour                                                                                       |

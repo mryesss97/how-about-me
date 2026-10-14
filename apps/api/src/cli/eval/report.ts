@@ -80,6 +80,18 @@ export function renderReport(s: EvalSummary, meta: ReportMeta): string {
     "",
   );
 
+  // FR-120: informational only, not part of the freeze gate.
+  if (s.phrases) {
+    const p = s.phrases;
+    out.push(
+      "## Key phrases (informational, not gated)",
+      "",
+      `- Coverage: ${fmt(p.coverage)} of ${p.n} relevant/uncertain item(s) have ≥ 1 phrase; avg ${fmt(p.avgPhrasesPerPost, 2)} per item`,
+      `- vs gold (n=${p.goldN}): micro-P ${fmt(p.microPrecision)}, micro-R ${fmt(p.microRecall)}, micro-F1 ${fmt(p.microF1)}`,
+      "",
+    );
+  }
+
   out.push(
     "## Usage & latency",
     "",

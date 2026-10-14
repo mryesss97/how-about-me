@@ -1,6 +1,13 @@
 import { INTENT_LABELS, TOPIC_LABELS } from "@how-about-me/taxonomy";
 import { bucketInterval } from "../../common/time/range";
-import { sortByCountDesc, toDistribution, toTopicSentimentRows, toTopicsDistribution } from "./distributions";
+import {
+  compareCodePoints,
+  sortByCountDesc,
+  toDistribution,
+  toPhraseSentimentRows,
+  toTopicSentimentRows,
+  toTopicsDistribution,
+} from "./distributions";
 
 /** T-093 pure helpers — metric-definitions §3.1–3.6, FR-140. */
 describe("distributions helpers (T-093)", () => {
@@ -110,5 +117,53 @@ describe("toTopicSentimentRows", () => {
     ]);
     expect(rows).toHaveLength(TOPIC_LABELS.length);
     expect(rows.every((r) => r.total === 0)).toBe(true);
+  });
+});
+
+// FR-148, FR-140, FR-147: phrase × sentiment rows.
+describe("toPhraseSentimentRows (FR-148)", () => {
+  const cells = [
+    { phrase: "giá vé", sentiment: "negative", count: 3 },
+    { phrase: "giá vé", sentiment: "positive", count: 1 },
+    { phrase: "check-in", sentiment: "neutral", count: 4 },
+    { phrase: "app lỗi", sentiment: "negative", count: 4 },
+    { phrase: "đỉnh quá", sentiment: "positive", count: 1 },
+    { phrase: "x", sentiment: "mixed", count: 9 },
+  ];
+  it("totals = pos + neu + neg, negativeShare, unknown sentiments ignored", () => {
+    const rows = toPhraseSentimentRows(cells, { limit: 30, minMentions: 1 });
+    expect(rows.find((r) => r.phrase === "giá vé")).toEqual({
+      phrase: "giá vé",
+      positive: 1,
+      neutral: 0,
+      negative: 3,
+      total: 4,
+      negativeShare: 0.75,
+    });
+    expect(rows.some((r) => r.phrase === "x")).toBe(false);
+  });
+  it("sorts total desc then phrase by code point; applies minMentions and limit", () => {
+    const rows = toPhraseSentimentRows(cells, { limit: 30, minMentions: 2 });
+    expect(rows.map((r) => r.phrase)).toEqual(["app lỗi", "check-in", "giá vé"]);
+    expect(toPhraseSentimentRows(cells, { limit: 2, minMentions: 1 }).map((r) => r.phrase)).toEqual([
+      "app lỗi",
+      "check-in",
+    ]);
+  });
+  it("empty input → []", () => {
+    expect(toPhraseSentimentRows([], { limit: 30, minMentions: 2 })).toEqual([]);
+  });
+  it('ties sort by code point like SQL COLLATE "C", also past the BMP', () => {
+    // U+1F600 (surrogate pair 0xD83D…) vs U+FF01: UTF-16 `<` puts the emoji first, code point order does not.
+    expect(compareCodePoints("😀", "！")).toBeGreaterThan(0);
+    expect(compareCodePoints("giá vé", "giá")).toBeGreaterThan(0);
+    const cells = [
+      { phrase: "😀 vui", sentiment: "positive", count: 2 },
+      { phrase: "！hay", sentiment: "positive", count: 2 },
+    ];
+    expect(toPhraseSentimentRows(cells, { limit: 30, minMentions: 1 }).map((r) => r.phrase)).toEqual([
+      "！hay",
+      "😀 vui",
+    ]);
   });
 });

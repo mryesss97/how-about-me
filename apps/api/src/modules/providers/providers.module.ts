@@ -80,6 +80,7 @@ export function createContentClassifier(cfg: AppConfig): ContentClassifier {
     maxRetries: cfg.OPENAI_MAX_RETRIES,
     prices,
     skipSummaryForSpam: cfg.ANALYSIS_SKIP_SUMMARY_FOR_SPAM,
+    promptVersion: cfg.ANALYSIS_PROMPT_VERSION,
   });
 }
 

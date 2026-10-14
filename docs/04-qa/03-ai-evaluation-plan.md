@@ -32,6 +32,7 @@
 }
 ```
 
+- Optional `labels.keyPhrases: string[]` (≤ 5, FR-120): gold key phrases for `classifier-v2`+; compared by exact match after BR-041 normalisation. Not required and not part of the freeze gate.
 - Double labelling on 30 % sample; disagreements resolved by BA; inter-annotator agreement reported (Cohen's κ per dimension).
 
 ## 2. Labelling guide
@@ -62,6 +63,7 @@ CLI (T-079, `apps/api/src/cli/eval-classifier.ts`; paths relative to `apps/api`)
 - Exit 0 when the run completes, even with gate FAIL (gate is information for QC); exit 1 on argument, dataset or config errors.
 - Report: header (UTC time, dataset sha256, providers/model, prompt/taxonomy/safety-policy versions), freeze-gate table (doc 08 §11, PASS/FAIL), per-dimension tables + confusion, usage/latency (p50/p95), errors, mismatches. Items are identified by `id` only — item text never appears in the report or logs.
 - Items whose gold lacks a dimension (e.g. no `sentiment` on `irrelevant`) are excluded from that dimension. VI sentiment subset and the severe subset are derived from gold `labels.language === "vi"` / `labels.safetyLevel === "severe"`. Optional `tags: string[]` per record is accepted for grouping (not used by the gate). A provider error on one item is recorded and the run continues.
+- Key phrases (#223): when the classifier returns `keyPhrases` (prompt `classifier-v2` / `fake-v2`) the report adds an informational "Key phrases" section — coverage (share of predicted relevant/uncertain items with ≥ 1 phrase), avg phrases per item, micro P/R/F1 vs gold `labels.keyPhrases` when present. Never a gate row. With `classifier-v1` the section is omitted.
 - Draft synthetic fixture: `apps/api/src/cli/eval/__fixtures__/eval-draft.jsonl`; fake-mode sample report: `eval-results/2026-10-13-classifier-v1-draft-fake.md` (not a freeze result).
 
 ```bash

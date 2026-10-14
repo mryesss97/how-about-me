@@ -27,4 +27,13 @@ describe("parseDataset (T-079)", () => {
   it("rejects an empty dataset", () => {
     expect(() => parseDataset("\n\n")).toThrow(/empty/);
   });
+
+  it("FR-120: accepts optional gold keyPhrases (≤ 5)", () => {
+    const ok = line({ labels: { relevance: "relevant", safetyLevel: "safe", keyPhrases: ["giá vé"] } });
+    expect(parseDataset(ok)[0]?.labels.keyPhrases).toEqual(["giá vé"]);
+    const tooMany = line({
+      labels: { relevance: "relevant", safetyLevel: "safe", keyPhrases: ["a", "b", "c", "d", "e", "f"] },
+    });
+    expect(() => parseDataset(tooMany)).toThrow(/labels\.keyPhrases/);
+  });
 });

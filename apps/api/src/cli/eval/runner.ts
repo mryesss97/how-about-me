@@ -12,16 +12,19 @@ import {
   type SafetyLevel,
   type SentimentLabel,
   type TopicLabel,
+  normalizePhrases,
 } from "@how-about-me/taxonomy";
 import type { ContentClassifier, SafetyProvider, Usage } from "../../modules/analysis/providers/interfaces";
 import { toSafetyAnalysis } from "../../modules/analysis/safety/safety-mapping";
 import type { EvalItem } from "./dataset";
 import {
   type MultiLabelMetrics,
+  type PhraseMetrics,
   type SafetyMetrics,
   type SingleLabelMetrics,
   multiLabelMetrics,
   percentile,
+  phraseMetrics,
   ratio,
   safetyMetrics,
   singleLabelMetrics,
@@ -34,6 +37,8 @@ export type Prediction = {
   topics: TopicLabel[];
   language: LanguageCode;
   safetyLevel: SafetyLevel;
+  /** null when the prompt version does not extract phrases (classifier-v1). */
+  keyPhrases: string[] | null;
 };
 
 export type ItemResult = {
@@ -89,6 +94,7 @@ async function evaluateOne(item: EvalItem, opts: RunOptions, runId: string): Pro
         topics: out.topics.map((x) => x.label),
         language: out.language,
         safetyLevel,
+        keyPhrases: out.keyPhrases ?? null,
       },
       error: null,
       usage,
@@ -109,6 +115,8 @@ export type EvalSummary = {
   intents: MultiLabelMetrics;
   topics: MultiLabelMetrics;
   safety: SafetyMetrics;
+  /** null when no prediction carried phrases (v1 prompt). */
+  phrases: PhraseMetrics | null;
   usage: {
     totalInputTokens: number;
     totalOutputTokens: number;
@@ -155,6 +163,19 @@ export function summarize(results: readonly ItemResult[]): EvalSummary {
   }));
   ok.forEach((r) => note(r.item.id, "safetyLevel", r.item.labels.safetyLevel, r.prediction.safetyLevel));
 
+  // FR-120: phrases only for runs whose prompt extracts them; gold normalised with BR-041.
+  const phraseItems = ok.flatMap((r) =>
+    r.prediction.keyPhrases === null
+      ? []
+      : [
+          {
+            relevant: r.prediction.relevance !== "irrelevant",
+            pred: r.prediction.keyPhrases,
+            ...(r.item.labels.keyPhrases ? { gold: normalizePhrases(r.item.labels.keyPhrases) } : {}),
+          },
+        ],
+  );
+
   const relevance = singleLabelMetrics(relPairs, RELEVANCE_LABELS);
   const totalIn = results.reduce((a, r) => a + r.usage.inputTokens, 0);
   const totalOut = results.reduce((a, r) => a + r.usage.outputTokens, 0);
@@ -176,6 +197,7 @@ export function summarize(results: readonly ItemResult[]): EvalSummary {
     intents: multiLabelMetrics(intentPairs, INTENT_LABELS),
     topics: multiLabelMetrics(topicPairs, TOPIC_LABELS),
     safety: safetyMetrics(safetyPairs, SAFETY_LEVELS),
+    phrases: phraseItems.length > 0 ? phraseMetrics(phraseItems) : null,
     usage: {
       totalInputTokens: totalIn,
       totalOutputTokens: totalOut,

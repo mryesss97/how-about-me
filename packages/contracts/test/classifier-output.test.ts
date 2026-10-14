@@ -1,7 +1,10 @@
+import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { INTENT_LABELS, LANGUAGE_CODES, TOPIC_LABELS } from "@how-about-me/taxonomy";
 import {
   ClassifierOutputJsonSchema,
+  ClassifierOutputJsonSchemaV2,
+  classifierSchemaVersionOf,
   ClassifierOutputSchema,
   IntentLabelSchema,
   TopicLabelSchema,
@@ -183,3 +186,47 @@ describe("taxonomy ↔ contract drift (FR-119)", () => {
     expect(ClassifierOutputSchema.shape.language.options).toEqual([...LANGUAGE_CODES]);
   });
 });
+
+// FR-120, BR-041: classifier-v2 output carries normalised key phrases; v1 stays frozen (BR-023).
+describe("classifier output v2 (FR-120, BR-041)", () => {
+  const v2 = { ...valid, keyPhrases: ["Giá vé", "giá vé ", "“Thất vọng”"] };
+
+  it("v1 strict schema rejects keyPhrases", () => {
+    expect(parseClassifierOutput(v2).ok).toBe(false);
+    expect(parseClassifierOutput(v2, "v1").ok).toBe(false);
+  });
+  it("v2 requires keyPhrases; [] is valid", () => {
+    const r = parseClassifierOutput(valid, "v2");
+    expect(r.ok).toBe(false);
+    expect(r.ok ? [] : r.issues.join(" ")).toContain("keyPhrases");
+    expect(parseClassifierOutput({ ...valid, keyPhrases: [] }, "v2").ok).toBe(true);
+  });
+  it("v2 rejects more than 5 phrases", () => {
+    const r = parseClassifierOutput({ ...valid, keyPhrases: ["a", "b", "c", "d", "e", "f"] }, "v2");
+    expect(r.ok).toBe(false);
+    expect(r.ok ? "" : r.issues.join(" ")).toMatch(/keyPhrases/);
+  });
+  it("v2 normalises and dedupes phrases (BR-041)", () => {
+    const r = parseClassifierOutput(v2, "v2");
+    expect(r.ok && r.value.keyPhrases).toEqual(["giá vé", "thất vọng"]);
+  });
+  it("v1 normalisation never adds keyPhrases", () => {
+    const r = parseClassifierOutput(valid);
+    expect(r.ok && "keyPhrases" in r.value).toBe(false);
+  });
+  it("classifierSchemaVersionOf maps phrase prompts to v2", () => {
+    expect(classifierSchemaVersionOf("classifier-v2")).toBe("v2");
+    expect(classifierSchemaVersionOf("fake-v2")).toBe("v2");
+    expect(classifierSchemaVersionOf("classifier-v1")).toBe("v1");
+    expect(classifierSchemaVersionOf("fake-v1")).toBe("v1");
+  });
+  it("JSON schema v2 requires keyPhrases; v1 JSON schema is unchanged (golden hash)", () => {
+    expect((ClassifierOutputJsonSchemaV2 as { required?: string[] }).required).toContain("keyPhrases");
+    expect(JSON.stringify(ClassifierOutputJsonSchema)).not.toContain("keyPhrases");
+    const hash = createHash("sha256").update(JSON.stringify(ClassifierOutputJsonSchema)).digest("hex");
+    expect(hash).toBe(V1_JSON_SCHEMA_SHA256);
+  });
+});
+
+/** sha256 of the classifier-v1 JSON schema captured before #223; any change means v1 was altered. */
+const V1_JSON_SCHEMA_SHA256 = "c18d362b8e1f591ac6b1b31a00e6671431a45cd58d146cbf5c2284d76ee70025";

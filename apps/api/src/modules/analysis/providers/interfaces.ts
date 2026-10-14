@@ -36,6 +36,7 @@ export interface ContentClassifier {
     input: ClassifierInput,
     ctx: AnalysisContext,
   ): Promise<Pick<ClassifierOutput, "relevance"> & { language?: ClassifierOutput["language"]; usage: Usage }>;
+  /** Full output; `keyPhrases` is set (possibly []) only when the prompt version extracts phrases (FR-120). */
   classify(input: ClassifierInput, ctx: AnalysisContext): Promise<ClassifierOutput & { usage: Usage }>;
 }
 
