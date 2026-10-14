@@ -23,7 +23,7 @@ describe("MentionDetailSlideout (TC-MEN-009)", () => {
     row.focus();
     render(<MentionDetailSlideout mentionId="00000000-0000-4000-8000-000000000001" />);
     expect(await screen.findByText("body")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Open full page/ })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /Mở trang đầy đủ/ })).toHaveAttribute(
       "href",
       "/mentions/00000000-0000-4000-8000-000000000001?preset=7d",
     );

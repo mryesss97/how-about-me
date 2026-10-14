@@ -661,15 +661,35 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 
 .plaque-button:hover,
-.plaque-button[data-selected] {
+.plaque-button[data-selected],
+.plaque-button[aria-current="page"] {
   background: var(--ink);
   color: #fff;
+}
+
+.plaque-button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .plaque-button {
     transition: none;
   }
+}
+
+/* Task plate (#279): a static label plate, not a button — no hover, no shadow */
+.task-plate {
+  border: 2px solid var(--ink);
+  border-radius: 2px;
+  background: #fff;
+  color: var(--ink);
+  padding: 4px 10px;
+  font-family: var(--font-figure), sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-transform: uppercase;
 }
 
 /* ── Phrase detail hero (#276): the phrase as a large enamel board (same tones as the landing boards) ────────── */

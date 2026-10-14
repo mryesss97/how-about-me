@@ -20,7 +20,7 @@ let qc: QueryClient;
 const wrapper = ({ children }: { children: ReactNode }) => (
   <QueryClientProvider client={qc}>{children}</QueryClientProvider>
 );
-const input = () => screen.getByRole("spinbutton", { name: /Minimum mentions per phrase/ });
+const input = () => screen.getByRole("spinbutton", { name: /Số lượt nhắc tối thiểu mỗi cụm từ/ });
 const setValue = (v: string) => fireEvent.change(input(), { target: { value: v } });
 
 beforeEach(() => {
@@ -42,12 +42,12 @@ describe("PhraseThresholdForm", () => {
     const invalidate = vi.spyOn(qc, "invalidateQueries");
     render(<PhraseThresholdForm project={projectData()} canEdit />, { wrapper });
     expect(input()).toHaveValue(2);
-    const save = screen.getByRole("button", { name: "Save" });
+    const save = screen.getByRole("button", { name: "Lưu" });
     expect(save).toBeDisabled();
     setValue("5");
     expect(save).not.toBeDisabled();
     fireEvent.click(save);
-    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Sentiment map settings saved"));
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Đã lưu cài đặt bản đồ cảm xúc"));
     const [path, init] = apiFetch.mock.calls[0] as [string, RequestInit];
     expect(path).toBe(`/projects/${P1}`);
     expect(init.method).toBe("PATCH");
@@ -58,8 +58,8 @@ describe("PhraseThresholdForm", () => {
   it.each(["0", "51", "2.5", ""])("invalid %p → field error, Save disabled, no API call", (v) => {
     render(<PhraseThresholdForm project={projectData()} canEdit />, { wrapper });
     setValue(v);
-    expect(screen.getByText("Enter a whole number from 1 to 50.")).toBeInTheDocument();
-    const save = screen.getByRole("button", { name: "Save" });
+    expect(screen.getByText("Nhập số nguyên từ 1 đến 50.")).toBeInTheDocument();
+    const save = screen.getByRole("button", { name: "Lưu" });
     expect(save).toBeDisabled();
     fireEvent.click(save);
     expect(apiFetch).not.toHaveBeenCalled();
@@ -69,18 +69,18 @@ describe("PhraseThresholdForm", () => {
     apiFetch.mockRejectedValueOnce(new ApiError(400, "VALIDATION_ERROR", "Invalid", "r1"));
     render(<PhraseThresholdForm project={projectData()} canEdit />, { wrapper });
     setValue("5");
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(await screen.findByText("Enter a whole number from 1 to 50.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Lưu" }));
+    expect(await screen.findByText("Nhập số nguyên từ 1 đến 50.")).toBeInTheDocument();
     apiFetch.mockRejectedValueOnce(new ApiError(500, "UNKNOWN", "Boom", "r2"));
     setValue("6");
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    fireEvent.click(screen.getByRole("button", { name: "Lưu" }));
     expect(await screen.findByRole("alert")).toBeInTheDocument();
   });
 
   it("FR-015: non-admins see a disabled input without Save", () => {
     render(<PhraseThresholdForm project={projectData()} canEdit={false} />, { wrapper });
     expect(input()).toBeDisabled();
-    expect(screen.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
-    expect(screen.getByText("Only project admins can change these settings.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Lưu" })).not.toBeInTheDocument();
+    expect(screen.getByText("Chỉ quản trị viên dự án mới thay đổi được các cài đặt này.")).toBeInTheDocument();
   });
 });

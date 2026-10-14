@@ -34,7 +34,7 @@ describe("RequireRole", () => {
     apiFetch.mockResolvedValue(meFixture([projectFixture(P1, "viewer")]));
     renderGuard();
     expect(await screen.findByText("Bạn không có quyền xem trang này.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /back to overview/i })).toHaveAttribute("href", "/overview");
+    expect(screen.getByRole("link", { name: /về tổng quan/i })).toHaveAttribute("href", "/overview");
     expect(screen.queryByText("secret content")).not.toBeInTheDocument();
   });
 

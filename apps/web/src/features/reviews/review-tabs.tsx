@@ -1,17 +1,21 @@
 "use client";
 
 import type { ReviewQueueCounts, ReviewReason } from "@how-about-me/contracts";
-import { Tabs } from "@/components/application/tabs/tabs";
+import { Tab as AriaTab, TabList as AriaTabList, Tabs as AriaTabs } from "react-aria-components";
 import { formatCount } from "@/lib/format/number";
+import { reviewReasonLabelVi } from "@/lib/semantics/labels";
 
 const TABS: { id: "all" | ReviewReason; label: string; count: keyof ReviewQueueCounts }[] = [
-  { id: "all", label: "All", count: "all" },
-  { id: "uncertain", label: "Uncertain", count: "uncertain" },
-  { id: "low_confidence", label: "Low confidence", count: "lowConfidence" },
-  { id: "failed", label: "Failed", count: "failed" },
+  { id: "all", label: "Tất cả", count: "all" },
+  { id: "uncertain", label: reviewReasonLabelVi.uncertain, count: "uncertain" },
+  { id: "low_confidence", label: reviewReasonLabelVi.low_confidence, count: "lowConfidence" },
+  { id: "failed", label: reviewReasonLabelVi.failed, count: "failed" },
 ];
 
-/** Tabs by review reason (FR-195). Badges hidden when `counts` is absent (count timed out) — never a fake 0. */
+/**
+ * Tabs by review reason (FR-195) as signboard plaques (#278): `.plaque-button` inverts on `[data-selected]`.
+ * Counts hidden when `counts` is absent (count timed out) — never a fake 0 (BR-032).
+ */
 export function ReviewTabs({
   reason,
   counts,
@@ -22,15 +26,22 @@ export function ReviewTabs({
   onChange: (reason: ReviewReason | null) => void;
 }) {
   return (
-    <Tabs
+    <AriaTabs
       selectedKey={reason ?? "all"}
       onSelectionChange={(k) => onChange(k === "all" ? null : (String(k) as ReviewReason))}
     >
-      <Tabs.List type="underline" aria-label="Review reason">
+      <AriaTabList aria-label="Lý do cần xem lại" className="flex flex-wrap gap-2">
         {TABS.map((t) => (
-          <Tabs.Item key={t.id} id={t.id} label={t.label} badge={counts ? formatCount(counts[t.count]) : undefined} />
+          <AriaTab
+            key={t.id}
+            id={t.id}
+            className="plaque-button cursor-pointer px-3 py-1.5 outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            {t.label}
+            {counts ? <span className="tabular-nums"> · {formatCount(counts[t.count])}</span> : null}
+          </AriaTab>
         ))}
-      </Tabs.List>
-    </Tabs>
+      </AriaTabList>
+    </AriaTabs>
   );
 }

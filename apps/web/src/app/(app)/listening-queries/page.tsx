@@ -4,8 +4,12 @@ export default function ListeningQueriesPage() {
   return (
     <PagePlaceholder
       title="Truy vấn theo dõi"
-      description="Từ khoá và hashtag mà bộ thu thập tìm theo lịch: tạo/sửa, chạy ngay, bật/tắt, xoá mềm (UX §3.5)."
-      tasks={["T-046 table", "T-047 drawer & actions", "T-141 backfill (P1)"]}
+      description="Từ khoá và hashtag mà bộ thu thập tìm theo lịch: tạo/sửa, chạy ngay, bật/tắt, xoá mềm."
+      tasks={[
+        { id: "T-046", label: "Bảng truy vấn" },
+        { id: "T-047", label: "Ngăn kéo & thao tác" },
+        { id: "T-141", label: "Lấy dữ liệu cũ (P1)" },
+      ]}
     />
   );
 }

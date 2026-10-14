@@ -27,29 +27,29 @@ describe("SettingsTabs", () => {
     apiFetch.mockResolvedValue(meFixture([projectFixture(P1, "viewer")]));
     renderTabs();
     await waitFor(() => expect(screen.getByTestId("role")).toHaveTextContent("viewer"));
-    expect(screen.getByRole("link", { name: "Project" })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Integrations" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Members" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Dự án" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Kết nối" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Thành viên" })).not.toBeInTheDocument();
   });
 
   it("shows every tab to an admin", async () => {
     apiFetch.mockResolvedValue(meFixture([projectFixture(P1, "admin")]));
     renderTabs();
-    expect(await screen.findByRole("link", { name: "Members" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Integrations" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Thành viên" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Kết nối" })).toBeInTheDocument();
   });
 
   it("marks the tab for the current path as active", async () => {
     apiFetch.mockResolvedValue(meFixture([projectFixture(P1, "admin")]));
     renderTabs();
-    expect(await screen.findByRole("link", { name: "Members" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: "Project" })).not.toHaveAttribute("aria-current");
+    expect(await screen.findByRole("link", { name: "Thành viên" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Dự án" })).not.toHaveAttribute("aria-current");
   });
 
   it.each(["admin", "analyst", "viewer"] as const)("FR-190: %s sees the Analysis tab", async (role) => {
     apiFetch.mockResolvedValue(meFixture([projectFixture(P1, role)]));
     renderTabs();
     await waitFor(() => expect(screen.getByTestId("role")).toHaveTextContent(role));
-    expect(screen.getByRole("link", { name: "Analysis" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Phân tích" })).toBeInTheDocument();
   });
 });

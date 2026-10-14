@@ -1,7 +1,15 @@
 import { ANALYSIS_TRIGGERS } from "@how-about-me/contracts";
 import { INTENT_LABELS, LANGUAGE_CODES, TOPIC_LABELS } from "@how-about-me/taxonomy";
 import { describe, expect, it } from "vitest";
-import { analysisTriggerLabelVi, displayLabel, intentLabelVi, languageLabelVi, topicLabelVi } from "./labels";
+import {
+  analysisTriggerLabelVi,
+  displayLabel,
+  intentLabelVi,
+  languageLabelVi,
+  reviewReasonLabelVi,
+  roleLabelVi,
+  topicLabelVi,
+} from "./labels";
 
 describe("Vietnamese taxonomy labels (#275)", () => {
   it("covers every intent, topic and language value", () => {
@@ -18,6 +26,17 @@ describe("Vietnamese taxonomy labels (#275)", () => {
   it("falls back to a humanised value for unknown keys", () => {
     expect(displayLabel("topic", "new_thing")).toBe("New thing");
     expect(displayLabel("intent", "purchase_intent")).toBe("Ý định mua");
+  });
+
+  it("#278 FR-195: every review reason has a Vietnamese label", () => {
+    for (const v of ["uncertain", "low_confidence", "failed"] as const) expect(reviewReasonLabelVi[v]).toBeTruthy();
+    expect(displayLabel("reviewReason", "failed")).toBe("Phân tích lỗi");
+  });
+});
+
+describe("roleLabelVi (#281)", () => {
+  it("labels every role in Vietnamese, keyed by the API enum", () => {
+    expect(roleLabelVi).toEqual({ admin: "Quản trị", analyst: "Phân tích", viewer: "Chỉ xem" });
   });
 });
 

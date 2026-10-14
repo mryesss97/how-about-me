@@ -1,7 +1,6 @@
 "use client";
 
 import { MARK_REVIEWED_MAX, type ReviewQueueItem } from "@how-about-me/contracts";
-import { Button } from "@/components/base/buttons/button";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { ErrorState, QueryState, SkeletonBlock, type QueryStateError } from "@/features/shared/query-state";
 import { ReviewRow } from "./review-row";
@@ -47,58 +46,67 @@ export function ReviewTable(p: Props) {
       error={p.error}
       onRetry={p.onRetry}
       isEmpty={p.items.length === 0}
-      skeleton={<SkeletonBlock lines={6} className="rounded-xl border border-secondary p-4" />}
-      emptyTitle={p.showReviewed ? "No reviewed items" : "No items need review"}
-      emptyDescription={p.showReviewed ? "Items you mark as reviewed appear here." : "All caught up."}
+      skeleton={<SkeletonBlock lines={6} className="operate-board p-4" />}
+      emptyTitle={p.showReviewed ? "Chưa có mục nào đã xem lại" : "Không có mục nào cần xem lại"}
+      emptyDescription={p.showReviewed ? "Các mục bạn đánh dấu đã xem lại sẽ hiện ở đây." : "Đã xem hết."}
     >
       <div className="flex flex-col gap-3">
-        {p.selectable && full ? <p className="text-sm text-tertiary">Up to {MARK_REVIEWED_MAX} at a time</p> : null}
-        <div className="overflow-x-auto rounded-xl border border-secondary">
-          <table className="w-full" aria-busy={p.isFetchingNextPage}>
-            <thead className="border-b border-secondary bg-secondary">
-              <tr>
-                {p.selectable ? (
-                  <th className="w-10 px-3 py-2">
-                    <Checkbox
-                      aria-label="Select all"
-                      isSelected={allSelected}
-                      isIndeterminate={!allSelected && p.selected.size > 0}
-                      onChange={(on) => p.onSelect(on ? selectAllCapped(p.items) : new Set())}
-                    />
-                  </th>
-                ) : null}
-                <th className={TH}>Post</th>
-                <th className={TH}>Reasons</th>
-                <th className={TH}>Relevance</th>
-                <th className={TH}>Sentiment</th>
-                <th className={TH}>Confidence</th>
-                <th className={TH}>Status</th>
-                {p.showReviewed ? <th className={TH}>Reviewed by</th> : null}
-              </tr>
-            </thead>
-            <tbody>
-              {p.items.map((item) => (
-                <ReviewRow
-                  key={item.id}
-                  item={item}
-                  tz={p.tz}
-                  selectable={p.selectable}
-                  selected={p.selected.has(item.id)}
-                  disabled={full && !p.selected.has(item.id)}
-                  showReviewed={p.showReviewed}
-                  onToggle={toggle}
-                  onOpen={p.onOpen}
-                />
-              ))}
-            </tbody>
-          </table>
+        {p.selectable && full ? <p className="text-sm text-tertiary">Tối đa {MARK_REVIEWED_MAX} mục mỗi lần</p> : null}
+        {/* #278: table sits in an enamel board; it scrolls horizontally inside the board, never the page. */}
+        <div className="operate-board min-w-0">
+          <span aria-hidden className="sign-keyline" />
+          <div className="relative overflow-x-auto p-3">
+            <table className="w-full" aria-busy={p.isFetchingNextPage}>
+              <thead className="border-b border-secondary bg-secondary">
+                <tr>
+                  {p.selectable ? (
+                    <th className="w-10 px-3 py-2">
+                      <Checkbox
+                        aria-label="Chọn tất cả"
+                        isSelected={allSelected}
+                        isIndeterminate={!allSelected && p.selected.size > 0}
+                        onChange={(on) => p.onSelect(on ? selectAllCapped(p.items) : new Set())}
+                      />
+                    </th>
+                  ) : null}
+                  <th className={TH}>Bài viết</th>
+                  <th className={TH}>Lý do</th>
+                  <th className={TH}>Mức liên quan</th>
+                  <th className={TH}>Cảm xúc</th>
+                  <th className={TH}>Độ tin cậy</th>
+                  <th className={TH}>Trạng thái</th>
+                  {p.showReviewed ? <th className={TH}>Người xem lại</th> : null}
+                </tr>
+              </thead>
+              <tbody>
+                {p.items.map((item) => (
+                  <ReviewRow
+                    key={item.id}
+                    item={item}
+                    tz={p.tz}
+                    selectable={p.selectable}
+                    selected={p.selected.has(item.id)}
+                    disabled={full && !p.selected.has(item.id)}
+                    showReviewed={p.showReviewed}
+                    onToggle={toggle}
+                    onOpen={p.onOpen}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
         {p.nextPageError ? <ErrorState error={p.nextPageError} onRetry={p.fetchNextPage} /> : null}
         {p.hasNextPage && !p.nextPageError ? (
           <div className="flex justify-center">
-            <Button color="secondary" size="sm" isDisabled={p.isFetchingNextPage} onClick={p.fetchNextPage}>
-              {p.isFetchingNextPage ? "Loading…" : "Load more"}
-            </Button>
+            <button
+              type="button"
+              disabled={p.isFetchingNextPage}
+              onClick={p.fetchNextPage}
+              className="plaque-button px-3 py-1.5 outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60"
+            >
+              {p.isFetchingNextPage ? "Đang tải…" : "Tải thêm"}
+            </button>
           </div>
         ) : null}
       </div>

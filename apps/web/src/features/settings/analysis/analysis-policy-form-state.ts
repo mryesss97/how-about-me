@@ -40,7 +40,7 @@ export function parseProbability(input: string): number | null | "invalid" {
   return cents / 100;
 }
 
-const INVALID = "Enter a number between 0.01 and 1 in steps of 0.01";
+const INVALID = "Nhập số từ 0.01 đến 1, bước 0.01";
 
 function field(path: string, input: string, errors: PolicyErrors, required: boolean): number | null | undefined {
   const v = parseProbability(input);
@@ -49,7 +49,7 @@ function field(path: string, input: string, errors: PolicyErrors, required: bool
     return undefined;
   }
   if (v === null) {
-    if (required) errors[path] = "Required";
+    if (required) errors[path] = "Bắt buộc";
     return required ? undefined : null;
   }
   if (!PolicyProbabilitySchema.safeParse(v).success) {

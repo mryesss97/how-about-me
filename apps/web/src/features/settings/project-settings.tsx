@@ -6,6 +6,7 @@ import { QueryState } from "@/features/shared/query-state";
 import { useProject } from "./api";
 import { LandingTermsForm } from "./landing-terms-form";
 import { ProjectSettingsForm } from "./project-settings-form";
+import { SettingsBoard } from "./settings-board";
 
 function ProjectSettingsLoaded({ pid, canEdit }: { pid: string; canEdit: boolean }) {
   const q = useProject(pid);
@@ -13,15 +14,18 @@ function ProjectSettingsLoaded({ pid, canEdit }: { pid: string; canEdit: boolean
     <QueryState isLoading={q.isLoading} error={q.error} onRetry={() => void q.refetch()}>
       {/* key: reset local form state when the project or its server version changes */}
       {q.data ? (
-        <div className="flex flex-col gap-8">
-          <ProjectSettingsForm key={projectFormKey(pid, q.data)} project={q.data} canEdit={canEdit} />
-          <hr className="border-secondary" />
+        <div className="flex flex-col gap-6">
+          <SettingsBoard title="Dự án">
+            <ProjectSettingsForm key={projectFormKey(pid, q.data)} project={q.data} canEdit={canEdit} />
+          </SettingsBoard>
           {/* #261: separate Save; each form remounts only when its own saved values change, so the other keeps its draft. */}
-          <LandingTermsForm
-            key={`landing:${pid}:${JSON.stringify(q.data.settings.landingTerms)}`}
-            project={q.data}
-            canEdit={canEdit}
-          />
+          <SettingsBoard title="Trang landing">
+            <LandingTermsForm
+              key={`landing:${pid}:${JSON.stringify(q.data.settings.landingTerms)}`}
+              project={q.data}
+              canEdit={canEdit}
+            />
+          </SettingsBoard>
         </div>
       ) : null}
     </QueryState>

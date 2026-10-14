@@ -10,8 +10,8 @@ import { ApiError } from "@/lib/api/client";
 import { errorMessage, useProject, useUpdateProject } from "../api";
 
 const HINT =
-  "Phrases found in fewer mentions are hidden from the sentiment map in Phrases mode. Whole number from 1 to 50.";
-const INVALID = "Enter a whole number from 1 to 50.";
+  "Cụm từ xuất hiện trong ít bài nhắc hơn sẽ bị ẩn khỏi bản đồ cảm xúc ở chế độ Cụm từ. Số nguyên từ 1 đến 50.";
+const INVALID = "Nhập số nguyên từ 1 đến 50.";
 
 /** Parses the string draft; `null` when it is not an integer 1–50 (FR-032, #251). */
 export function parsePhraseThreshold(draft: string): number | null {
@@ -40,7 +40,7 @@ export function PhraseThresholdForm({ project, canEdit }: { project: Project; ca
     update.mutate(
       { settings: { phraseMinMentions: value } },
       {
-        onSuccess: () => toast.success("Sentiment map settings saved"),
+        onSuccess: () => toast.success("Đã lưu cài đặt bản đồ cảm xúc"),
         onError: (err) => {
           const details = err instanceof ApiError ? ValidationErrorDetailsSchema.safeParse(err.details) : null;
           if (err instanceof ApiError && err.code === "VALIDATION_ERROR")
@@ -52,10 +52,9 @@ export function PhraseThresholdForm({ project, canEdit }: { project: Project; ca
   };
 
   return (
-    <form onSubmit={onSubmit} noValidate className="flex max-w-xl flex-col gap-4" aria-label="Sentiment map settings">
-      <h2 className="text-md font-semibold text-primary">Sentiment map</h2>
+    <form onSubmit={onSubmit} noValidate className="flex max-w-xl flex-col gap-4" aria-label="Cài đặt bản đồ cảm xúc">
       <Input
-        label="Minimum mentions per phrase"
+        label="Số lượt nhắc tối thiểu mỗi cụm từ"
         type="number"
         value={draft}
         onChange={(v) => {
@@ -74,11 +73,11 @@ export function PhraseThresholdForm({ project, canEdit }: { project: Project; ca
       {canEdit ? (
         <div>
           <Button type="submit" isDisabled={!dirty} isLoading={update.isPending}>
-            Save
+            Lưu
           </Button>
         </div>
       ) : (
-        <p className="text-sm text-tertiary">Only project admins can change these settings.</p>
+        <p className="text-sm text-tertiary">Chỉ quản trị viên dự án mới thay đổi được các cài đặt này.</p>
       )}
     </form>
   );

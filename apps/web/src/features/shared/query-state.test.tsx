@@ -62,7 +62,7 @@ describe("QueryState (UX §2.3, BR-032)", () => {
     render(<QueryState error={{ code: "FORBIDDEN_ROLE" }}>{CONTENT}</QueryState>);
     expect(screen.getByText(/không có quyền/i)).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /back to overview/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /về tổng quan/i })).toBeInTheDocument();
   });
 
   it("forbidden wins over loading, so a denied screen never flashes a skeleton first", () => {

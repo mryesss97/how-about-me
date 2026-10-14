@@ -72,7 +72,7 @@ export function ProjectSettingsForm({ project, canEdit }: { project: Project; ca
     }
     setErrors({});
     update.mutate(parsed.data, {
-      onSuccess: () => toast.success("Project saved"),
+      onSuccess: () => toast.success("Đã lưu dự án"),
       onError: (err) => {
         const details = err instanceof ApiError ? ValidationErrorDetailsSchema.safeParse(err.details) : null;
         if (err instanceof ApiError && err.code === "VALIDATION_ERROR" && details?.success)
@@ -83,9 +83,9 @@ export function ProjectSettingsForm({ project, canEdit }: { project: Project; ca
   };
 
   return (
-    <form onSubmit={onSubmit} noValidate className="flex max-w-xl flex-col gap-5" aria-label="Project settings">
+    <form onSubmit={onSubmit} noValidate className="flex max-w-xl flex-col gap-5" aria-label="Cài đặt dự án">
       <Input
-        label="Project name"
+        label="Tên dự án"
         value={name}
         onChange={setName}
         isDisabled={readOnly}
@@ -93,7 +93,7 @@ export function ProjectSettingsForm({ project, canEdit }: { project: Project; ca
         hint={errors.name}
       />
       <ComboBox
-        label="Timezone"
+        label="Múi giờ"
         items={zones}
         selectedKey={timezone}
         onSelectionChange={(k) => k && setTimezone(String(k))}
@@ -106,15 +106,15 @@ export function ProjectSettingsForm({ project, canEdit }: { project: Project; ca
       </ComboBox>
       {/* FR-032 / T-107: each permission toggle explains its effect; /me is refetched after Save. */}
       <Toggle
-        label="Allow analysts to re-analyze"
-        hint="Analysts can queue re-analysis for mentions. Admins always can."
+        label="Cho phép Phân tích viên chạy lại phân tích"
+        hint="Phân tích viên có thể đưa bài nhắc vào hàng đợi phân tích lại. Quản trị viên luôn làm được."
         isSelected={settings.allowAnalystReanalyze}
         onChange={(v) => setSettings((s) => ({ ...s, allowAnalystReanalyze: v }))}
         isDisabled={readOnly}
       />
       <Toggle
-        label="Allow viewers to export"
-        hint="Viewers can download CSV exports of mentions and analytics."
+        label="Cho phép Người xem xuất dữ liệu"
+        hint="Người xem có thể tải tệp CSV của bài nhắc và số liệu phân tích."
         isSelected={settings.allowViewerExport}
         onChange={(v) => setSettings((s) => ({ ...s, allowViewerExport: v }))}
         isDisabled={readOnly}
@@ -125,11 +125,11 @@ export function ProjectSettingsForm({ project, canEdit }: { project: Project; ca
         </p>
       ) : null}
       {readOnly ? (
-        <p className="text-sm text-tertiary">Only project admins can change these settings.</p>
+        <p className="text-sm text-tertiary">Chỉ quản trị viên dự án mới thay đổi được các cài đặt này.</p>
       ) : (
         <div>
           <Button type="submit" isDisabled={!dirty} isLoading={update.isPending}>
-            Save
+            Lưu
           </Button>
         </div>
       )}
