@@ -9,50 +9,32 @@ import { useBreakpoint } from "@/hooks/use-breakpoint";
 import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
 import { useResizeObserver } from "@/hooks/use-resize-observer";
 import { env } from "@/lib/env";
-import { LandingBackdrop } from "./landing-backdrop";
-import { LandingBalloons } from "./landing-balloons";
-import { fallbackRange, formatLandingStats, toLandingBubbles } from "./landing-data";
-import { LandingEmpty } from "./landing-empty";
-import { LandingHero } from "./landing-hero";
-import type { Rect } from "./landing-layout";
-import { LandingStats } from "./landing-stats";
-import { LandingTopBar } from "./landing-top-bar";
-
-/** Ghost circles in the empty state (#267). */
-const GHOSTS = 5;
+import { cx } from "@/utils/cx";
+import { landingCopy as copy } from "./copy";
+import { BlankBoard, SignBoard } from "./landing-board";
+import { boardRanks, fallbackRange, formatLandingStats, toLandingBoards } from "./landing-data";
+import { figureFont, signFont } from "./landing-fonts";
+import { MainSign } from "./landing-main-sign";
+import { type Rect, WALL_GAP, layoutSignWall, phoneWallHeight } from "./sign-wall-layout";
 
 const NO_PARAMS: Record<string, string> = {};
-
-const toRect = (el: HTMLElement | null, origin: DOMRect): Rect | null => {
-  if (!el) return null;
-  const r = el.getBoundingClientRect();
-  if (r.width === 0 || r.height === 0) return null;
-  return { x: r.left - origin.left, y: r.top - origin.top, width: r.width, height: r.height };
-};
-
-/** Bounding box of the hero + stats block: the orbit rings surround it (#267). */
-const union = (rects: Rect[]): Rect => {
-  const x = Math.min(...rects.map((r) => r.x));
-  const y = Math.min(...rects.map((r) => r.y));
-  const right = Math.max(...rects.map((r) => r.x + r.width));
-  const bottom = Math.max(...rects.map((r) => r.y + r.height));
-  return { x, y, width: right - x, height: bottom - y };
-};
+/** Blank boards hung while phrases load, fail, or none is configured (#271). */
+const PLACEHOLDERS = Array.from({ length: 8 }, (_, i) => ({ key: `blank-${i}`, total: 8 - i }));
 
 /**
- * Full-screen landing `/` (#262): balloons per landing term (FR-149, BR-042), hero + Explore, 4 stats from the
- * overview over the same 30-day range. #267: orbs on orbit rings centred on the hero, grid/wash backdrop, top bar.
- * Light mode only (#260); no sidebar/header.
+ * Full-screen landing `/` (#262, #271): a Saigon signboard wall. Every configured phrase (FR-149, BR-042) hangs as an
+ * enamel board sized by mentions around the main sign (headline, 30-day figures, door plaque into the dashboard).
+ * Desktop and tablet fill one viewport; phones stack the main sign above a scrolling wall. Light only (#260).
  */
 export function LandingView() {
   const { project } = useCurrentProject();
   const projectId = project?.id ?? null;
   const { hasRole } = useRole();
   const reducedMotion = usePrefersReducedMotion();
-  const desktop = useBreakpoint("sm");
+  const wide = useBreakpoint("sm");
 
   const landing = useLandingTerms(projectId);
-  // Stats use the landing range so both agree; fall back to 30 days in the project tz if landing-terms failed.
+  // Figures use the landing range so both agree; fall back to 30 days in the project tz if landing-terms failed.
   const [now] = useState(() => new Date());
   const range = useMemo(
     () =>
@@ -68,49 +50,75 @@ export function LandingView() {
   const stats = useMemo(() => (overview.data ? formatLandingStats(overview.data, now) : null), [overview.data, now]);
   const statsLoading = !overview.isError && !overview.data;
 
-  const bubbles = useMemo(() => (landing.data ? toLandingBubbles(landing.data.rows) : []), [landing.data]);
-  const empty = landing.isSuccess && bubbles.length === 0;
+  const boards = useMemo(() => (landing.data ? toLandingBoards(landing.data.rows) : []), [landing.data]);
+  const ranks = useMemo(() => boardRanks(boards), [boards]);
+  const empty = landing.isSuccess && boards.length === 0;
+  const items = useMemo(
+    () => (boards.length > 0 ? boards.map((b) => ({ key: b.key, total: b.total })) : PLACEHOLDERS),
+    [boards],
+  );
 
-  const rootRef = useRef<HTMLDivElement>(null);
-  const heroRef = useRef<HTMLDivElement>(null);
-  const statsRef = useRef<HTMLDivElement>(null);
-  const topRef = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState({ width: 0, height: 0 });
-  const [exclude, setExclude] = useState<Rect[]>([]);
-  const [content, setContent] = useState<Rect | null>(null);
+  const wallRef = useRef<HTMLDivElement>(null);
+  const signRef = useRef<HTMLElement>(null);
+  const [wall, setWall] = useState({ width: 0, height: 0 });
+  const [hole, setHole] = useState<Rect | null>(null);
   const measure = useCallback(() => {
-    const root = rootRef.current;
-    if (!root) return;
-    const origin = root.getBoundingClientRect();
-    setSize({ width: root.clientWidth, height: root.clientHeight });
-    const hero = toRect(heroRef.current, origin);
-    const statsRect = toRect(statsRef.current, origin);
-    setContent(hero ? union(statsRect ? [hero, statsRect] : [hero]) : null);
-    setExclude([hero, statsRect, toRect(topRef.current, origin)].filter((r): r is Rect => !!r));
-  }, []);
-  useResizeObserver({ ref: rootRef, onResize: measure });
-  useEffect(measure, [measure, stats, statsLoading, empty]);
+    const el = wallRef.current;
+    if (!el) return;
+    setWall({ width: el.clientWidth, height: el.clientHeight });
+    const sign = signRef.current;
+    if (!wide || !sign) {
+      setHole(null);
+      return;
+    }
+    const o = el.getBoundingClientRect();
+    const r = sign.getBoundingClientRect();
+    setHole(r.width > 0 ? { x: r.left - o.left, y: r.top - o.top, width: r.width, height: r.height } : null);
+  }, [wide]);
+  useResizeObserver({ ref: wallRef, onResize: measure });
+  useEffect(measure, [measure, stats, statsLoading, empty, items.length]);
+
+  const rects = useMemo(
+    () => layoutSignWall(items, { width: wall.width, height: wall.height, hole, gap: WALL_GAP }),
+    [items, wall.width, wall.height, hole],
+  );
+  const byKey = useMemo(() => new Map(boards.map((b) => [b.key, b])), [boards]);
 
   return (
     <main
-      ref={rootRef}
-      className="relative flex min-h-dvh flex-col items-center justify-center gap-8 overflow-x-hidden bg-secondary pt-20 pb-8 sm:h-dvh sm:py-8 sm:overflow-hidden"
+      data-motion={reducedMotion ? "reduced" : "full"}
+      className={cx(
+        signFont.variable,
+        figureFont.variable,
+        "sign-wall relative min-h-dvh overflow-x-hidden sm:h-dvh sm:overflow-hidden",
+      )}
     >
-      <LandingBackdrop size={size} content={content} mobile={!desktop} ghosts={empty ? GHOSTS : 0} />
-      <LandingTopBar ref={topRef} />
-      {bubbles.length > 0 ? (
-        <LandingBalloons
-          bubbles={bubbles}
-          size={size}
-          exclude={exclude}
-          content={content}
-          mobile={!desktop}
-          reducedMotion={reducedMotion}
+      {/* Same DOM at every width (SSR-safe); CSS moves the main sign into the wall from `sm` up. */}
+      <div className="p-1.5 sm:p-0">
+        <MainSign
+          ref={signRef}
+          stats={stats}
+          loading={statsLoading}
+          empty={empty ? (hasRole(["admin"]) ? "admin" : "other") : null}
+          className="relative sm:absolute sm:top-[47%] sm:left-1/2 sm:z-10 sm:w-[clamp(400px,62vw,560px)] sm:-translate-x-1/2 sm:-translate-y-1/2 lg:w-[clamp(520px,44vw,680px)]"
         />
-      ) : null}
-      <LandingHero ref={heroRef} live={!!overview.data?.dataQuality.lastSyncAt} />
-      {empty ? <LandingEmpty admin={hasRole(["admin"])} /> : null}
-      <LandingStats ref={statsRef} stats={stats} loading={statsLoading} />
+      </div>
+      <div
+        ref={wallRef}
+        role="group"
+        aria-label={copy.wallLabel}
+        className="relative mx-[3px] mb-[3px] h-[var(--phone-wall-h)] sm:absolute sm:inset-[3px] sm:m-0 sm:h-auto"
+        style={{ ["--phone-wall-h" as string]: `${phoneWallHeight(items.length)}px` }}
+      >
+        {rects.map((rect, i) => {
+          const board = byKey.get(rect.key);
+          return board ? (
+            <SignBoard key={rect.key} board={board} rect={rect} rank={ranks.get(rect.key) ?? i + 1} index={i} />
+          ) : (
+            <BlankBoard key={rect.key} rect={rect} index={i} />
+          );
+        })}
+      </div>
     </main>
   );
 }

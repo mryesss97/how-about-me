@@ -1,0 +1,285 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-14T09:55:05+00:00",
+  "title": "Design System: How About Me — Landing",
+  "extensions": {
+    "colorMeta": {
+      "wall-concrete": {
+        "role": "neutral",
+        "displayName": "Wall Concrete",
+        "canonical": "#D9E6EF",
+        "tonalRamp": ["#1b2a35", "#2f4352", "#4a6070", "#6b8394", "#93a9b8", "#b9cbd7", "#d9e6ef", "#eef4f8"]
+      },
+      "signwriter-navy": {
+        "role": "neutral",
+        "displayName": "Signwriter Navy",
+        "canonical": "#0C4A6E",
+        "tonalRamp": ["#082f49", "#0c4a6e", "#075985", "#0369a1", "#0284c7", "#0ea5e9", "#7dd3fc", "#e0f2fe"]
+      },
+      "sky-enamel": {
+        "role": "primary",
+        "displayName": "Sky Enamel",
+        "canonical": "#0369A1",
+        "tonalRamp": ["#082f49", "#0c4a6e", "#075985", "#0369a1", "#0284c7", "#0ea5e9", "#7dd3fc", "#e0f2fe"]
+      },
+      "red-enamel": {
+        "role": "secondary",
+        "displayName": "Red Enamel",
+        "canonical": "#B42318",
+        "tonalRamp": ["#55160c", "#7a271a", "#912018", "#b42318", "#d92d20", "#f04438", "#fda29b", "#fee4e2"]
+      },
+      "green-enamel": {
+        "role": "secondary",
+        "displayName": "Green Enamel",
+        "canonical": "#067647",
+        "tonalRamp": ["#053321", "#074d31", "#085d3a", "#067647", "#079455", "#17b26a", "#75e0a7", "#dcfae6"]
+      },
+      "enamel-white": {
+        "role": "neutral",
+        "displayName": "Enamel White",
+        "canonical": "#FBFDFF",
+        "tonalRamp": ["#2a3a45", "#4a5d6b", "#71848f", "#9aabb5", "#c3d0d8", "#e3ecf2", "#f5fbff", "#fbfdff"]
+      },
+      "lettering-white": {
+        "role": "neutral",
+        "displayName": "Lettering White",
+        "canonical": "#FFFFFF",
+        "tonalRamp": ["#2a3a45", "#4a5d6b", "#71848f", "#9aabb5", "#c3d0d8", "#e3ecf2", "#f5fbff", "#fbfdff"]
+      },
+      "blank-lettering": {
+        "role": "neutral",
+        "displayName": "Blank Lettering",
+        "canonical": "#5B7083",
+        "tonalRamp": ["#1e2a33", "#2f3f4c", "#455a6a", "#5b7083", "#7d93a4", "#9fb3c2", "#c6d4de", "#eaf0f4"]
+      },
+      "blank-keyline": {
+        "role": "neutral",
+        "displayName": "Blank Keyline",
+        "canonical": "#9FB3C2",
+        "tonalRamp": ["#1e2a33", "#2f3f4c", "#455a6a", "#5b7083", "#7d93a4", "#9fb3c2", "#c6d4de", "#eaf0f4"]
+      },
+      "selection-sky": {
+        "role": "neutral",
+        "displayName": "Selection Sky",
+        "canonical": "#BAE6FD",
+        "tonalRamp": ["#082f49", "#0c4a6e", "#075985", "#0369a1", "#0284c7", "#0ea5e9", "#7dd3fc", "#e0f2fe"]
+      },
+      "brand-sky-500": {
+        "role": "primary",
+        "displayName": "Brand Sky 500 (shared)",
+        "canonical": "#0EA5E9",
+        "tonalRamp": ["#082f49", "#0c4a6e", "#075985", "#0369a1", "#0284c7", "#0ea5e9", "#7dd3fc", "#e0f2fe"]
+      },
+      "app-mist": {
+        "role": "neutral",
+        "displayName": "App Mist (shared)",
+        "canonical": "#F5FBFF",
+        "tonalRamp": ["#2a3a45", "#4a5d6b", "#71848f", "#9aabb5", "#c3d0d8", "#e3ecf2", "#f5fbff", "#fbfdff"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Main-sign headline only."
+      },
+      "headline": {
+        "displayName": "Phrase, wide caps",
+        "purpose": "Bungee phrase lettering on boards with room; fitted 11-76px per board."
+      },
+      "title": {
+        "displayName": "Phrase, condensed caps",
+        "purpose": "Saira Extra Condensed 700 on width-bound boards and blade signs."
+      },
+      "figure": {
+        "displayName": "Painted figure",
+        "purpose": "The four 30-day figures on the main sign."
+      },
+      "share-line": {
+        "displayName": "Share line",
+        "purpose": "Dominant share under every phrase; one line, fitted to width."
+      },
+      "label": {
+        "displayName": "Rank plate",
+        "purpose": "House-number rank figure."
+      },
+      "body": {
+        "displayName": "Tagline",
+        "purpose": "Inter tagline on the main sign."
+      },
+      "small-print": {
+        "displayName": "Small print",
+        "purpose": "Captions, notes, legend, sub-sign split, states."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "sign-hang",
+        "value": "720ms cubic-bezier(0.16, 1, 0.3, 1), stagger 55ms, swing from ±2.4deg, transform-origin 50% 0",
+        "purpose": "Boards hung once on load; none under reduced motion."
+      },
+      {
+        "name": "sub-sign-slide",
+        "value": "transform 260ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Sub-sign slides up from a board's foot on hover/focus."
+      },
+      {
+        "name": "plaque-invert",
+        "value": "background-color, color 160ms ease-out",
+        "purpose": "Door plaque hover inversion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px",
+        "purpose": "Wall becomes one fixed viewport; main sign moves into the wall."
+      },
+      {
+        "name": "lg",
+        "value": "1024px",
+        "purpose": "Main sign widens to ~44vw; figures in 4 columns."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Sign Board — Neutral",
+      "kind": "card",
+      "refersTo": "sign-board-neutral",
+      "description": "Phrase board led by neutral sentiment: navy lettering and keyline on white enamel.",
+      "html": "<div class=\"ds-wall\"><div class=\"ds-board \" tabindex=\"0\" role=\"img\" aria-label=\"XẾP HÀNG 60,3% TRUNG TÍNH\"><span class=\"ds-keyline\"></span><span class=\"ds-plate\">4</span><span class=\"ds-content\"><span class=\"ds-phrase\">\"XẾP HÀNG\"</span><span class=\"ds-figure\">60,3% TRUNG TÍNH</span></span><span class=\"ds-sub\">78 lượt nhắc · 20,5% tích cực · 60,3% trung tính · 19,2% tiêu cực</span></div></div>",
+      "css": ":host{--wall:#d9e6ef;--ink:#0c4a6e;--sky-enamel:#0369a1;--red-enamel:#b42318;--green-enamel:#067647;--enamel-white:#fbfdff;}.ds-wall{background:var(--wall);padding:6px;display:flex;gap:6px;flex-wrap:wrap;}.ds-board{--enamel:var(--enamel-white);--letter:var(--ink);--line:var(--ink);position:relative;width:240px;height:150px;overflow:hidden;border-radius:3px;background:var(--enamel);color:var(--letter);outline:none;}.ds-board:focus-visible{outline:3px solid var(--ink);outline-offset:2px;}.ds-keyline{position:absolute;inset:5px;border:2px solid var(--line);border-radius:2px;pointer-events:none;}.ds-plate{position:absolute;top:11px;left:11px;min-width:26px;padding:1px 6px;border-radius:2px;background:var(--sky-enamel);color:#fff;font-family:'Saira Extra Condensed',sans-serif;font-size:15px;font-weight:700;line-height:18px;text-align:center;font-variant-numeric:tabular-nums;}.ds-content{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.35em;padding:12px;text-align:center;}.ds-phrase{font-family:Bungee,sans-serif;font-size:30px;line-height:1.2;letter-spacing:.01em;text-transform:uppercase;}.ds-figure{white-space:nowrap;font-family:'Saira Extra Condensed',sans-serif;font-weight:700;font-size:20px;line-height:1;letter-spacing:.02em;font-variant-numeric:tabular-nums;text-transform:uppercase;}.ds-sub{position:absolute;inset:auto 0 0 0;padding:7px 12px 8px;background:var(--ink);color:#fff;font-family:Inter,sans-serif;font-size:12px;font-weight:500;line-height:1.35;text-align:center;transform:translateY(101%);transition:transform 260ms cubic-bezier(0.16, 1, 0.3, 1);}.ds-board:hover .ds-sub,.ds-board:focus-visible .ds-sub{transform:translateY(0);}"
+    },
+    {
+      "name": "Sign Board — Negative Solid",
+      "kind": "card",
+      "refersTo": "sign-board-negative-solid",
+      "description": "Clear negative lead (>= 60%): white lettering on red enamel; rank plate inverts.",
+      "html": "<div class=\"ds-wall\"><div class=\"ds-board ds-neg-solid\" tabindex=\"0\" role=\"img\" aria-label=\"THẤT VỌNG 100,0% TIÊU CỰC\"><span class=\"ds-keyline\"></span><span class=\"ds-plate\">1</span><span class=\"ds-content\"><span class=\"ds-phrase\">\"THẤT VỌNG\"</span><span class=\"ds-figure\">100,0% TIÊU CỰC</span></span><span class=\"ds-sub\">120 lượt nhắc · 0,0% tích cực · 0,0% trung tính · 100,0% tiêu cực</span></div></div>",
+      "css": ":host{--wall:#d9e6ef;--ink:#0c4a6e;--sky-enamel:#0369a1;--red-enamel:#b42318;--green-enamel:#067647;--enamel-white:#fbfdff;}.ds-wall{background:var(--wall);padding:6px;display:flex;gap:6px;flex-wrap:wrap;}.ds-board{--enamel:var(--enamel-white);--letter:var(--ink);--line:var(--ink);position:relative;width:240px;height:150px;overflow:hidden;border-radius:3px;background:var(--enamel);color:var(--letter);outline:none;}.ds-board:focus-visible{outline:3px solid var(--ink);outline-offset:2px;}.ds-keyline{position:absolute;inset:5px;border:2px solid var(--line);border-radius:2px;pointer-events:none;}.ds-plate{position:absolute;top:11px;left:11px;min-width:26px;padding:1px 6px;border-radius:2px;background:var(--sky-enamel);color:#fff;font-family:'Saira Extra Condensed',sans-serif;font-size:15px;font-weight:700;line-height:18px;text-align:center;font-variant-numeric:tabular-nums;}.ds-content{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.35em;padding:12px;text-align:center;}.ds-phrase{font-family:Bungee,sans-serif;font-size:30px;line-height:1.2;letter-spacing:.01em;text-transform:uppercase;}.ds-figure{white-space:nowrap;font-family:'Saira Extra Condensed',sans-serif;font-weight:700;font-size:20px;line-height:1;letter-spacing:.02em;font-variant-numeric:tabular-nums;text-transform:uppercase;}.ds-sub{position:absolute;inset:auto 0 0 0;padding:7px 12px 8px;background:var(--ink);color:#fff;font-family:Inter,sans-serif;font-size:12px;font-weight:500;line-height:1.35;text-align:center;transform:translateY(101%);transition:transform 260ms cubic-bezier(0.16, 1, 0.3, 1);}.ds-board:hover .ds-sub,.ds-board:focus-visible .ds-sub{transform:translateY(0);}.ds-neg-solid{--enamel:var(--red-enamel);--letter:#fff;--line:rgb(255 255 255 / .85);}.ds-neg-solid .ds-plate{background:#fff;color:var(--red-enamel);}"
+    },
+    {
+      "name": "Sign Board — Positive Mixed",
+      "kind": "card",
+      "refersTo": "sign-board-positive-mixed",
+      "description": "Weaker positive lead: green lettering and keyline on white enamel, condensed caps.",
+      "html": "<div class=\"ds-wall\"><div class=\"ds-board ds-pos-mixed\" tabindex=\"0\" role=\"img\" aria-label=\"NHÂN VIÊN 48,1% TÍCH CỰC\"><span class=\"ds-keyline\"></span><span class=\"ds-plate\">9</span><span class=\"ds-content\"><span class=\"ds-phrase\">\"NHÂN VIÊN\"</span><span class=\"ds-figure\">48,1% TÍCH CỰC</span></span><span class=\"ds-sub\">52 lượt nhắc · 48,1% tích cực · 40,4% trung tính · 11,5% tiêu cực</span></div></div>",
+      "css": ":host{--wall:#d9e6ef;--ink:#0c4a6e;--sky-enamel:#0369a1;--red-enamel:#b42318;--green-enamel:#067647;--enamel-white:#fbfdff;}.ds-wall{background:var(--wall);padding:6px;display:flex;gap:6px;flex-wrap:wrap;}.ds-board{--enamel:var(--enamel-white);--letter:var(--ink);--line:var(--ink);position:relative;width:240px;height:150px;overflow:hidden;border-radius:3px;background:var(--enamel);color:var(--letter);outline:none;}.ds-board:focus-visible{outline:3px solid var(--ink);outline-offset:2px;}.ds-keyline{position:absolute;inset:5px;border:2px solid var(--line);border-radius:2px;pointer-events:none;}.ds-plate{position:absolute;top:11px;left:11px;min-width:26px;padding:1px 6px;border-radius:2px;background:var(--sky-enamel);color:#fff;font-family:'Saira Extra Condensed',sans-serif;font-size:15px;font-weight:700;line-height:18px;text-align:center;font-variant-numeric:tabular-nums;}.ds-content{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.35em;padding:12px;text-align:center;}.ds-phrase{font-family:Bungee,sans-serif;font-size:30px;line-height:1.2;letter-spacing:.01em;text-transform:uppercase;}.ds-figure{white-space:nowrap;font-family:'Saira Extra Condensed',sans-serif;font-weight:700;font-size:20px;line-height:1;letter-spacing:.02em;font-variant-numeric:tabular-nums;text-transform:uppercase;}.ds-sub{position:absolute;inset:auto 0 0 0;padding:7px 12px 8px;background:var(--ink);color:#fff;font-family:Inter,sans-serif;font-size:12px;font-weight:500;line-height:1.35;text-align:center;transform:translateY(101%);transition:transform 260ms cubic-bezier(0.16, 1, 0.3, 1);}.ds-board:hover .ds-sub,.ds-board:focus-visible .ds-sub{transform:translateY(0);}.ds-pos-mixed{--letter:var(--green-enamel);--line:var(--green-enamel);}.ds-pos-mixed .ds-phrase{font-family:'Saira Extra Condensed',sans-serif;font-weight:700;line-height:1.05;font-size:40px;}"
+    },
+    {
+      "name": "Rank Plate",
+      "kind": "chip",
+      "refersTo": "rank-plate",
+      "description": "Sky house-number plate on every board.",
+      "html": "<span class=\"ds-rank\">3</span>",
+      "css": ".ds-rank{display:inline-block;min-width:26px;padding:1px 6px;border-radius:2px;background:#0369a1;color:#fff;font-family:'Saira Extra Condensed',sans-serif;font-size:15px;font-weight:700;line-height:18px;text-align:center;font-variant-numeric:tabular-nums;}"
+    },
+    {
+      "name": "Door Plaque",
+      "kind": "button",
+      "refersTo": "door-plaque",
+      "description": "The single CTA into the dashboard; inverts to navy on hover.",
+      "html": "<div class=\"ds-plaque-bg\"><a href=\"#\" class=\"ds-plaque\"><span>Vào dashboard</span><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\"><path d=\"M5 12h14m0 0-7-7m7 7-7 7\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg></a></div>",
+      "css": ".ds-plaque-bg{background:#0369a1;padding:24px;}.ds-plaque{display:inline-flex;align-items:center;gap:10px;white-space:nowrap;padding:12px 18px;border:2px solid #fff;border-radius:2px;background:#fbfdff;color:#0c4a6e;font-family:Bungee,sans-serif;font-size:17px;text-transform:uppercase;text-decoration:none;transition:background-color 160ms ease-out,color 160ms ease-out;}.ds-plaque:hover{background:#0c4a6e;color:#fff;}.ds-plaque:focus-visible{outline:3px solid #fff;outline-offset:3px;}"
+    },
+    {
+      "name": "Main Sign",
+      "kind": "custom",
+      "refersTo": "main-sign",
+      "description": "The shop's sky enamel sign: logo plate, headline, ruled info line of painted figures.",
+      "html": "<section class=\"ds-main\"><span class=\"ds-main-keyline\"></span><div class=\"ds-main-in\"><span class=\"ds-logo\">How About Me</span><h1 class=\"ds-head\">Cộng đồng Threads nghĩ gì về bạn?</h1><p class=\"ds-tag\">Lắng nghe. Thấu hiểu.</p><dl class=\"ds-figs\"><div><dd class=\"ds-fig\">854 <span class=\"ds-growth\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\"><path d=\"M12 19V5m0 0-7 7m7-7 7 7\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>12,4%</span></dd><dt>lượt nhắc · 30 ngày</dt></div><div><dd class=\"ds-fig\">23,5%</dd><dt>tích cực</dt></div><div><dd class=\"ds-fig\">30,2%</dd><dt>tiêu cực</dt></div><div><dd class=\"ds-status\">Chưa đồng bộ</dd><dt>cập nhật</dt></div></dl></div></section>",
+      "css": ".ds-main{position:relative;max-width:640px;border-radius:4px;background:#0369a1;color:#fff;font-family:Inter,sans-serif;}.ds-main-keyline{position:absolute;inset:8px;border:2px solid rgb(255 255 255 / .9);border-radius:2px;}.ds-main-in{position:relative;display:flex;flex-direction:column;gap:20px;padding:32px;}.ds-logo{align-self:flex-start;padding:8px 12px;border-radius:2px;background:#fbfdff;color:#0c4a6e;font-weight:600;font-size:14px;}.ds-head{margin:0;font-family:Bungee,sans-serif;font-weight:400;font-size:40px;line-height:1.16;text-transform:uppercase;text-wrap:balance;}.ds-tag{margin:0;font-size:18px;font-weight:500;}.ds-figs{display:grid;grid-template-columns:repeat(4,auto);justify-content:space-between;gap:14px 20px;margin:0;padding-top:16px;border-top:2px solid rgb(255 255 255 / .9);}.ds-figs div{display:flex;flex-direction:column;gap:2px;}.ds-figs dd{margin:0;}.ds-figs dt{font-size:14px;font-weight:500;}.ds-fig{font-family:'Saira Extra Condensed',sans-serif;font-size:40px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap;}.ds-growth{display:inline-flex;align-items:center;gap:2px;font-size:17px;font-weight:600;}.ds-status{font-size:16px;font-weight:600;line-height:1.25;}"
+    },
+    {
+      "name": "Blank Board",
+      "kind": "card",
+      "refersTo": "sign-board-blank",
+      "description": "Placeholder while phrases load or none is configured: white enamel, dashed grey keyline.",
+      "html": "<div class=\"ds-blank\"><span class=\"ds-blank-keyline\"></span></div>",
+      "css": ".ds-blank{position:relative;width:200px;height:120px;border-radius:3px;background:#fbfdff;outline:6px solid #d9e6ef;}.ds-blank-keyline{position:absolute;inset:5px;border:2px dashed #9fb3c2;border-radius:2px;}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Biển hiệu Sài Gòn",
+    "overview": "The landing is a Saigon street facade of hand-painted shop signboards. Every phrase the community says hangs as its own flat enamel board, sized by how often it is said, packed edge to edge on a cool concrete wall with thin seams between them. The shop's own main sign (sky enamel, the logo plate, the headline, the 30-day figures) hangs among them, and the only way in is the white door plaque on it. The surface fills one viewport on tablet and desktop; on phones the main sign sits on top and the wall continues below as a scrolling stack.\n\nThe material is enamel on metal, painted by hand: flat colour, one ruled keyline inset on every board, capitals in two sign-painter alphabets, house-number plates for rank. Nothing glows, nothing has a gradient, nothing casts a shadow. Meaning comes from paint colour plus words (BR-017), never colour alone. The one motion is the hanging: boards swing into place once, one after another, and a small navy sub-sign slides up from a board's foot on hover or focus. It rejects the SaaS hero: no centred headline over decoration, no glow, no row of KPI tiles.",
+    "keyCharacteristics": [
+      "Flat enamel boards on a concrete wall, 6px seams, no shadow, gradient or glow.",
+      "One 2px keyline per board, inset, in the lettering colour.",
+      "Two lettering alphabets: Bungee caps (wide) and Saira Extra Condensed 700 caps (hand-ruled condensed); Inter only for small print.",
+      "Board size = mention count; board paint = sentiment, always with the share in words.",
+      "Sky enamel belongs to the shop: the main sign and the rank plates.",
+      "Vietnamese copy and number format (`23,5%`, `1.284`)."
+    ],
+    "rules": [
+      {
+        "name": "The Paint Plus Words Rule",
+        "body": "A board's paint is the dominant sentiment, and the same board always carries the share line in words (`62,0% TIÊU CỰC`). Colour never stands alone (BR-017).",
+        "section": "colors"
+      },
+      {
+        "name": "The Two-Step Enamel Rule",
+        "body": "Clear lead (≥ 60%) paints the whole board; a weaker lead paints only the lettering and keyline on white. Neutral-led boards are navy on white. There is no third intensity.",
+        "section": "colors"
+      },
+      {
+        "name": "The Shop's Own Paint Rule",
+        "body": "Sky enamel is reserved for the main sign and rank plates.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Alphabets Rule",
+        "body": "Phrases are Bungee caps or Saira Extra Condensed 700 caps, whichever paints the larger letter on that board. No third display face.",
+        "section": "typography"
+      },
+      {
+        "name": "The Straight Quotes Rule",
+        "body": "Phrases are painted inside straight quotes (`\"GIÁ VÉ\"`). Stacked vertical boards drop them: upright quote glyphs read as noise.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tall Board Rule",
+        "body": "A tall, narrow board either stacks Bungee letters top to bottom (one column per word group, no quotes) or carries a blade-sign line of condensed caps turned 90°, read top to bottom.",
+        "section": "typography"
+      },
+      {
+        "name": "The Unbroken Share Rule",
+        "body": "The share line is always present and always on one line; it shrinks to the board's width, never wraps.",
+        "section": "typography"
+      },
+      {
+        "name": "The Small Print Rule",
+        "body": "States (never synced, empty, loading) are Inter small print, never painted figures.",
+        "section": "typography"
+      },
+      {
+        "name": "The Vietnamese Figures Rule",
+        "body": "Decimal comma and thousands dot via `vi-VN` (`23,5%`, `1.284`); tabular figures wherever numbers are painted.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Enamel Rule",
+        "body": "No `box-shadow`, gradient or glow on boards, the main sign, plates or the plaque. If a board needs to stand out, it gets bigger or gets solid paint.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** paint every phrase board flat, with one 2px keyline inset 5px in the lettering colour.",
+      "**Do** keep the share line on every board, on one line, in words beside the paint (BR-017).",
+      "**Do** keep the rank plate on every board, sky enamel with a white figure (inverted on solid boards).",
+      "**Do** let the #1 board share a full edge with the main sign.",
+      "**Do** choose Bungee or Saira Extra Condensed 700 per board by which paints the larger letter; stack or blade-turn the letters on tall, narrow boards.",
+      "**Do** keep the wall at Wall Concrete (#D9E6EF) so white enamel reads; keep Mist for the rest of the app.",
+      "**Do** format numbers as `vi-VN` with tabular figures.",
+      "**Do** draw arrows as icons (Untitled UI icons), not glyphs."
+    ],
+    "donts": [
+      "**Don't** add shadows, gradients, glows or a second keyline weight to anything on the wall.",
+      "**Don't** paint a phrase board sky; sky enamel is the shop's.",
+      "**Don't** paint states (loading, never synced, empty) as figures; they are Inter small print.",
+      "**Don't** put quote glyphs on letter-stacked vertical boards.",
+      "**Don't** let colour carry sentiment without the words.",
+      "**Don't** show safety figures or individual posts on the wall."
+    ]
+  }
+}

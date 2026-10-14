@@ -9,6 +9,8 @@ vi.mock("@/lib/api/client", () => ({ apiFetch: (...a: unknown[]) => apiFetch(...
 let reduced = false;
 vi.mock("@/hooks/use-prefers-reduced-motion", () => ({ usePrefersReducedMotion: () => reduced }));
 vi.mock("@/hooks/use-breakpoint", () => ({ useBreakpoint: () => true }));
+// next/font is a build-time loader; give the test the shape it returns.
+vi.mock("./landing-fonts", () => ({ signFont: { variable: "font-sign" }, figureFont: { variable: "font-figure" } }));
 
 const LANDING = {
   range: { from: "2026-09-14T12:00:00+07:00", to: "2026-10-14T12:00:00+07:00", timezone: "Asia/Ho_Chi_Minh" },
@@ -16,6 +18,7 @@ const LANDING = {
   rows: [
     { term: "giá vé", positive: 62, neutral: 38, negative: 0, total: 100, dominant: "positive", dominantShare: 0.62 },
     { term: "dịch vụ", positive: 1, neutral: 0, negative: 3, total: 4, dominant: "negative", dominantShare: 0.75 },
+    { term: "im lặng", positive: 0, neutral: 0, negative: 0, total: 0, dominant: null, dominantShare: null },
   ],
 };
 
@@ -35,7 +38,7 @@ function setup({ role = "viewer", landing = LANDING, overview = overviewFixture(
   return render(<LandingView />, { wrapper: Providers });
 }
 
-// jsdom has no layout: give the canvas a size; hero/stats rects stay 0 (unmeasured → no exclusion).
+// jsdom has no layout: give the wall a size; the main sign rect stays 0 (unmeasured → no hole).
 const sizes = { clientWidth: 1366, clientHeight: 768 };
 const orig: Record<string, PropertyDescriptor | undefined> = {};
 beforeAll(() => {
@@ -52,113 +55,83 @@ beforeEach(() => {
   reduced = false;
 });
 
-// #262 — landing page (FR-149, BR-042, BR-017)
+const boardsIn = () => screen.findAllByRole("img", { name: /^"/ });
+
+// #262, #271 — landing signboard wall (FR-020, FR-149, BR-042, BR-017)
 describe("LandingView", () => {
-  it("FR-149: one balloon per term with full accessible name; balloons are not links or buttons", async () => {
+  it("FR-149, BR-042: one board per configured phrase, incl. 0 mentions; full Vietnamese name; not links", async () => {
     setup();
-    const balloons = await screen.findAllByRole("img", { name: /mentions?$/ });
-    expect(balloons).toHaveLength(2);
-    expect(screen.getByRole("img", { name: "giá vé · 62.0% positive · 100 mentions" })).toHaveAttribute(
+    const boards = await boardsIn();
+    expect(boards).toHaveLength(3);
+    expect(screen.getByRole("img", { name: '"giá vé" · 62,0% tích cực · 100 lượt nhắc' })).toHaveAttribute(
       "tabindex",
       "0",
     );
-    expect(screen.queryByRole("button", { name: /giá vé/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("img", { name: '"im lặng" · chưa ai nhắc' })).toHaveAttribute("data-tone", "blank");
+    expect(screen.getByRole("img", { name: /dịch vụ/ })).toHaveAttribute("data-tone", "negative-solid");
     expect(screen.queryByRole("link", { name: /giá vé/ })).not.toBeInTheDocument();
   });
 
-  it("stats use the landing range with compare and never show safety (BR-017)", async () => {
+  it("main sign: Vietnamese headline, logo plate, figures over the landing range, never safety (BR-017)", async () => {
     setup();
-    expect(await screen.findByText("1,284")).toBeInTheDocument();
-    expect(screen.getByLabelText("+12.0%")).toHaveTextContent("↑ 12.0%");
-    expect(screen.getByText("62.0%")).toBeInTheDocument();
-    expect(screen.queryByText(/safety/i)).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent("Cộng đồng Threads nghĩ gì về bạn?");
+    expect(screen.getByRole("img", { name: "How About Me" })).toHaveAttribute(
+      "src",
+      "/brand/logo-horizontal-primary.svg",
+    );
+    expect(await screen.findByText("1.284")).toBeInTheDocument();
+    expect(screen.getByLabelText("+12,0%")).toHaveTextContent("12,0%");
+    expect(screen.getByText("kỳ trước: 1.000")).toBeInTheDocument();
+    expect(screen.queryByText(/[↑↓]/)).not.toBeInTheDocument();
+    expect(screen.getByText("62,0%")).toBeInTheDocument();
+    expect(screen.queryByText(/safety|an toàn/i)).not.toBeInTheDocument();
     expect(apiFetch).toHaveBeenCalledWith(`/projects/${P1}/analytics/overview`, {
       params: { compare: "true", from: LANDING.range.from, timezone: LANDING.range.timezone, to: LANDING.range.to },
     });
   });
 
-  it("Explore links to /overview", async () => {
+  it("FR-020: the door plaque links to /overview", async () => {
     setup();
-    expect(await screen.findByRole("link", { name: "Explore dashboard" })).toHaveAttribute("href", "/overview");
+    expect(await screen.findByRole("link", { name: "Vào dashboard" })).toHaveAttribute("href", "/overview");
   });
 
-  it("stats loading → skeleton", async () => {
+  it("figures loading → busy list with placeholders", async () => {
     setup({ overview: "pending" });
-    await screen.findAllByRole("img", { name: /mentions?$/ });
-    expect(screen.getAllByTestId("landing-stat-skeleton")).toHaveLength(4);
+    await boardsIn();
+    expect(screen.getByLabelText("30 ngày qua")).toHaveAttribute("aria-busy", "true");
   });
 
-  it("stats error → hidden, Explore still shown", async () => {
+  it("figures error → hidden, door plaque still there", async () => {
     setup({ overview: "error" });
-    await screen.findAllByRole("img", { name: /mentions?$/ });
-    await waitFor(() => expect(screen.queryAllByTestId("landing-stat-skeleton")).toHaveLength(0));
-    expect(screen.queryByText("Mentions")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Explore dashboard" })).toBeInTheDocument();
+    await boardsIn();
+    await waitFor(() => expect(screen.queryByText("lượt nhắc · 30 ngày")).not.toBeInTheDocument());
+    expect(screen.getByRole("link", { name: "Vào dashboard" })).toBeInTheDocument();
   });
 
-  it("landing-terms error → no balloons; stats fall back to a 30-day range", async () => {
+  it("landing-terms error → blank placeholder boards only; figures fall back to a 30-day range", async () => {
     setup({ landing: "error" });
-    expect(await screen.findByText("1,284")).toBeInTheDocument();
-    expect(screen.queryAllByRole("img", { name: /mentions?$/ })).toHaveLength(0);
+    expect(await screen.findByText("1.284")).toBeInTheDocument();
+    expect(screen.queryAllByRole("img", { name: /^"/ })).toHaveLength(0);
   });
 
-  it("empty terms: admin gets a Settings link", async () => {
+  it("no phrase configured: admin gets a Settings link, viewers a neutral line", async () => {
     setup({ role: "admin", landing: { ...LANDING, rows: [] } });
-    expect(await screen.findByRole("link", { name: "Add landing phrases in Settings" })).toHaveAttribute(
+    expect(await screen.findByRole("link", { name: "Thêm cụm từ cho landing trong Cài đặt" })).toHaveAttribute(
       "href",
       "/settings/project",
     );
   });
 
-  it("empty terms: viewer gets a neutral line only", async () => {
+  it("no phrase configured: viewer sees a neutral line only", async () => {
     setup({ role: "viewer", landing: { ...LANDING, rows: [] } });
-    expect(await screen.findByText("No landing phrases configured yet.")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /Settings/ })).not.toBeInTheDocument();
+    expect(await screen.findByText("Chưa có cụm từ nào được cấu hình.")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Cài đặt/ })).not.toBeInTheDocument();
   });
 
-  it("NFR-031: reduced motion → data-motion=reduced", async () => {
+  it("NFR-031: reduced motion → boards hang still", async () => {
     reduced = true;
     setup();
-    await screen.findAllByRole("img", { name: /mentions?$/ });
-    expect(screen.getByRole("group", { name: /landing terms/ })).toHaveAttribute("data-motion", "reduced");
-  });
-
-  it("#267: two-line headline, no stacked logo in the hero, horizontal logo in the top bar", async () => {
-    setup();
-    expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent("See how Threadsfeels about you.");
-    const logos = screen.getAllByRole("img", { name: "How About Me" });
-    expect(logos).toHaveLength(1);
-    expect(logos[0]).toHaveAttribute("src", "/brand/logo-horizontal-primary.svg");
-    expect(screen.getByTestId("landing-top-bar")).toContainElement(logos[0] ?? null);
-  });
-
-  it("#267, FR-149: orb face shows term + share without the sentiment word; aria-label stays complete", async () => {
-    setup();
-    const orb = await screen.findByRole("img", { name: "giá vé · 62.0% positive · 100 mentions" });
-    const face = Array.from(orb.querySelectorAll("span"))
-      .filter((el) => !el.className.includes("opacity-0") && !el.closest(".opacity-0"))
-      .map((el) => el.textContent)
-      .join(" ");
-    expect(face).toContain("62%");
-    expect(face).not.toMatch(/positive|negative/);
-  });
-
-  it("#267: empty state shows 5 ghost circles and the pill", async () => {
-    setup({ role: "viewer", landing: { ...LANDING, rows: [] } });
-    expect(await screen.findByText("No landing phrases configured yet.")).toBeInTheDocument();
-    expect(screen.getAllByTestId("landing-ghost")).toHaveLength(5);
-  });
-
-  it("#267: stats show the legend caption and uppercase-by-CSS labels", async () => {
-    setup();
-    expect(await screen.findByText("1,284")).toBeInTheDocument();
-    expect(screen.getByText(/Orb size = mentions/)).toBeInTheDocument();
-    expect(screen.getByText("Updated")).toHaveClass("uppercase");
-  });
-
-  it("#267: Live eyebrow only after a sync", async () => {
-    setup({ overview: overviewFixture({ lastSyncAt: null }) });
-    expect(await screen.findByText("Not synced")).toBeInTheDocument();
-    expect(screen.queryByText(/^Live/)).not.toBeInTheDocument();
+    await boardsIn();
+    expect(screen.getByRole("main")).toHaveAttribute("data-motion", "reduced");
   });
 });

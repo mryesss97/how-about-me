@@ -1,18 +1,24 @@
 import type { LandingTermsResponse, OverviewResponse } from "@how-about-me/contracts";
-import type { BubbleDatum } from "@/features/shared/bubbles/bubble-layout";
-import { bubbleCopy } from "@/features/shared/bubbles/sentiment-style";
-import { DASH, formatCount, formatGrowth, formatRate, type GrowthState } from "@/lib/format/number";
-import { formatRelativeOrAbsolute } from "@/lib/time/format";
 import { landingCopy as copy } from "./copy";
 
-/** Landing balloon = shared bubble + `empty` flag for terms with 0 mentions (#262). */
-export type LandingBubble = BubbleDatum & { empty: boolean };
+export type Sentiment = "positive" | "neutral" | "negative";
 
-/**
- * BR-042, FR-149 (#262): every configured term becomes a balloon, in setting order. A term with total 0 still
- * shows (neutral grey, share 0) so admins see that it is configured; its radius comes from the layout floor.
- */
-export function toLandingBubbles(rows: LandingTermsResponse["rows"]): LandingBubble[] {
+/** One signboard (#271): a configured phrase with its 30-day sentiment split (BR-042, FR-149). */
+export type LandingBoard = {
+  key: string;
+  name: string;
+  positive: number;
+  neutral: number;
+  negative: number;
+  total: number;
+  dominant: Sentiment;
+  dominantShare: number;
+  /** 0 mentions: a blank board, still shown so admins see the phrase is configured. */
+  empty: boolean;
+};
+
+/** Every configured phrase becomes a board, in setting order (BR-042). */
+export function toLandingBoards(rows: LandingTermsResponse["rows"]): LandingBoard[] {
   return rows.map((r) => ({
     key: r.term,
     name: r.term,
@@ -26,38 +32,101 @@ export function toLandingBubbles(rows: LandingTermsResponse["rows"]): LandingBub
   }));
 }
 
-/** Tooltip / accessible name: "term · 62.0% positive · 128 mentions"; empty → "term · no mentions". */
-export function balloonLabel(b: LandingBubble): string {
-  if (b.empty) return `${b.name} · ${copy.noMentions}`;
-  return `${b.name} · ${bubbleCopy.shareLine(b.dominantShare, b.dominant)} · ${bubbleCopy.mentions(b.total)}`;
+/** Rank by mentions, ties keep setting order (rank plates, #271). */
+export function boardRanks(boards: readonly LandingBoard[]): Map<string, number> {
+  const order = boards
+    .map((b, i) => ({ key: b.key, total: b.total, i }))
+    .sort((a, b) => b.total - a.total || a.i - b.i);
+  return new Map(order.map((o, i) => [o.key, i + 1]));
+}
+
+/** Enamel tone (#271): solid when one sentiment clearly leads, white board with coloured lettering when mixed. */
+export type BoardTone = "blank" | "positive-solid" | "negative-solid" | "positive-mixed" | "negative-mixed" | "neutral";
+export const SOLID_SHARE = 0.6;
+export function boardTone(b: LandingBoard): BoardTone {
+  if (b.empty) return "blank";
+  if (b.dominant === "neutral") return "neutral";
+  return `${b.dominant}-${b.dominantShare >= SOLID_SHARE ? "solid" : "mixed"}`;
+}
+
+const vi = (min: number, max: number) =>
+  new Intl.NumberFormat("vi-VN", { minimumFractionDigits: min, maximumFractionDigits: max });
+const pct1 = vi(1, 1);
+const int = vi(0, 0);
+
+/** "23,5%" — Vietnamese decimal comma (#271). */
+export const viRate = (v: number | null | undefined) => (v == null ? "—" : `${pct1.format(v * 100)}%`);
+/** "1.284" — Vietnamese thousands dot (#271). */
+export const viCount = (n: number) => int.format(n);
+
+/** Accessible name of a board: `"giá vé" · 62,0% tích cực · 100 lượt nhắc`. */
+export function boardLabel(b: LandingBoard): string {
+  if (b.empty) return `"${b.name}" · ${copy.noMentions}`;
+  return `"${b.name}" · ${viRate(b.dominantShare)} ${copy.sentiment[b.dominant]} · ${copy.mentions(viCount(b.total))}`;
+}
+
+/** Full split for the hover sub-sign: "100 lượt nhắc · 62,0% tích cực · 38,0% trung tính · 0,0% tiêu cực". */
+export function boardSplit(b: LandingBoard): string {
+  if (b.empty) return copy.noMentions;
+  const share = (n: number) => viRate(b.total > 0 ? n / b.total : 0);
+  return [
+    copy.mentions(viCount(b.total)),
+    `${share(b.positive)} ${copy.sentiment.positive}`,
+    `${share(b.neutral)} ${copy.sentiment.neutral}`,
+    `${share(b.negative)} ${copy.sentiment.negative}`,
+  ].join(" · ");
 }
 
 export type GrowthDirection = "up" | "down" | "flat" | "new";
-/** Growth badge (#267): `text` is capped at ">999%", `aria` keeps the exact value ("+14150.0%"). */
+/** Growth figure (#267, #271): `text` capped at ">999%" (direction drawn as an icon), `aria` keeps the exact value. */
 export type LandingGrowth = { text: string; direction: GrowthDirection; aria: string };
-export type LandingStat = {
-  key: keyof typeof copy.stats;
-  label: string;
-  value: string;
-  growth: LandingGrowth | null;
-};
-
-/** Growth cap shown on the badge (#267). */
 export const GROWTH_CAP = 999;
 
-export function landingGrowth(pct: number | null | undefined, state: GrowthState): LandingGrowth | null {
-  const aria = formatGrowth(pct, state);
-  if (aria === DASH) return null;
-  if (state === "new" || state === "flat" || pct == null)
-    return { text: aria, direction: state === "new" ? "new" : "flat", aria };
+export function landingGrowth(
+  pct: number | null | undefined,
+  state: OverviewResponse["kpis"]["mentionCount"]["growthState"],
+): LandingGrowth | null {
+  if (state === "new") return { text: copy.growthNew, direction: "new", aria: copy.growthNew };
+  if (pct == null) return null;
+  const sign = pct > 0 ? "+" : pct < 0 ? "−" : "";
+  const aria = `${sign}${pct1.format(Math.abs(pct))}%`;
   const direction: GrowthDirection = pct > 0 ? "up" : pct < 0 ? "down" : "flat";
-  const text = Math.abs(pct) > GROWTH_CAP ? `>${GROWTH_CAP}%` : `${Math.abs(pct).toFixed(1)}%`;
+  const text = Math.abs(pct) > GROWTH_CAP ? `>${GROWTH_CAP}%` : `${pct1.format(Math.abs(pct))}%`;
   return { text, direction, aria };
 }
 
+export type LandingStat = {
+  key: keyof typeof copy.stats;
+  value: string;
+  label: string;
+  growth: LandingGrowth | null;
+  /** Small print under the figure, e.g. the previous period's count behind a growth figure. */
+  note?: string;
+  /** A state rather than a number ("Chưa đồng bộ"): set as small print, not as a painted figure. */
+  status?: boolean;
+};
+
+/** "5 phút trước" / "3 giờ trước", else "14/10 09:30" in the range timezone (#271). */
+export function viUpdated(iso: string, now: Date, timeZone: string): string {
+  const min = Math.round((now.getTime() - new Date(iso).getTime()) / 60_000);
+  if (min < 1) return "vừa xong";
+  if (min < 60) return `${min} phút trước`;
+  if (min < 24 * 60) return `${Math.round(min / 60)} giờ trước`;
+  const parts = new Intl.DateTimeFormat("vi-VN", {
+    timeZone,
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date(iso));
+  const p = (t: string) => parts.find((x) => x.type === t)?.value ?? "";
+  return `${p("day")}/${p("month")} ${p("hour")}:${p("minute")}`;
+}
+
 /**
- * The 4 landing stats (#262) from the overview response over the landing range. Safety is never shown here:
- * sentiment ≠ safety (BR-017). Mentions carries a growth badge (↑/↓ %, "New", "0%"); hidden when not computable.
+ * The 4 painted figures of the main sign (#262, #271) from the overview over the landing range. Safety is never
+ * shown here: sentiment ≠ safety (BR-017).
  */
 export function formatLandingStats(o: OverviewResponse, now: Date = new Date()): LandingStat[] {
   const m = o.kpis.mentionCount;
@@ -65,22 +134,25 @@ export function formatLandingStats(o: OverviewResponse, now: Date = new Date()):
   return [
     {
       key: "mentions",
+      value: viCount(m.value),
       label: copy.stats.mentions,
-      value: formatCount(m.value),
       growth: landingGrowth(m.growthPct, m.growthState),
+      // The base behind the growth figure, so a jump from a nearly empty previous period reads as such.
+      note: m.previous != null && m.growthState !== "new" ? copy.previous(viCount(m.previous)) : undefined,
     },
-    { key: "positive", label: copy.stats.positive, value: formatRate(o.kpis.positiveRate.value), growth: null },
-    { key: "negative", label: copy.stats.negative, value: formatRate(o.kpis.negativeRate.value), growth: null },
+    { key: "positive", value: viRate(o.kpis.positiveRate.value), label: copy.stats.positive, growth: null },
+    { key: "negative", value: viRate(o.kpis.negativeRate.value), label: copy.stats.negative, growth: null },
     {
       key: "lastUpdated",
+      value: lastSyncAt ? viUpdated(lastSyncAt, now, o.range.timezone) : copy.neverSynced,
       label: copy.stats.lastUpdated,
-      value: lastSyncAt ? formatRelativeOrAbsolute(lastSyncAt, now, o.range.timezone) : copy.neverSynced,
       growth: null,
+      status: !lastSyncAt,
     },
   ];
 }
 
-/** Fallback range when landing-terms failed (open question 1 of the plan): last 30 days in the project timezone. */
+/** Fallback range when landing-terms failed: last 30 days, so the figures still show. */
 export function fallbackRange(now: Date, timezone: string): { from: string; to: string; timezone: string } {
   const to = new Date(Math.floor(now.getTime() / 60_000) * 60_000);
   const from = new Date(to.getTime() - 30 * 24 * 3600_000);

@@ -10,7 +10,7 @@ import { ApiError } from "@/lib/api/client";
 import { errorMessage, useUpdateProject } from "./api";
 
 const HINT =
-  "Each phrase becomes a balloon on the landing page, coloured by the sentiment of mentions whose text or key phrases contain it. Up to 20 phrases, 1–60 characters.";
+  "Each phrase becomes a signboard on the landing page, coloured by the sentiment of mentions whose text or key phrases contain it. Up to 20 phrases, 1–60 characters.";
 const INVALID = "Enter 1–60 characters with a letter or digit.";
 const DUPLICATE = "Already in the list.";
 const TOO_MANY = "Up to 20 phrases.";
