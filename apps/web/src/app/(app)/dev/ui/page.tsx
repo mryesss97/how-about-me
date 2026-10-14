@@ -97,6 +97,27 @@ export default function DevUiPage() {
               description="Try widening the time range or clearing some filters."
             />
           </Card>
+          <Card title="Empty — page-level illustration">
+            <EmptyState
+              illustration="empty"
+              title="No relevant mentions found in this period."
+              description="Page-level only (Mentions list, Reviews queue); cards keep the icon."
+            />
+          </Card>
+          <Card title="Pending — page-level illustration">
+            <EmptyState
+              illustration="pending"
+              title="Analysis is still running."
+              description="Results appear once the analysis worker finishes."
+            />
+          </Card>
+          <Card title="Sync attention — page-level illustration">
+            <EmptyState
+              illustration="sync-attention"
+              title="The last sync failed."
+              description="Reconnect Threads or retry from System Status."
+            />
+          </Card>
           <Card title="Error">
             <ErrorState
               error={{
