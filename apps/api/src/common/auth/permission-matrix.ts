@@ -1,4 +1,4 @@
-import type { ProjectSettings } from "@how-about-me/contracts";
+import type { ProjectToggleSetting } from "./project-settings";
 
 /**
  * Executable copy of docs/01-product/02-personas-rbac.md §3 (FR-014…FR-016). Change this table and the doc in the
@@ -7,7 +7,7 @@ import type { ProjectSettings } from "@how-about-me/contracts";
  * Paths are Nest-style without the global `api/v1` prefix.
  */
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-export type Access = "allow" | "deny" | { setting: keyof ProjectSettings };
+export type Access = "allow" | "deny" | { setting: ProjectToggleSetting };
 export type PermissionEntry = {
   method: HttpMethod;
   path: string;

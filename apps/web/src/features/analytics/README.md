@@ -3,11 +3,11 @@ Feature folder — see docs/02-architecture/03-frontend-design.md §1 and the T-
 Files:
 
 - `filter-bar.tsx`, `time-controls.tsx`, `applied-filter-chips.tsx`, `enum-multi-select.tsx` — shared filter bar (T-098).
-- `api.ts` — `useOverview` (re-exported from `features/shared/use-overview`, #233), `useMentionsTimeseries`, `useSentiment`, `useSafetyDistribution`, `useTopicsDistribution`, `useIntentsDistribution`, `useLanguagesDistribution`, `useQueryShare`, `useTopicSentiment`, `usePhraseSentiment` (#243: `limit=30`, `minMentions=2`, no `compare`, `enabled` only in Phrases mode) hooks (`GET …/analytics/overview|mentions-timeseries|sentiment|safety|topics|intents|languages|query-share|topic-sentiment|phrases`), all keyed on `apiParams`.
+- `api.ts` — `useOverview` (re-exported from `features/shared/use-overview`, #233), `useMentionsTimeseries`, `useSentiment`, `useSafetyDistribution`, `useTopicsDistribution`, `useIntentsDistribution`, `useLanguagesDistribution`, `useQueryShare`, `useTopicSentiment`, `usePhraseSentiment` (#243: `limit=30`, no `minMentions` — server applies the project's `phraseMinMentions` (#251), no `compare`, `enabled` only in Phrases mode) hooks (`GET …/analytics/overview|mentions-timeseries|sentiment|safety|topics|intents|languages|query-share|topic-sentiment|phrases`), all keyed on `apiParams`.
 - `kpi-definitions.ts` — KPI labels + tooltip copy from docs/01-product/07-metric-definitions.md §1.
 - `kpi-cards.tsx` — six KPI cards (FR-132/133/140): "—" for null rates, "New" for growth, pp delta when compare is on.
 - `overview-banners.tsx` — moved to `features/shared/overview-banners.tsx` (also used by Mentions, #233); fixtures in `features/shared/overview-fixture.test-utils.ts`.
-- `overview-view.tsx` — `/overview` body.
+- `overview-view.tsx` — `/overview` body; split into (#252): `overview-kpi-section.tsx` (banners + KPI cards), `overview-trend-row.tsx`, `overview-topic-rows.tsx`, `overview-p1-row.tsx` (chart rows rendering Fragments inside the 12-column grid; shared props in `overview-row-props.ts`), `use-overview-drill-down.ts` (drill-down hrefs), `query-error.ts` (`toQueryError`).
 - `charts/` — overview charts (T-100):
   - `index.ts` — lazy (`next/dynamic`, `ssr: false`) entry points used by `overview-view.tsx`.
   - `chart-card.tsx` — shared card: title, "View as table" toggle (NFR-032), loading/error/empty states; `headerAction` slot always visible (#243 mode toggle). Reused by T-101.
@@ -22,4 +22,4 @@ Files:
 
 ## Drill-down (T-102, FR-142)
 
-`OverviewView` builds hrefs with `toMentionsHref` + `lib/filters/drill-down.ts`, pinned to the `from/to` sent to analytics. `KpiCards` takes `hrefFor` (stretched link per card, separate link on "N severe"). Charts take `getHref`/`onNavigate` (`getBucketHref` for mentions over time): bars/slices/buckets navigate on click, and the "View as table" first column renders links (`ChartTable.rowHrefs`) as the keyboard path. Zero-count segments and topic `other` of Top topics are not drillable; in the topic × sentiment matrix `other` is a real label and drills to `topic=other` (T-149).
+`useOverviewDrillDown` builds hrefs with `toMentionsHref` + `lib/filters/drill-down.ts`, pinned to the `from/to` sent to analytics. `KpiCards` takes `hrefFor` (stretched link per card, separate link on "N severe"). Charts take `getHref`/`onNavigate` (`getBucketHref` for mentions over time): bars/slices/buckets navigate on click, and the "View as table" first column renders links (`ChartTable.rowHrefs`) as the keyboard path. Zero-count segments and topic `other` of Top topics are not drillable; in the topic × sentiment matrix `other` is a real label and drills to `topic=other` (T-149).

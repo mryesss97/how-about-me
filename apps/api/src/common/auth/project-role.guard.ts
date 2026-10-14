@@ -1,10 +1,11 @@
 import { type CanActivate, type ExecutionContext, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import { type ProjectSettings, ProjectSettingsSchema, type UserRole } from "@how-about-me/contracts";
+import type { UserRole } from "@how-about-me/contracts";
 import { PrismaService } from "../../database/prisma.service";
 import { AppError } from "../errors/app.error";
 import type { AuthedRequest } from "./current-user.decorator";
 import { IS_PUBLIC_KEY } from "./public.decorator";
+import { parseProjectSettings } from "./project-settings";
 import { PROJECT_SETTING_GATE_KEY, type ProjectSettingGate } from "./project-setting-gate.decorator";
 import { ROLES_KEY } from "./roles.decorator";
 
@@ -37,7 +38,7 @@ export class ProjectRoleGuard implements CanActivate {
     });
     if (!membership) throw new AppError("FORBIDDEN_PROJECT", "You are not a member of this project");
     const role = membership.role as UserRole;
-    const settings = parseSettings(membership.project.settings);
+    const settings = parseProjectSettings(membership.project.settings);
     req.project = { projectId, role, settings };
 
     const allowed = this.reflector.getAllAndOverride<UserRole[] | undefined>(ROLES_KEY, [
@@ -57,20 +58,4 @@ export class ProjectRoleGuard implements CanActivate {
     }
     return true;
   }
-}
-
-/**
- * Malformed settings never cause a 500: each key that is missing or has the wrong type falls back to its own schema
- * default (deny-safe for allowViewerExport); valid keys are kept, so one bad key does not reset the others.
- */
-function parseSettings(raw: unknown): ProjectSettings {
-  const parsed = ProjectSettingsSchema.safeParse(raw ?? {});
-  if (parsed.success) return parsed.data;
-  const obj = raw !== null && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
-  const settings = ProjectSettingsSchema.parse({});
-  for (const key of Object.keys(settings) as (keyof ProjectSettings)[]) {
-    const value = obj[key];
-    if (typeof value === "boolean") settings[key] = value;
-  }
-  return settings;
 }

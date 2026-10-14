@@ -1,5 +1,5 @@
 import type { Project, UserRole } from "@how-about-me/contracts";
-import { ProjectSettingsSchema } from "@how-about-me/contracts";
+import { parseProjectSettings } from "../../common/auth/project-settings";
 
 export type ProjectRow = {
   id: string;
@@ -21,7 +21,7 @@ export function toProject(p: ProjectRow, role?: UserRole): Project {
     slug: p.slug,
     description: p.description,
     timezone: p.timezone,
-    settings: ProjectSettingsSchema.parse(p.settings ?? {}),
+    settings: parseProjectSettings(p.settings),
     isActive: p.isActive,
     role,
     createdAt: p.createdAt.toISOString(),

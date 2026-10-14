@@ -42,7 +42,7 @@ Cursors are opaque. A malformed, tampered or legacy cursor (one issued before a 
       "slug": "1zone-eventista",
       "timezone": "Asia/Ho_Chi_Minh",
       "role": "analyst",
-      "settings": { "allowAnalystReanalyze": true, "allowViewerExport": false }
+      "settings": { "allowAnalystReanalyze": true, "allowViewerExport": false, "phraseMinMentions": 2 }
     }
   ]
 }
@@ -50,15 +50,15 @@ Cursors are opaque. A malformed, tampered or legacy cursor (one issued before a 
 
 ## 3. Projects & members
 
-| Method & path                                 | Role   | Body / query                                                                      | Response                                             |
-| --------------------------------------------- | ------ | --------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| `GET /projects`                               | any    | —                                                                                 | `Project[]` with `role`                              |
-| `GET /projects/:projectId`                    | member | —                                                                                 | `Project`                                            |
-| `PATCH /projects/:projectId`                  | admin  | `{ name?, timezone?, settings?: { allowAnalystReanalyze?, allowViewerExport? } }` | `Project`                                            |
-| `GET /projects/:projectId/members`            | admin  | —                                                                                 | `Member[] {userId,email,displayName,role,createdAt}` |
-| `POST /projects/:projectId/members`           | admin  | `{ email, role }`                                                                 | `Member` (201) · `409 MEMBER_EXISTS`                 |
-| `PATCH /projects/:projectId/members/:userId`  | admin  | `{ role }`                                                                        | `Member` · `409 LAST_ADMIN`                          |
-| `DELETE /projects/:projectId/members/:userId` | admin  | —                                                                                 | 204 · `409 LAST_ADMIN`                               |
+| Method & path                                 | Role   | Body / query                                                                                          | Response                                             |
+| --------------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `GET /projects`                               | any    | —                                                                                                     | `Project[]` with `role`                              |
+| `GET /projects/:projectId`                    | member | —                                                                                                     | `Project`                                            |
+| `PATCH /projects/:projectId`                  | admin  | `{ name?, timezone?, settings?: { allowAnalystReanalyze?, allowViewerExport?, phraseMinMentions? } }` | `Project`                                            |
+| `GET /projects/:projectId/members`            | admin  | —                                                                                                     | `Member[] {userId,email,displayName,role,createdAt}` |
+| `POST /projects/:projectId/members`           | admin  | `{ email, role }`                                                                                     | `Member` (201) · `409 MEMBER_EXISTS`                 |
+| `PATCH /projects/:projectId/members/:userId`  | admin  | `{ role }`                                                                                            | `Member` · `409 LAST_ADMIN`                          |
+| `DELETE /projects/:projectId/members/:userId` | admin  | —                                                                                                     | 204 · `409 LAST_ADMIN`                               |
 
 `PATCH /projects/:projectId` (FR-032, T-034): body must have at least one field; `timezone` must be a valid IANA zone (`Intl.DateTimeFormat`, aliases such as `UTC` accepted) else `400 VALIDATION_ERROR`. `settings` is merged per key — unsent keys keep their current value. Only fields that actually change are written; the change is audited as `project.updated` in the same transaction with metadata `{ changes: { name?|timezone?|"settings.<key>"?: { from, to } } }` (no secrets). A no-op patch returns `200` with the current project and writes no audit row.
 
@@ -233,7 +233,7 @@ Topic × sentiment matrix and negative-topic contributors (FR-144, T-149). Roles
 
 ### `GET …/analytics/phrases` (P1) → `{ sentimentAnalyzed, phraseAnalyzed, totalPhrases, minMentions, limit, rows:[{phrase, positive, neutral, negative, total, negativeShare}] }`
 
-Phrase × sentiment for the sentiment map in phrases mode (FR-148, #223; metric-definitions §4). Roles admin/analyst/viewer; same analytics params as the other widgets (`compare` ignored) plus `limit` (int 1–100, default 30) and `minMentions` (int 1–1000, default 2). Errors: `400 VALIDATION_ERROR`, `403`, `404 NOT_FOUND`.
+Phrase × sentiment for the sentiment map in phrases mode (FR-148, #223; metric-definitions §4). Roles admin/analyst/viewer; same analytics params as the other widgets (`compare` ignored) plus `limit` (int 1–100, default 30) and `minMentions` (int 1–1000; omitted → project `settings.phraseMinMentions`, default 2, #251). Response `minMentions` is the effective value. Errors: `400 VALIDATION_ERROR`, `403`, `404 NOT_FOUND`.
 
 - Cells = `COUNT(DISTINCT post_id)` in `B` with that key phrase in the **current** analysis (`analysis_phrases`) and that effective sentiment; posts without a sentiment are not counted.
 - Rows with `total ≥ minMentions`, sorted `total DESC, phrase ASC` (code point), first `limit`. No `other` row. `totalPhrases` = rows meeting the threshold before the cut.
