@@ -40,4 +40,28 @@ describe("AuthBridge", () => {
     );
     expect(countAtChildEffect).toBeGreaterThan(0);
   });
+
+  it("#262: swapping one bridge for another (landing → app layout) keeps a working getter for the new page", async () => {
+    let tokenAtChildEffect: Promise<unknown> | null = null;
+    function Child() {
+      useEffect(() => {
+        tokenAtChildEffect = Promise.resolve(getters.at(-1)?.());
+      }, []);
+      return null;
+    }
+    const client = new QueryClient();
+    const { rerender } = render(
+      <QueryClientProvider client={client}>
+        <AuthBridge key="landing" />
+      </QueryClientProvider>,
+    );
+    rerender(
+      <QueryClientProvider client={client}>
+        <AuthBridge key="app">
+          <Child />
+        </AuthBridge>
+      </QueryClientProvider>,
+    );
+    expect(await tokenAtChildEffect).toBe("tok");
+  });
 });

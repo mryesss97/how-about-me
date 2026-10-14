@@ -54,10 +54,12 @@ export function AuthBridge({ children }: PropsWithChildren) {
       }
     });
 
+    // The getter is not reset on unmount: it reads the live session (null once signed out), and navigating between
+    // two layouts that each mount a bridge (landing `/` → `(app)`, #262) would otherwise clear the new bridge's getter
+    // after it registered, so the new page's first requests went out without a bearer.
     return () => {
       data.subscription.unsubscribe();
       setTokenExpiredHandler(null);
-      setAccessTokenGetter(() => null);
     };
   }, [queryClient, router]);
 
