@@ -28,7 +28,7 @@ Sidebar (Untitled UI `sidebar-simple`): Overview · Mentions · Listening Querie
 
 ### Brand (v2)
 
-Concept: an ear + a speech bubble — "Lắng nghe. Thấu hiểu." Palette: Sky `#0EA5E9`, Action Blue `#0369A1` (primary actions), Ink `#15344B` (text), Mist `#F5FBFF` (page background); Inter 400/600. Logo keeps clear space of ¼ of the symbol width on each side; horizontal logo ≥ 180 px wide, mark ≥ 24 px; never stretched or recoloured; white variant on dark surfaces. Sky/blue is reserved for brand and actions — sentiment and safety keep their own palettes and always pair colour with a label + icon (BR-017). Guide: `docs/assets/brand/brand-guide-v2.pdf`; token mapping in `docs/02-architecture/03-frontend-design.md` §6.1.
+Concept: an ear + a speech bubble — "Lắng nghe. Thấu hiểu." Palette: Sky `#0EA5E9`, Action Blue `#0369A1` (primary actions), Ink `#15344B` (text), Mist `#F5FBFF` (page background); Inter 400/600. Logo keeps clear space of ¼ of the symbol width on each side; horizontal logo ≥ 180 px wide, mark ≥ 24 px; never stretched or recoloured. Theme: light only (owner decision 2026-10-14, #260). Sky/blue is reserved for brand and actions — sentiment and safety keep their own palettes and always pair colour with a label + icon (BR-017). Guide: `docs/assets/brand/brand-guide-v2.pdf`; token mapping in `docs/02-architecture/03-frontend-design.md` §6.1.
 
 ## 2. Global patterns
 

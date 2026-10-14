@@ -139,7 +139,7 @@ Screenshot:
 | `--wait-text "<chữ>"` | Chờ chữ hiện và nhìn thấy được. Dùng cho màn tải dữ liệu sau khi mở                       |
 | `--click "<nhãn>"`    | Bấm theo thứ tự ưu tiên: nút, rồi link (đúng tên), rồi chữ hiển thị. Sau đó chờ mạng lắng |
 | `--scroll "<chữ>"`    | Cuộn phần tử chứa chữ vào viewport                                                        |
-| `--dark`              | Giả lập `prefers-color-scheme: dark`; script kiểm tra `<html>` có class `dark-mode`       |
+| `--dark`              | Giả lập OS dark; script kiểm tra `<html>` KHÔNG có `dark-mode` (light only, #260)         |
 
 - Script chờ trang `load`, rồi chờ mạng lắng thêm tối đa 5 s. Animation luôn tắt (`prefers-reduced-motion: reduce`).
 - `--wait-text`, `--click`, `--scroll` lặp được và chạy theo thứ tự trên dòng lệnh. Một bước lỗi thì lệnh lỗi, nêu bước đó, và không lưu ảnh.

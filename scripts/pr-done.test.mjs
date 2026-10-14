@@ -5,7 +5,7 @@
 //   node --test scripts/pr-done.test.mjs
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import { findChrome } from "./lib/find-chrome.mjs";
@@ -214,11 +214,13 @@ test("clickTargets lists button, link, then text in priority order", () => {
   ]);
 });
 
-test("DARK_CLASS matches the class the theme provider sets", () => {
-  const source = readFileSync(new URL("../apps/web/src/providers/theme.tsx", import.meta.url), "utf8");
-  assert.equal(source.match(/dark: "([^"]+)"/)?.[1], DARK_CLASS);
-  // `--dark` emulates the system scheme; the provider must follow it.
-  assert.match(source, /enableSystem/);
+test("light only (#260): no theme provider sets DARK_CLASS, viewport pins light", () => {
+  assert.equal(existsSync(new URL("../apps/web/src/providers/theme.tsx", import.meta.url)), false);
+  const layout = readFileSync(new URL("../apps/web/src/app/layout.tsx", import.meta.url), "utf8");
+  assert.match(layout, /colorScheme: "light",/);
+  assert.doesNotMatch(layout, /next-themes|enableSystem/);
+  // DARK_CLASS is the vendored class `--dark` asserts is absent.
+  assert.equal(DARK_CLASS, "dark-mode");
 });
 
 test("SHOT_USAGE lists every flag the parser accepts", () => {

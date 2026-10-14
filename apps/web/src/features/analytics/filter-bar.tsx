@@ -40,7 +40,7 @@ export function FilterBar({ showCompare = false, queryOptions = [] }: FilterBarP
   return (
     <section
       aria-label="Filters"
-      className="sticky top-0 z-10 flex flex-col gap-3 border-b border-secondary bg-secondary py-3 dark:bg-primary"
+      className="sticky top-0 z-10 flex flex-col gap-3 border-b border-secondary bg-secondary py-3"
     >
       <div className="flex flex-wrap items-end gap-3">
         <TimeControls filters={filters} setFilters={setFilters} />

@@ -6,6 +6,7 @@
 @plugin "tailwindcss-react-aria-components";
 @plugin "tailwindcss-animate";
 
+/* Kept so vendored Untitled UI `dark:` classes stay inert (only match `.dark-mode`, never set) — #260. */
 @custom-variant dark (&:where(.dark-mode, .dark-mode *));
 @custom-variant label (& [data-label]);
 @custom-variant focus-input-within (&:has(input:focus));
@@ -112,11 +113,6 @@ input[type="search"]::-webkit-search-cancel-button {
     inset -6px -8px 16px rgb(0 0 0 / 0.08),
     inset 4px 6px 12px rgb(255 255 255 / 0.35),
     0 10px 20px -8px rgb(16 24 40 / 0.25);
-}
-
-/* Dark mode: a softer specular highlight so it reads as gloss, not a white spot. */
-.dark-mode .bubble-3d {
-  --bubble-spec: rgb(255 255 255 / 0.28);
 }
 
 /* Stronger drop shadow on hover via opacity of a pseudo-element (box-shadow itself is never animated). */

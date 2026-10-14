@@ -8,17 +8,21 @@ import { StateIllustration, type StateIllustrationName } from "./state-illustrat
 const srcs = (c: HTMLElement) => Array.from(c.querySelectorAll("img")).map((i) => i.getAttribute("src"));
 
 describe("StateIllustration (#245, UX §2.3)", () => {
-  it.each<StateIllustrationName>(["empty", "pending", "sync-attention"])("%s swaps light/dark files", (name) => {
-    const { container } = render(<StateIllustration name={name} />);
-    expect(srcs(container)).toEqual([`/brand/illustrations/${name}.svg`, `/brand/illustrations/${name}-dark.svg`]);
-    for (const img of container.querySelectorAll("img")) expect(img).toHaveAttribute("alt", "");
-    expect(container.firstElementChild).toHaveAttribute("aria-hidden", "true");
-  });
+  it.each<StateIllustrationName>(["empty", "pending", "sync-attention"])(
+    "%s renders only the light file (#260)",
+    (name) => {
+      const { container } = render(<StateIllustration name={name} />);
+      expect(srcs(container)).toEqual([`/brand/illustrations/${name}.svg`]);
+      expect(container.innerHTML).not.toContain("dark");
+      for (const img of container.querySelectorAll("img")) expect(img).toHaveAttribute("alt", "");
+      expect(container.firstElementChild).toHaveAttribute("aria-hidden", "true");
+    },
+  );
 
   // #253: the pack's Mist panel (#F5FBFF) equals the Mist page background (bg-secondary), so the light files
-  // use Sky Tint (#E0F2FE = brand-100) for the panel. Dark files keep their team-mapped panel (#13161B).
+  // use Sky Tint (#E0F2FE = brand-100) for the panel.
   it.each<StateIllustrationName>(["empty", "pending", "sync-attention"])(
-    "%s light panel is Sky Tint, not Mist; dark panel unchanged",
+    "%s light panel is Sky Tint, not Mist",
     (name) => {
       const read = (file: string) =>
         readFileSync(resolve(__dirname, `../../../public/brand/illustrations/${file}.svg`), "utf8");
@@ -26,7 +30,6 @@ describe("StateIllustration (#245, UX §2.3)", () => {
         svg.match(/<rect x="75" y="35" width="210" height="164" rx="36" fill="([^"]+)"/)?.[1];
       expect(panel(read(name))).toBe("#E0F2FE");
       expect(read(name)).not.toContain("#F5FBFF");
-      expect(panel(read(`${name}-dark`))).toBe("#13161B");
     },
   );
 

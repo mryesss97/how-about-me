@@ -109,23 +109,25 @@ Missing components are added with `npx untitledui@latest add <name>` into the sa
 
 Source: official brand pack v2 — guide in [`docs/assets/brand/brand-guide-v2.pdf`](../assets/brand/brand-guide-v2.pdf). Tokens live in `apps/web/src/styles/theme.css`.
 
-| Brand v2                            | Untitled UI token                                         | Light                                      | Dark                                  |
-| ----------------------------------- | --------------------------------------------------------- | ------------------------------------------ | ------------------------------------- |
-| Brand scale (Tailwind sky, 25..950) | `--color-brand-*`                                         | sky; 500 `#0EA5E9`, 700 `#0369A1`          | same scale                            |
-| Action Blue (primary button)        | `--color-bg-brand-solid` / `_hover`                       | brand-700 / 800 (white text ≈ 5.9:1)       | brand-700 / 800                       |
-| Brand text / fg                     | `--color-text-brand-tertiary`, `--color-fg-brand-primary` | brand-700                                  | unchanged                             |
-| Focus ring                          | `--color-focus-ring`                                      | brand-600 (≥ 3:1 on white)                 | brand-500 (≈ 7:1 on neutral-950)      |
-| Mist (page bg)                      | `--color-bg-secondary`                                    | `#F5FBFF`                                  | neutral-900 (unchanged)               |
-| Ink (primary text)                  | `--color-text-primary`                                    | `#15344B` (≈ 12:1 on white)                | neutral-50 (unchanged)                |
-| Sidebar active item (#245)          | `nav-item.tsx` only (not `bg-active` / `bg-secondary`)    | brand-100 bg + brand-700 text/icon (5.2:1) | brand-500/15 bg + brand-300 (≈ 9.5:1) |
+**Light only** (owner decision 2026-10-14, #260): no dark theme and no system switching — an OS in dark mode renders exactly like light. There is no theme provider; `viewport` sets `colorScheme: "light"` so native controls stay light. The `.dark-mode` token block in `theme.css` and vendored `dark:` classes are inert: `@custom-variant dark` in `globals.css` is kept so `dark:` only matches `.dark-mode`, which is never set (removing it would make Tailwind fall back to `prefers-color-scheme`).
 
-Page backgrounds use `bg-secondary` (Mist): the login page, and in light mode the app shell `<main>` (`(app)/layout.tsx`) and the sticky filter bar, which keep `bg-primary` in dark mode (`dark:bg-primary`) so dark cards do not sit on a lighter page. Cards and the sidebar stay `bg-primary` (white).
+| Brand v2                            | Untitled UI token                                         | Light                                      |
+| ----------------------------------- | --------------------------------------------------------- | ------------------------------------------ |
+| Brand scale (Tailwind sky, 25..950) | `--color-brand-*`                                         | sky; 500 `#0EA5E9`, 700 `#0369A1`          |
+| Action Blue (primary button)        | `--color-bg-brand-solid` / `_hover`                       | brand-700 / 800 (white text ≈ 5.9:1)       |
+| Brand text / fg                     | `--color-text-brand-tertiary`, `--color-fg-brand-primary` | brand-700                                  |
+| Focus ring                          | `--color-focus-ring`                                      | brand-600 (≥ 3:1 on white)                 |
+| Mist (page bg)                      | `--color-bg-secondary`                                    | `#F5FBFF`                                  |
+| Ink (primary text)                  | `--color-text-primary`                                    | `#15344B` (≈ 12:1 on white)                |
+| Sidebar active item (#245)          | `nav-item.tsx` only (not `bg-active` / `bg-secondary`)    | brand-100 bg + brand-700 text/icon (5.2:1) |
+
+Page backgrounds use `bg-secondary` (Mist): the login page, the app shell `<main>` (`(app)/layout.tsx`) and the sticky filter bar. Cards and the sidebar stay `bg-primary` (white).
 
 Error/success/warning, gray scale and the sentiment/safety palettes are not brand colours and are unchanged (BR-017). Charts using `utility-brand-*` follow the sky scale.
 
-Logo: `features/shared/brand-logo.tsx` (`horizontal | stacked | mark`) renders the official primary SVG in light mode and the white SVG under `.dark-mode`; files in `apps/web/public/brand/`. Used in the sidebar and mobile header (horizontal, 180 px wide — the guide minimum) and on the login page (stacked). Icons use Next file conventions: `src/app/favicon.ico`, `icon.svg`, `apple-icon.png` (180). `viewport.themeColor` = Mist (light) / `#0C0E12` (dark).
+Logo: `features/shared/brand-logo.tsx` (`horizontal | stacked | mark`) renders the official primary SVG only (no white variant, #260); files in `apps/web/public/brand/`. Used in the sidebar and mobile header (horizontal, 180 px wide — the guide minimum) and on the login page (stacked). Icons use Next file conventions: `src/app/favicon.ico`, `icon.svg`, `apple-icon.png` (180). `viewport.themeColor` = Mist `#F5FBFF`.
 
-Illustrations (#245): `features/shared/state-illustration.tsx` (`empty | pending | sync-attention`, 360×240) renders `public/brand/illustrations/{name}.svg` in light mode and `{name}-dark.svg` under `.dark-mode`, decorative (`alt=""`, `aria-hidden`), max 240/280 px wide. The light files differ from the pack in one fill: the panel is Sky Tint `#E0F2FE` (brand-100) instead of Mist `#F5FBFF`, because Mist equals `bg-secondary` and the panel vanished on page backgrounds (#253). A tinted container behind the image was tried first and rejected: the 360×240 viewBox has transparent margins, so the container showed as a larger box around the panel. Dark files are unchanged. Opt-in via `EmptyState illustration` / `QueryState emptyIllustration`; the default (FeaturedIcon) stays for chart cards and widgets. The pack has no dark files, so dark variants map colours: Mist panel → `#13161B` (neutral-900), white card → `#0C0E12`, Light Blue `#BAE6FD` → brand-800 `#075985`, Sky `#0EA5E9` kept, clock hand `#0369A1` → brand-300, warning `#FFFAEB`/`#FEDF89`/`#B54708` → `#2B1D06`/`#93370D`/`#FDB022`.
+Illustrations (#245): `features/shared/state-illustration.tsx` (`empty | pending | sync-attention`, 360×240) renders `public/brand/illustrations/{name}.svg` (no dark files, #260), decorative (`alt=""`, `aria-hidden`), max 240/280 px wide. The light files differ from the pack in one fill: the panel is Sky Tint `#E0F2FE` (brand-100) instead of Mist `#F5FBFF`, because Mist equals `bg-secondary` and the panel vanished on page backgrounds (#253). A tinted container behind the image was tried first and rejected: the 360×240 viewBox has transparent margins, so the container showed as a larger box around the panel. Opt-in via `EmptyState illustration` / `QueryState emptyIllustration`; the default (FeaturedIcon) stays for chart cards and widgets.
 
 ## 7. Error handling & states
 
