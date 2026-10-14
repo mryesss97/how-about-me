@@ -111,7 +111,11 @@ Opened from a landing board (last 30 days) or any `/terms/<term>` URL; inside th
 
 ### 3.1 Login (`/login`)
 
-Centered card: logo, email + password, "Continue with Google" (if enabled), error text. No sign-up link. Footer: "Ask an admin for access." After sign-in → `/` (landing, #262) unless a safe `next` is given; a signed-in visit to `/login` → `/`.
+Centered white enamel board on the wall (signboard style, #286): logo, title "Đăng nhập" (Bungee caps), "E-mail công việc" + "Mật khẩu", "Tiếp tục", "Tiếp tục với Google" (if enabled), generic error "E-mail hoặc mật khẩu không đúng". Banners: `?reason=expired` → "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."; `?reason=forbidden` → "Tài khoản không có quyền truy cập. Liên hệ quản trị viên." (render only; no flow sends it yet). No sign-up link. Footer: "Chưa có tài khoản? Nhờ quản trị viên cấp quyền." After sign-in → `/` (landing, #262) unless a safe `next` is given; a signed-in visit to `/login` → `/`.
+
+### 3.1a Not found (404, `not-found`)
+
+Same wall + white enamel board: "Lỗi 404", title "Không tìm thấy trang", short description; plaque buttons "Quay lại" (browser back) and "Về trang chủ" (→ `/`). Title tab: "Không tìm thấy trang".
 
 ### 3.2 Overview (`/overview`) — P0
 
@@ -198,6 +202,7 @@ Two-column (≥ 1024 px) or stacked. Clicking a row in `/mentions` opens the det
 - Table (Untitled UI `table.tsx`): Query (display name + value with `#` for tags) · Type · Enabled (toggle, admin) · Poll interval · Overlap · Last sync (relative + status dot) · Last result (fetched/inserted) · Matched posts (24 h / all) · Last error (truncated, tooltip) · Created by · Actions (⋯ menu: Edit, Run now, Backfill (P1), View mentions, Disable/Enable, Delete/Restore).
 - Create/Edit **drawer**: Display name · Query value (helper: "Enter without #") · Type (Keyword / Topic tag radio, disabled on edit) · Exclude terms (tag input) · Include terms (tag input, collapsed "Advanced") · Poll interval (number, seconds, presets 5/10/30/60 min) · Overlap (seconds, preset) · Initial backfill (days, 0–30) · Enabled toggle. Validation inline; duplicate → error toast with link to existing query.
 - Run now → toast "Sync queued" with "View job". Delete → confirm dialog explaining soft delete.
+- **Signboard (#279).** Currently still a placeholder (enamel board with task plates). When built (#42/#43): fascia header + "+ Thêm truy vấn"; toolbar panel with "Hiện truy vấn đã xoá"; table on an `.operate-board`, Inter cells, status dot + text (BR-017); drawer title in condensed caps. Vietnamese labels — columns: Truy vấn · Loại · Bật · Chu kỳ quét · Chồng lấn · Lần đồng bộ cuối · Kết quả gần nhất · Bài khớp (24 giờ / tất cả) · Lỗi gần nhất · Người tạo; actions: Sửa, Chạy ngay, Lấy dữ liệu cũ, Xem bài nhắc, Tắt/Bật, Xoá/Khôi phục. Toast: "Đã xếp lịch đồng bộ" / "Xem lượt đồng bộ". See `apps/web/DESIGN.md` → Operate Surfaces.
 
 ### 3.6 System Status (`/system-status`) — P0
 
@@ -207,6 +212,8 @@ Tabs: **Overview** · **Sync jobs** · **Analysis failures** · **Audit log** (a
 - Sync jobs tab: table with filters (query, status, date) → row click opens job detail drawer (window, pages, counters, requests, rate-limit events, error, cursor). Admin: "Retry" for failed.
 - Analysis failures tab: failed runs list with error code, post link, "Retry" (admin), "Retry all failed (≤ 500)" (admin, confirm).
 - Audit log tab (admin): actor, action, entity, time, metadata (expand).
+
+- **Signboard (#280).** Currently still a placeholder (enamel board with task plates). When built (#55/#56/#93): tabs Tổng quan · Lượt đồng bộ · Lỗi phân tích · Nhật ký thao tác (admin); cards Kết nối Threads · Bộ thu thập · Bộ phân tích · Cơ sở dữ liệu as `.operate-board`s, state as a plate with its word (Hoạt động tốt · Chậm · Tạm dừng · Lỗi), never colour alone (BR-017); "Cập nhật 12 giây trước"; actions "Thử lại", "Thử lại tất cả lỗi (≤ 500)", "Quản lý". See `apps/web/DESIGN.md` → Operate Surfaces.
 
 ### 3.7 Settings (`/settings/*`) — P0
 
