@@ -78,7 +78,7 @@ export function MentionsToolbar({ q, sort, onSearch, onSort, total, loaded, hasM
   }, [text, onSearch]);
 
   return (
-    <div className="flex flex-col gap-3 border-b-2 border-[var(--ink)] bg-[var(--enamel-white)] py-3 md:flex-row md:items-center md:justify-between">
+    <div className="flex flex-col gap-3 border-b-2 border-[var(--ink)] bg-[var(--enamel-white)] px-4 py-3 md:flex-row md:items-center md:justify-between">
       <MentionsCount total={total} loaded={loaded} hasMore={hasMore} showCount={showCount} />
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         <label className="relative flex items-center">
