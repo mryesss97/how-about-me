@@ -44,8 +44,8 @@ export function QueryState({
   isForbidden,
   onRetry,
   skeleton,
-  emptyTitle = "No relevant mentions found in this period.",
-  emptyDescription = "Try widening the time range or clearing some filters.",
+  emptyTitle = "Không có lượt nhắc liên quan trong khoảng thời gian này.",
+  emptyDescription = "Hãy mở rộng khoảng thời gian hoặc bỏ bớt bộ lọc.",
   emptyAction,
   emptyIllustration,
   className,
@@ -77,7 +77,7 @@ export function ForbiddenState({ className, backHref = "/overview" }: { classNam
       className={cx("flex flex-col items-center justify-center gap-3 px-4 py-16 text-center", className)}
     >
       <FeaturedIcon color="gray" theme="modern" icon={Lock01} size="lg" />
-      <h2 className="text-lg font-semibold text-primary">You don&apos;t have permission to view this page.</h2>
+      <h2 className="text-lg font-semibold text-primary">Bạn không có quyền xem trang này.</h2>
       <p className="max-w-md text-sm text-tertiary">
         Ask a project admin if you need access. Your role decides which screens are available.
       </p>
@@ -103,11 +103,11 @@ export function ErrorState({
       <div className="flex items-start gap-3">
         <FeaturedIcon color="error" theme="modern" icon={AlertCircle} size="md" />
         <div className="flex min-w-0 flex-col gap-1">
-          <p className="text-sm font-semibold text-primary">Something went wrong loading this data.</p>
-          <p className="text-sm text-tertiary">{error.message ?? "Please try again in a moment."}</p>
+          <p className="text-sm font-semibold text-primary">Đã xảy ra lỗi khi tải dữ liệu.</p>
+          <p className="text-sm text-tertiary">{error.message ?? "Vui lòng thử lại sau giây lát."}</p>
           {error.requestId ? (
             <p className="font-mono text-xs text-quaternary">
-              Request ID: <span data-testid="request-id">{error.requestId}</span>
+              Mã yêu cầu: <span data-testid="request-id">{error.requestId}</span>
             </p>
           ) : null}
         </div>
@@ -115,7 +115,7 @@ export function ErrorState({
       {onRetry ? (
         <div>
           <Button color="secondary" size="sm" iconLeading={RefreshCcw01} onClick={onRetry}>
-            Retry
+            Thử lại
           </Button>
         </div>
       ) : null}
@@ -161,7 +161,7 @@ export function EmptyState({
 export function SkeletonBlock({ lines = 3, className }: { lines?: number; className?: string }) {
   return (
     <div aria-busy="true" aria-live="polite" className={cx("flex flex-col gap-3", className)}>
-      <span className="sr-only">Loading…</span>
+      <span className="sr-only">Đang tải…</span>
       {Array.from({ length: lines }).map((_, i) => (
         <div key={i} className="h-4 w-full animate-pulse rounded-md bg-secondary" style={{ opacity: 1 - i * 0.2 }} />
       ))}

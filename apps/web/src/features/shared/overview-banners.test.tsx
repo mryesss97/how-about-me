@@ -17,23 +17,23 @@ describe("OverviewBanners (FR-134)", () => {
   it("TC-DASH-009: pending 124 shows the analysis-pending banner; 0 shows none", () => {
     const f = overviewFixture();
     render(<OverviewBanners data={{ ...f, coverage: { ...f.coverage, pendingMentions: 124 } }} canManage={false} />);
-    expect(screen.getByText("124 mentions are waiting for analysis.")).toBeInTheDocument();
+    expect(screen.getByText("124 lượt nhắc đang chờ phân tích.")).toBeInTheDocument();
     expect(bannersFor(f)).toEqual([]);
   });
 
   it("TC-DASH-010: failed or partial sync shows sync banner linking to System Status", () => {
     render(<OverviewBanners data={dq({ lastSyncStatus: "failed" })} canManage={false} />);
-    expect(screen.getByText("Latest Threads sync failed. Data may be incomplete.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "View System Status" })).toHaveAttribute("href", "/system-status");
+    expect(screen.getByText("Lần đồng bộ Threads gần nhất bị lỗi. Dữ liệu có thể chưa đầy đủ.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Xem trạng thái hệ thống" })).toHaveAttribute("href", "/system-status");
     expect(bannersFor(dq({ lastSyncStatus: "partial" }))).toEqual(["sync"]);
   });
 
   it("TC-DASH-011 / BR-033: integration banner links to Integrations for admins only", () => {
     const { rerender } = render(<OverviewBanners data={dq({ integrationStatus: "expired" })} canManage />);
-    expect(screen.getByRole("alert")).toHaveTextContent("Threads connection needs attention.");
-    expect(screen.getByRole("link", { name: "Go to Integrations" })).toHaveAttribute("href", "/settings/integrations");
+    expect(screen.getByRole("alert")).toHaveTextContent("Kết nối Threads cần được xử lý.");
+    expect(screen.getByRole("link", { name: "Đến trang Tích hợp" })).toHaveAttribute("href", "/settings/integrations");
     rerender(<OverviewBanners data={dq({ integrationStatus: "expired" })} canManage={false} />);
-    expect(screen.queryByRole("link", { name: "Go to Integrations" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Đến trang Tích hợp" })).toBeNull();
   });
 
   it("orders banners red → yellow → blue", () => {

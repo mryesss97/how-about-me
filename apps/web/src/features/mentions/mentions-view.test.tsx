@@ -98,7 +98,7 @@ describe("MentionsView (UX §3.3)", () => {
     expect(path).toBe(`/projects/${PID}/mentions`);
     expect(params).toMatchObject({ limit: "25", count: "true", relevance: "relevant", sort: "newest" });
     expect(params.cursor).toBeUndefined();
-    expect(screen.getByTestId("mentions-count")).toHaveTextContent("1,234 mentions");
+    expect(screen.getByTestId("mentions-count")).toHaveTextContent("1.234 mentions");
   });
 
   it("T-095: totalCount omitted → header shows loaded rows as a lower bound, no endless skeleton", async () => {
@@ -194,7 +194,7 @@ describe("MentionsView (UX §3.3)", () => {
   it("TC-MEN-017: empty state with widen CTA", async () => {
     apiFetch.mockResolvedValueOnce(page(0, null, 0));
     setup();
-    expect(await screen.findByText("No relevant mentions found in this period.")).toBeInTheDocument();
+    expect(await screen.findByText("Không có lượt nhắc liên quan trong khoảng thời gian này.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Widen time range" })).toBeInTheDocument();
     // #245: page-level empty state uses the brand v2 illustration (decorative).
     expect(document.querySelector('img[src="/brand/illustrations/empty.svg"]')).not.toBeNull();
@@ -207,7 +207,7 @@ describe("MentionsView (UX §3.3)", () => {
     expect(await screen.findByTestId("request-id")).toHaveTextContent("req-42");
     expect(screen.queryByTestId("mentions-count")).toBeNull();
     apiFetch.mockResolvedValueOnce(page(2, null, 2));
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Retry" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Thử lại" })));
     await waitFor(() => expect(screen.getAllByTestId("mention-row")).toHaveLength(2));
   });
 
@@ -219,9 +219,9 @@ describe("MentionsView (UX §3.3)", () => {
     });
     apiFetch.mockResolvedValueOnce(page(0, null, 0));
     setup("?compare=true");
-    expect(await screen.findByText("No relevant mentions found in this period.")).toBeInTheDocument();
-    expect(screen.getByText("Latest Threads sync failed. Data may be incomplete.")).toBeInTheDocument();
-    expect(screen.getByText("12 mentions are waiting for analysis.")).toBeInTheDocument();
+    expect(await screen.findByText("Không có lượt nhắc liên quan trong khoảng thời gian này.")).toBeInTheDocument();
+    expect(screen.getByText("Lần đồng bộ Threads gần nhất bị lỗi. Dữ liệu có thể chưa đầy đủ.")).toBeInTheDocument();
+    expect(screen.getByText("12 lượt nhắc đang chờ phân tích.")).toBeInTheDocument();
     // Banners need coverage only — no previous-period work.
     expect(nth(useOverview.mock.calls, -1)[1].compare).toBeUndefined();
   });
@@ -237,7 +237,7 @@ describe("MentionsView (UX §3.3)", () => {
     expect(await screen.findByTestId("request-id")).toHaveTextContent("req-77");
     expect(screen.getAllByTestId("mention-row")).toHaveLength(25);
     apiFetch.mockResolvedValueOnce(page(5, null));
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Retry" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Thử lại" })));
     await waitFor(() => expect(screen.getAllByTestId("mention-row")).toHaveLength(30));
   });
 

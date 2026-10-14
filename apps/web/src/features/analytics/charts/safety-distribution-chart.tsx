@@ -67,23 +67,23 @@ export function SafetyDistributionChart({
 
   const table = {
     rowHrefs: rows.map((r) => segmentHref(getHref, r)),
-    columns: ["Level", "Count", "Share"],
+    columns: ["Mức độ", "Số lượng", "Tỷ lệ"],
     rows: [
       ...rows.map((r) => [r.name, formatCount(r.count), formatRate(r.share)]),
-      ["Total", formatCount(denominator), denominator > 0 ? formatRate(1) : "—"],
+      ["Tổng", formatCount(denominator), denominator > 0 ? formatRate(1) : "—"],
     ],
   };
 
   return (
     <ChartCard
-      title="Safety distribution"
-      description="Share of safety-analysed mentions"
+      title="Phân bố an toàn"
+      description="Tỷ lệ trên lượt nhắc đã đánh giá an toàn"
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}
       // BR-032: denominator 0 → empty state.
       isEmpty={!!data && denominator === 0}
-      emptyTitle="No analysed mentions in this range"
+      emptyTitle="Chưa có lượt nhắc đã phân tích trong khoảng này"
       table={table}
       className={className}
     >
@@ -92,7 +92,7 @@ export function SafetyDistributionChart({
         getFill={(r) => safetyFill(r.key, idPrefix)}
         denominator={denominator}
         onSelect={drillSelect({ getHref, onNavigate })}
-        denominatorLabel="analysed"
+        denominatorLabel="lượt nhắc đã phân tích"
         defs={<SafetyPatterns idPrefix={idPrefix} />}
       />
       <ul className="flex flex-wrap justify-center gap-x-4 gap-y-1">

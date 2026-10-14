@@ -39,23 +39,23 @@ export function SentimentDistributionChart({
   const select = drillSelect({ getHref, onNavigate });
   const table = {
     rowHrefs: slices.map((s) => segmentHref(getHref, s)),
-    columns: ["Sentiment", "Count", "Share"],
+    columns: ["Cảm xúc", "Số lượng", "Tỷ lệ"],
     rows: [
       ...slices.map((s) => [s.name, formatCount(s.count), formatRate(s.share)]),
-      ["Total", formatCount(denominator), denominator > 0 ? formatRate(1) : "—"],
+      ["Tổng", formatCount(denominator), denominator > 0 ? formatRate(1) : "—"],
     ],
   };
 
   return (
     <ChartCard
-      title="Sentiment distribution"
-      description="Share of analysed mentions"
+      title="Phân bố cảm xúc"
+      description="Tỷ lệ trên lượt nhắc đã phân tích"
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}
       // Denominator 0 → empty state, no division by zero (BR-032).
       isEmpty={!!data && denominator === 0}
-      emptyTitle="No analysed mentions in this range"
+      emptyTitle="Chưa có lượt nhắc đã phân tích trong khoảng này"
       table={table}
       className={className}
     >
@@ -71,7 +71,7 @@ export function SentimentDistributionChart({
                     title={s.name}
                     lines={[{ name: s.name, count: s.count, share: s.share, color: SENTIMENT_COLORS[s.key] }]}
                     denominator={denominator}
-                    denominatorLabel="analysed"
+                    denominatorLabel="lượt nhắc đã phân tích"
                   />
                 );
               }}
@@ -101,7 +101,7 @@ export function SentimentDistributionChart({
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-x-0 top-[calc(50%-2rem)] flex flex-col items-center">
           <span className="text-display-xs font-semibold text-primary">{formatCount(denominator)}</span>
-          <span className="text-xs text-tertiary">analysed</span>
+          <span className="text-xs text-tertiary">đã phân tích</span>
         </div>
       </div>
       {/* Static legend in sentiment order: colour is never the only cue (label + share as text, NFR-030). */}

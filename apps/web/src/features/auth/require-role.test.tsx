@@ -33,7 +33,7 @@ describe("RequireRole", () => {
   it("shows the Forbidden page with a back link for a denied role (TC-AUTH-015)", async () => {
     apiFetch.mockResolvedValue(meFixture([projectFixture(P1, "viewer")]));
     renderGuard();
-    expect(await screen.findByText("You don't have permission to view this page.")).toBeInTheDocument();
+    expect(await screen.findByText("Bạn không có quyền xem trang này.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /back to overview/i })).toHaveAttribute("href", "/overview");
     expect(screen.queryByText("secret content")).not.toBeInTheDocument();
   });
@@ -49,7 +49,7 @@ describe("RequireRole", () => {
     apiFetch.mockReturnValue(new Promise(() => {}));
     renderGuard();
     expect(screen.queryByText(/permission/)).not.toBeInTheDocument();
-    expect(screen.getByText("Loading…")).toBeInTheDocument();
+    expect(screen.getByText("Đang tải…")).toBeInTheDocument();
   });
 
   it("shows an error state when /me fails", async () => {

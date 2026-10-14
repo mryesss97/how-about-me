@@ -40,22 +40,22 @@ export function QueryShareChart({
   }));
   const table = {
     rowHrefs: rows.map((r) => segmentHref(getHref, r)),
-    columns: ["Query", "Count", "Share"],
+    columns: ["Truy vấn", "Số lượng", "Tỷ lệ"],
     rows: [
       ...rows.map((r) => [r.name, formatCount(r.count), formatRate(r.share)]),
-      ["Distinct mentions", formatCount(denominator), "—"],
+      ["Lượt nhắc (không trùng)", formatCount(denominator), "—"],
     ],
   };
 
   return (
     <ChartCard
-      title="Keyword share"
-      description="Distinct mentions per query"
+      title="Tỷ trọng từ khoá"
+      description="Lượt nhắc theo từng truy vấn"
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}
       isEmpty={!!data && denominator === 0}
-      emptyTitle="No mentions in this range"
+      emptyTitle="Không có lượt nhắc trong khoảng này"
       table={table}
       className={className}
     >
@@ -64,7 +64,7 @@ export function QueryShareChart({
         getFill={() => "var(--color-utility-brand-500)"}
         denominator={denominator}
         onSelect={drillSelect({ getHref, onNavigate })}
-        denominatorLabel="mentions"
+        denominatorLabel="lượt nhắc"
       />
       <p className="text-xs text-tertiary">{OVERLAP_NOTE}</p>
     </ChartCard>

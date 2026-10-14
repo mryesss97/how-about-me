@@ -9,18 +9,19 @@ import type { DrillKpiId } from "@/lib/filters/drill-down";
 import { cx } from "@/utils/cx";
 import { type KpiId, kpiDefinition } from "./kpi-definitions";
 
-export const EMPTY_VALUE_TOOLTIP = "No analysed mentions in range";
+export const EMPTY_VALUE_TOOLTIP = "Chưa có lượt nhắc đã phân tích trong khoảng này";
 
 type Delta = { text: string; direction: Direction | "new" };
 
 const ARROWS = { up: ArrowUp, down: ArrowDown, flat: Minus } as const;
 
-/** Delta colour is neutral on purpose: "up" is bad for negative/safety/complaint rates. */
+/**
+ * Delta colour is neutral on purpose: "up" is bad for negative/safety/complaint rates.
+ * Arrows are drawn icons, never glyphs (DESIGN.md); no rounded pill (#275).
+ */
 function DeltaBadge({ delta }: { delta: Delta }) {
   if (delta.direction === "new") {
-    return (
-      <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary">{delta.text}</span>
-    );
+    return <span className="text-sm font-medium text-secondary">{delta.text}</span>;
   }
   const Icon = ARROWS[delta.direction];
   return (
@@ -31,6 +32,13 @@ function DeltaBadge({ delta }: { delta: Delta }) {
   );
 }
 
+/** Optional enamel tint for the figure; only where the label names the sentiment (BR-017). */
+export type KpiTone = "positive" | "negative";
+const TONE_CLASS: Record<KpiTone, string> = {
+  positive: "text-[var(--green-enamel)]",
+  negative: "text-[var(--red-enamel)]",
+};
+
 export function KpiCard({
   id,
   value,
@@ -39,9 +47,11 @@ export function KpiCard({
   extra,
   href,
   extraHref,
+  tone,
 }: {
   id: KpiId;
   value: string;
+  tone?: KpiTone;
   delta?: Delta | null;
   subText?: string;
   extra?: string;
@@ -53,19 +63,24 @@ export function KpiCard({
   return (
     <div
       className={cx(
-        "relative flex flex-col gap-2 rounded-xl border border-secondary bg-primary p-4 shadow-xs",
+        "operate-board flex flex-col gap-2 p-4",
         href &&
           "has-[>a:hover]:bg-primary_hover has-[>a:focus-visible]:outline-2 has-[>a:focus-visible]:outline-focus-ring",
       )}
     >
+      <span aria-hidden className="sign-keyline" />
       {href ? (
-        <Link href={href} aria-label={`View mentions: ${label}`} className="absolute inset-0 rounded-xl outline-none" />
+        <Link
+          href={href}
+          aria-label={`Xem lượt nhắc: ${label}`}
+          className="absolute inset-0 rounded-[3px] outline-none"
+        />
       ) : null}
       <div className="flex items-center gap-1">
-        <h3 className="text-sm font-medium text-tertiary">{label}</h3>
+        <h3 className="kpi-label">{label}</h3>
         {/* FR-140: definition + denominator from doc 07. */}
-        <Tooltip title={definition} description={`Denominator: ${denominator}`}>
-          <TooltipTrigger aria-label={`About ${label}`} className="relative z-10 text-quaternary">
+        <Tooltip title={definition} description={`Mẫu số: ${denominator}`}>
+          <TooltipTrigger aria-label={`Giải thích ${label}`} className="relative z-10 text-quaternary">
             <InfoCircle aria-hidden="true" className="size-4" />
           </TooltipTrigger>
         </Tooltip>
@@ -74,15 +89,12 @@ export function KpiCard({
         {value === DASH ? (
           // BR-032: "—" means no denominator, distinct from a real 0%.
           <Tooltip title={EMPTY_VALUE_TOOLTIP}>
-            <TooltipTrigger
-              aria-label={EMPTY_VALUE_TOOLTIP}
-              className="relative z-10 text-display-xs font-semibold text-primary"
-            >
+            <TooltipTrigger aria-label={EMPTY_VALUE_TOOLTIP} className="kpi-figure relative z-10 text-[var(--ink)]">
               {DASH}
             </TooltipTrigger>
           </Tooltip>
         ) : (
-          <span className="text-display-xs font-semibold text-primary">{value}</span>
+          <span className={cx("kpi-figure", tone ? TONE_CLASS[tone] : "text-[var(--ink)]")}>{value}</span>
         )}
         {delta ? <DeltaBadge delta={delta} /> : null}
       </div>
@@ -108,7 +120,7 @@ function rateProps(rate: Rate) {
     value: formatRate(rate.value),
     // Only present when compare=true (doc 07 §2); otherwise no delta.
     delta: formatRateDelta(rate.value, rate.previous),
-    subText: `of ${formatCount(rate.denominator)} analysed`,
+    subText: `trên ${formatCount(rate.denominator)} đã phân tích`,
   };
 }
 
@@ -133,23 +145,24 @@ export function KpiCards({
         id="mentions"
         href={hrefFor?.("mentions")}
         value={formatCount(m.value)}
-        subText="distinct relevant posts"
+        subText="bài viết liên quan (không trùng)"
       />
       <KpiCard
         id="growth"
         href={hrefFor?.("growth")}
-        value={m.growthState === "new" ? "New" : formatGrowth(m.growthPct, m.growthState)}
-        delta={growthDelta ? { ...growthDelta, text: "vs previous" } : null}
-        subText={m.previous == null ? undefined : `previous: ${formatCount(m.previous)}`}
+        value={m.growthState === "new" ? "Mới" : formatGrowth(m.growthPct, m.growthState)}
+        delta={growthDelta ? { ...growthDelta, text: "so với kỳ trước" } : null}
+        subText={m.previous == null ? undefined : `kỳ trước: ${formatCount(m.previous)}`}
       />
-      <KpiCard id="positive" href={hrefFor?.("positive")} {...rateProps(kpis.positiveRate)} />
-      <KpiCard id="negative" href={hrefFor?.("negative")} {...rateProps(kpis.negativeRate)} />
+      <KpiCard id="positive" tone="positive" href={hrefFor?.("positive")} {...rateProps(kpis.positiveRate)} />
+      {/* BR-017: only sentiment cards are tinted; the safety card stays ink. */}
+      <KpiCard id="negative" tone="negative" href={hrefFor?.("negative")} {...rateProps(kpis.negativeRate)} />
       <KpiCard
         id="safety"
         href={hrefFor?.("safety")}
         extraHref={hrefFor?.("severe")}
         {...rateProps(kpis.safetyRiskRate)}
-        extra={severe > 0 ? `${formatCount(severe)} severe` : undefined}
+        extra={severe > 0 ? `${formatCount(severe)} nghiêm trọng` : undefined}
       />
       <KpiCard id="complaint" href={hrefFor?.("complaint")} {...rateProps(kpis.complaintRate)} />
     </div>
@@ -159,9 +172,9 @@ export function KpiCards({
 export function KpiCardsSkeleton() {
   return (
     <div className={GRID} aria-busy="true">
-      <span className="sr-only">Loading…</span>
+      <span className="sr-only">Đang tải…</span>
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="h-32 animate-pulse rounded-xl border border-secondary bg-secondary" />
+        <div key={i} className="h-32 animate-pulse rounded-[3px] bg-[var(--enamel-white)]" />
       ))}
     </div>
   );

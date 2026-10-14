@@ -1,7 +1,7 @@
 import type { PhraseSentimentResponse, TopicSentimentResponse } from "@how-about-me/contracts";
 import type { SentimentLabel } from "@how-about-me/taxonomy";
 import { type BubbleDatum, type Counts, dominantSentiment } from "@/features/shared/bubbles/bubble-layout";
-import { humanizeLabel } from "./chart-data";
+import { displayLabel } from "@/lib/semantics/labels";
 
 /** Analytics-specific bubble helpers (#222, #243); the shared core lives in `features/shared/bubbles` (#262). */
 export * from "@/features/shared/bubbles/bubble-layout";
@@ -18,7 +18,7 @@ function toBubble(key: string, name: string, r: Counts): BubbleDatum[] {
 
 /** Drops topics with no sentiment (no bubble, BR-032) and keeps API order (total DESC, `other` last). */
 export function toTopicBubbles(rows: readonly Row[]): BubbleDatum[] {
-  return rows.flatMap((r) => toBubble(r.topic, humanizeLabel(r.topic), r));
+  return rows.flatMap((r) => toBubble(r.topic, displayLabel("topic", r.topic), r));
 }
 
 /** #243 (FR-148): phrase rows → bubbles; the phrase is shown verbatim (BR-041 normalised), API order kept. */

@@ -17,13 +17,13 @@ function setup(search = "", props: { showCompare?: boolean } = {}) {
 describe("FilterBar (UX §2.1)", () => {
   it("TC-DASH-002: clicking a preset updates the URL", async () => {
     const { lastQuery } = setup();
-    await act(async () => fireEvent.click(screen.getByRole("radio", { name: "24h" })));
+    await act(async () => fireEvent.click(screen.getByRole("radio", { name: "24 giờ" })));
     await waitFor(() => expect(lastQuery()).toContain("preset=24h"));
   });
 
   it("TC-DASH-005: applied filters show as chips and removing a chip updates the URL", async () => {
     const { lastQuery, onUrlUpdate } = setup("?sentiment=negative");
-    expect(screen.getByText("Sentiment: Negative")).toBeInTheDocument();
+    expect(screen.getByText("Cảm xúc: Tiêu cực")).toBeInTheDocument();
     await act(async () => fireEvent.click(screen.getByRole("button", { name: /remove/i })));
     // Wait for the throttled nuqs flush so the assertion cannot pass vacuously (#237)
     await waitFor(() => expect(onUrlUpdate).toHaveBeenCalled());
@@ -32,16 +32,16 @@ describe("FilterBar (UX §2.1)", () => {
 
   it("BR-016: deselecting the last relevance keeps relevant", async () => {
     const { onUrlUpdate } = setup();
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Relevant" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Liên quan" })));
     // Default [relevant] is cleared from the URL, i.e. relevance stays relevant.
     await waitFor(() => expect(onUrlUpdate).toHaveBeenCalled());
     expect(onUrlUpdate.mock.calls.at(-1)?.[0].searchParams.get("relevance")).toBeNull();
-    expect(screen.getByRole("button", { name: "Relevant" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Liên quan" })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("reset clears every filter", async () => {
     const { lastQuery, onUrlUpdate } = setup("?preset=24h&sentiment=negative&tz=UTC");
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Reset" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Đặt lại" })));
     // Wait for the throttled nuqs flush so the assertion cannot pass vacuously (#237)
     await waitFor(() => expect(onUrlUpdate).toHaveBeenCalled());
     expect(lastQuery()).toBe("");
@@ -52,7 +52,7 @@ describe("FilterBar (UX §2.1)", () => {
     const { lastQuery, onUrlUpdate } = setup(
       "?preset=custom&from=2026-09-30T17:00:00.000Z&to=2026-10-07T17:00:00.000Z&tz=Asia/Ho_Chi_Minh",
     );
-    const tz = screen.getByRole("combobox", { name: "Timezone" });
+    const tz = screen.getByRole("combobox", { name: "Múi giờ" });
     await act(async () => {
       tz.focus();
       fireEvent.change(tz, { target: { value: "UTC" } });
@@ -68,11 +68,11 @@ describe("FilterBar (UX §2.1)", () => {
 
   it("hides compare unless showCompare", () => {
     setup();
-    expect(screen.queryByText("Compare to previous period")).not.toBeInTheDocument();
+    expect(screen.queryByText("So sánh với kỳ trước")).not.toBeInTheDocument();
   });
 
   it("shows compare on Overview", () => {
     setup("", { showCompare: true });
-    expect(screen.getByText("Compare to previous period")).toBeInTheDocument();
+    expect(screen.getByText("So sánh với kỳ trước")).toBeInTheDocument();
   });
 });

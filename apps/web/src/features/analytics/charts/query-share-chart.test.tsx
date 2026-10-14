@@ -22,10 +22,10 @@ describe("QueryShareChart (T-150)", () => {
   it("A2 / FR-145: keeps API order, ends with the distinct-mentions row, no summed Total", async () => {
     render(<QueryShareChart data={fixture()} />);
     const [header, ...rows] = await openTable();
-    expect(header).toEqual(["Query", "Count", "Share"]);
-    expect(rows.map((r) => r[0])).toEqual(["beta", "alpha", "gamma", "Distinct mentions"]);
-    expect(rows.at(-1)).toEqual(["Distinct mentions", "10", "—"]);
-    expect(rows.map((r) => r[0])).not.toContain("Total");
+    expect(header).toEqual(["Truy vấn", "Số lượng", "Tỷ lệ"]);
+    expect(rows.map((r) => r[0])).toEqual(["beta", "alpha", "gamma", "Lượt nhắc (không trùng)"]);
+    expect(rows.at(-1)).toEqual(["Lượt nhắc (không trùng)", "10", "—"]);
+    expect(rows.map((r) => r[0])).not.toContain("Tổng");
   });
 
   it("FR-147: the overlap note is always shown when there is data", () => {
@@ -35,19 +35,19 @@ describe("QueryShareChart (T-150)", () => {
 
   it("BR-032: denominator 0 → empty state", () => {
     render(<QueryShareChart data={{ denominator: 0, distribution: [], note: "overlapping" }} />);
-    expect(screen.getByText("No mentions in this range")).toBeInTheDocument();
+    expect(screen.getByText("Không có lượt nhắc trong khoảng này")).toBeInTheDocument();
   });
 
   it("loading state hides the table toggle", () => {
     render(<QueryShareChart isLoading />);
-    expect(screen.queryByRole("button", { name: "View as table" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Xem dạng bảng" })).toBeNull();
   });
 
   it("error state shows request ID and Retry", () => {
     const onRetry = vi.fn();
     render(<QueryShareChart error={{ code: "INTERNAL", message: "boom", requestId: "req-9" }} onRetry={onRetry} />);
     expect(screen.getByText(/req-9/)).toBeInTheDocument();
-    screen.getByRole("button", { name: /retry/i }).click();
+    screen.getByRole("button", { name: /thử lại/i }).click();
     expect(onRetry).toHaveBeenCalled();
   });
 
@@ -57,6 +57,6 @@ describe("QueryShareChart (T-150)", () => {
     await openTable();
     expect(screen.getByRole("link", { name: "beta" })).toHaveAttribute("href", `/mentions?queryIds=${Q2}`);
     expect(screen.queryByRole("link", { name: "gamma" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "Distinct mentions" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Lượt nhắc (không trùng)" })).toBeNull();
   });
 });

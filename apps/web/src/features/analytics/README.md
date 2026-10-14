@@ -4,7 +4,7 @@ Files:
 
 - `filter-bar.tsx`, `time-controls.tsx`, `applied-filter-chips.tsx`, `enum-multi-select.tsx` — shared filter bar (T-098).
 - `api.ts` — `useOverview` (re-exported from `features/shared/use-overview`, #233), `useMentionsTimeseries`, `useSentiment`, `useSafetyDistribution`, `useTopicsDistribution`, `useIntentsDistribution`, `useLanguagesDistribution`, `useQueryShare`, `useTopicSentiment`, `usePhraseSentiment` (#243: `limit=30`, no `minMentions` — server applies the project's `phraseMinMentions` (#251), no `compare`, `enabled` only in Phrases mode) hooks (`GET …/analytics/overview|mentions-timeseries|sentiment|safety|topics|intents|languages|query-share|topic-sentiment|phrases`), all keyed on `apiParams`.
-- `kpi-definitions.ts` — KPI labels + tooltip copy from docs/01-product/07-metric-definitions.md §1.
+- `kpi-definitions.ts` — KPI labels + tooltip copy (Vietnamese, #275) from docs/01-product/07-metric-definitions.md §1.
 - `kpi-cards.tsx` — six KPI cards (FR-132/133/140): "—" for null rates, "New" for growth, pp delta when compare is on.
 - `overview-banners.tsx` — moved to `features/shared/overview-banners.tsx` (also used by Mentions, #233); fixtures in `features/shared/overview-fixture.test-utils.ts`.
 - `overview-view.tsx` — `/overview` body; split into (#252): `overview-kpi-section.tsx` (banners + KPI cards), `overview-trend-row.tsx`, `overview-topic-rows.tsx`, `overview-p1-row.tsx` (chart rows rendering Fragments inside the 12-column grid; shared props in `overview-row-props.ts`), `use-overview-drill-down.ts` (drill-down hrefs), `query-error.ts` (`toQueryError`).

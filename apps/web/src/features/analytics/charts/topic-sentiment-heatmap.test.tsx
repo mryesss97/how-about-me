@@ -12,52 +12,52 @@ describe("TopicSentimentHeatmap (T-149)", () => {
     render(<TopicSentimentHeatmap data={topicSentimentFixture()} getCellHref={getCellHref} />);
     const headers = screen.getAllByRole("rowheader").map((h) => h.textContent);
     expect(headers).toHaveLength(12);
-    expect(headers[0]).toBe("Ticket");
-    expect(headers.at(-1)).toBe("Other");
-    expect(screen.getByRole("link", { name: /^Ticket · Negative: 2 mentions, 50\.0% of 4/ })).toHaveTextContent(
-      "2 · 50.0%",
+    expect(headers[0]).toBe("Vé");
+    expect(headers.at(-1)).toBe("Khác");
+    expect(screen.getByRole("link", { name: /^Vé · Tiêu cực: 2 lượt nhắc, 50,0% trên 4/ })).toHaveTextContent(
+      "2 · 50,0%",
     );
   });
 
   it("FR-142: non-zero cells link to topic&sentiment (incl. `other`), zero cells are plain text", () => {
     render(<TopicSentimentHeatmap data={topicSentimentFixture()} getCellHref={getCellHref} />);
-    expect(screen.getByRole("link", { name: /^Ticket · Negative/ })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /^Vé · Tiêu cực/ })).toHaveAttribute(
       "href",
       "/mentions?topic=ticket&sentiment=negative",
     );
-    expect(screen.getByRole("link", { name: /^Other · Negative/ })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /^Khác · Tiêu cực/ })).toHaveAttribute(
       "href",
       "/mentions?topic=other&sentiment=negative",
     );
-    expect(screen.queryByRole("link", { name: /^Venue · Positive/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /^Địa điểm · Positive/ })).toBeNull();
   });
 
   it("NFR-032: View as table lists every topic with row denominator and negative share; row header drills topic", async () => {
     render(<TopicSentimentHeatmap data={topicSentimentFixture()} getCellHref={getCellHref} />);
     const [header, ...rows] = await openTable();
-    expect(header).toEqual(["Topic", "Positive", "Neutral", "Negative", "With sentiment", "Negative share"]);
+    expect(header).toEqual(["Chủ đề", "Tích cực", "Trung tính", "Tiêu cực", "Có cảm xúc", "Tỷ lệ tiêu cực"]);
     expect(rows).toHaveLength(12);
-    expect(rows[0]).toEqual(["Ticket", "1", "1", "2", "4", "50.0%"]);
-    expect(rows.map((r) => r[0])).not.toContain("Total");
-    expect(screen.getByRole("link", { name: "Ticket" })).toHaveAttribute("href", "/mentions?topic=ticket");
-    expect(screen.queryByRole("link", { name: "Artist" })).toBeNull();
+    expect(rows[0]).toEqual(["Vé", "1", "1", "2", "4", "50,0%"]);
+    expect(rows.map((r) => r[0])).not.toContain("Tổng");
+    expect(screen.getByRole("link", { name: "Vé" })).toHaveAttribute("href", "/mentions?topic=ticket");
+    expect(screen.queryByRole("link", { name: "Nghệ sĩ" })).toBeNull();
   });
 
   it("BR-032: every row total 0 → empty state", () => {
     render(<TopicSentimentHeatmap data={emptyTopicSentiment()} />);
-    expect(screen.getByText("No analysed mentions in this range")).toBeInTheDocument();
+    expect(screen.getByText("Chưa có lượt nhắc đã phân tích trong khoảng này")).toBeInTheDocument();
   });
 
   it("loading hides the table toggle; error shows request ID and Retry", () => {
     const { unmount } = render(<TopicSentimentHeatmap isLoading />);
-    expect(screen.queryByRole("button", { name: "View as table" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Xem dạng bảng" })).toBeNull();
     unmount();
     const onRetry = vi.fn();
     render(
       <TopicSentimentHeatmap error={{ code: "INTERNAL", message: "boom", requestId: "req-7" }} onRetry={onRetry} />,
     );
     expect(screen.getByText(/req-7/)).toBeInTheDocument();
-    screen.getByRole("button", { name: /retry/i }).click();
+    screen.getByRole("button", { name: /thử lại/i }).click();
     expect(onRetry).toHaveBeenCalled();
   });
 });

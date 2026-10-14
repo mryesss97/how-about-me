@@ -8,7 +8,7 @@ import { MetricTooltip } from "./metric-tooltip";
 
 const ROW_HEIGHT = 28;
 
-/** "120 · 12.0%" — value printed next to each bar so colour is never the only cue (NFR-030). */
+/** "120 · 12,0%" — value printed next to each bar so colour is never the only cue (NFR-030). */
 export const barValueLabel = (row: BarRow) => `${formatCount(row.count)} · ${formatRate(row.share)}`;
 
 /** Shared horizontal bar chart for T-101 distributions (internal; not exported via index). */
@@ -64,7 +64,7 @@ export function HorizontalBarChart<R extends BarRow>({
             }}
           />
           {/* A custom shape keeps zero-count rows (Recharts drops zero-width default bars), so their
-              "0 · 0.0%" label still renders (TC-DASH-016: all intents incl. zero counts). */}
+              "0 · 0,0%" label still renders (TC-DASH-016: all intents incl. zero counts). */}
           <Bar
             dataKey="count"
             isAnimationActive={false}
@@ -89,6 +89,6 @@ export function HorizontalBarChart<R extends BarRow>({
 /** Multi-label note (FR-138/139): shares are not normalised. */
 export function MultiLabelNote({ noun }: { noun: string }) {
   return (
-    <p className="text-xs text-tertiary">{`A mention can have several ${noun}, so shares can add up to more than 100%.`}</p>
+    <p className="text-xs text-tertiary">{`Một lượt nhắc có thể thuộc nhiều ${noun}, nên tổng tỷ lệ có thể vượt 100%.`}</p>
   );
 }

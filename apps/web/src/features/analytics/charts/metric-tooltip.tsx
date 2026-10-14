@@ -12,7 +12,7 @@ export function MetricTooltip({
   title,
   lines,
   denominator,
-  denominatorLabel = "mentions",
+  denominatorLabel = "lượt nhắc",
   previous,
 }: {
   title: string;
@@ -30,9 +30,9 @@ export function MetricTooltip({
           {`${l.name}: ${formatCount(l.count)} (${formatRate(l.share)})`}
         </p>
       ))}
-      <p className="text-xs text-tooltip-supporting-text">{`of ${formatCount(denominator)} ${denominatorLabel}`}</p>
+      <p className="text-xs text-tooltip-supporting-text">{`trên ${formatCount(denominator)} ${denominatorLabel}`}</p>
       {previous !== undefined ? (
-        <p className="text-xs text-tooltip-supporting-text">{`Previous: ${formatCount(previous)}`}</p>
+        <p className="text-xs text-tooltip-supporting-text">{`Kỳ trước: ${formatCount(previous)}`}</p>
       ) : null}
     </div>
   );

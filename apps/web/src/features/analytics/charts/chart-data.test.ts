@@ -76,7 +76,7 @@ describe("topic × sentiment helpers (T-149, FR-144)", () => {
   it("toContributorRows drops negative 0, ranks negative desc then share desc, keeps row total", () => {
     const rows = toContributorRows(topicSentimentFixture().rows);
     expect(rows.map((r) => r.key)).toEqual(["venue", "ticket", "other", "price"]);
-    expect(rows[1]).toEqual({ key: "ticket", name: "Ticket", count: 2, share: 0.5, total: 4 });
+    expect(rows[1]).toEqual({ key: "ticket", name: "Vé", count: 2, share: 0.5, total: 4 });
   });
 
   it("heatmapOpacity: 0/null → min, 1 → max, monotonic", () => {

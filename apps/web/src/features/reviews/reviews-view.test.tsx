@@ -68,7 +68,7 @@ describe("ReviewsView (UX §3.8, FR-195, TC-REV-007)", () => {
     serve();
     setup();
     await waitFor(() => expect(screen.getAllByTestId("review-row")).toHaveLength(2));
-    expect(screen.getByText("1,234")).toBeInTheDocument();
+    expect(screen.getByText("1.234")).toBeInTheDocument();
     expect(listCalls()[0]?.[1].params).toMatchObject({ status: "unreviewed", count: "true" });
     fireEvent.click(screen.getByRole("tab", { name: /Failed/ }));
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/reviews?reason=failed"));
@@ -85,7 +85,7 @@ describe("ReviewsView (UX §3.8, FR-195, TC-REV-007)", () => {
     serve([reviewFixture()], { counts: undefined });
     setup();
     await waitFor(() => expect(screen.getAllByTestId("review-row")).toHaveLength(1));
-    expect(screen.queryByText("1,234")).toBeNull();
+    expect(screen.queryByText("1.234")).toBeNull();
   });
 
   it("BR-040: marks 2 rows — POST body, optimistic removal, success toast", async () => {

@@ -1,4 +1,5 @@
 import type { SentimentResponse, TimeseriesResponse, TopicSentimentResponse } from "@how-about-me/contracts";
+import { displayLabel, humanizeLabel, languageLabelVi } from "@/lib/semantics/labels";
 import type { LanguageCode, SafetyLevel, SentimentLabel } from "@how-about-me/taxonomy";
 
 /** Pure data helpers for the overview charts (T-100) — kept free of React/Recharts so they are unit-testable. */
@@ -14,7 +15,7 @@ const pad = (n: string) => n.padStart(2, "0");
 
 /** Bucket label in the bucketing timezone (never the browser tz): hour → "HH:mm dd/MM", day → "dd/MM". */
 export function formatBucket(iso: string, interval: Interval, timeZone: string): string {
-  const parts = new Intl.DateTimeFormat("en-GB", {
+  const parts = new Intl.DateTimeFormat("vi-VN", {
     timeZone,
     day: "2-digit",
     month: "2-digit",
@@ -80,8 +81,7 @@ export const SAFETY_COLORS: Record<SafetyLevel, string> = {
   severe: "var(--color-utility-red-500)",
 };
 
-/** `customer_service` → "Customer service". */
-export const humanizeLabel = (v: string) => v.charAt(0).toUpperCase() + v.slice(1).replace(/_/g, " ");
+export { humanizeLabel } from "@/lib/semantics/labels";
 
 export type BarRow<K extends string = string> = { key: K; name: string; count: number; share: number | null };
 
@@ -98,16 +98,7 @@ export function toBarRows<K extends string>(
 export const sumShares = (rows: readonly BarRow[]) => rows.reduce((s, r) => s + (r.share ?? 0), 0);
 
 /** Display names for language codes (FR-143). */
-export const LANGUAGE_NAMES: Record<LanguageCode, string> = {
-  vi: "Vietnamese",
-  en: "English",
-  ko: "Korean",
-  ja: "Japanese",
-  th: "Thai",
-  zh: "Chinese",
-  other: "Other",
-  unknown: "Unknown",
-};
+export const LANGUAGE_NAMES: Record<LanguageCode, string> = languageLabelVi;
 
 /** Language donut colours: distinct utility hues; `other` / `unknown` stay neutral. */
 export const LANGUAGE_COLORS: Record<LanguageCode, string> = {
@@ -143,7 +134,7 @@ export function toContributorRows(rows: readonly TopicSentimentRow[]): Contribut
     .sort((a, b) => b.r.negative - a.r.negative || (b.r.negativeShare ?? 0) - (a.r.negativeShare ?? 0) || a.i - b.i)
     .map(({ r }) => ({
       key: r.topic,
-      name: humanizeLabel(r.topic),
+      name: displayLabel("topic", r.topic),
       count: r.negative,
       share: r.negativeShare,
       total: r.total,

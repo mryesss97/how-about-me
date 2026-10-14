@@ -1,5 +1,6 @@
 "use client";
 
+import { displayLabel } from "@/lib/semantics/labels";
 import type { IntentsDistributionResponse } from "@how-about-me/contracts";
 import type { IntentLabel } from "@how-about-me/taxonomy";
 import type { QueryStateError } from "@/features/shared/query-state";
@@ -27,25 +28,25 @@ export function IntentDistributionChart({
   onNavigate,
 }: IntentDistributionChartProps) {
   const denominator = data?.denominator ?? 0;
-  const rows = toBarRows(data?.distribution ?? []);
+  const rows = toBarRows(data?.distribution ?? [], (k) => displayLabel("intent", k));
   const table = {
     rowHrefs: rows.map((r) => segmentHref(getHref, r)),
-    columns: ["Intent", "Count", "Share"],
+    columns: ["Ý định", "Số lượng", "Tỷ lệ"],
     rows: [
       ...rows.map((r) => [r.name, formatCount(r.count), formatRate(r.share)]),
-      ["Mentions with an intent", formatCount(denominator), "—"],
+      ["Lượt nhắc có ý định", formatCount(denominator), "—"],
     ],
   };
 
   return (
     <ChartCard
-      title="Intent distribution"
-      description="Distinct mentions per intent"
+      title="Phân bố ý định"
+      description="Lượt nhắc theo từng ý định"
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}
       isEmpty={!!data && denominator === 0}
-      emptyTitle="No analysed mentions in this range"
+      emptyTitle="Chưa có lượt nhắc đã phân tích trong khoảng này"
       table={table}
       className={className}
     >
@@ -54,9 +55,9 @@ export function IntentDistributionChart({
         getFill={(r) => (r.key === "other" ? "var(--color-utility-neutral-400)" : "var(--color-utility-brand-500)")}
         denominator={denominator}
         onSelect={drillSelect({ getHref, onNavigate })}
-        denominatorLabel="with an intent"
+        denominatorLabel="lượt nhắc có ý định"
       />
-      {sumShares(rows) > 1 ? <MultiLabelNote noun="intents" /> : null}
+      {sumShares(rows) > 1 ? <MultiLabelNote noun="ý định" /> : null}
     </ChartCard>
   );
 }

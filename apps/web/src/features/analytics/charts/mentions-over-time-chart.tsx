@@ -44,7 +44,7 @@ export function MentionsOverTimeChart({
   const drillable = !!getBucketHref && !!onNavigate;
   const table = {
     rowHrefs: rows.map((_, i) => bucketHref(i)),
-    columns: withPrevious ? ["Time", "Mentions", "Previous"] : ["Time", "Mentions"],
+    columns: withPrevious ? ["Thời gian", "Lượt nhắc", "Kỳ trước"] : ["Thời gian", "Lượt nhắc"],
     rows: rows.map((r) => {
       const cells = [r.label, formatCount(r.mentions)];
       return withPrevious ? [...cells, r.previous === undefined ? "—" : formatCount(r.previous)] : cells;
@@ -53,8 +53,8 @@ export function MentionsOverTimeChart({
 
   return (
     <ChartCard
-      title="Mentions over time"
-      description={data ? `Bucketed by ${data.interval} · ${data.timezone}` : undefined}
+      title="Lượt nhắc theo thời gian"
+      description={data ? `Gom theo ${data.interval === "hour" ? "giờ" : "ngày"} · ${data.timezone}` : undefined}
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}
@@ -84,7 +84,7 @@ export function MentionsOverTimeChart({
                 return (
                   <MetricTooltip
                     title={row.label}
-                    lines={[{ name: "Mentions", count: row.mentions, share: shareOf(row.mentions, total) }]}
+                    lines={[{ name: "Lượt nhắc", count: row.mentions, share: shareOf(row.mentions, total) }]}
                     denominator={total}
                     previous={row.previous}
                   />
@@ -93,7 +93,7 @@ export function MentionsOverTimeChart({
             />
             <Legend verticalAlign="top" align="right" content={<ChartLegendContent className="-translate-y-2" />} />
             <Area
-              name="Mentions"
+              name="Lượt nhắc"
               dataKey="mentions"
               type="monotone"
               stroke="var(--color-utility-brand-600)"
@@ -105,7 +105,7 @@ export function MentionsOverTimeChart({
             />
             {withPrevious ? (
               <Line
-                name="Previous period"
+                name="Kỳ trước"
                 dataKey="previous"
                 type="monotone"
                 stroke="var(--color-utility-neutral-400)"

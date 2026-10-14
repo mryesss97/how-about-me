@@ -18,7 +18,7 @@ export function EnumMultiSelect({ label, items, value, onChange }: EnumMultiSele
     <MultiSelect
       size="sm"
       label={label}
-      placeholder="All"
+      placeholder="Tất cả"
       items={items}
       selectedKeys={new Set(value)}
       onSelectionChange={(keys) => onChange(toArray(keys))}

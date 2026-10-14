@@ -12,29 +12,33 @@ export type Direction = "up" | "down" | "flat";
 /** |x| below this is "flat" (doc 07 §1.2). */
 export const FLAT_THRESHOLD = 0.005;
 
+const LOCALE = "vi-VN";
+const oneDecimal = new Intl.NumberFormat(LOCALE, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+/** 1234 → "1.234" (vi-VN grouping). */
 export function formatCount(n: number): string {
-  return Number.isFinite(n) ? n.toLocaleString("en-US") : DASH;
+  return Number.isFinite(n) ? n.toLocaleString(LOCALE) : DASH;
 }
 
-/** Rate in [0,1] → "12.3%"; null (denominator 0) → "—", never "0%" (BR-032). */
+/** Rate in [0,1] → "12,3%"; null (denominator 0) → "—", never "0%" (BR-032). */
 export function formatRate(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return DASH;
-  return `${(value * 100).toFixed(1)}%`;
+  return `${oneDecimal.format(value * 100)}%`;
 }
 
-function signed(n: number, digits: number, suffix: string): string {
-  const abs = Math.abs(n).toFixed(digits);
+function signed(n: number, suffix: string): string {
+  const abs = oneDecimal.format(Math.abs(n));
   if (n > 0) return `+${abs}${suffix}`;
   if (n < 0) return `${MINUS}${abs}${suffix}`;
   return `${abs}${suffix}`;
 }
 
-/** Growth already in percent, 1 decimal (21.4 = +21.4%) — API contract 05 §overview, #78. `new` → "New" (FR-133). */
+/** Growth already in percent, 1 decimal (21.4 = +21.4%) — API contract 05 §overview, #78. `new` → "Mới" (FR-133). */
 export function formatGrowth(pct: number | null | undefined, state: GrowthState): string {
-  if (state === "new") return "New";
+  if (state === "new") return "Mới";
   if (state === "flat") return "0%";
   if (pct == null || !Number.isFinite(pct)) return DASH;
-  return signed(pct, 1, "%");
+  return signed(pct, "%");
 }
 
 export function deltaDirection(diff: number | null | undefined): Direction {
@@ -49,5 +53,5 @@ export function formatRateDelta(
 ): { text: string; direction: Direction } | null {
   if (curr == null || prev == null || !Number.isFinite(curr) || !Number.isFinite(prev)) return null;
   const diff = curr - prev;
-  return { text: signed(diff * 100, 1, " pp"), direction: deltaDirection(diff) };
+  return { text: signed(diff * 100, " điểm %"), direction: deltaDirection(diff) };
 }

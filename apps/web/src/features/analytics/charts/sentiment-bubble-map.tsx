@@ -139,7 +139,7 @@ export function SentimentBubbleMap({
         <span>{copy.legend}</span>
         <span className="tabular-nums">{count}</span>
       </div>
-      <MultiLabelNote noun={phrases ? "phrases" : "topics"} />
+      <MultiLabelNote noun={phrases ? "cụm từ" : "chủ đề"} />
     </div>
   );
 

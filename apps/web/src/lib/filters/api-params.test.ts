@@ -77,7 +77,11 @@ describe("appliedChips / removeFilterValue", () => {
   it("skips defaults (BR-016) and labels active values", () => {
     expect(appliedChips(base())).toEqual([]);
     const chips = appliedChips(base({ sentiment: ["negative"], relevance: ["relevant", "irrelevant"] }));
-    expect(chips.map((c) => c.label)).toEqual(["Relevance: Relevant", "Relevance: Irrelevant", "Sentiment: Negative"]);
+    expect(chips.map((c) => c.label)).toEqual([
+      "Mức liên quan: Liên quan",
+      "Mức liên quan: Không liên quan",
+      "Cảm xúc: Tiêu cực",
+    ]);
   });
 
   it("removes a value; emptied relevance falls back to relevant (BR-016)", () => {
@@ -103,7 +107,7 @@ describe("phrase filter (#243, FR-148, BR-041)", () => {
   });
 
   it("has a verbatim chip and can be removed", () => {
-    expect(appliedChips(f).map((c) => c.label)).toEqual(["Phrase: giá vé", "Phrase: xếp hàng"]);
+    expect(appliedChips(f).map((c) => c.label)).toEqual(["Cụm từ: giá vé", "Cụm từ: xếp hàng"]);
     expect(removeFilterValue(f, "phrase", "giá vé")).toEqual({ phrase: ["xếp hàng"] });
   });
 });

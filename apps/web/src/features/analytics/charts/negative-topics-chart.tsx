@@ -16,7 +16,7 @@ export type NegativeTopicsChartProps = {
   className?: string;
 } & DrillDownProps<TopicLabel>;
 
-export const NEGATIVE_SHARE_NOTE = "Share = negative ÷ mentions of this topic with a sentiment.";
+export const NEGATIVE_SHARE_NOTE = "Tỷ lệ = tiêu cực ÷ lượt nhắc có cảm xúc của chủ đề này.";
 
 /**
  * Negative-topic contributors (FR-144, T-149): topics with negative mentions ranked by negative count, label
@@ -35,19 +35,19 @@ export function NegativeTopicsChart({
   const rows = toContributorRows(data?.rows ?? []);
   const table = {
     rowHrefs: rows.map((r) => segmentHref(getHref, r)),
-    columns: ["Topic", "Negative", "With sentiment", "Negative share"],
+    columns: ["Chủ đề", "Tiêu cực", "Có cảm xúc", "Tỷ lệ tiêu cực"],
     rows: rows.map((r) => [r.name, formatCount(r.count), formatCount(r.total), formatRate(r.share)]),
   };
 
   return (
     <ChartCard
-      title="Negative-topic contributors"
-      description="Topics ranked by negative mentions"
+      title="Chủ đề kéo tiêu cực"
+      description="Chủ đề xếp theo số lượt nhắc tiêu cực"
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}
       isEmpty={!!data && rows.length === 0}
-      emptyTitle="No negative mentions in this range"
+      emptyTitle="Không có lượt nhắc tiêu cực trong khoảng này"
       table={table}
       className={className}
     >
@@ -56,7 +56,7 @@ export function NegativeTopicsChart({
         getFill={() => SENTIMENT_COLORS.negative}
         denominator={0}
         rowDenominator={(r) => r.total}
-        denominatorLabel="with sentiment in this topic"
+        denominatorLabel="lượt nhắc có cảm xúc trong chủ đề này"
         onSelect={drillSelect({ getHref, onNavigate })}
       />
       <p className="text-xs text-tertiary">{NEGATIVE_SHARE_NOTE}</p>

@@ -27,15 +27,15 @@ describe("semantic badges (UX §2.2, NFR-035)", () => {
       </>,
     );
     for (const label of [
-      "Positive",
-      "Neutral",
-      "Negative",
-      "Safe",
-      "Sensitive",
-      "Severe",
-      "Relevant",
-      "Uncertain",
-      "Irrelevant",
+      "Tích cực",
+      "Trung tính",
+      "Tiêu cực",
+      "An toàn",
+      "Nhạy cảm",
+      "Nghiêm trọng",
+      "Liên quan",
+      "Chưa chắc",
+      "Không liên quan",
     ])
       expect(screen.getByText(label)).toBeInTheDocument();
     // Colour is never the only encoding: each badge carries an icon alongside the label.
@@ -50,7 +50,7 @@ describe("semantic badges (UX §2.2, NFR-035)", () => {
         ))}
       </>,
     );
-    for (const label of ["Pending analysis", "Analysing…", "Analysed", "Analysis failed", "Skipped", "Stale"])
+    for (const label of ["Chờ phân tích", "Đang phân tích…", "Đã phân tích", "Phân tích lỗi", "Bỏ qua", "Cũ"])
       expect(screen.getByText(label)).toBeInTheDocument();
   });
 
@@ -65,8 +65,8 @@ describe("semantic badges (UX §2.2, NFR-035)", () => {
         ))}
       </>,
     );
-    expect(screen.getByText("Medium confidence")).toBeInTheDocument();
-    expect(screen.getByText("Low confidence")).toBeInTheDocument();
+    expect(screen.getByText("Độ tin cậy trung bình")).toBeInTheDocument();
+    expect(screen.getByText("Độ tin cậy thấp")).toBeInTheDocument();
   });
 
   it("BR-020: the confidence marker says it is not a probability", () => {

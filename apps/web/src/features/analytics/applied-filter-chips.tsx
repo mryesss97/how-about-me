@@ -16,7 +16,7 @@ export function AppliedFilterChips({ filters, setFilters, queryNames }: AppliedF
   const chips = appliedChips(filters, queryNames);
   if (chips.length === 0) return null;
   return (
-    <TagGroup label="Applied filters" size="sm">
+    <TagGroup label="Bộ lọc đang áp dụng" size="sm">
       <TagList className="flex flex-wrap gap-2" items={chips.map((c) => ({ ...c, id: chipId(c) }))}>
         {(c) => (
           <Tag id={c.id} onClose={() => setFilters(removeFilterValue(filters, c.key, c.value))}>

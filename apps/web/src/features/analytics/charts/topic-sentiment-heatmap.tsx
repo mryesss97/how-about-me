@@ -5,8 +5,9 @@ import type { SentimentLabel, TopicLabel } from "@how-about-me/taxonomy";
 import Link from "next/link";
 import type { QueryStateError } from "@/features/shared/query-state";
 import { formatCount, formatRate } from "@/lib/format/number";
+import { displayLabel } from "@/lib/semantics/labels";
 import { ChartCard } from "./chart-card";
-import { SENTIMENT_COLORS, SENTIMENT_ORDER, heatmapOpacity, humanizeLabel, shareOf } from "./chart-data";
+import { SENTIMENT_COLORS, SENTIMENT_ORDER, heatmapOpacity, shareOf } from "./chart-data";
 import { MultiLabelNote } from "./horizontal-bar-chart";
 
 type Row = TopicSentimentResponse["rows"][number];
@@ -37,9 +38,9 @@ export function TopicSentimentHeatmap({
   const rows = data?.rows ?? [];
   const table = {
     rowHrefs: rows.map((r) => (r.total > 0 ? (getCellHref?.(r.topic, null) ?? null) : null)),
-    columns: ["Topic", "Positive", "Neutral", "Negative", "With sentiment", "Negative share"],
+    columns: ["Chủ đề", "Tích cực", "Trung tính", "Tiêu cực", "Có cảm xúc", "Tỷ lệ tiêu cực"],
     rows: rows.map((r) => [
-      humanizeLabel(r.topic),
+      displayLabel("topic", r.topic),
       formatCount(r.positive),
       formatCount(r.neutral),
       formatCount(r.negative),
@@ -50,13 +51,13 @@ export function TopicSentimentHeatmap({
 
   return (
     <ChartCard
-      title="Topic × sentiment"
-      description="Distinct mentions per topic, share within each topic"
+      title="Chủ đề × cảm xúc"
+      description="Lượt nhắc theo chủ đề, tỷ lệ trong từng chủ đề"
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}
       isEmpty={!!data && rows.every((r) => r.total === 0)}
-      emptyTitle="No analysed mentions in this range"
+      emptyTitle="Chưa có lượt nhắc đã phân tích trong khoảng này"
       table={table}
       className={className}
     >
@@ -65,15 +66,15 @@ export function TopicSentimentHeatmap({
           <thead>
             <tr>
               <th scope="col" className="text-left text-xs font-medium text-tertiary">
-                Topic
+                Chủ đề
               </th>
               {SENTIMENT_ORDER.map((s) => (
                 <th key={s} scope="col" className="text-xs font-medium text-tertiary">
-                  {humanizeLabel(s)}
+                  {displayLabel("sentiment", s)}
                 </th>
               ))}
               <th scope="col" className="text-right text-xs font-medium text-tertiary">
-                With sentiment
+                Có cảm xúc
               </th>
             </tr>
           </thead>
@@ -81,7 +82,7 @@ export function TopicSentimentHeatmap({
             {rows.map((r) => (
               <tr key={r.topic}>
                 <th scope="row" className="pr-2 text-left font-medium whitespace-nowrap text-secondary">
-                  {humanizeLabel(r.topic)}
+                  {displayLabel("topic", r.topic)}
                 </th>
                 {SENTIMENT_ORDER.map((s) => (
                   <HeatmapCell key={s} row={r} sentiment={s} href={getCellHref} />
@@ -92,7 +93,7 @@ export function TopicSentimentHeatmap({
           </tbody>
         </table>
       </div>
-      <MultiLabelNote noun="topics" />
+      <MultiLabelNote noun="chủ đề" />
     </ChartCard>
   );
 }
@@ -110,7 +111,7 @@ function HeatmapCell({
   const share = shareOf(count, row.total);
   const text = `${formatCount(count)} · ${formatRate(share)}`;
   const to = count > 0 ? (href?.(row.topic, sentiment) ?? null) : null;
-  const label = `${humanizeLabel(row.topic)} · ${humanizeLabel(sentiment)}: ${formatCount(count)} mentions, ${formatRate(share)} of ${formatCount(row.total)} with sentiment`;
+  const label = `${displayLabel("topic", row.topic)} · ${displayLabel("sentiment", sentiment)}: ${formatCount(count)} lượt nhắc, ${formatRate(share)} trên ${formatCount(row.total)} có cảm xúc`;
   return (
     <td className="relative h-9 min-w-24 rounded-md p-0 text-center tabular-nums">
       {/* Background layer: sentiment hue (never safety colours, BR-017) at an opacity set by the row share. */}

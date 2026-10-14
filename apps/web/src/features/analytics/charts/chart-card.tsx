@@ -52,7 +52,7 @@ export type ChartCardProps = {
   emptyDescription?: string;
   table: ChartTable;
   className?: string;
-  /** #222: segmented "chart | table" toggle labels instead of the "View as table" button. */
+  /** #222: segmented "chart | table" toggle labels instead of the "Xem dạng bảng" plaque. */
   viewToggle?: { chart: string; table: string };
   /** #222: controls shown above the content in both chart and table mode (only when ready). */
   toolbar?: ReactNode;
@@ -67,7 +67,8 @@ export function ChartSkeleton({ className }: { className?: string }) {
   return <div aria-hidden className={cx("h-72 w-full animate-pulse rounded-lg bg-secondary", className)} />;
 }
 
-/** Card shell shared by overview charts (T-100, reused by T-101): title, "View as table" toggle, states. */
+/** Card shell shared by overview charts (T-100, reused by T-101): title, "Xem dạng bảng" toggle, states.
+ * Restyled as a white enamel board with a navy keyline (#275, DESIGN.md Operate Surfaces). */
 export function ChartCard({
   title,
   description,
@@ -75,7 +76,7 @@ export function ChartCard({
   error,
   onRetry,
   isEmpty,
-  emptyTitle = "No mentions in this range",
+  emptyTitle = "Không có lượt nhắc trong khoảng này",
   emptyDescription,
   table,
   className,
@@ -89,10 +90,11 @@ export function ChartCard({
   const ready = !isLoading && !error && !isEmpty;
 
   return (
-    <section className={cx("flex flex-col gap-4 rounded-xl bg-primary p-5 shadow-xs ring-1 ring-secondary", className)}>
-      <header className="flex items-start justify-between gap-3">
+    <section className={cx("operate-board flex flex-col gap-4 p-5", className)}>
+      <span aria-hidden className="sign-keyline" />
+      <header className="relative flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-md font-semibold text-primary">{title}</h3>
+          <h3 className="operate-board-title">{title}</h3>
           {description ? <p className="text-sm text-tertiary">{description}</p> : null}
         </div>
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
@@ -100,7 +102,7 @@ export function ChartCard({
           {ready && viewToggle ? (
             <ButtonGroup
               size="sm"
-              aria-label="View"
+              aria-label="Chế độ xem"
               disallowEmptySelection
               selectedKeys={[asTable ? "table" : "chart"]}
               onSelectionChange={(keys) => setAsTable(keys.has("table"))}
@@ -113,9 +115,9 @@ export function ChartCard({
             <AriaToggleButton
               isSelected={asTable}
               onChange={setAsTable}
-              className="shrink-0 rounded-lg px-3 py-2 text-sm font-semibold text-secondary shadow-xs ring-1 ring-primary outline-focus-ring hover:bg-primary_hover focus-visible:outline-2 focus-visible:outline-offset-2 selected:bg-active"
+              className="plaque-button shrink-0 px-3 py-1.5 outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2"
             >
-              View as table
+              Xem dạng bảng
             </AriaToggleButton>
           ) : null}
         </div>
@@ -146,7 +148,7 @@ export function ChartCard({
 
 function ChartDataTable({ caption, table }: { caption: string; table: ChartTable }) {
   return (
-    <Table aria-label={`${caption} (table)`} size="sm">
+    <Table aria-label={`${caption} (bảng)`} size="sm">
       <Table.Header>
         {table.columns.map((c, i) => (
           <Table.Head key={c} id={c} label={c} isRowHeader={i === 0} />

@@ -35,13 +35,16 @@ Concept: an ear + a speech bubble — "Lắng nghe. Thấu hiểu." Palette: Sky
 
 ### 2.1 Filter bar (shared by Overview & Mentions)
 
-- Sticky under the header. Order: **Time range** (preset segmented control + custom date-range picker + timezone select) · **Queries** (multi-select with `#` rendering for tags) · **Relevance** (default `Relevant`; chips `Relevant`, `Uncertain`, `Irrelevant`) · **Sentiment** · **Safety** · **Intent** · **Topic** · **Language** · **Analysis status** · "Compare with previous period" toggle (Overview only) · "Reset".
+- Sticky under the header; since #275 a white enamel panel with a 2px navy rule, controls stay Untitled/Inter. Labels are Vietnamese (#275): Khoảng thời gian (1 giờ · 24 giờ · 7 ngày · 30 ngày · Chọn ngày) · Múi giờ · Truy vấn · Mức liên quan (Liên quan / Chưa chắc / Không liên quan) · Cảm xúc · An toàn · Ý định · Chủ đề · Ngôn ngữ · Trạng thái phân tích · "So sánh với kỳ trước" · "Đặt lại". Enum values in the URL stay English.
+- Order: **Time range** (preset segmented control + custom date-range picker + timezone select) · **Queries** (multi-select with `#` rendering for tags) · **Relevance** (default `Relevant`; chips `Relevant`, `Uncertain`, `Irrelevant`) · **Sentiment** · **Safety** · **Intent** · **Topic** · **Language** · **Analysis status** · "Compare with previous period" toggle (Overview only) · "Reset".
 - Default time preset is **7d**. The timezone select lists all IANA zones with `Asia/Ho_Chi_Minh` and `UTC` pinned first. Custom ranges over 366 days show an inline error and are not applied.
 - Changing the timezone keeps a custom range's **calendar dates** (#240): the selected days are re-read as `[from 00:00, to+1 00:00)` in the new timezone (e.g. 1–7 Oct stays 1–7 Oct). Only ranges whose ends are both 00:00 in the old timezone are re-zoned; exact-instant ranges (e.g. hour-bucket drill-down, FR-142) keep their instants. Relative presets (1h/24h/7d/30d) only change `tz`. `tz`/`from`/`to` update in one URL change.
 - All filters sync to the URL query string (`nuqs`). Changing a filter refetches all widgets.
 - Applied filters show as removable chips under the bar.
 
 ### 2.2 Semantic badges (never colour alone)
+
+Display labels are Vietnamese since #275 (`lib/semantics/badges.ts`): Tích cực / Trung tính / Tiêu cực; An toàn / Nhạy cảm / Nghiêm trọng; Liên quan / Chưa chắc / Không liên quan; Chờ phân tích / Đang phân tích… / Đã phân tích / Phân tích lỗi / Bỏ qua / Cũ; Độ tin cậy cao / trung bình / thấp. The English names in the table are the enum values.
 
 | Dimension       | Value                                 | Badge (Untitled UI `Badge` with dot/icon + label)                  |
 | --------------- | ------------------------------------- | ------------------------------------------------------------------ |
@@ -105,7 +108,7 @@ Centered card: logo, email + password, "Continue with Google" (if enabled), erro
 Layout (12-col grid, 24 px gap):
 
 1. **Banners row** (conditional): integration / sync / pending banners (2.3).
-2. **KPI row**: 6 cards (2 rows × 3 on tablet). Card = label + info icon, big value, delta vs previous (arrow + %, or "New"), sub-text with denominator ("of 2,410 analysed"). Mention Growth is its own card ("New" when the previous period had 0). Rate cards show a delta in percentage points ("+2.1 pp") only when Compare is on; delta colour is neutral (arrow only). Banners: `lastSyncStatus` failed/partial → sync-failed banner; `pendingMentions > 0` → pending banner; `integrationStatus ≠ connected` → integration banner (link for admins only).
+2. **KPI row**: 6 cards (2 rows × 3 on tablet). Card (#275: white enamel board, navy keyline, label in condensed caps 15px, value as a 40px figure) = label + info icon, big value, delta vs previous (arrow icon + %, or "Mới"), sub-text with denominator ("trên 2.410 đã phân tích"). Tăng trưởng lượt nhắc is its own card ("Mới" when the previous period had 0). Rate cards show a delta in percentage points ("+2,1 điểm %") only when Compare is on; delta colour is neutral (arrow only). Banners: `lastSyncStatus` failed/partial → sync-failed banner; `pendingMentions > 0` → pending banner; `integrationStatus ≠ connected` → integration banner (link for admins only).
 3. **Mentions over time** (span 8) + **Sentiment distribution** donut (span 4).
 4. **Sentiment over time** stacked bars (span 6) + **Safety distribution** horizontal bars (span 6).
 5. **Sentiment map** bubble chart (span 12, #222).
