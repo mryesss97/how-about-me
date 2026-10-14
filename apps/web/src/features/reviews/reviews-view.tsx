@@ -8,6 +8,7 @@ import { useRole } from "@/features/auth/use-role";
 import { flattenUnique } from "@/lib/query/infinite-list";
 import { ApiError } from "@/lib/api/client";
 import { env } from "@/lib/env";
+import { formatCount } from "@/lib/format/number";
 import { canMarkReviewed, useMarkReviewed, useReviewQueue, type ReviewFilters } from "./api";
 import { ReviewDetailSlideout, type RenderReviewDetail } from "./review-detail-slideout";
 import { ReviewTable } from "./review-table";
@@ -20,7 +21,7 @@ const toStateError = (err: unknown) =>
   err
     ? err instanceof ApiError
       ? { code: err.code, message: err.message, requestId: err.requestId }
-      : { message: "Unexpected response from the server." }
+      : { message: "Máy chủ trả về phản hồi không hợp lệ." }
     : null;
 
 /** /reviews body (UX §3.8, FR-195): tabs by reason → toolbar → table → slide-out. Viewer is read-only. */
@@ -60,14 +61,17 @@ export function ReviewsView({ renderDetail }: { renderDetail: RenderReviewDetail
 
   return (
     <div className="flex flex-col gap-4">
-      <ReviewTabs reason={reason} counts={counts} onChange={params.setReason} />
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Toggle label="Show reviewed" isSelected={showReviewed} onChange={params.setShowReviewed} />
-        {canMark ? (
-          <Button size="sm" isDisabled={visibleSelected.size === 0 || mark.isPending} onClick={onMark}>
-            {`Mark reviewed (${visibleSelected.size})`}
-          </Button>
-        ) : null}
+      {/* #278: white enamel panel with a 2px navy rule, same language as the Overview filter bar. */}
+      <div className="flex min-w-0 flex-col gap-3 border-b-2 border-[var(--ink)] bg-[var(--enamel-white)] px-4 py-3">
+        <ReviewTabs reason={reason} counts={counts} onChange={params.setReason} />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Toggle label="Hiện mục đã xem lại" isSelected={showReviewed} onChange={params.setShowReviewed} />
+          {canMark ? (
+            <Button size="sm" isDisabled={visibleSelected.size === 0 || mark.isPending} onClick={onMark}>
+              {`Đánh dấu đã xem lại (${formatCount(visibleSelected.size)})`}
+            </Button>
+          ) : null}
+        </div>
       </div>
       <ReviewTable
         items={items}

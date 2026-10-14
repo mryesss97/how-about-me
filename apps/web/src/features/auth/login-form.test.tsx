@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { LoginForm } from "./login-form";
+import { EXPIRED_NOTICE, FORBIDDEN_NOTICE, LOGIN_ERROR, LoginForm } from "./login-form";
 import { safeNext } from "./safe-next";
 
 const replace = vi.fn();
@@ -14,9 +14,9 @@ vi.mock("@/lib/supabase/browser", () => ({
 }));
 
 function submit() {
-  fireEvent.change(screen.getByLabelText(/^work email/i, { selector: "input" }), { target: { value: "a@b.co" } });
-  fireEvent.change(screen.getByLabelText(/^password/i, { selector: "input" }), { target: { value: "secret123" } });
-  fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+  fireEvent.change(screen.getByLabelText(/^e-mail/i, { selector: "input" }), { target: { value: "a@b.co" } });
+  fireEvent.change(screen.getByLabelText(/^mật khẩu/i, { selector: "input" }), { target: { value: "secret123" } });
+  fireEvent.click(screen.getByRole("button", { name: "Tiếp tục" }));
 }
 
 describe("LoginForm (FR-010)", () => {
@@ -26,7 +26,7 @@ describe("LoginForm (FR-010)", () => {
     signInWithPassword.mockResolvedValue({ error: { message: "Invalid login credentials" } });
     render(<LoginForm googleEnabled={false} />);
     submit();
-    expect(await screen.findByRole("alert")).toHaveTextContent("Invalid email or password");
+    expect(await screen.findByRole("alert")).toHaveTextContent(LOGIN_ERROR);
     expect(replace).not.toHaveBeenCalled();
   });
 
@@ -51,7 +51,9 @@ describe("LoginForm (FR-010)", () => {
 
   it("TC-AUTH-004: has no sign-up link", () => {
     render(<LoginForm googleEnabled />);
-    expect(screen.queryByRole("link", { name: /sign up|register|create account/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /sign up|register|create account|đăng ký|tạo tài khoản/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("FR-012: Google button follows the flag", () => {
@@ -63,7 +65,12 @@ describe("LoginForm (FR-010)", () => {
 
   it("TC-AUTH-008: shows the expired banner", () => {
     render(<LoginForm googleEnabled={false} reason="expired" />);
-    expect(screen.getByRole("status")).toHaveTextContent(/session expired/i);
+    expect(screen.getByRole("status")).toHaveTextContent(EXPIRED_NOTICE);
+  });
+
+  it("#286: shows the forbidden banner (text carries meaning, BR-017)", () => {
+    render(<LoginForm googleEnabled={false} reason="forbidden" />);
+    expect(screen.getByRole("status")).toHaveTextContent(FORBIDDEN_NOTICE);
   });
 });
 

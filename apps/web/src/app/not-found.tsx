@@ -1,38 +1,23 @@
-"use client";
+import type { Metadata } from "next";
+import { NotFoundActions } from "@/features/shared/not-found-actions";
 
-import { ArrowLeft } from "@untitledui/icons";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/base/buttons/button";
+export const metadata: Metadata = { title: "Không tìm thấy trang" };
 
+/** 404 in signboard style (#286): wall + white enamel board, plaque actions. */
 export default function NotFound() {
-  const router = useRouter();
-
   return (
-    <section className="flex min-h-screen items-start bg-primary py-16 md:items-center md:py-24">
-      <div className="mx-auto max-w-container grow px-4 md:px-8">
-        <div className="flex w-full max-w-3xl flex-col gap-8 md:gap-12">
-          <div className="flex flex-col gap-4 md:gap-6">
-            <div className="flex flex-col gap-3">
-              <span className="text-md font-semibold text-brand-secondary">404 error</span>
-              <h1 className="text-display-md font-semibold text-primary md:text-display-lg lg:text-display-xl">
-                We can’t find that page
-              </h1>
-            </div>
-            <p className="text-lg text-tertiary md:text-xl">
-              Sorry, the page you are looking for doesn&apos;t exist or has been moved.
-            </p>
+    <main className="flex min-h-dvh items-center justify-center bg-[var(--wall)] px-4 py-10">
+      <div className="operate-board relative w-full max-w-xl">
+        <span aria-hidden className="sign-keyline" />
+        <div className="relative flex flex-col gap-6 p-6 sm:p-10">
+          <div className="flex flex-col gap-3">
+            <span className="kpi-label">Lỗi 404</span>
+            <h1 className="page-fascia-title">Không tìm thấy trang</h1>
+            <p className="text-md text-tertiary">Trang bạn tìm không tồn tại hoặc đã được chuyển đi.</p>
           </div>
-
-          <div className="flex flex-col-reverse gap-3 sm:flex-row">
-            <Button color="secondary" size="xl" iconLeading={ArrowLeft} onClick={() => router.back()}>
-              Go back
-            </Button>
-            <Button size="xl" onClick={() => router.back()}>
-              Take me home
-            </Button>
-          </div>
+          <NotFoundActions />
         </div>
       </div>
-    </section>
+    </main>
   );
 }

@@ -27,8 +27,8 @@ export function ReviewDetailSlideout({
   return (
     <DetailSlideout
       key={postId}
-      title="Mention detail"
-      regionLabel="Mention detail"
+      title="Chi tiết bài viết"
+      regionLabel="Chi tiết bài viết"
       onClose={onClose}
       fullPageHref={() => `/mentions/${postId}`}
       fallbackHref="/mentions"
@@ -41,7 +41,7 @@ export function ReviewDetailSlideout({
             isLoading={mark.isPending}
             onClick={() => mark.mutate([postId], { onSuccess: onClose })}
           >
-            Mark reviewed
+            Đánh dấu đã xem lại
           </Button>
         ) : null
       }

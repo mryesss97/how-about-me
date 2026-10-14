@@ -1,6 +1,6 @@
 import { INTENT_LABELS, LANGUAGE_CODES, TOPIC_LABELS } from "@how-about-me/taxonomy";
 import { describe, expect, it } from "vitest";
-import { displayLabel, intentLabelVi, languageLabelVi, roleLabelVi, topicLabelVi } from "./labels";
+import { displayLabel, intentLabelVi, languageLabelVi, reviewReasonLabelVi, roleLabelVi, topicLabelVi } from "./labels";
 
 describe("Vietnamese taxonomy labels (#275)", () => {
   it("covers every intent, topic and language value", () => {
@@ -17,6 +17,11 @@ describe("Vietnamese taxonomy labels (#275)", () => {
   it("falls back to a humanised value for unknown keys", () => {
     expect(displayLabel("topic", "new_thing")).toBe("New thing");
     expect(displayLabel("intent", "purchase_intent")).toBe("Ý định mua");
+  });
+
+  it("#278 FR-195: every review reason has a Vietnamese label", () => {
+    for (const v of ["uncertain", "low_confidence", "failed"] as const) expect(reviewReasonLabelVi[v]).toBeTruthy();
+    expect(displayLabel("reviewReason", "failed")).toBe("Phân tích lỗi");
   });
 });
 

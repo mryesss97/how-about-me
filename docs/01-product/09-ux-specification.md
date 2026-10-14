@@ -111,7 +111,11 @@ Opened from a landing board (last 30 days) or any `/terms/<term>` URL; inside th
 
 ### 3.1 Login (`/login`)
 
-Centered card: logo, email + password, "Continue with Google" (if enabled), error text. No sign-up link. Footer: "Ask an admin for access." After sign-in → `/` (landing, #262) unless a safe `next` is given; a signed-in visit to `/login` → `/`.
+Centered white enamel board on the wall (signboard style, #286): logo, title "Đăng nhập" (Bungee caps), "E-mail công việc" + "Mật khẩu", "Tiếp tục", "Tiếp tục với Google" (if enabled), generic error "E-mail hoặc mật khẩu không đúng". Banners: `?reason=expired` → "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."; `?reason=forbidden` → "Tài khoản không có quyền truy cập. Liên hệ quản trị viên." (render only; no flow sends it yet). No sign-up link. Footer: "Chưa có tài khoản? Nhờ quản trị viên cấp quyền." After sign-in → `/` (landing, #262) unless a safe `next` is given; a signed-in visit to `/login` → `/`.
+
+### 3.1a Not found (404, `not-found`)
+
+Same wall + white enamel board: "Lỗi 404", title "Không tìm thấy trang", short description; plaque buttons "Quay lại" (browser back) and "Về trang chủ" (→ `/`). Title tab: "Không tìm thấy trang".
 
 ### 3.2 Overview (`/overview`) — P0
 
@@ -198,6 +202,7 @@ Two-column (≥ 1024 px) or stacked. Clicking a row in `/mentions` opens the det
 - Table (Untitled UI `table.tsx`): Query (display name + value with `#` for tags) · Type · Enabled (toggle, admin) · Poll interval · Overlap · Last sync (relative + status dot) · Last result (fetched/inserted) · Matched posts (24 h / all) · Last error (truncated, tooltip) · Created by · Actions (⋯ menu: Edit, Run now, Backfill (P1), View mentions, Disable/Enable, Delete/Restore).
 - Create/Edit **drawer**: Display name · Query value (helper: "Enter without #") · Type (Keyword / Topic tag radio, disabled on edit) · Exclude terms (tag input) · Include terms (tag input, collapsed "Advanced") · Poll interval (number, seconds, presets 5/10/30/60 min) · Overlap (seconds, preset) · Initial backfill (days, 0–30) · Enabled toggle. Validation inline; duplicate → error toast with link to existing query.
 - Run now → toast "Sync queued" with "View job". Delete → confirm dialog explaining soft delete.
+- **Signboard (#279).** Currently still a placeholder (enamel board with task plates). When built (#42/#43): fascia header + "+ Thêm truy vấn"; toolbar panel with "Hiện truy vấn đã xoá"; table on an `.operate-board`, Inter cells, status dot + text (BR-017); drawer title in condensed caps. Vietnamese labels — columns: Truy vấn · Loại · Bật · Chu kỳ quét · Chồng lấn · Lần đồng bộ cuối · Kết quả gần nhất · Bài khớp (24 giờ / tất cả) · Lỗi gần nhất · Người tạo; actions: Sửa, Chạy ngay, Lấy dữ liệu cũ, Xem bài nhắc, Tắt/Bật, Xoá/Khôi phục. Toast: "Đã xếp lịch đồng bộ" / "Xem lượt đồng bộ". See `apps/web/DESIGN.md` → Operate Surfaces.
 
 ### 3.6 System Status (`/system-status`) — P0
 
@@ -207,6 +212,8 @@ Tabs: **Overview** · **Sync jobs** · **Analysis failures** · **Audit log** (a
 - Sync jobs tab: table with filters (query, status, date) → row click opens job detail drawer (window, pages, counters, requests, rate-limit events, error, cursor). Admin: "Retry" for failed.
 - Analysis failures tab: failed runs list with error code, post link, "Retry" (admin), "Retry all failed (≤ 500)" (admin, confirm).
 - Audit log tab (admin): actor, action, entity, time, metadata (expand).
+
+- **Signboard (#280).** Currently still a placeholder (enamel board with task plates). When built (#55/#56/#93): tabs Tổng quan · Lượt đồng bộ · Lỗi phân tích · Nhật ký thao tác (admin); cards Kết nối Threads · Bộ thu thập · Bộ phân tích · Cơ sở dữ liệu as `.operate-board`s, state as a plate with its word (Hoạt động tốt · Chậm · Tạm dừng · Lỗi), never colour alone (BR-017); "Cập nhật 12 giây trước"; actions "Thử lại", "Thử lại tất cả lỗi (≤ 500)", "Quản lý". See `apps/web/DESIGN.md` → Operate Surfaces.
 
 ### 3.7 Settings (`/settings/*`) — P0
 
@@ -229,13 +236,14 @@ Queue of `uncertain`, low-confidence, failed items; tabs by reason; row → deta
 
 Built in #219 (`apps/web/src/features/reviews`):
 
-- **Tabs** All · Uncertain · Low confidence · Failed, each with a count badge from page 1 `counts`. When the API omits `counts` (count timed out) the badges are hidden — never shown as 0 (BR-032).
-- **URL state:** `?reason=uncertain|low_confidence|failed` (missing/invalid → All), `?status=reviewed` (toggle "Show reviewed"; default unreviewed), `?item=<postId>` (slide-out). Tabs and the toggle replace history; opening a row pushes, so Back closes the slide-out. Changing tab/status clears the selection.
-- **Table:** post (user, time with tz tooltip, 2-line text, override icon), reasons, relevance, sentiment, confidence (`%` + band; a band, not a probability — BR-020), analysis status (+ `errorCode` when failed), and "Reviewed by" when Show reviewed is on. Load more paginates (25 / page).
-- **Mark reviewed (admin, analyst):** checkboxes + "Mark reviewed (N)"; select-all and manual selection are capped at 50 (`MARK_REVIEWED_MAX`, helper "Up to 50 at a time"). Rows disappear optimistically and come back with a toast (incl. Request ID) on error. Not offered under Show reviewed; no "Unmark" in v1. A new analysis run reopens an item (BR-040).
-- **Slide-out:** mention detail with override form (T-143) + "Mark reviewed" for that item (closes on success); "Open full page" → `/mentions/:id`.
+- **Signboard (#278):** tabs are plaques (`.plaque-button`, selected inverts to navy); tabs + toolbar sit in a white enamel panel with a 2px navy rule; the table sits in an `.operate-board` and scrolls horizontally inside it (390px never scrolls the page). Table, controls and helper text stay Inter. Copy is Vietnamese; enum values in the URL stay English.
+- **Tabs** Tất cả · Chưa chắc · Độ tin cậy thấp · Phân tích lỗi, each with a count (`Tất cả · 1.234`) from page 1 `counts`. When the API omits `counts` (count timed out) the counts are hidden — never shown as 0 (BR-032).
+- **URL state:** `?reason=uncertain|low_confidence|failed` (missing/invalid → All), `?status=reviewed` (toggle "Hiện mục đã xem lại"; default unreviewed), `?item=<postId>` (slide-out). Tabs and the toggle replace history; opening a row pushes, so Back closes the slide-out. Changing tab/status clears the selection.
+- **Table:** post (user, time with tz tooltip, 2-line text, override icon), reasons, relevance, sentiment, confidence (`%` + band; a band, not a probability — BR-020), analysis status (+ `errorCode` when failed), and "Reviewed by" when Show reviewed is on. "Tải thêm" (plaque) paginates (25 / page). Confidence renders vi-VN (`42,0%`), band as Thấp / Trung bình / Cao. Column headers: Bài viết, Lý do, Mức liên quan, Cảm xúc, Độ tin cậy, Trạng thái, Người xem lại.
+- **Mark reviewed (admin, analyst):** checkboxes + "Đánh dấu đã xem lại (N)"; select-all and manual selection are capped at 50 (`MARK_REVIEWED_MAX`, helper "Tối đa 50 mục mỗi lần"). Success toast "Đã đánh dấu N mục đã xem lại" (+ "(bỏ qua M)"). Rows disappear optimistically and come back with a toast "Không thể đánh dấu đã xem lại" (incl. "Mã yêu cầu") on error. Not offered under Show reviewed; no "Unmark" in v1. A new analysis run reopens an item (BR-040).
+- **Slide-out:** mention detail with override form (T-143) + "Đánh dấu đã xem lại" for that item (closes on success); title "Chi tiết bài viết"; "Mở trang đầy đủ" → `/mentions/:id`. The detail body (MentionDetail, override form) is restyled with Mentions (#277).
 - **Viewer:** read-only — no checkboxes, no Mark reviewed, no override form.
-- **Empty:** "No items need review" (unreviewed) / "No reviewed items".
+- **Empty:** "Không có mục nào cần xem lại" / "Đã xem hết." (unreviewed) / "Chưa có mục nào đã xem lại" (reviewed).
 
 ## 4. Responsive behaviour
 

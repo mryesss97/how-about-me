@@ -12,6 +12,7 @@ import {
 import { useInfiniteQuery, useMutation, useQueryClient, type InfiniteData, type QueryKey } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
+import { formatCount } from "@/lib/format/number";
 import { isRejectedCursor } from "@/lib/query/infinite-list";
 import { ApiError, apiFetch } from "@/lib/api/client";
 import { qk, staleTimes } from "@/lib/query/keys";
@@ -102,7 +103,7 @@ export function useMarkReviewed(pid: string | null | undefined) {
   const p = pid ?? "";
   return useMutation({
     mutationFn: async (postIds: string[]) => {
-      if (!pid) throw new Error("No project selected");
+      if (!pid) throw new Error("Chưa chọn dự án");
       const body = MarkReviewedBodySchema.parse({ postIds });
       return MarkReviewedResponseSchema.parse(
         await apiFetch<unknown>(`/projects/${pid}/reviews/mark-reviewed`, {
@@ -121,13 +122,14 @@ export function useMarkReviewed(pid: string | null | undefined) {
     onSuccess: (r, postIds) => {
       const skipped = postIds.length - r.marked;
       // Ids gone from the project (or no longer in scope) are skipped server-side; the refetch restores truth.
-      toast.success(skipped > 0 ? `Marked ${r.marked} reviewed (${skipped} skipped)` : `Marked ${r.marked} reviewed`);
+      const done = `Đã đánh dấu ${formatCount(r.marked)} mục đã xem lại`;
+      toast.success(skipped > 0 ? `${done} (bỏ qua ${formatCount(skipped)})` : done);
     },
     onError: (err: unknown, _ids, ctx) => {
       for (const [key, data] of ctx?.snapshot ?? []) qc.setQueryData(key, data);
-      const msg = err instanceof ApiError ? err.message : "Could not mark as reviewed";
+      const msg = err instanceof ApiError ? err.message : "Không thể đánh dấu đã xem lại";
       toast.error(msg, {
-        description: err instanceof ApiError && err.requestId ? `Request ID: ${err.requestId}` : undefined,
+        description: err instanceof ApiError && err.requestId ? `Mã yêu cầu: ${err.requestId}` : undefined,
       });
     },
     onSettled: () =>
