@@ -105,6 +105,25 @@ Exception (#222): the Sentiment map is not Recharts — `d3-hierarchy` (`packSib
 
 Missing components are added with `npx untitledui@latest add <name>` into the same folder (see [../06-engineering/01-local-setup.md](../06-engineering/01-local-setup.md)).
 
+### 6.1 Theme & brand (brand v2, #221)
+
+Source: official brand pack v2 — guide in [`docs/assets/brand/brand-guide-v2.pdf`](../assets/brand/brand-guide-v2.pdf). Tokens live in `apps/web/src/styles/theme.css`.
+
+| Brand v2                            | Untitled UI token                                         | Light                                | Dark                             |
+| ----------------------------------- | --------------------------------------------------------- | ------------------------------------ | -------------------------------- |
+| Brand scale (Tailwind sky, 25..950) | `--color-brand-*`                                         | sky; 500 `#0EA5E9`, 700 `#0369A1`    | same scale                       |
+| Action Blue (primary button)        | `--color-bg-brand-solid` / `_hover`                       | brand-700 / 800 (white text ≈ 5.9:1) | brand-700 / 800                  |
+| Brand text / fg                     | `--color-text-brand-tertiary`, `--color-fg-brand-primary` | brand-700                            | unchanged                        |
+| Focus ring                          | `--color-focus-ring`                                      | brand-600 (≥ 3:1 on white)           | brand-500 (≈ 7:1 on neutral-950) |
+| Mist (page bg)                      | `--color-bg-secondary`                                    | `#F5FBFF`                            | neutral-900 (unchanged)          |
+| Ink (primary text)                  | `--color-text-primary`                                    | `#15344B` (≈ 12:1 on white)          | neutral-50 (unchanged)           |
+
+Page backgrounds use `bg-secondary` (Mist): the login page, and in light mode the app shell `<main>` (`(app)/layout.tsx`) and the sticky filter bar, which keep `bg-primary` in dark mode (`dark:bg-primary`) so dark cards do not sit on a lighter page. Cards and the sidebar stay `bg-primary` (white).
+
+Error/success/warning, gray scale and the sentiment/safety palettes are not brand colours and are unchanged (BR-017). Charts using `utility-brand-*` follow the sky scale.
+
+Logo: `features/shared/brand-logo.tsx` (`horizontal | stacked | mark`) renders the official primary SVG in light mode and the white SVG under `.dark-mode`; files in `apps/web/public/brand/`. Used in the sidebar and mobile header (horizontal, 180 px wide — the guide minimum) and on the login page (stacked). Icons use Next file conventions: `src/app/favicon.ico`, `icon.svg`, `apple-icon.png` (180). `viewport.themeColor` = Mist (light) / `#0C0E12` (dark).
+
 ## 7. Error handling & states
 
 `lib/api` throws `ApiError {code, message, requestId, status}`. Feature components use `<QueryState query={...} empty={...} />` helper rendering skeleton / error card (with requestId + retry) / empty state, per UX §2.3. Banners derive from overview `coverage` + `dataQuality`.

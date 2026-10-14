@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LoginForm } from "@/features/auth/login-form";
+import { BrandLogo } from "@/features/shared/brand-logo";
 import { env } from "@/lib/env";
 
 export const metadata: Metadata = { title: "Sign in" };
@@ -14,6 +15,12 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
   return (
     <main className="flex min-h-dvh items-center justify-center bg-secondary px-4">
       <div className="w-full max-w-sm rounded-2xl border border-secondary bg-primary p-8 shadow-xs">
+        <div className="mb-2 flex justify-center">
+          <BrandLogo variant="stacked" className="h-28 w-auto" />
+        </div>
+        <p lang="vi" className="mb-6 text-center text-sm text-tertiary">
+          Lắng nghe. Thấu hiểu.
+        </p>
         <h1 className="text-display-xs font-semibold text-primary">Sign in</h1>
         <p className="mt-1 text-sm text-tertiary">How About Me — Threads social listening</p>
         <LoginForm

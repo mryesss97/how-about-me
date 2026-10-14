@@ -12,10 +12,17 @@ const inter = Inter({ subsets: ["latin", "vietnamese"], display: "swap", variabl
 
 export const metadata: Metadata = {
   title: { default: "How About Me", template: "%s · How About Me" },
-  description: "Threads social listening & content intelligence",
+  description: "How About Me — Threads social listening. Listen. Understand.",
 };
 
-export const viewport: Viewport = { themeColor: "#7f56d9", colorScheme: "light dark" };
+export const viewport: Viewport = {
+  // Brand v2 (#221): Mist in light, app dark surface in dark.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F5FBFF" },
+    { media: "(prefers-color-scheme: dark)", color: "#0C0E12" },
+  ],
+  colorScheme: "light dark",
+};
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (

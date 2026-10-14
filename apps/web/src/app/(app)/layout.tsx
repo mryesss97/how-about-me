@@ -15,7 +15,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <AuthBridge>
       <div className="flex min-h-dvh flex-col lg:flex-row">
         <AppSidebar />
-        <main className="min-w-0 flex-1 bg-primary">
+        {/* Brand v2 (#221): Mist page background in light mode, cards stay white. */}
+        <main className="min-w-0 flex-1 bg-secondary dark:bg-primary">
           <RequireProject>{children}</RequireProject>
         </main>
       </div>
