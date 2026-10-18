@@ -108,9 +108,12 @@ export const ListeningQueryPageSchema = pageOf(ListeningQuerySchema);
 
 /** Alias kept for existing imports. */
 export const RunQueryResponseSchema = QueuedJobResponseSchema;
-export const BackfillBodySchema = z
-  .object({ since: IsoDateTimeSchema, until: IsoDateTimeSchema, searchType: SearchTypeSchema.default("RECENT") })
-  .refine((b) => new Date(b.until) > new Date(b.since), { message: "until must be after since", path: ["until"] });
+/** FR-063 / T-140: shape only — window rules (until > since, max days, not future) are enforced server-side → BACKFILL_WINDOW_INVALID. */
+export const BackfillBodySchema = z.object({
+  since: IsoDateTimeSchema,
+  until: IsoDateTimeSchema,
+  searchType: SearchTypeSchema.default("RECENT"),
+});
 export type BackfillBody = z.infer<typeof BackfillBodySchema>;
 
 export const QueryIdsFilterSchema = csvArray(UuidSchema);

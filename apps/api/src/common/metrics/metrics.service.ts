@@ -4,7 +4,7 @@ import { Counter, Gauge, Histogram, Registry } from "prom-client";
 export type ProviderOutcome = "ok" | "rate_limited" | "error" | "timeout";
 export type RecordKind = "fetched" | "inserted" | "updated" | "duplicated" | "invalid" | "excluded";
 export type SyncJobStatus = "success" | "partial" | "failed";
-export type SyncTrigger = "scheduled" | "manual";
+export type SyncTrigger = "scheduled" | "manual" | "retry" | "backfill";
 /** `analysis_runs_total.status`: terminal outcomes plus `retried` (requeued after a retryable failure). */
 export type AnalysisRunOutcome = "completed" | "skipped" | "failed" | "retried";
 export type AnalysisStep = "relevance" | "safety" | "classify" | "total";

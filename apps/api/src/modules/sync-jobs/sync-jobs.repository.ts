@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { Prisma, type SearchMode, type SyncJob as SyncJobRow } from "@prisma/client";
+import { Prisma, type SearchMode, type SearchType, type SyncJob as SyncJobRow } from "@prisma/client";
 import { v7 as uuidv7 } from "uuid";
 import type { SyncJob, SyncJobDetail, SyncJobsListQuery } from "@how-about-me/contracts";
 import {
@@ -19,7 +19,16 @@ export type RunnableQuery = { id: string; enabled: boolean; deleted: boolean; se
 /** Fields of a job needed to build its retry (FR-175). */
 export type RetrySource = Pick<
   SyncJobRow,
-  "id" | "projectId" | "queryId" | "status" | "searchType" | "searchMode" | "windowSince" | "windowUntil" | "lastCursor"
+  | "id"
+  | "projectId"
+  | "queryId"
+  | "status"
+  | "trigger"
+  | "searchType"
+  | "searchMode"
+  | "windowSince"
+  | "windowUntil"
+  | "lastCursor"
 >;
 
 /** Read/list + retry insert for `sync_jobs` (T-055, FR-081, FR-175). Prisma types never leave this file. */
@@ -55,6 +64,7 @@ export class SyncJobsRepository {
         projectId: true,
         queryId: true,
         status: true,
+        trigger: true,
         searchType: true,
         searchMode: true,
         windowSince: true,
@@ -109,6 +119,38 @@ export class SyncJobsRepository {
     return id;
   }
 
+  /** T-140 / FR-063: new queued `backfill` job with a fixed window + search type (BR-008); cursor starts empty. */
+  async createBackfillTx(
+    tx: Prisma.TransactionClient,
+    b: {
+      projectId: string;
+      queryId: string;
+      searchMode: SearchMode;
+      searchType: SearchType;
+      windowSince: Date;
+      windowUntil: Date;
+    },
+    requestedBy: string,
+  ): Promise<string> {
+    const id = uuidv7();
+    await tx.syncJob.create({
+      data: {
+        id,
+        projectId: b.projectId,
+        queryId: b.queryId,
+        status: "queued",
+        trigger: "backfill",
+        searchType: b.searchType,
+        searchMode: b.searchMode,
+        windowSince: b.windowSince,
+        windowUntil: b.windowUntil,
+        lastCursor: null,
+        requestedBy,
+      },
+    });
+    return id;
+  }
+
   async findActiveForQueryTx(tx: Prisma.TransactionClient, queryId: string): Promise<string | null> {
     const job = await tx.syncJob.findFirst({
       where: { queryId, status: { in: ["queued", "running"] } },
@@ -127,7 +169,8 @@ export class SyncJobsRepository {
         projectId: src.projectId,
         queryId: src.queryId,
         status: "queued",
-        trigger: "retry",
+        // T-140 / BR-014: a retried backfill stays `backfill` so it still never moves the watermark.
+        trigger: src.trigger === "backfill" ? "backfill" : "retry",
         searchType: src.searchType,
         searchMode: src.searchMode,
         windowSince: src.windowSince,

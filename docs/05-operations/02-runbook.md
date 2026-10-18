@@ -27,7 +27,7 @@ Mutating routes below require role `admin` unless stated (FR-015); others return
 1. Confirm in Settings → Integrations (admin).
 2. Obtain a new long-lived token (Meta flow documented in POC report) — Admin pastes it in "Update token", then "Verify".
 3. Scheduler resumes automatically on `connected`. Check next sync within 2 min in Sync jobs.
-4. Gap recovery: if outage > overlap, use the §4 workaround (backfill is **P1, not in MVP**).
+4. Gap recovery: if outage > overlap, run a backfill for the gap window (§4, T-140).
 5. If `permission_error` persists: check Meta app status/App Review; escalate to owner.
 6. Token refresh (T-040): once the POC confirms Threads refresh and the real adapter implements it, set `THREADS_TOKEN_REFRESH_MODE=on` on the worker (cron `THREADS_TOKEN_REFRESH_CRON`, window `THREADS_TOKEN_REFRESH_WINDOW_DAYS`). Failed refreshes show in Audit log as `integration.refresh_failed` (filter by action); a 401/403 there also moves the integration to `expired`/`permission_error`.
 
@@ -76,12 +76,13 @@ curl -s -X POST "${AUTH[@]}" "$API/projects/$PID/analysis-runs/<runId>/retry"
 ## 4. Manual run / backfill
 
 - Run now: Listening Queries → ⋯ → Run now (admin). Only one non-terminal job per query.
-- Backfill: **P1, not implemented in MVP** (no `…/backfill` endpoint). Workaround: retry the failed sync job (resumes from `last_cursor`, §2) or Run now; the collector's overlap window re-fetches recent posts and duplicates are absorbed by `(platform, platform_post_id)` uniqueness (counters show `duplicated`). Record any unrecoverable window as "missing data" in the incident note.
+- Backfill: `POST /api/v1/projects/:pid/listening-queries/:id/backfill {since, until, searchType?}` (window ≤ `COLLECTOR_MAX_BACKFILL_DAYS`, until not in the future; does not move the query watermark); a `partial` (page cap) backfill is resumed with Retry; watch job in Sync jobs; verify no duplicates (counters show `duplicated`).
 
 **Commands**
 
 ```sh
 curl -s -X POST "${AUTH[@]}" "$API/projects/$PID/listening-queries/<queryId>/run"   # 409 if a job is already non-terminal
+curl -s -X POST "${AUTH[@]}" "$API/projects/$PID/listening-queries/<queryId>/backfill" -d '{"since":"2026-10-01T00:00:00Z","until":"2026-10-08T00:00:00Z"}'   # T-140
 ```
 
 ## 5. Re-analysis after prompt/model change

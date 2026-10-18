@@ -30,7 +30,7 @@ Rules are normative and referenced by code comments (`// BR-007`) and tests.
 - **BR-011** Search window: `since = last_successful_sync_at − overlap_seconds`, `until = now()`; first run `since = now() − initial_backfill_days`.
 - **BR-012** Defaults: poll interval 600 s, overlap 1 200 s; both configurable per query.
 - **BR-013** Duplicate discovery inside the overlap is expected; it only updates `last_seen_at`.
-- **BR-014** A job that fetched ≥ 1 page successfully and then failed is `partial`, not `failed`; collected data is kept.
+- **BR-014** A job that fetched ≥ 1 page successfully and then failed is `partial`, not `failed`; collected data is kept. The watermark (`last_successful_sync_at`) only moves on a `success` of a scheduled/manual/retry job; a backfill never moves it (T-140).
 - **BR-015** Provider quotas are never hard-coded; rate-limit signals are recorded and surfaced.
 
 ### Analysis

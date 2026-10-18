@@ -72,6 +72,8 @@ export class CollectorService implements CollectorRunner {
       windowUntil: computed.until,
       workerId: claimed.workerId,
     });
+    // BR-008 / T-140: the job's search type wins (a backfill may run TOP).
+    const searchType = job.searchType;
     const since = job.windowSince ?? computed.since;
     const until = job.windowUntil ?? computed.until;
     const ingestionQuery = {
@@ -113,7 +115,7 @@ export class CollectorService implements CollectorRunner {
                   {
                     query: query.queryValue,
                     searchMode: query.searchMode,
-                    searchType: query.scheduledSearchType,
+                    searchType,
                     since,
                     until,
                     limit: this.cfg.COLLECTOR_PAGE_LIMIT,
@@ -175,7 +177,7 @@ export class CollectorService implements CollectorRunner {
         if (!nextCursor) break;
         cursor = nextCursor;
         // RECENT is newest-first: once a page reaches past `since`, the window is covered (doc 06 §5).
-        if (query.scheduledSearchType === "RECENT" && valid.some((p) => p.publishedAt < since)) break;
+        if (searchType === "RECENT" && valid.some((p) => p.publishedAt < since)) break;
       }
     } catch (err: unknown) {
       error = err;
@@ -193,7 +195,8 @@ export class CollectorService implements CollectorRunner {
           : undefined;
 
     // BR-014: only a fully successful run moves the watermark; partial/failed rely on the overlap next time.
-    if (status === "success")
+    // T-140: a backfill covers a fixed historical window and never moves the watermark.
+    if (status === "success" && job.trigger !== "backfill")
       await this.prisma.listeningQuery.updateMany({
         where: { id: query.id, lockedBy: claimed.workerId },
         data: { lastSuccessfulSyncAt: until },
@@ -207,7 +210,7 @@ export class CollectorService implements CollectorRunner {
       }
     }
     await this.recorder.finish(job.id, { status, errorCode, errorMessage });
-    this.metrics.incSyncJob(status, claimed.manualJobId ? "manual" : "scheduled");
+    this.metrics.incSyncJob(status, job.trigger);
 
     this.logger.info(
       { jobId: job.id, queryId: query.id, windowReason: computed.reason, status, errorCode, ...totals },

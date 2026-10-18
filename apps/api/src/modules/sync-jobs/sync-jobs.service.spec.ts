@@ -1,5 +1,6 @@
 import type { SyncJob as SyncJobRow } from "@prisma/client";
 import type { AuthUser } from "../../common/auth/current-user.decorator";
+import type { AppConfig } from "../../config/config.module";
 import type { PrismaService } from "../../database/prisma.service";
 import type { AuditService } from "../audit/audit.service";
 import type { RunNowThrottle } from "./run-now-throttle";
@@ -22,6 +23,7 @@ const source = (over: Partial<RetrySource> = {}): RetrySource => ({
   projectId: PID,
   queryId: QID,
   status: "failed",
+  trigger: "scheduled",
   searchType: "RECENT",
   searchMode: "KEYWORD",
   windowSince: new Date("2026-10-01T00:00:00Z"),
@@ -45,6 +47,7 @@ function setup(
         opts.query === undefined ? { id: QID, enabled: true, deleted: false, searchMode: "KEYWORD" } : opts.query,
       ),
     createManualTx: jest.fn().mockResolvedValue("manual-job"),
+    createBackfillTx: jest.fn().mockResolvedValue("backfill-job"),
   };
   const throttle = { assertAllowed: jest.fn().mockResolvedValue(undefined) };
   const audit = { record: jest.fn().mockResolvedValue(undefined) };
@@ -55,6 +58,7 @@ function setup(
     repo as unknown as SyncJobsRepository,
     audit as unknown as AuditService,
     throttle as unknown as RunNowThrottle,
+    { COLLECTOR_MAX_BACKFILL_DAYS: 30 } as AppConfig,
   );
   return { svc, repo, audit, tx, throttle };
 }
@@ -211,5 +215,74 @@ describe("sync job mappers (FR-081)", () => {
     );
     expect(d.providerUsage).toEqual({ remaining: 5, resetAt: null, observedAt: "2026-10-01T00:00:00.000Z" });
     expect(toSyncJobDetail(row()).providerUsage).toBeNull();
+  });
+});
+
+/** T-140 / FR-063 / TC-LQ-022: admin backfill. */
+describe("SyncJobsService.backfill (FR-063)", () => {
+  const body = { since: "2026-08-01T00:00:00Z", until: "2026-08-20T00:00:00+07:00", searchType: "TOP" as const };
+
+  it("valid window → queued backfill job + audit in the same tx, no run-now throttle", async () => {
+    const { svc, repo, audit, tx, throttle } = setup(null);
+    await expect(svc.backfill(ctx, QID, body)).resolves.toEqual({ jobId: "backfill-job", status: "queued" });
+    expect(repo.createBackfillTx).toHaveBeenCalledWith(
+      tx,
+      {
+        projectId: PID,
+        queryId: QID,
+        searchMode: "KEYWORD",
+        searchType: "TOP",
+        windowSince: new Date("2026-08-01T00:00:00Z"),
+        windowUntil: new Date("2026-08-19T17:00:00Z"),
+      },
+      "u-admin",
+    );
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "query.backfill_requested",
+        entityType: "listening_query",
+        entityId: QID,
+        metadata: {
+          jobId: "backfill-job",
+          since: "2026-08-01T00:00:00.000Z",
+          until: "2026-08-19T17:00:00.000Z",
+          searchType: "TOP",
+        },
+      }),
+      tx,
+    );
+    expect(throttle.assertAllowed).not.toHaveBeenCalled();
+  });
+
+  it("invalid window → BACKFILL_WINDOW_INVALID before any DB work", async () => {
+    const { svc, repo } = setup(null);
+    await expect(svc.backfill(ctx, QID, { ...body, until: body.since })).rejects.toMatchObject({
+      code: "BACKFILL_WINDOW_INVALID",
+    });
+    expect(repo.findRunnableQueryTx).not.toHaveBeenCalled();
+  });
+
+  it("BR-010: deleted/missing → 404, disabled → 400", async () => {
+    await expect(setup(null, { query: null }).svc.backfill(ctx, QID, body)).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+    const deleted = { id: QID, enabled: true, deleted: true, searchMode: "KEYWORD" as const };
+    await expect(setup(null, { query: deleted }).svc.backfill(ctx, QID, body)).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+    const disabled = { id: QID, enabled: false, deleted: false, searchMode: "KEYWORD" as const };
+    await expect(setup(null, { query: disabled }).svc.backfill(ctx, QID, body)).rejects.toMatchObject({
+      code: "VALIDATION_ERROR",
+    });
+  });
+
+  it("active job → 409 SYNC_ALREADY_RUNNING, nothing created", async () => {
+    const { svc, repo, audit } = setup(null, { active: "j-active" });
+    await expect(svc.backfill(ctx, QID, body)).rejects.toMatchObject({
+      code: "SYNC_ALREADY_RUNNING",
+      details: { jobId: "j-active" },
+    });
+    expect(repo.createBackfillTx).not.toHaveBeenCalled();
+    expect(audit.record).not.toHaveBeenCalled();
   });
 });

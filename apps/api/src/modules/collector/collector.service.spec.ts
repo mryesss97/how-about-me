@@ -79,7 +79,14 @@ function setup(
     }),
   };
   const recorder = {
-    start: jest.fn().mockResolvedValue({ id: "job1", windowSince: null, windowUntil: null, lastCursor: null }),
+    start: jest.fn().mockResolvedValue({
+      id: "job1",
+      windowSince: null,
+      windowUntil: null,
+      lastCursor: null,
+      searchType: opts.searchType ?? "RECENT",
+      trigger: "scheduled",
+    }),
     recordPageTx: jest.fn(async (_tx: unknown, _id: string, d: unknown) => {
       deltas.push(d);
     }),
@@ -233,10 +240,58 @@ describe("CollectorService (T-052, doc 06 §5)", () => {
 
   it("resumes from the queued job's last_cursor (retry, TC-COL-008)", async () => {
     const { svc, search, recorder } = setup([page([item("c", 3)])]);
-    recorder.start.mockResolvedValueOnce({ id: "job2", windowSince: null, windowUntil: null, lastCursor: "c2" });
+    recorder.start.mockResolvedValueOnce({
+      id: "job2",
+      windowSince: null,
+      windowUntil: null,
+      lastCursor: "c2",
+      searchType: "RECENT",
+      trigger: "retry",
+    });
     await svc.run({ ...claimed, manualJobId: "job2" });
     expect(search.mock.calls[0]).toEqual([expect.objectContaining({ cursor: "c2" }), expect.anything()]);
     expect(recorder.start).toHaveBeenCalledWith(expect.objectContaining({ queuedJobId: "job2", workerId: "w1" }));
+  });
+
+  describe("backfill jobs (T-140, FR-063)", () => {
+    const since = new Date(NOW - 3 * 86_400_000);
+    const until = new Date(NOW - 86_400_000);
+    const backfillJob = { id: "bf1", windowSince: since, windowUntil: until, lastCursor: null, trigger: "backfill" };
+
+    it("BR-008: TOP backfill → provider gets the job's searchType + window, no RECENT early stop", async () => {
+      // Items older than `since` would stop a RECENT run after page 1.
+      const { svc, search, recorder } = setup([page([item("a", 10 * 1440)], "c1"), page([item("b", 1)])]);
+      recorder.start.mockResolvedValueOnce({ ...backfillJob, searchType: "TOP" });
+      const out = await svc.run({ ...claimed, manualJobId: "bf1" });
+      expect(out.status).toBe("success");
+      expect(search).toHaveBeenCalledTimes(2);
+      expect(search.mock.calls[0]).toEqual([
+        expect.objectContaining({ searchType: "TOP", since, until }),
+        expect.anything(),
+      ]);
+    });
+
+    it("BR-014: a successful backfill never moves last_successful_sync_at", async () => {
+      const { svc, recorder, prisma, metrics } = setup([page([item("a", 2 * 1440)])]);
+      recorder.start.mockResolvedValueOnce({ ...backfillJob, searchType: "RECENT" });
+      await expect(svc.run({ ...claimed, manualJobId: "bf1" })).resolves.toMatchObject({ status: "success" });
+      expect(prisma.listeningQuery.updateMany).not.toHaveBeenCalled();
+      expect(await metrics.render()).toContain('collector_sync_jobs_total{status="success",trigger="backfill"} 1');
+    });
+
+    it("BR-014: a successful manual run still moves the watermark", async () => {
+      const { svc, recorder, prisma } = setup([page([item("a", 1)])]);
+      recorder.start.mockResolvedValueOnce({
+        id: "m1",
+        windowSince: null,
+        windowUntil: null,
+        lastCursor: null,
+        searchType: "RECENT",
+        trigger: "manual",
+      });
+      await svc.run({ ...claimed, manualJobId: "m1" });
+      expect(prisma.listeningQuery.updateMany).toHaveBeenCalled();
+    });
   });
 
   describe("FR-174 metrics (T-058, doc 09 §2)", () => {
