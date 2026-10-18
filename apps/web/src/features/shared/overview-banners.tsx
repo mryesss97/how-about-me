@@ -16,6 +16,17 @@ export function bannersFor({ coverage, dataQuality }: BannerInput): OverviewBann
   return out;
 }
 
+export type EmptyReason = OverviewBannerKind | "none";
+
+/**
+ * FR-159: why a list is empty — highest-priority banner wins (integration > sync > pending), same order as
+ * `bannersFor`. Missing overview data (loading/error) falls back to "none" so it never blocks the list.
+ */
+export function emptyReasonFor(data: BannerInput | null | undefined): EmptyReason {
+  if (!data) return "none";
+  return bannersFor(data)[0] ?? "none";
+}
+
 /** `canManage` only toggles the Integrations link — UX only, the API enforces access (BR-033). */
 export function OverviewBanners({ data, canManage }: { data: BannerInput; canManage: boolean }) {
   const kinds = bannersFor(data);

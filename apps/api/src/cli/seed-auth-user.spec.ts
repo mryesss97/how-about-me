@@ -1,4 +1,4 @@
-import { seedAuthUser } from "./seed-auth-user";
+import { seedAuthUser, seedAuthUserFor } from "./seed-auth-user";
 
 const KEY = "service-role-secret";
 const base = {
@@ -48,5 +48,25 @@ describe("seedAuthUser (T-008, US-006)", () => {
     const err = await seedAuthUser(base, { fetch: mockFetch([], false), log: jest.fn() }).catch((e: Error) => e);
     expect(err).toBeInstanceOf(Error);
     expect((err as Error).message).not.toContain(KEY);
+  });
+});
+
+describe("seedAuthUserFor (#294 demo accounts)", () => {
+  it("creates a non-admin seed account with its own password", async () => {
+    const fetch = mockFetch([{ email: "admin@example.com" }]);
+    const res = await seedAuthUserFor(
+      { url: base.SUPABASE_URL, key: KEY, email: " Analyst@Example.com ", password: "pw-analyst" },
+      { fetch, log: jest.fn() },
+    );
+    expect(res).toBe("created");
+    const [, init] = fetch.mock.calls[1] as unknown as [string, { body: string }];
+    const body: unknown = JSON.parse(init.body);
+    expect(body).toMatchObject({ email: "analyst@example.com", password: "pw-analyst", email_confirm: true });
+  });
+
+  it("skips when no email is given", async () => {
+    const fetch = mockFetch([]);
+    expect(await seedAuthUserFor({ url: base.SUPABASE_URL, key: KEY }, { fetch, log: jest.fn() })).toBe("skipped");
+    expect(fetch).not.toHaveBeenCalled();
   });
 });

@@ -219,11 +219,50 @@ describe("MentionsView (UX §3.3)", () => {
     });
     apiFetch.mockResolvedValueOnce(page(0, null, 0));
     setup("?compare=true");
-    expect(await screen.findByText("Không có lượt nhắc liên quan trong khoảng thời gian này.")).toBeInTheDocument();
+    // Empty state names the highest-priority cause (sync > pending), not the generic copy (FR-159, BR-032).
+    expect(
+      await screen.findByText("Lần đồng bộ Threads gần nhất bị lỗi, dữ liệu có thể chưa đầy đủ."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Không có lượt nhắc liên quan trong khoảng thời gian này.")).toBeNull();
     expect(screen.getByText("Lần đồng bộ Threads gần nhất bị lỗi. Dữ liệu có thể chưa đầy đủ.")).toBeInTheDocument();
     expect(screen.getByText("12 lượt nhắc đang chờ phân tích.")).toBeInTheDocument();
     // Banners need coverage only — no previous-period work.
     expect(nth(useOverview.mock.calls, -1)[1].compare).toBeUndefined();
+  });
+
+  it.each([
+    ["pending", { pendingMentions: 1234 }, {}, "1.234 lượt nhắc đang chờ phân tích."],
+    [
+      "sync partial",
+      {},
+      { lastSyncStatus: "partial" },
+      "Lần đồng bộ Threads gần nhất bị lỗi, dữ liệu có thể chưa đầy đủ.",
+    ],
+    ["integration", {}, { integrationStatus: "expired" }, "Kết nối Threads cần được kiểm tra."],
+  ] as const)("TC-MEN-017 / FR-159: empty list caused by %s shows its own copy", async (_n, cov, dq, title) => {
+    const base = overviewFixture();
+    overviewData = overviewFixture({
+      coverage: { ...base.coverage, ...cov },
+      dataQuality: { ...base.dataQuality, ...dq },
+    });
+    apiFetch.mockResolvedValueOnce(page(0, null, 0));
+    setup();
+    const heading = await screen.findAllByText(title);
+    expect(heading.length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: "Mở rộng khoảng thời gian" })).toBeNull();
+  });
+
+  it.each([
+    ["admin", true],
+    ["viewer", false],
+  ] as const)("TC-MEN-017 / BR-033: integration empty state — %s sees settings link → %s", async (role, visible) => {
+    roleState = { role, settings: null };
+    const base = overviewFixture();
+    overviewData = overviewFixture({ dataQuality: { ...base.dataQuality, integrationStatus: "expired" } });
+    apiFetch.mockResolvedValueOnce(page(0, null, 0));
+    setup();
+    await screen.findByText("Kết nối Threads cần được kiểm tra.");
+    expect(screen.queryByRole("link", { name: "Mở cài đặt kết nối" }) !== null).toBe(visible);
   });
 
   it("TC-MEN-017: a failed further page shows an inline error and keeps the loaded rows", async () => {

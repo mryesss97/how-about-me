@@ -10,7 +10,7 @@ export type SeedAuthEnv = {
 
 export type SeedAuthResult = "skipped" | "exists" | "created" | "invited";
 
-type FetchFn = (
+export type FetchFn = (
   url: string,
   init: { method: string; headers: Record<string, string>; body?: string },
 ) => Promise<{
@@ -32,15 +32,33 @@ function hasEmail(body: unknown, email: string): boolean {
   );
 }
 
+export type SeedAuthTarget = { url?: string; key?: string; email?: string; password?: string };
+
 export async function seedAuthUser(
   env: SeedAuthEnv,
   deps: { fetch: FetchFn; log: (m: string) => void },
 ): Promise<SeedAuthResult> {
-  const url = env.SUPABASE_URL?.replace(/\/+$/, "");
-  const key = env.SUPABASE_SERVICE_ROLE_KEY;
-  const email = env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
+  return seedAuthUserFor(
+    {
+      url: env.SUPABASE_URL,
+      key: env.SUPABASE_SERVICE_ROLE_KEY,
+      email: env.SEED_ADMIN_EMAIL,
+      password: env.SEED_ADMIN_PASSWORD,
+    },
+    deps,
+  );
+}
+
+/** Ensures any seed account exists in Supabase Auth (admin via `seedAuthUser`, demo analyst/viewer from #294). */
+export async function seedAuthUserFor(
+  target: SeedAuthTarget,
+  deps: { fetch: FetchFn; log: (m: string) => void },
+): Promise<SeedAuthResult> {
+  const url = target.url?.replace(/\/+$/, "");
+  const key = target.key;
+  const email = target.email?.trim().toLowerCase();
   if (!url || !key || !email) {
-    deps.log("seed:auth-user skipped — SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY and SEED_ADMIN_EMAIL are required.");
+    deps.log("seed:auth-user skipped — SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY and a seed email are required.");
     return "skipped";
   }
   const headers = { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" };
@@ -58,11 +76,11 @@ export async function seedAuthUser(
     if (!Array.isArray(users) || users.length < 1000) break;
   }
 
-  if (env.SEED_ADMIN_PASSWORD) {
+  if (target.password) {
     const res = await deps.fetch(`${url}/auth/v1/admin/users`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ email, password: env.SEED_ADMIN_PASSWORD, email_confirm: true }),
+      body: JSON.stringify({ email, password: target.password, email_confirm: true }),
     });
     if (!res.ok) throw new Error(`Supabase create user failed (HTTP ${res.status})`);
     deps.log(`auth user created: ${email}`);

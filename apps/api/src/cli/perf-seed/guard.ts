@@ -5,7 +5,7 @@
  */
 export class PerfDbGuardError extends Error {}
 
-const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
+export const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 /** `perf` / `test` as a whole `_`/`-` separated word (so `contest_prod` does not pass). */
 const MARKER = /(^|[_-])(perf|test)([_-]|$)/i;
 
