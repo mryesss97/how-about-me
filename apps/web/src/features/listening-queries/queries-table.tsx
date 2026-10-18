@@ -28,10 +28,17 @@ const DOT: Record<SyncTone, string> = {
   neutral: "bg-fg-quaternary",
 };
 
-type Props = QueryActionHandlers & { items: ListeningQuery[]; tz: string; isAdmin: boolean; now?: Date };
+type Props = QueryActionHandlers & {
+  items: ListeningQuery[];
+  tz: string;
+  isAdmin: boolean;
+  now?: Date;
+  /** Row with a pending enable/disable PATCH; its toggle is disabled. */
+  busyId?: string;
+};
 
 /** Listening Queries table (UX §3.5, FR-051/FR-061). Scrolls horizontally inside the board (#278). */
-export function QueriesTable({ items, tz, isAdmin, now, ...handlers }: Props) {
+export function QueriesTable({ items, tz, isAdmin, now, busyId, ...handlers }: Props) {
   return (
     <div className="operate-board min-w-0">
       <span aria-hidden className="sign-keyline" />
@@ -56,7 +63,15 @@ export function QueriesTable({ items, tz, isAdmin, now, ...handlers }: Props) {
           </thead>
           <tbody>
             {items.map((q) => (
-              <QueryRow key={q.id} q={q} tz={tz} isAdmin={isAdmin} now={now} handlers={handlers} />
+              <QueryRow
+                key={q.id}
+                q={q}
+                tz={tz}
+                isAdmin={isAdmin}
+                now={now}
+                busy={busyId === q.id}
+                handlers={handlers}
+              />
             ))}
           </tbody>
         </table>
@@ -70,12 +85,14 @@ function QueryRow({
   tz,
   isAdmin,
   now,
+  busy,
   handlers,
 }: {
   q: ListeningQuery;
   tz: string;
   isAdmin: boolean;
   now?: Date;
+  busy: boolean;
   handlers: QueryActionHandlers;
 }) {
   const deleted = !!q.deletedAt;
@@ -96,12 +113,12 @@ function QueryRow({
       <td className={cx(TD, "whitespace-nowrap text-secondary")}>{queryTypeLabelVi[q.queryType]}</td>
       <td className={TD}>
         {isAdmin && !deleted ? (
-          // Wired to PATCH { enabled } in #43; read-only until then.
+          // PATCH { enabled } (FR-055, #43); read-only when no handler is passed.
           <Toggle
             size="sm"
             aria-label={`Bật ${q.displayName}`}
             isSelected={q.enabled}
-            isDisabled={!handlers.onToggle}
+            isDisabled={!handlers.onToggle || busy}
             onChange={() => handlers.onToggle?.(q)}
           />
         ) : (

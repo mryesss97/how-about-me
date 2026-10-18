@@ -1,8 +1,9 @@
 "use client";
 
+import type { ListeningQuery } from "@how-about-me/contracts";
 import { Plus } from "@untitledui/icons";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/base/buttons/button";
 import { Toggle } from "@/components/base/toggle/toggle";
 import { useCurrentProject } from "@/features/auth/use-current-project";
@@ -11,9 +12,11 @@ import { PageHeader } from "@/features/shared/page-header";
 import { ErrorState, QueryState, SkeletonBlock } from "@/features/shared/query-state";
 import { ApiError } from "@/lib/api/client";
 import { flattenUnique } from "@/lib/query/infinite-list";
-import { useListeningQueries } from "./api";
+import { useListeningQueries, useListeningQuery } from "./api";
+import { DeleteQueryDialog } from "./delete-query-dialog";
 import { QueriesTable } from "./queries-table";
-import type { QueryActionHandlers } from "./query-actions-menu";
+import { QueryFormDrawer } from "./query-form-drawer";
+import { useQueryActions } from "./use-query-actions";
 
 const DEFAULT_TZ = "Asia/Ho_Chi_Minh";
 
@@ -24,10 +27,10 @@ const toStateError = (err: unknown) =>
       : { message: "Phản hồi không hợp lệ từ máy chủ." }
     : null;
 
-type Props = QueryActionHandlers & { onCreate?: () => void };
+type DrawerState = { mode: "create" } | { mode: "edit"; query: ListeningQuery };
 
-/** /listening-queries body (T-046, UX §3.5). Drawer + mutations are wired by #43 through the handler props. */
-export function ListeningQueriesView({ onCreate, ...handlers }: Props) {
+/** /listening-queries body (T-046, UX §3.5). Create/edit drawer, row mutations and `?edit=<id>` deep link (#43). */
+export function ListeningQueriesView() {
   const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams();
@@ -39,6 +42,18 @@ export function ListeningQueriesView({ onCreate, ...handlers }: Props) {
   const list = useListeningQueries(project?.id, { includeDeleted });
   const items = useMemo(() => flattenUnique(list.data?.pages ?? []), [list.data]);
   const pagesLoaded = (list.data?.pages.length ?? 0) > 0;
+  const pid = project?.id ?? "";
+  const actions = useQueryActions(pid);
+  const [drawer, setDrawer] = useState<DrawerState | null>(null);
+  const [deleting, setDeleting] = useState<ListeningQuery | null>(null);
+
+  // `?edit=<id>`: opens the edit drawer for a query, fetched when outside the loaded list (duplicate link, FR-053).
+  const editId = isAdmin ? (search?.get("edit") ?? null) : null;
+  const editInList = editId ? items.find((q) => q.id === editId) : undefined;
+  const editFetched = useListeningQuery(pid, editId && pagesLoaded && !editInList ? editId : null);
+  const editTarget = editInList ?? editFetched.data;
+  const activeDrawer: DrawerState | null =
+    drawer ?? (editTarget && !editTarget.deletedAt ? { mode: "edit", query: editTarget } : null);
 
   const setIncludeDeleted = useCallback(
     (on: boolean) => {
@@ -51,8 +66,40 @@ export function ListeningQueriesView({ onCreate, ...handlers }: Props) {
     [router, pathname, search],
   );
 
+  const writeEdit = useCallback(
+    (id: string | null) => {
+      const next = new URLSearchParams(search?.toString());
+      if (id) next.set("edit", id);
+      else next.delete("edit");
+      const qs = next.toString();
+      router.replace(`${pathname ?? "/listening-queries"}${qs ? `?${qs}` : ""}`);
+    },
+    [router, pathname, search],
+  );
+
+  const closeDrawer = () => {
+    setDrawer(null);
+    if (editId) writeEdit(null);
+  };
+  const openExisting = (id: string) => {
+    const found = items.find((q) => q.id === id);
+    if (found && !found.deletedAt) setDrawer({ mode: "edit", query: found });
+    else writeEdit(id);
+  };
+
+  // Handlers only for admins; the menu/toggle hide without them (BR-033: UX only, API enforces FR-015).
+  const handlers = isAdmin
+    ? {
+        onEdit: (q: ListeningQuery) => setDrawer({ mode: "edit", query: q }),
+        onRun: actions.onRun,
+        onToggle: actions.onToggle,
+        onDelete: setDeleting,
+        onRestore: actions.onRestore,
+      }
+    : {};
+
   const createButton = isAdmin ? (
-    <Button size="sm" iconLeading={Plus} isDisabled={!onCreate} onClick={onCreate}>
+    <Button size="sm" iconLeading={Plus} isDisabled={!project} onClick={() => setDrawer({ mode: "create" })}>
       Thêm truy vấn
     </Button>
   ) : null;
@@ -79,7 +126,13 @@ export function ListeningQueriesView({ onCreate, ...handlers }: Props) {
         emptyAction={createButton}
       >
         <div className="flex flex-col gap-3">
-          <QueriesTable items={items} tz={project?.timezone ?? DEFAULT_TZ} isAdmin={isAdmin} {...handlers} />
+          <QueriesTable
+            items={items}
+            tz={project?.timezone ?? DEFAULT_TZ}
+            isAdmin={isAdmin}
+            busyId={actions.togglingId}
+            {...handlers}
+          />
           {pagesLoaded && list.isFetchNextPageError ? (
             <ErrorState error={toStateError(list.error) ?? {}} onRetry={() => void list.fetchNextPage()} />
           ) : null}
@@ -98,6 +151,27 @@ export function ListeningQueriesView({ onCreate, ...handlers }: Props) {
           ) : null}
         </div>
       </QueryState>
+      {isAdmin && project && activeDrawer ? (
+        <QueryFormDrawer
+          key={activeDrawer.mode === "edit" ? activeDrawer.query.id : "new"}
+          pid={project.id}
+          mode={activeDrawer.mode}
+          query={activeDrawer.mode === "edit" ? activeDrawer.query : undefined}
+          isOpen
+          onClose={closeDrawer}
+          onOpenExisting={openExisting}
+        />
+      ) : null}
+      {isAdmin ? (
+        <DeleteQueryDialog
+          query={deleting}
+          onClose={() => setDeleting(null)}
+          onConfirm={(q) => {
+            setDeleting(null);
+            actions.onConfirmDelete(q);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
