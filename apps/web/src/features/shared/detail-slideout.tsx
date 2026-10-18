@@ -59,7 +59,7 @@ export function DetailSlideout({
           {/* Plain <a> on purpose: a full navigation escapes the intercepting route and renders the page. */}
           <a
             href={fullPageHref(qs)}
-            className="inline-flex items-center gap-1 text-sm font-semibold text-brand-secondary hover:underline"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--ink)] underline-offset-2 hover:underline"
           >
             <Expand06 className="size-4" aria-hidden />
             Mở trang đầy đủ

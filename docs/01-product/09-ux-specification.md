@@ -96,6 +96,8 @@ Threads permalink: icon `link-external-01`, `target=_blank`, `rel=noopener noref
 
 Keyboard reachable filters/tables/drawers (React Aria); focus rings visible; charts expose data table via "View as table" toggle (the Sentiment map uses a segmented "Bubbles | Table" toggle instead, #222); contrast AA; badges include text.
 
+**axe gate (#95):** unit tests run axe-core (`apps/web/src/test/axe.ts`, `color-contrast` off in jsdom) on badges, `ChartCard` (chart + table mode) and `MentionRow`; Playwright `e2e/a11y.spec.ts` (public `/`, `/login`) and `e2e/a11y.auth.spec.ts` (working screens @1280/@900, mention slide-out) fail on any `serious`/`critical` violation (WCAG 2.1 A/AA tags); `moderate`/`minor` are attached to the report only. Esc on the detail slide-out returns focus to the row that opened it (TC-MEN-020).
+
 ## 3. Screens
 
 ### 3.0 Landing (`/`) — P1 (#262, FR-020; signboard wall #271)
@@ -262,6 +264,7 @@ Built in #219 (`apps/web/src/features/reviews`):
 - Landing `/` (#262, #271): one viewport from 640 px with every phrase on the wall; below 640 px the main sign sits on top and the wall scrolls (every phrase still shown).
 - ≥ 1280 px: full sidebar, 12-col grid.
 - 768–1279 px: collapsed slim sidebar, charts 2-per-row → 1-per-row, tables horizontally scrollable.
+  - **Current state (#95):** the slim icon-only sidebar is not built yet (follow-up issue). Shipped behaviour: full sidebar from Tailwind `lg` (1024 px); below that a header with a hamburger menu. Overview grid is 1-per-row < 1024 px and 2–3-per-row ≥ 1024 px; no horizontal page scroll at 900 px (checked in `e2e/a11y.auth.spec.ts`).
 - < 768 px: read-only Overview/Mentions acceptable; admin forms not optimised.
 
 ## 5. Copy guidelines
