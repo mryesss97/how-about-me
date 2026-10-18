@@ -1,5 +1,6 @@
 "use client";
 
+import { plaqueClassName } from "@/features/shared/plaque-button";
 import {
   Dialog as AriaDialog,
   DialogTrigger as AriaDialogTrigger,
@@ -15,9 +16,7 @@ export function MoreFiltersPopover({ filters, setFilters }: FilterControlProps) 
   const n = secondaryFilterCount(filters);
   return (
     <AriaDialogTrigger>
-      <AriaButton className="plaque-button inline-flex items-center gap-1.5 px-3 py-1.5 text-sm outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2">
-        Bộ lọc khác{n > 0 ? ` (${n})` : ""}
-      </AriaButton>
+      <AriaButton className={plaqueClassName("sm", "text-sm")}>Bộ lọc khác{n > 0 ? ` (${n})` : ""}</AriaButton>
       <AriaPopover
         placement="bottom start"
         offset={6}

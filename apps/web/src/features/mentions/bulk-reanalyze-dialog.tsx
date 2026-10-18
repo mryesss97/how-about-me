@@ -11,6 +11,7 @@ import { ApiError } from "@/lib/api/client";
 import { retryAfterSeconds, waitTextVi } from "@/lib/api/rate-limit";
 import { formatCount } from "@/lib/format/number";
 import { useBulkReanalyze } from "./api";
+import { PlaqueButton } from "@/features/shared/plaque-button";
 
 const TITLE = "Phân tích lại các bài nhắc?";
 
@@ -137,14 +138,9 @@ export function BulkReanalyzeButton({ pid, params }: { pid: string; params: Reco
   const [snapshot, setSnapshot] = useState<Record<string, string> | null>(null);
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setSnapshot(params)}
-        className="plaque-button inline-flex min-h-11 md:min-h-0 items-center gap-2 px-3 py-1.5 outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2"
-      >
-        <RefreshCw01 className="size-4" aria-hidden />
+      <PlaqueButton iconLeading={RefreshCw01} onClick={() => setSnapshot(params)}>
         Phân tích lại
-      </button>
+      </PlaqueButton>
       {snapshot ? <BulkReanalyzeDialog pid={pid} params={snapshot} onClose={() => setSnapshot(null)} /> : null}
     </>
   );

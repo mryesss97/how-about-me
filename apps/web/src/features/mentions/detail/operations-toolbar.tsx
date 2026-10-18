@@ -7,9 +7,7 @@ import { Button } from "@/components/base/buttons/button";
 import { RequireRole } from "@/features/auth/require-role";
 import { SettingsDialog } from "@/features/shared/settings-dialog";
 import { isInFlight } from "./api";
-
-const PLAQUE =
-  "plaque-button inline-flex items-center gap-2 px-3 py-1.5 outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+import { PlaqueButton } from "@/features/shared/plaque-button";
 
 type Props = {
   mention: MentionDetail;
@@ -42,24 +40,21 @@ export function OperationsToolbar({
     <div className="flex flex-nowrap items-center gap-2" role="toolbar" aria-label="Thao tác">
       {canReanalyze ? (
         <RequireRole roles={["admin", "analyst"]} fallback={null}>
-          <button
-            type="button"
-            className={PLAQUE}
-            disabled={busy}
+          <PlaqueButton
+            iconLeading={RefreshCw01}
+            isDisabled={busy}
             aria-busy={isReanalyzing}
             onClick={() => setConfirm(true)}
           >
-            <RefreshCw01 className="size-4" aria-hidden />
             Phân tích lại
-          </button>
+          </PlaqueButton>
         </RequireRole>
       ) : null}
       {canOverride ? (
         <RequireRole roles={["admin", "analyst"]} fallback={null}>
-          <button type="button" className={PLAQUE} onClick={onOpenOverride}>
-            <UserCheck01 className="size-4" aria-hidden />
+          <PlaqueButton iconLeading={UserCheck01} onClick={onOpenOverride}>
             Ghi đè
-          </button>
+          </PlaqueButton>
         </RequireRole>
       ) : null}
       <SettingsDialog isOpen={confirm} onClose={() => setConfirm(false)} title="Phân tích lại bài nhắc này?">

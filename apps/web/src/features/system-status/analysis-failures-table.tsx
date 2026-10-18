@@ -5,7 +5,7 @@ import type { AnalysisRun } from "@how-about-me/contracts";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/base/buttons/button";
+import { PlaqueButton } from "@/features/shared/plaque-button";
 import { DASH, formatCount } from "@/lib/format/number";
 import { formatDateTime } from "@/lib/time/format";
 import { withBack } from "@/lib/navigation/back-link";
@@ -90,17 +90,15 @@ export function AnalysisFailuresTable({ pid, items, tz, isAdmin }: Props) {
                   <td className={`${TD} whitespace-nowrap`}>{analysisTriggerLabel[r.trigger]}</td>
                   {isAdmin ? (
                     <td className={TD}>
-                      <Button
-                        color="secondary"
-                        size="sm"
-                        className="plaque"
+                      <PlaqueButton
+                        className="whitespace-nowrap"
                         aria-label={`Thử lại lượt phân tích ${r.id}`}
                         isLoading={busyIds.has(r.id)}
                         isDisabled={busyIds.has(r.id)}
                         onClick={() => onRetry(r.id)}
                       >
                         Thử lại
-                      </Button>
+                      </PlaqueButton>
                     </td>
                   ) : null}
                 </tr>

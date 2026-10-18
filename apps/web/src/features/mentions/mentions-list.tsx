@@ -6,6 +6,7 @@ import type { EmptyReason } from "@/features/shared/overview-banners";
 import { ErrorState, QueryState, SkeletonBlock, type QueryStateError } from "@/features/shared/query-state";
 import { mentionsEmptyCopy } from "./empty-copy";
 import { MentionRow } from "./mention-row";
+import { PlaqueButton } from "@/features/shared/plaque-button";
 
 type Props = {
   items: MentionListItem[];
@@ -105,14 +106,9 @@ export function MentionsList(p: Props) {
         {nextPageError ? <ErrorState error={nextPageError} onRetry={fetchNextPage} /> : null}
         {hasNextPage && !nextPageError ? (
           <div ref={sentinel} className="flex justify-center">
-            <button
-              type="button"
-              disabled={isFetchingNextPage}
-              onClick={fetchNextPage}
-              className="plaque-button px-4 py-2 outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60"
-            >
-              {isFetchingNextPage ? "Đang tải…" : "Tải thêm"}
-            </button>
+            <PlaqueButton isLoading={isFetchingNextPage} onClick={fetchNextPage}>
+              Tải thêm
+            </PlaqueButton>
           </div>
         ) : null}
       </div>

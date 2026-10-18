@@ -1,5 +1,6 @@
 "use client";
 
+import { plaqueClassName } from "@/features/shared/plaque-button";
 import { Button as AriaButton } from "react-aria-components";
 import { SlideoutMenu } from "@/components/application/slideout-menus/slideout-menu";
 import { Button } from "@/components/base/buttons/button";
@@ -44,7 +45,7 @@ export function FilterSheet({
       <SlideoutMenu.Trigger>
         <AriaButton
           aria-label={`Bộ lọc, ${n} đang áp dụng`}
-          className="plaque-button inline-flex min-h-11 shrink-0 items-center px-4 text-sm outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2"
+          className={plaqueClassName("md", "min-h-11 shrink-0 text-sm")}
         >
           Bộ lọc
         </AriaButton>

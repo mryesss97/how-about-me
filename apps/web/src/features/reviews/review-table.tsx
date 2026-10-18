@@ -4,6 +4,7 @@ import { MARK_REVIEWED_MAX, type ReviewQueueItem } from "@how-about-me/contracts
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { ErrorState, QueryState, SkeletonBlock, type QueryStateError } from "@/features/shared/query-state";
 import { ReviewRow } from "./review-row";
+import { PlaqueButton } from "@/features/shared/plaque-button";
 
 type Props = {
   items: ReviewQueueItem[];
@@ -99,14 +100,9 @@ export function ReviewTable(p: Props) {
         {p.nextPageError ? <ErrorState error={p.nextPageError} onRetry={p.fetchNextPage} /> : null}
         {p.hasNextPage && !p.nextPageError ? (
           <div className="flex justify-center">
-            <button
-              type="button"
-              disabled={p.isFetchingNextPage}
-              onClick={p.fetchNextPage}
-              className="plaque-button px-3 py-1.5 outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60"
-            >
-              {p.isFetchingNextPage ? "Đang tải…" : "Tải thêm"}
-            </button>
+            <PlaqueButton isLoading={p.isFetchingNextPage} onClick={p.fetchNextPage}>
+              Tải thêm
+            </PlaqueButton>
           </div>
         ) : null}
       </div>

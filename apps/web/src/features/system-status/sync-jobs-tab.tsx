@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Button } from "@/components/base/buttons/button";
+import { PlaqueButton } from "@/features/shared/plaque-button";
 import { QueryState, SkeletonBlock } from "@/features/shared/query-state";
 import { ApiError } from "@/lib/api/client";
 import { flattenUnique } from "@/lib/query/infinite-list";
@@ -55,15 +55,9 @@ export function SyncJobsTab({ pid, tz, isAdmin }: { pid: string; tz: string; isA
           <SyncJobsTable items={items} tz={tz} queryNames={queryNames} onOpen={(id) => update({ job: id })} />
           {list.hasNextPage ? (
             <div className="flex justify-center">
-              <Button
-                color="secondary"
-                size="sm"
-                className="plaque"
-                isLoading={list.isFetchingNextPage}
-                onClick={() => void list.fetchNextPage()}
-              >
+              <PlaqueButton isLoading={list.isFetchingNextPage} onClick={() => void list.fetchNextPage()}>
                 Tải thêm
-              </Button>
+              </PlaqueButton>
             </div>
           ) : null}
         </div>
