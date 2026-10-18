@@ -4,6 +4,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { formatRate } from "@/lib/format/number";
 import { cx } from "@/utils/cx";
 import { type BubbleDatum, bubbleIntensity } from "./bubble-layout";
+import { SentimentIcon } from "./sentiment-icon";
 import { SENTIMENT_COLORS, bubbleCopy } from "./sentiment-style";
 
 /** Shade-700 text tokens for the "% sentiment" line (prototype); sentiment hues only, never safety (BR-017). */
@@ -16,8 +17,12 @@ const SHARE_TEXT: Record<BubbleDatum["dominant"], string> = {
 export const bubbleAriaLabel = (d: BubbleDatum) =>
   `${d.name}, ${bubbleCopy.shareLine(d.dominantShare, d.dominant)}, ${bubbleCopy.mentions(d.total)}`;
 
-/** Radius thresholds (px) for in-bubble labels; below `compact` only the hover/focus tooltip shows (UX §3.2). */
+/**
+ * Radius thresholds (px) for in-bubble labels (UX §3.2, #389). Below `compact` the bubble has no in-bubble text;
+ * the canvas lists it in the "small topics" row instead (BR-017: colour is never the only cue).
+ */
 export const LABEL_FULL_R = 58;
+export const LABEL_WORD_R = 44;
 export const LABEL_COMPACT_R = 36;
 
 export const BUBBLE_FACE_CLASS =
@@ -62,8 +67,9 @@ export function BubbleShell({ pos, index, children }: PositionProps) {
 }
 
 /**
- * Label by radius: ≥ 58 px name + "75.0% negative" + "N mentions"; 36–58 px name + "75.0%"; smaller → tooltip
- * on hover/focus (the aria-label always carries the full text). Text is clamped to the bubble's inner width.
+ * Label by radius (#389, BR-017 — sentiment always has a word or icon, never colour only): ≥ 58 px name +
+ * "75.0% negative" + "N mentions"; 44–58 px name + "75.0% negative"; 36–44 px name + sentiment icon + "75.0%";
+ * smaller → tooltip on hover/focus (the aria-label always carries the full text). Text is clamped to the bubble's inner width.
  * `tooltip` overrides the hover text (landing uses "term · 62% positive · 128 mentions").
  */
 export function BubbleLabel({
@@ -110,7 +116,14 @@ export function BubbleLabel({
       {r >= LABEL_COMPACT_R ? (
         <span aria-hidden className="flex flex-col items-center leading-tight" style={{ maxWidth: r * 1.6 }}>
           <span className="max-w-full truncate text-xs font-semibold text-primary">{d.name}</span>
-          <span className={shareCls}>{formatRate(d.dominantShare)}</span>
+          {r >= LABEL_WORD_R ? (
+            <span className={cx(shareCls, "text-[11px]")}>{bubbleCopy.shareLine(d.dominantShare, d.dominant)}</span>
+          ) : (
+            <span className={cx(shareCls, "inline-flex items-center gap-0.5")}>
+              <SentimentIcon sentiment={d.dominant} className="size-3.5" />
+              {formatRate(d.dominantShare)}
+            </span>
+          )}
         </span>
       ) : null}
       {tip}
