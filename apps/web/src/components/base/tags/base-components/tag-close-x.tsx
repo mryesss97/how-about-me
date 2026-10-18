@@ -22,7 +22,7 @@ export const TagCloseX = ({ size = "md", className, ...otherProps }: TagCloseXPr
             slot="remove"
             aria-label="Xoá thẻ này"
             className={cx(
-                "flex cursor-pointer rounded-[3px] text-fg-quaternary outline-transparent transition duration-100 ease-linear hover:bg-primary_hover hover:text-fg-quaternary_hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:cursor-not-allowed",
+                "relative flex cursor-pointer rounded-[3px] after:absolute after:-inset-3.5 after:content-[''] md:after:hidden text-fg-quaternary outline-transparent transition duration-100 ease-linear hover:bg-primary_hover hover:text-fg-quaternary_hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:cursor-not-allowed",
                 styles[size].root,
                 className,
             )}

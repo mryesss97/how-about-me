@@ -27,7 +27,7 @@ const dt = (iso: string | null, tz: string) => (iso ? formatDateTime(iso, tz) : 
 const usd = {
   format: (v: number) => `$${v.toLocaleString("vi-VN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
 };
-const PLAQUE = "plaque-button inline-block whitespace-nowrap px-3 py-1 text-sm";
+const PLAQUE = "plaque-button inline-flex items-center whitespace-nowrap px-3 py-1 text-sm max-md:min-h-11";
 
 /** Overview tab cards (UX §3.6, FR-170, TC-SYS-001). "Scopes" is not in the contract, so it is not shown. */
 export function OverviewCards({ data, tz, isAdmin, queriesWithError = null }: Props) {

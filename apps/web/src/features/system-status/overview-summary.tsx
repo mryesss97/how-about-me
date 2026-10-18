@@ -15,7 +15,10 @@ export function OverviewSummary({ summary }: { summary: Summary }) {
         <Fragment key={c.text}>
           {i > 0 ? " · " : null}
           {c.href ? (
-            <Link href={c.href} className="font-semibold underline underline-offset-2">
+            <Link
+              href={c.href}
+              className="font-semibold underline underline-offset-2 max-md:inline-flex max-md:min-h-11 max-md:items-center"
+            >
               {c.text}
             </Link>
           ) : (
