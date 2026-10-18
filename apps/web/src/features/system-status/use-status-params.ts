@@ -1,18 +1,20 @@
 "use client";
 
-import { JOB_STATUSES, type JobStatus } from "@how-about-me/contracts";
+import { AUDIT_ACTIONS, JOB_STATUSES, type AuditAction, type JobStatus } from "@how-about-me/contracts";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 
-export type StatusTab = "overview" | "sync-jobs" | "analysis-failures";
-const TAB_IDS: readonly StatusTab[] = ["overview", "sync-jobs", "analysis-failures"];
+export type StatusTab = "overview" | "sync-jobs" | "analysis-failures" | "audit-log";
+const TAB_IDS: readonly StatusTab[] = ["overview", "sync-jobs", "analysis-failures", "audit-log"];
 export type SyncJobsParams = { queryId: string; status: JobStatus | ""; from: string; to: string };
+export type AuditLogParams = { action: AuditAction | ""; from: string; to: string };
 
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
  * URL state for /system-status: `?tab=sync-jobs&queryId=&status=&from=YYYY-MM-DD&to=YYYY-MM-DD&job=<id>`
  * so other screens can deep-link to a filtered list or an open job.
+ * Audit log tab (admin, FR-201): `?tab=audit-log&action=<AuditAction>&from=&to=` (shares `from`/`to`).
  */
 export function useStatusParams() {
   const router = useRouter();
@@ -30,6 +32,12 @@ export function useStatusParams() {
     from: day("from"),
     to: day("to"),
   };
+  const rawAction = get("action");
+  const auditFilters: AuditLogParams = {
+    action: (AUDIT_ACTIONS as readonly string[]).includes(rawAction) ? (rawAction as AuditAction) : "",
+    from: filters.from,
+    to: filters.to,
+  };
   const jobId = get("job") || null;
 
   const update = useCallback(
@@ -45,5 +53,5 @@ export function useStatusParams() {
     [router, pathname, search],
   );
 
-  return { tab, filters, jobId, update };
+  return { tab, filters, auditFilters, jobId, update };
 }

@@ -1,4 +1,4 @@
-import type { AnalysisRun, SyncJob, SyncJobDetail, SystemStatusResponse } from "@how-about-me/contracts";
+import type { AnalysisRun, AuditLog, SyncJob, SyncJobDetail, SystemStatusResponse } from "@how-about-me/contracts";
 
 let n = 0;
 export const uuid = (i: number) => `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`;
@@ -94,6 +94,21 @@ export function analysisRunFixture(over: Partial<AnalysisRun> = {}): AnalysisRun
     errorMessage: "Provider timed out",
     startedAt: "2026-10-13T03:00:00.000Z",
     completedAt: "2026-10-13T03:00:30.000Z",
+    createdAt: "2026-10-13T03:00:00.000Z",
+    ...over,
+  };
+}
+
+export function auditLogFixture(over: Partial<AuditLog> = {}): AuditLog {
+  n += 1;
+  return {
+    id: uuid(3000 + n),
+    action: "member.role_changed",
+    actor: { id: uuid(1), displayName: "Lan Admin", email: "lan@example.com" },
+    entityType: "member",
+    entityId: uuid(2),
+    metadata: { role: "analyst", previousRole: "viewer" },
+    requestId: "req-audit-1",
     createdAt: "2026-10-13T03:00:00.000Z",
     ...over,
   };

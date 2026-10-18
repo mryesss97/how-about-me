@@ -8,3 +8,5 @@ Append-only audit log (FR-200/201, T-059). Design: [docs/02-architecture/08-secu
 - Metadata is sanitized by `sanitizeAuditMetadata` (allow-list + secret-key deny pattern, depth/size caps). Never pass raw provider payloads.
 - `GET /projects/:projectId/audit-logs` is admin-only and read-only; there is no update/delete.
 - List pagination: keyset `(created_at, id) DESC` evaluated in SQL via `common/pagination/created-at-keyset.ts`; cursor = `encodeSortCursor` sort `created_desc` with the µs `created_at` key, so rows inside one millisecond are never skipped (#188).
+
+`AUDIT_ACTIONS` / `AuditAction` are defined in `@how-about-me/contracts` (`audit.ts`) and re-exported from `audit-metadata.ts` (#56) so the web filter uses the same list.

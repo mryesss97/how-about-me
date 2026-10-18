@@ -1,5 +1,6 @@
 import type {
   AnalysisTrigger,
+  AuditAction,
   IntegrationStatus,
   JobStatus,
   JobTrigger,
@@ -85,4 +86,44 @@ export function truncateMiddle(s: string, max = 24): string {
   if (s.length <= max) return s;
   const half = Math.floor((max - 1) / 2);
   return `${s.slice(0, half)}…${s.slice(-half)}`;
+}
+
+/** FR-201: Vietnamese labels for audit actions (docs/02-architecture/08-security-secrets.md §6). */
+export const auditActionLabel: Record<AuditAction, string> = {
+  "project.updated": "Cập nhật dự án",
+  "member.added": "Thêm thành viên",
+  "member.role_changed": "Đổi vai trò thành viên",
+  "member.removed": "Xoá thành viên",
+  "integration.updated": "Cập nhật kết nối Threads",
+  "integration.verified": "Kiểm tra kết nối Threads",
+  "integration.disconnected": "Ngắt kết nối Threads",
+  "integration.refresh_failed": "Làm mới token thất bại",
+  "query.created": "Tạo truy vấn",
+  "query.updated": "Sửa truy vấn",
+  "query.enabled": "Bật truy vấn",
+  "query.disabled": "Tắt truy vấn",
+  "query.deleted": "Xoá truy vấn",
+  "query.restored": "Khôi phục truy vấn",
+  "query.run_requested": "Yêu cầu chạy truy vấn",
+  "query.backfill_requested": "Yêu cầu quét bù",
+  "analysis.reanalyze_requested": "Yêu cầu phân tích lại",
+  "analysis.bulk_reanalyze_requested": "Yêu cầu phân tích lại hàng loạt",
+  "analysis.retry_requested": "Thử lại phân tích",
+  "override.created": "Tạo chỉnh sửa nhãn",
+  "override.revoked": "Thu hồi chỉnh sửa nhãn",
+  "review.marked": "Đánh dấu đã xem xét",
+  "mentions.exported": "Xuất dữ liệu đề cập",
+  "analysis_settings.updated": "Cập nhật cài đặt phân tích",
+  "sync_job.retry_requested": "Thử lại lượt đồng bộ",
+  "data.purged": "Xoá dữ liệu",
+};
+
+/** Label for an action; unknown (legacy) actions fall back to the raw string. */
+export function auditActionText(action: string): string {
+  return (auditActionLabel as Record<string, string | undefined>)[action] ?? action;
+}
+
+/** `YYYY-MM-DD` → UTC ISO start of the *next* day in `tz` (exclusive upper bound, audit API `to`). */
+export function nextDayStartUtc(day: string, tz: string): string {
+  return parseDate(day).add({ days: 1 }).toDate(tz).toISOString();
 }
