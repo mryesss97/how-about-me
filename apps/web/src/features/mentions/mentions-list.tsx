@@ -19,7 +19,10 @@ type Props = {
   /** Error while loading a further page: pages already loaded stay visible. */
   nextPageError: QueryStateError | null;
   fetchNextPage: () => void;
-  onOpen: (id: string) => void;
+  /** Plain-click handler; omitted → the row link navigates normally. */
+  onOpen?: (id: string) => void;
+  /** Real href of each row (full page detail, #326). */
+  hrefFor: (id: string) => string;
   onWidenRange: () => void;
   /** FR-159: cause of an empty list (defaults to "none"). */
   emptyReason?: EmptyReason;
@@ -40,7 +43,7 @@ export function MentionsListSkeleton() {
 
 /** List body with load more + infinite scroll and ↑/↓ roving focus (UX §3.3, TC-MEN-020). */
 export function MentionsList(p: Props) {
-  const rowRefs = useRef<(HTMLElement | null)[]>([]);
+  const rowRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   const sentinel = useRef<HTMLDivElement>(null);
   const { hasNextPage, isFetchingNextPage, fetchNextPage, nextPageError } = p;
 
@@ -54,7 +57,7 @@ export function MentionsList(p: Props) {
     return () => io.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage, nextPageError]);
 
-  const onRowKey = (i: number) => (e: KeyboardEvent<HTMLElement>) => {
+  const onRowKey = (i: number) => (e: KeyboardEvent<HTMLAnchorElement>) => {
     if (e.target !== e.currentTarget) return;
     const next = e.key === "ArrowDown" ? i + 1 : e.key === "ArrowUp" ? i - 1 : null;
     if (next === null) return;
@@ -93,6 +96,7 @@ export function MentionsList(p: Props) {
               item={item}
               query={p.query}
               tz={p.tz}
+              href={p.hrefFor(item.id)}
               onOpen={p.onOpen}
               onKeyDown={onRowKey(i)}
             />

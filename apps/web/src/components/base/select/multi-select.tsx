@@ -51,20 +51,31 @@ interface MultiSelectFooterProps {
     onReset?: () => void;
     /** Handler that is called when the select all button is clicked. */
     onSelectAll?: () => void;
+    /** Label of the reset button. */
+    resetLabel?: string;
+    /** Label of the select-all button. */
+    selectAllLabel?: string;
     /** Additional class name. */
     className?: string;
 }
 
-const MultiSelectFooter = ({ size = "sm", onReset, onSelectAll, className }: MultiSelectFooterProps) => {
+const MultiSelectFooter = ({
+    size = "sm",
+    onReset,
+    onSelectAll,
+    resetLabel = "Reset",
+    selectAllLabel = "Select all",
+    className,
+}: MultiSelectFooterProps) => {
     const btnSize = footerButtonSize[size];
 
     return (
         <div className={cx("flex items-center justify-between border-t border-secondary p-3", className)}>
             <Button size={btnSize} color="secondary" onClick={onReset}>
-                Reset
+                {resetLabel}
             </Button>
             <Button size={btnSize} color="secondary" onClick={onSelectAll}>
-                Select all
+                {selectAllLabel}
             </Button>
         </div>
     );
@@ -152,6 +163,12 @@ interface MultiSelectProps extends RefAttributes<HTMLDivElement>, CommonProps {
     selectedCountFormatter?: (count: number) => ReactNode;
     /** Supporting text displayed next to the selected count in the trigger. */
     supportingText?: ReactNode;
+    /** Placeholder of the search input in the popover. */
+    searchPlaceholder?: string;
+    /** Label of the footer reset button. */
+    resetLabel?: string;
+    /** Label of the footer select-all button. */
+    selectAllLabel?: string;
 }
 
 const MultiSelectRoot = ({
@@ -179,6 +196,9 @@ const MultiSelectRoot = ({
     emptyStateDescription,
     selectedCountFormatter,
     supportingText,
+    searchPlaceholder = "Search",
+    resetLabel,
+    selectAllLabel,
 }: MultiSelectProps) => {
     const { contains } = useFilter({ sensitivity: "base" });
     const [searchValue, setSearchValue] = useState("");
@@ -270,7 +290,7 @@ const MultiSelectRoot = ({
                                             <div className={cx("flex items-center", searchSizes[size].root)}>
                                                 <SearchLg data-icon aria-hidden="true" className="shrink-0 text-fg-quaternary" />
                                                 <AriaInput
-                                                    placeholder="Search"
+                                                    placeholder={searchPlaceholder}
                                                     className={cx(
                                                         "w-full appearance-none bg-transparent text-primary caret-alpha-black/90 outline-hidden placeholder:text-placeholder",
                                                         searchSizes[size].text,
@@ -301,7 +321,15 @@ const MultiSelectRoot = ({
                                 </AriaListBox>
                             </AriaAutocomplete>
 
-                            {showFooter && <MultiSelectFooter size={size} onReset={onReset} onSelectAll={onSelectAll} />}
+                            {showFooter && (
+                                <MultiSelectFooter
+                                    size={size}
+                                    onReset={onReset}
+                                    onSelectAll={onSelectAll}
+                                    resetLabel={resetLabel}
+                                    selectAllLabel={selectAllLabel}
+                                />
+                            )}
                         </AriaDialog>
                     </AriaPopover>
                 </AriaDialogTrigger>

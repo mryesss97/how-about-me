@@ -121,7 +121,7 @@ export function TermDetailView({ term }: { term: string }) {
         </div>
       </section>
 
-      <FilterBar queryOptions={[]} />
+      <FilterBar />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <MentionsOverTimeChart

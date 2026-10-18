@@ -10,11 +10,11 @@ export const SEED_PROJECT = {
   timezone: "Asia/Ho_Chi_Minh",
 };
 export const SEED_QUERIES: { displayName: string; queryValue: string; queryType: QueryType }[] = [
-  { displayName: "1zone (keyword)", queryValue: "1zone", queryType: QueryType.keyword },
+  { displayName: "1zone", queryValue: "1zone", queryType: QueryType.keyword },
   // Raw value keeps '#' on purpose: normalizeQuery strips it (BR-004).
-  { displayName: "#1zone (topic tag)", queryValue: "#1zone", queryType: QueryType.topic_tag },
-  { displayName: "eventista (keyword)", queryValue: "eventista", queryType: QueryType.keyword },
-  { displayName: "#eventista (topic tag)", queryValue: "eventista", queryType: QueryType.topic_tag },
+  { displayName: "#1zone", queryValue: "#1zone", queryType: QueryType.topic_tag },
+  { displayName: "eventista", queryValue: "eventista", queryType: QueryType.keyword },
+  { displayName: "#eventista", queryValue: "eventista", queryType: QueryType.topic_tag },
 ];
 
 export async function runSeed(

@@ -11,14 +11,21 @@ import { MentionsView } from "./mentions-view";
 const PID = "11111111-1111-4111-8111-111111111111";
 const apiFetch = vi.fn();
 const push = vi.fn();
+const replace = vi.fn();
+const back = vi.fn();
+let searchState = "preset=7d";
 
 vi.mock("@/lib/api/client", async (orig) => ({
   ...(await orig<typeof ClientModule>()),
   apiFetch: (...a: unknown[]) => apiFetch(...a),
 }));
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push }),
-  useSearchParams: () => new URLSearchParams("preset=7d"),
+  useRouter: () => ({ push, replace, back }),
+  useSearchParams: () => new URLSearchParams(searchState),
+}));
+// The slide-out body has its own tests; keep this view test on the list ↔ `?item=` wiring (#326).
+vi.mock("./detail/mention-detail", () => ({
+  MentionDetail: ({ mentionId }: { mentionId: string }) => <p>detail {mentionId}</p>,
 }));
 vi.mock("@/features/auth/use-current-project", () => ({ useCurrentProject: () => ({ project: { id: PID } }) }));
 let roleState: { role: string; settings: { allowViewerExport: boolean } | null } = { role: "analyst", settings: null };
@@ -61,6 +68,9 @@ beforeEach(() => {
   roleState = { role: "analyst", settings: null };
   apiFetch.mockReset();
   push.mockReset();
+  replace.mockReset();
+  back.mockReset();
+  searchState = "preset=7d";
   useOverview.mockClear();
   overviewData = undefined;
 });
@@ -315,18 +325,47 @@ describe("MentionsView (UX §3.3)", () => {
     expect(screen.getByRole("button", { name: "Tải thêm" })).toBeEnabled();
   });
 
-  it("TC-MEN-020: ↑/↓ moves focus between rows, Enter opens detail keeping filters", async () => {
+  it("TC-MEN-020: ↑/↓ moves focus between row links; activating opens `?item=` keeping filters (#326)", async () => {
     const data = page(3, null, 3);
     apiFetch.mockResolvedValueOnce(data);
     setup();
-    const rows = await screen.findAllByTestId("mention-row");
-    nth(rows, 0).focus();
-    fireEvent.keyDown(nth(rows, 0), { key: "ArrowDown" });
-    expect(document.activeElement).toBe(rows[1]);
-    fireEvent.keyDown(nth(rows, 1), { key: "ArrowUp" });
-    expect(document.activeElement).toBe(rows[0]);
-    fireEvent.keyDown(nth(rows, 0), { key: "Enter" });
-    expect(push).toHaveBeenCalledWith(`/mentions/${nth(data.items, 0).id}?preset=7d`);
+    const links = await screen.findAllByRole("link", { name: /Bài nhắc của/ });
+    nth(links, 0).focus();
+    fireEvent.keyDown(nth(links, 0), { key: "ArrowDown" });
+    expect(document.activeElement).toBe(links[1]);
+    fireEvent.keyDown(nth(links, 1), { key: "ArrowUp" });
+    expect(document.activeElement).toBe(links[0]);
+    const id = nth(data.items, 0).id;
+    expect(nth(links, 0)).toHaveAttribute("href", `/mentions/${id}?preset=7d`);
+    // Enter on a link dispatches a click.
+    fireEvent.click(nth(links, 0));
+    expect(push).toHaveBeenCalledWith(`/mentions?preset=7d&item=${id}`, { scroll: false });
+  });
+
+  it("TC-MEN-009 (#326): `?item=<uuid>` renders the slide-out over the list; full-page link drops `item`", async () => {
+    const data = page(2, null, 2);
+    const id = nth(data.items, 0).id;
+    searchState = `preset=7d&item=${id}`;
+    apiFetch.mockResolvedValue(data);
+    setup();
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByText("Chi tiết bài nhắc", { selector: "h2" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Mở trang đầy đủ/ })).toHaveAttribute("href", `/mentions/${id}?preset=7d`);
+    // Row links never carry `item` either.
+    await waitFor(() => expect(screen.getAllByTestId("mention-row")).toHaveLength(2));
+    for (const l of screen.getAllByRole("link", { name: /Bài nhắc của/, hidden: true }))
+      expect(l.getAttribute("href")).not.toContain("item=");
+    fireEvent.click(screen.getByRole("button", { name: /close|đóng/i }));
+    // Deep link (not pushed by this view) → replace without `item`, scroll kept.
+    expect(replace).toHaveBeenCalledWith("/mentions?preset=7d", { scroll: false });
+  });
+
+  it("#326: invalid `item` is ignored (no slide-out)", async () => {
+    searchState = "preset=7d&item=not-a-uuid";
+    apiFetch.mockResolvedValue(page(1, null, 1));
+    setup();
+    await screen.findAllByTestId("mention-row");
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
 

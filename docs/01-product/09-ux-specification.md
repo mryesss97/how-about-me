@@ -25,7 +25,7 @@
    └─ /settings/analysis        Thresholds & versions (P1)
 ```
 
-Sidebar (Untitled UI `sidebar-simple`, signboard style #274 — sky enamel sign, white logo plate, condensed caps labels, current item as a white plate): logo links to `/` (landing, #262) · Tổng quan · Bài nhắc · Truy vấn theo dõi · Cần xem lại (P1) · Trạng thái hệ thống · Cài đặt. Footer: account card (e-mail, role plate Quản trị / Phân tích / Chỉ xem, Đăng xuất). Project switcher appears only with ≥ 2 projects. Every page opens with a page fascia (white enamel board, navy keyline, title in sign lettering). Copy moves to Vietnamese screen by screen (#274, #275, #277–#281).
+Sidebar (Untitled UI `sidebar-simple`, signboard style #274 — sky enamel sign, white logo plate, condensed caps labels, current item as a white plate): logo links to `/` (landing, #262) · Tổng quan · Bài nhắc · Truy vấn theo dõi · Cần xem lại (P1) · Trạng thái hệ thống · Cài đặt. Footer: account card (e-mail, role plate Quản trị / Phân tích / Chỉ xem, Đăng xuất). Project switcher appears only with ≥ 2 projects. Current item (#325, BR-017): the item whose path is the longest segment-aligned prefix of the URL — Cài đặt for every `/settings/*` tab, Bài nhắc for `/mentions/[id]`; exactly one `aria-current="page"`, none on unknown paths. The first tab stop is a skip link "Bỏ qua tới nội dung chính" to `<main id="main-content">`. Every page opens with a page fascia (white enamel board, navy keyline, title in sign lettering). Copy moves to Vietnamese screen by screen (#274, #275, #277–#281).
 
 ### Brand (v2)
 
@@ -41,6 +41,8 @@ Concept: an ear + a speech bubble — "Lắng nghe. Thấu hiểu." Palette: Sky
 - Changing the timezone keeps a custom range's **calendar dates** (#240): the selected days are re-read as `[from 00:00, to+1 00:00)` in the new timezone (e.g. 1–7 Oct stays 1–7 Oct). Only ranges whose ends are both 00:00 in the old timezone are re-zoned; exact-instant ranges (e.g. hour-bucket drill-down, FR-142) keep their instants. Relative presets (1h/24h/7d/30d) only change `tz`. `tz`/`from`/`to` update in one URL change.
 - All filters sync to the URL query string (`nuqs`). Changing a filter refetches all widgets.
 - Applied filters show as removable chips under the bar.
+- **Queries** options are the project's listening queries (FR-051), loaded by the filter bar itself (#329): active first, then soft-deleted ones marked "Đã xoá" so old drill-down links still show a name. Tags render as `#name` (no double `#`) in the select, the chips and the "Tỷ trọng từ khoá" chart.
+- Multi-select copy is Vietnamese (#329): search "Tìm…", empty "Không có kết quả" / "Thử từ khoá khác.", footer "Bỏ chọn" / "Chọn tất cả"; trigger shows "Tất cả" (none), the value label (one) or "N đã chọn" (several). The keyword-share overlap note (FR-147) is Vietnamese too.
 
 ### 2.2 Semantic badges (never colour alone)
 
@@ -162,7 +164,7 @@ Chart details (T-101, decided 2026-10-13 on #88):
 Chart details (T-149, decided 2026-10-13 on #120):
 
 - Layout: the P1 row is Language donut · Keyword share · Negative-topic contributors (4 + 4 + 4 columns); the Topic × sentiment heatmap takes a full row below. Both use one `topic-sentiment` request.
-- Topic × sentiment heatmap: rows = all 12 topics in API order, columns Positive · Neutral · Negative + "With sentiment". Each cell prints "count · share" (share within the topic row) and its sentiment colour gets stronger with the share (colour is never the only cue, NFR-030; no safety colours, BR-017). Non-zero cells are links to `/mentions?topic=t&sentiment=s` (incl. `topic=other`); zero cells are plain text. "View as table": Topic, Positive, Neutral, Negative, With sentiment, Negative share; the topic column links to `topic=t`; no Total row (multi-label). Empty state "No analysed mentions in this range".
+- Topic × sentiment heatmap: rows = all 12 topics in API order, columns Negative · Neutral · Positive + "With sentiment" (#327: negative first on every viewport; under 640px "With sentiment" is folded into the row header and each cell shows count / share on two lines). Each cell prints "count · share" (share within the topic row) and its sentiment colour gets stronger with the share (colour is never the only cue, NFR-030; no safety colours, BR-017). Non-zero cells are links to `/mentions?topic=t&sentiment=s` (incl. `topic=other`); zero cells are plain text. "View as table": Topic, Negative, Neutral, Positive, With sentiment, Negative share; the topic column links to `topic=t`; no Total row (multi-label). Empty state "No analysed mentions in this range".
 - Negative-topic contributors: red horizontal bars, only topics with negative mentions, ranked by negative count then negative share; label "count · negative share", tooltip names the topic denominator ("with sentiment in this topic"). Click → `/mentions?topic=t&sentiment=negative`. Empty state "No negative mentions in this range".
 
 Chart details (#222, decided 2026-10-13):
@@ -197,7 +199,7 @@ Chart details (#222, decided 2026-10-13):
 
 ### 3.4 Mention Detail (`/mentions/[id]`) — P0
 
-Two-column (≥ 1024 px) or stacked. Clicking a row in `/mentions` opens the detail as a slide-out over the list (URL becomes `/mentions/:id?<filters>`; Esc/close returns to the list with filters kept and focus back on the row); a deep link or refresh renders the full page (T-104).
+Two-column (≥ 1024 px) or stacked. Clicking a row in `/mentions` opens the detail as a slide-out over the list (URL becomes `/mentions?<filters>&item=<id>`; Back/Esc/close closes it with filters, scroll and loaded pages kept and focus back on the row). Each row is a real link to `/mentions/:id?<filters>`: cmd/ctrl/middle-click opens the full page in a new tab; a deep link or refresh of `/mentions/:id` renders the full page (T-104, #326).
 
 - **Original**: full text (plain, links auto-detected as text with external icon), `@username`, published (tz), permalink button "Open on Threads", media metadata (type, thumbnail URL as image if allowed, alt text), quote/repost indicators, matched queries, first seen / last seen, revision.
 - **Analysis** (tabs: _Current_, _History_):
@@ -229,6 +231,8 @@ Tabs: **Overview** · **Sync jobs** · **Analysis failures** · **Audit log** (a
 - Audit log tab (admin): actor, action, entity, time, metadata (expand).
 
 - **Signboard (#280).** Built in #55: tabs Tổng quan · Lượt đồng bộ (URL `?tab=sync-jobs&queryId=&status=&from=YYYY-MM-DD&to=YYYY-MM-DD&job=<id>`, days in the project timezone sent as UTC bounds; deep-linkable). Overview polls every 30 s while the browser tab is visible. Sync job drawer shows window, counters, provider usage, error and last cursor (truncated, copy); admins get "Thử lại" on `failed` jobs only (toast "Đã xếp lịch thử lại"; 409 → "Lượt đồng bộ này không thể thử lại."). Token scopes are not in the contract and are not shown. Tab Lỗi phân tích (#93, `?tab=analysis-failures`, every member can view) lists `failed` analysis runs (Thời gian · Mã lỗi + message · Bài viết → `/mentions/{postId}` · Phiên bản · Số lần thử · Kích hoạt, "Tải thêm" by cursor); admins get per-row "Thử lại" (toast "Đã xếp lịch thử lại"; 409 `ANALYSIS_RUN_NOT_RETRYABLE` → "Lượt phân tích này không còn ở trạng thái lỗi.", `ANALYSIS_ALREADY_PENDING` → "Bài này đã có lượt phân tích đang chờ.") and "Thử lại tất cả lỗi (≤ 500)" behind a confirm dialog (toast "Đã xếp lịch N lượt phân tích"; BR-024). The Bộ phân tích card links "Xem lỗi" to this tab when failed 24h > 0. Tab Nhật ký thao tác (#56, FR-201, `?tab=audit-log&action=&from=YYYY-MM-DD&to=YYYY-MM-DD`) is admin-only: columns Thời gian · Người thực hiện ("Hệ thống" when no actor) · Thao tác (Vietnamese label; unknown legacy actions shown raw) · Đối tượng (type · truncated id); "Chi tiết" expands the sanitized metadata JSON + Mã yêu cầu; filters Thao tác + Từ ngày/Đến ngày (project-timezone days, `to` sent as next-day start since the API bound is exclusive); "Tải thêm" by cursor. Analysts/viewers don't see the tab and a deep link falls back to Tổng quan without calling the API (TC-SYS-015; the API returns 403). Target layout: tabs Tổng quan · Lượt đồng bộ · Lỗi phân tích · Nhật ký thao tác (admin); cards Kết nối Threads · Bộ thu thập · Bộ phân tích · Cơ sở dữ liệu as `.operate-board`s, state as a plate with its word (Hoạt động tốt · Chậm · Tạm dừng · Lỗi), never colour alone (BR-017); "Cập nhật 12 giây trước"; actions "Thử lại", "Thử lại tất cả lỗi (≤ 500)", "Quản lý". See `apps/web/DESIGN.md` → Operate Surfaces.
+
+- **390px rule (#327, all screens).** At 390px no screen scrolls the page horizontally; wide content (tables, segmented groups) scrolls inside its own board. Checked by e2e on every app route for admin and viewer (TC-DASH-024).
 
 ### 3.7 Settings (`/settings/*`) — P0
 
@@ -265,7 +269,7 @@ Built in #219 (`apps/web/src/features/reviews`):
 - Landing `/` (#262, #271): one viewport from 640 px with every phrase on the wall; below 640 px the main sign sits on top and the wall scrolls (every phrase still shown).
 - ≥ 1280 px: full sidebar, 12-col grid.
 - 768–1279 px: collapsed slim sidebar, charts 2-per-row → 1-per-row, tables horizontally scrollable.
-  - **Current state (#95):** the slim icon-only sidebar is not built yet (follow-up issue). Shipped behaviour: full sidebar from Tailwind `lg` (1024 px); below that a header with a hamburger menu. Overview grid is 1-per-row < 1024 px and 2–3-per-row ≥ 1024 px; no horizontal page scroll at 900 px (checked in `e2e/a11y.auth.spec.ts`).
+  - **Current state (#95):** the slim icon-only sidebar is not built yet (follow-up issue). Shipped behaviour: full sidebar from Tailwind `lg` (1024 px); below that a sticky 56 px header with a 44 px hamburger; the drawer closes on any route change, on tapping any link (including the current page) and on sign-out; one close button, flat ink scrim at 60% (no blur), drawer targets ≥ 44 px (#325). Overview grid is 1-per-row < 1024 px and 2–3-per-row ≥ 1024 px; no horizontal page scroll at 900 px (checked in `e2e/a11y.auth.spec.ts`).
 - < 768 px: read-only Overview/Mentions acceptable; admin forms not optimised.
 
 ## 5. Copy guidelines

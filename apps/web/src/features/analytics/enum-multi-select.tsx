@@ -14,9 +14,18 @@ interface EnumMultiSelectProps {
 /** Thin controlled wrapper: URL array ↔ React Aria `Selection`. */
 export function EnumMultiSelect({ label, items, value, onChange }: EnumMultiSelectProps) {
   const toArray = (keys: Selection) => (keys === "all" ? items.map((i) => String(i.id)) : [...keys].map(String));
+  // One value → its label (filter label already sits above); more → "N đã chọn" (#329).
+  const formatCount = (count: number) =>
+    count === 1 ? (items.find((i) => String(i.id) === value[0])?.label ?? "1 đã chọn") : `${count} đã chọn`;
   return (
     <MultiSelect
       size="sm"
+      searchPlaceholder="Tìm…"
+      emptyStateTitle="Không có kết quả"
+      emptyStateDescription="Thử từ khoá khác."
+      resetLabel="Bỏ chọn"
+      selectAllLabel="Chọn tất cả"
+      selectedCountFormatter={formatCount}
       label={label}
       placeholder="Tất cả"
       items={items}

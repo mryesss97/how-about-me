@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReviewQueueCounts, ReviewReason } from "@how-about-me/contracts";
-import { Tab as AriaTab, TabList as AriaTabList, Tabs as AriaTabs } from "react-aria-components";
+import { ToggleButton as AriaToggleButton, ToggleButtonGroup as AriaToggleButtonGroup } from "react-aria-components";
 import { formatCount } from "@/lib/format/number";
 import { reviewReasonLabelVi } from "@/lib/semantics/labels";
 
@@ -13,7 +13,8 @@ const TABS: { id: "all" | ReviewReason; label: string; count: keyof ReviewQueueC
 ];
 
 /**
- * Tabs by review reason (FR-195) as signboard plaques (#278): `.plaque-button` inverts on `[data-selected]`.
+ * Reason filter (FR-195) as signboard plaques (#278): `.plaque-button` inverts on `[data-selected]`.
+ * A single-select toggle group (radiogroup), not tabs: it filters one list, there are no tab panels (#352).
  * Counts hidden when `counts` is absent (count timed out) — never a fake 0 (BR-032).
  */
 export function ReviewTabs({
@@ -26,22 +27,27 @@ export function ReviewTabs({
   onChange: (reason: ReviewReason | null) => void;
 }) {
   return (
-    <AriaTabs
-      selectedKey={reason ?? "all"}
-      onSelectionChange={(k) => onChange(k === "all" ? null : (String(k) as ReviewReason))}
+    <AriaToggleButtonGroup
+      aria-label="Lý do cần xem lại"
+      selectionMode="single"
+      disallowEmptySelection
+      selectedKeys={[reason ?? "all"]}
+      onSelectionChange={(keys) => {
+        const k = [...keys][0];
+        onChange(k === undefined || k === "all" ? null : (String(k) as ReviewReason));
+      }}
+      className="flex flex-wrap gap-2"
     >
-      <AriaTabList aria-label="Lý do cần xem lại" className="flex flex-wrap gap-2">
-        {TABS.map((t) => (
-          <AriaTab
-            key={t.id}
-            id={t.id}
-            className="plaque-button cursor-pointer px-3 py-1.5 outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2"
-          >
-            {t.label}
-            {counts ? <span className="tabular-nums"> · {formatCount(counts[t.count])}</span> : null}
-          </AriaTab>
-        ))}
-      </AriaTabList>
-    </AriaTabs>
+      {TABS.map((t) => (
+        <AriaToggleButton
+          key={t.id}
+          id={t.id}
+          className="plaque-button cursor-pointer px-3 py-1.5 outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          {t.label}
+          {counts ? <span className="tabular-nums"> · {formatCount(counts[t.count])}</span> : null}
+        </AriaToggleButton>
+      ))}
+    </AriaToggleButtonGroup>
   );
 }

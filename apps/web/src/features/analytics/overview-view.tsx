@@ -28,7 +28,7 @@ export function OverviewView() {
 
   return (
     <div className="flex flex-col gap-6">
-      <FilterBar showCompare queryOptions={[]} />
+      <FilterBar showCompare />
       <OverviewKpiSection
         projectId={project?.id}
         apiParams={apiParams}

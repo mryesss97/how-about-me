@@ -5,8 +5,8 @@ import { DetailSlideout } from "@/features/shared/detail-slideout";
 import { MentionDetail } from "./mention-detail";
 
 /**
- * Slide-out opened from the Mentions list via the intercepting route `@detail/(.)[id]` (UX §3.4, TC-MEN-009).
- * Esc / close → back to the list with its filters; React Aria returns focus to the row that opened it.
+ * Slide-out opened over the Mentions list via `?item=<id>` (UX §3.4, TC-MEN-009, #326).
+ * Esc / close → `onClose` clears `item`; the list never unmounts, so React Aria returns focus to the row link.
  */
 export function MentionDetailSlideout({
   mentionId,
@@ -15,8 +15,8 @@ export function MentionDetailSlideout({
   actions,
 }: {
   mentionId: string;
-  /** Overrides the default close (history back → /mentions). */
-  onClose?: () => void;
+  /** Clears `?item` (history back or replace). */
+  onClose: () => void;
   fullPageHref?: string;
   /** Extra controls rendered in the header. */
   actions?: ReactNode;

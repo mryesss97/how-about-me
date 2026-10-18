@@ -1,7 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
 import { useCurrentProject } from "@/features/auth/use-current-project";
 import { ApiError } from "@/lib/api/client";
 import { useFilters } from "@/lib/filters/use-filters";
@@ -19,7 +18,6 @@ const toStateError = (err: unknown) =>
 
 /** Mentions of one phrase on its detail page (#276): the mentions list with `term` (BR-042), same filters as the page. */
 export function TermMentions({ term }: { term: string }) {
-  const router = useRouter();
   const { project } = useCurrentProject();
   const { filters, setFilters, apiParams: live } = useFilters("mentions");
   const params = usePinnedParams(`${JSON.stringify(filters)}|${term}`, { ...live, term });
@@ -27,7 +25,6 @@ export function TermMentions({ term }: { term: string }) {
   const items = useMemo(() => flattenUnique(list.data?.pages ?? []), [list.data]);
   const total = list.data?.pages[0]?.totalCount ?? null;
   const pagesLoaded = (list.data?.pages.length ?? 0) > 0;
-  const onOpen = useCallback((id: string) => router.push(`/mentions/${id}`), [router]);
 
   return (
     <section aria-labelledby="term-mentions" className="operate-board">
@@ -49,7 +46,7 @@ export function TermMentions({ term }: { term: string }) {
           isFetchingNextPage={list.isFetchingNextPage}
           nextPageError={pagesLoaded && list.isFetchNextPageError ? toStateError(list.error) : null}
           fetchNextPage={() => void list.fetchNextPage()}
-          onOpen={onOpen}
+          hrefFor={(id) => `/mentions/${id}`}
           onWidenRange={() => setFilters({ preset: "30d", from: null, to: null })}
         />
       </div>
