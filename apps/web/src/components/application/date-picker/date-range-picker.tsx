@@ -79,7 +79,14 @@ export const DateRangePicker = ({ value: valueProp, defaultValue, onChange, onAp
     return (
         <AriaDateRangePicker aria-label="Chọn khoảng ngày" shouldCloseOnSelect={false} {...props} value={value} onChange={setValue}>
             <AriaGroup>
-                <Button size={size} color="secondary" iconLeading={CalendarIcon}>
+                {/* #385: own Vietnamese name; React Aria has no vi-VN string and would inject "Calendar". */}
+                <Button
+                    size={size}
+                    color="secondary"
+                    iconLeading={CalendarIcon}
+                    aria-label={props["aria-label"] ?? "Chọn khoảng ngày"}
+                    aria-labelledby={undefined}
+                >
                     {!value ? <span className="text-placeholder">Chọn khoảng ngày</span> : `${formattedStartDate} – ${formattedEndDate}`}
                 </Button>
             </AriaGroup>

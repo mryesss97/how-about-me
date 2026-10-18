@@ -62,6 +62,16 @@ describe("toApiParams (FR-130)", () => {
 });
 
 describe("toMentionsHref (FR-142)", () => {
+  it("#385: an already pinned range wins over now", () => {
+    const range = { from: "2026-09-13T05:30:00.000Z", to: "2026-10-13T05:30:00.000Z" };
+    const a = toMentionsHref(base({ preset: "30d" }), {}, new Date("2026-10-13T05:30:00.000Z"), range);
+    const b = toMentionsHref(base({ preset: "30d" }), {}, new Date("2026-10-13T06:45:12.000Z"), range);
+    expect(a).toBe(b);
+    const u = new URL(a, "http://x");
+    expect(u.searchParams.get("from")).toBe(range.from);
+    expect(u.searchParams.get("to")).toBe(range.to);
+  });
+
   it("pins the resolved range as custom, merges extra and drops compare", () => {
     const href = toMentionsHref(base({ preset: "24h", compare: true }), { sentiment: ["negative"] }, now);
     const url = new URL(href, "http://x");

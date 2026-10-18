@@ -46,14 +46,14 @@ export function LastErrorCell({ q, tz }: { q: ListeningQuery; tz: string }) {
   if (!err) return <span className="text-tertiary">{DASH}</span>;
   const stale = isStaleError(q);
   const failedJob = !stale && q.lastJob && (q.lastJob.status === "failed" || q.lastJob.status === "partial");
+  // #385: Vietnamese label as tooltip title/accessible name; the raw code only on the muted "Mã: …" line.
+  const label = syncErrorLabel(err.code, err.message);
+  const shown = stale ? `Lỗi lúc ${formatDateTime(err.at, tz)}, đã đồng bộ lại` : label;
   return (
     <>
-      <Tooltip title={`${err.code}: ${err.message}`} description={formatDateTime(err.at, tz)}>
-        <TooltipTrigger
-          aria-label={`${err.code}: ${err.message}`}
-          className={cx("text-left", stale ? "text-tertiary" : "text-error-primary")}
-        >
-          {stale ? `Lỗi lúc ${formatDateTime(err.at, tz)}, đã đồng bộ lại` : syncErrorLabel(err.code, err.message)}
+      <Tooltip title={label} description={`${formatDateTime(err.at, tz)} · Mã: ${err.code}`}>
+        <TooltipTrigger aria-label={shown} className={cx("text-left", stale ? "text-tertiary" : "text-error-primary")}>
+          {shown}
         </TooltipTrigger>
       </Tooltip>
       {failedJob && q.lastJob ? (

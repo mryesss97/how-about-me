@@ -35,4 +35,11 @@ describe("EnumMultiSelect", () => {
     await act(async () => fireEvent.change(screen.getByPlaceholderText("Tìm…"), { target: { value: "zzz" } }));
     expect(await screen.findByText("Không có kết quả")).toBeInTheDocument();
   });
+
+  it("#385: the trigger's accessible name is label + value", () => {
+    const { rerender } = render(<EnumMultiSelect label="Cảm xúc" items={items} value={[]} onChange={vi.fn()} />);
+    expect(screen.getByRole("button", { name: /^Cảm xúc/ })).toHaveAccessibleName(/^Cảm xúc .+/);
+    rerender(<EnumMultiSelect label="Cảm xúc" items={items} value={["negative", "positive"]} onChange={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Cảm xúc 2 đã chọn" })).toBeInTheDocument();
+  });
 });

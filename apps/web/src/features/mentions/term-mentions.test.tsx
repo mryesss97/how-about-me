@@ -83,4 +83,15 @@ describe("TermMentions", () => {
     expect(url.searchParams.get("sentiment")).toBe("negative");
     expect(url.searchParams.get("list")).toBeNull();
   });
+
+  it("#385 / FR-142: the /mentions href uses the list's pinned from/to", async () => {
+    apiFetch.mockResolvedValue({ items: [], nextCursor: null, totalCount: 0 });
+    renderIt("?preset=30d&list=negative");
+    await vi.waitFor(() => expect(lastListParams().from).toBeDefined());
+    const link = screen.getAllByRole("link").find((a) => a.getAttribute("href")?.startsWith("/mentions?"));
+    const url = new URL(link?.getAttribute("href") ?? "", "http://x");
+    expect(url.searchParams.get("from")).toBe(lastListParams().from);
+    expect(url.searchParams.get("to")).toBe(lastListParams().to);
+    expect(url.searchParams.get("sentiment")).toBe("negative");
+  });
 });
