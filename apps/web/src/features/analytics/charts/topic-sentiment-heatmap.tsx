@@ -7,10 +7,13 @@ import type { QueryStateError } from "@/features/shared/query-state";
 import { formatCount, formatRate } from "@/lib/format/number";
 import { displayLabel } from "@/lib/semantics/labels";
 import { ChartCard } from "./chart-card";
-import { SENTIMENT_COLORS, SENTIMENT_ORDER, heatmapOpacity, shareOf } from "./chart-data";
+import { SENTIMENT_COLORS, heatmapOpacity, shareOf } from "./chart-data";
 import { MultiLabelNote } from "./horizontal-bar-chart";
 
 type Row = TopicSentimentResponse["rows"][number];
+
+/** #327: negative first so the column that matters most is never the one cut off on narrow screens. */
+export const HEATMAP_ORDER: readonly SentimentLabel[] = ["negative", "neutral", "positive"];
 
 export type TopicSentimentHeatmapProps = {
   data?: TopicSentimentResponse;
@@ -38,12 +41,12 @@ export function TopicSentimentHeatmap({
   const rows = data?.rows ?? [];
   const table = {
     rowHrefs: rows.map((r) => (r.total > 0 ? (getCellHref?.(r.topic, null) ?? null) : null)),
-    columns: ["Chủ đề", "Tích cực", "Trung tính", "Tiêu cực", "Có cảm xúc", "Tỷ lệ tiêu cực"],
+    columns: ["Chủ đề", "Tiêu cực", "Trung tính", "Tích cực", "Có cảm xúc", "Tỷ lệ tiêu cực"],
     rows: rows.map((r) => [
       displayLabel("topic", r.topic),
-      formatCount(r.positive),
-      formatCount(r.neutral),
       formatCount(r.negative),
+      formatCount(r.neutral),
+      formatCount(r.positive),
       formatCount(r.total),
       formatRate(r.negativeShare),
     ]),
@@ -68,12 +71,12 @@ export function TopicSentimentHeatmap({
               <th scope="col" className="text-left text-xs font-medium text-tertiary">
                 Chủ đề
               </th>
-              {SENTIMENT_ORDER.map((s) => (
+              {HEATMAP_ORDER.map((s) => (
                 <th key={s} scope="col" className="text-xs font-medium text-tertiary">
                   {displayLabel("sentiment", s)}
                 </th>
               ))}
-              <th scope="col" className="text-right text-xs font-medium text-tertiary">
+              <th scope="col" className="hidden text-right text-xs font-medium text-tertiary sm:table-cell">
                 Có cảm xúc
               </th>
             </tr>
@@ -81,13 +84,17 @@ export function TopicSentimentHeatmap({
           <tbody>
             {rows.map((r) => (
               <tr key={r.topic}>
-                <th scope="row" className="pr-2 text-left font-medium whitespace-nowrap text-secondary">
+                <th scope="row" className="pr-2 text-left font-medium text-secondary sm:whitespace-nowrap">
                   {displayLabel("topic", r.topic)}
+                  {/* #327: total folds into the row header under sm (the total column is hidden). */}
+                  <span className="block text-xs font-normal text-tertiary tabular-nums sm:hidden">
+                    {formatCount(r.total)} có cảm xúc
+                  </span>
                 </th>
-                {SENTIMENT_ORDER.map((s) => (
+                {HEATMAP_ORDER.map((s) => (
                   <HeatmapCell key={s} row={r} sentiment={s} href={getCellHref} />
                 ))}
-                <td className="text-right text-tertiary tabular-nums">{formatCount(r.total)}</td>
+                <td className="hidden text-right text-tertiary tabular-nums sm:table-cell">{formatCount(r.total)}</td>
               </tr>
             ))}
           </tbody>
@@ -109,11 +116,11 @@ function HeatmapCell({
 }) {
   const count = row[sentiment];
   const share = shareOf(count, row.total);
-  const text = `${formatCount(count)} · ${formatRate(share)}`;
+
   const to = count > 0 ? (href?.(row.topic, sentiment) ?? null) : null;
   const label = `${displayLabel("topic", row.topic)} · ${displayLabel("sentiment", sentiment)}: ${formatCount(count)} lượt nhắc, ${formatRate(share)} trên ${formatCount(row.total)} có cảm xúc`;
   return (
-    <td className="relative h-9 min-w-24 rounded-md p-0 text-center tabular-nums">
+    <td className="relative h-11 min-w-16 rounded-md sm:h-9 sm:min-w-24 p-0 text-center tabular-nums">
       {/* Background layer: sentiment hue (never safety colours, BR-017) at an opacity set by the row share. */}
       <span
         aria-hidden
@@ -127,13 +134,26 @@ function HeatmapCell({
           title={label}
           className="relative flex h-full items-center justify-center rounded-md px-2 font-medium text-primary outline-focus-ring hover:underline focus-visible:outline-2"
         >
-          {text}
+          <CellText count={count} share={share} />
         </Link>
       ) : (
         <span title={label} className="relative flex h-full items-center justify-center px-2 text-tertiary">
-          {text}
+          <CellText count={count} share={share} />
         </span>
       )}
     </td>
+  );
+}
+
+/** BR-017: count text is always printed. Under sm it splits into two lines so cells fit 390px. */
+function CellText({ count, share }: { count: number; share: number | null }) {
+  return (
+    <span className="flex flex-col text-xs leading-tight sm:flex-row sm:text-sm sm:whitespace-pre">
+      <span>{formatCount(count)}</span>
+      <span aria-hidden className="hidden sm:inline">
+        {" · "}
+      </span>
+      <span>{formatRate(share)}</span>
+    </span>
   );
 }
