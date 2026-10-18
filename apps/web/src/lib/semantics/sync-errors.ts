@@ -19,3 +19,18 @@ export function syncErrorLabel(code: string, message: string): string {
 function truncate(msg: string, max = 60): string {
   return msg.length <= max ? msg : `${msg.slice(0, max - 1).trimEnd()}…`;
 }
+
+/** Analysis run error codes in Vietnamese (#93); the raw code and message stay in the tooltip. */
+const ANALYSIS_ERROR_LABEL_VI: Record<string, string> = {
+  ANALYSIS_PROVIDER_ERROR: "Bộ phân tích đang lỗi",
+  ANALYSIS_PROVIDER_AUTH: "Khoá API của bộ phân tích không hợp lệ",
+  ANALYSIS_PROVIDER_BAD_REQUEST: "Bộ phân tích từ chối yêu cầu",
+  ANALYSIS_SCHEMA_INVALID: "Kết quả phân tích sai định dạng",
+  LLM_TIMEOUT: "Bộ phân tích phản hồi quá lâu",
+  INTERNAL: "Lỗi hệ thống",
+};
+
+/** Vietnamese label for an analysis error code; unknown codes are shown as the code itself. */
+export function analysisErrorLabel(code: string): string {
+  return ANALYSIS_ERROR_LABEL_VI[code] ?? code;
+}

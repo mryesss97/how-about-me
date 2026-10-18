@@ -84,7 +84,7 @@ export function OperationsToolbar({
           href={link}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 px-2 text-sm font-semibold text-brand-secondary hover:underline"
+          className="inline-flex items-center gap-1 px-2 text-sm font-semibold text-[var(--ink)] underline-offset-2 hover:underline"
         >
           Mở trên Threads
           <LinkExternal01 className="size-4" aria-hidden />

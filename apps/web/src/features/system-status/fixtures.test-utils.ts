@@ -1,4 +1,4 @@
-import type { SyncJob, SyncJobDetail, SystemStatusResponse } from "@how-about-me/contracts";
+import type { AnalysisRun, SyncJob, SyncJobDetail, SystemStatusResponse } from "@how-about-me/contracts";
 
 let n = 0;
 export const uuid = (i: number) => `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`;
@@ -79,4 +79,22 @@ export function jobFixture(over: Partial<SyncJob> = {}): SyncJob {
 
 export function jobDetailFixture(over: Partial<SyncJobDetail> = {}): SyncJobDetail {
   return { ...jobFixture(), providerUsage: null, ...over };
+}
+
+export function analysisRunFixture(over: Partial<AnalysisRun> = {}): AnalysisRun {
+  n += 1;
+  return {
+    id: uuid(n),
+    postId: uuid(900 + n),
+    status: "failed",
+    trigger: "ingest",
+    effectiveVersion: "p1+t1",
+    attemptCount: 3,
+    errorCode: "LLM_TIMEOUT",
+    errorMessage: "Provider timed out",
+    startedAt: "2026-10-13T03:00:00.000Z",
+    completedAt: "2026-10-13T03:00:30.000Z",
+    createdAt: "2026-10-13T03:00:00.000Z",
+    ...over,
+  };
 }

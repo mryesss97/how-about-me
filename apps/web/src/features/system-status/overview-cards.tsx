@@ -85,6 +85,14 @@ export function OverviewCards({ data, tz, isAdmin }: Props) {
           value={`${formatCount(analysis.tokens24h.input)} / ${formatCount(analysis.tokens24h.output)}`}
         />
         <Row label="Chi phí ước tính 24 giờ" value={usd.format(analysis.estimatedCost24hUsd)} />
+        {analysis.failed24h > 0 ? (
+          <Link
+            href="/system-status?tab=analysis-failures"
+            className="text-sm font-semibold text-brand-secondary hover:underline"
+          >
+            Xem lỗi
+          </Link>
+        ) : null}
       </Board>
 
       <Board title="Cơ sở dữ liệu">

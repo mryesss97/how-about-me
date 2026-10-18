@@ -96,6 +96,8 @@ Threads permalink: icon `link-external-01`, `target=_blank`, `rel=noopener noref
 
 Keyboard reachable filters/tables/drawers (React Aria); focus rings visible; charts expose data table via "View as table" toggle (the Sentiment map uses a segmented "Bubbles | Table" toggle instead, #222); contrast AA; badges include text.
 
+**axe gate (#95):** unit tests run axe-core (`apps/web/src/test/axe.ts`, `color-contrast` off in jsdom) on badges, `ChartCard` (chart + table mode) and `MentionRow`; Playwright `e2e/a11y.spec.ts` (public `/`, `/login`) and `e2e/a11y.auth.spec.ts` (working screens @1280/@900, mention slide-out) fail on any `serious`/`critical` violation (WCAG 2.1 A/AA tags); `moderate`/`minor` are attached to the report only. Esc on the detail slide-out returns focus to the row that opened it (TC-MEN-020).
+
 ## 3. Screens
 
 ### 3.0 Landing (`/`) — P1 (#262, FR-020; signboard wall #271)
@@ -225,7 +227,7 @@ Tabs: **Overview** · **Sync jobs** · **Analysis failures** · **Audit log** (a
 - Analysis failures tab: failed runs list with error code, post link, "Retry" (admin), "Retry all failed (≤ 500)" (admin, confirm).
 - Audit log tab (admin): actor, action, entity, time, metadata (expand).
 
-- **Signboard (#280).** Built in #55: tabs Tổng quan · Lượt đồng bộ (URL `?tab=sync-jobs&queryId=&status=&from=YYYY-MM-DD&to=YYYY-MM-DD&job=<id>`, days in the project timezone sent as UTC bounds; deep-linkable). Overview polls every 30 s while the browser tab is visible. Sync job drawer shows window, counters, provider usage, error and last cursor (truncated, copy); admins get "Thử lại" on `failed` jobs only (toast "Đã xếp lịch thử lại"; 409 → "Lượt đồng bộ này không thể thử lại."). Token scopes are not in the contract and are not shown. Tabs Lỗi phân tích (#93) and Nhật ký thao tác (#56) are not rendered until those tickets land. Target layout: tabs Tổng quan · Lượt đồng bộ · Lỗi phân tích · Nhật ký thao tác (admin); cards Kết nối Threads · Bộ thu thập · Bộ phân tích · Cơ sở dữ liệu as `.operate-board`s, state as a plate with its word (Hoạt động tốt · Chậm · Tạm dừng · Lỗi), never colour alone (BR-017); "Cập nhật 12 giây trước"; actions "Thử lại", "Thử lại tất cả lỗi (≤ 500)", "Quản lý". See `apps/web/DESIGN.md` → Operate Surfaces.
+- **Signboard (#280).** Built in #55: tabs Tổng quan · Lượt đồng bộ (URL `?tab=sync-jobs&queryId=&status=&from=YYYY-MM-DD&to=YYYY-MM-DD&job=<id>`, days in the project timezone sent as UTC bounds; deep-linkable). Overview polls every 30 s while the browser tab is visible. Sync job drawer shows window, counters, provider usage, error and last cursor (truncated, copy); admins get "Thử lại" on `failed` jobs only (toast "Đã xếp lịch thử lại"; 409 → "Lượt đồng bộ này không thể thử lại."). Token scopes are not in the contract and are not shown. Tab Lỗi phân tích (#93, `?tab=analysis-failures`, every member can view) lists `failed` analysis runs (Thời gian · Mã lỗi + message · Bài viết → `/mentions/{postId}` · Phiên bản · Số lần thử · Kích hoạt, "Tải thêm" by cursor); admins get per-row "Thử lại" (toast "Đã xếp lịch thử lại"; 409 `ANALYSIS_RUN_NOT_RETRYABLE` → "Lượt phân tích này không còn ở trạng thái lỗi.", `ANALYSIS_ALREADY_PENDING` → "Bài này đã có lượt phân tích đang chờ.") and "Thử lại tất cả lỗi (≤ 500)" behind a confirm dialog (toast "Đã xếp lịch N lượt phân tích"; BR-024). The Bộ phân tích card links "Xem lỗi" to this tab when failed 24h > 0. Tab Nhật ký thao tác (#56) is not rendered until that ticket lands. Target layout: tabs Tổng quan · Lượt đồng bộ · Lỗi phân tích · Nhật ký thao tác (admin); cards Kết nối Threads · Bộ thu thập · Bộ phân tích · Cơ sở dữ liệu as `.operate-board`s, state as a plate with its word (Hoạt động tốt · Chậm · Tạm dừng · Lỗi), never colour alone (BR-017); "Cập nhật 12 giây trước"; actions "Thử lại", "Thử lại tất cả lỗi (≤ 500)", "Quản lý". See `apps/web/DESIGN.md` → Operate Surfaces.
 
 ### 3.7 Settings (`/settings/*`) — P0
 
@@ -262,6 +264,7 @@ Built in #219 (`apps/web/src/features/reviews`):
 - Landing `/` (#262, #271): one viewport from 640 px with every phrase on the wall; below 640 px the main sign sits on top and the wall scrolls (every phrase still shown).
 - ≥ 1280 px: full sidebar, 12-col grid.
 - 768–1279 px: collapsed slim sidebar, charts 2-per-row → 1-per-row, tables horizontally scrollable.
+  - **Current state (#95):** the slim icon-only sidebar is not built yet (follow-up issue). Shipped behaviour: full sidebar from Tailwind `lg` (1024 px); below that a header with a hamburger menu. Overview grid is 1-per-row < 1024 px and 2–3-per-row ≥ 1024 px; no horizontal page scroll at 900 px (checked in `e2e/a11y.auth.spec.ts`).
 - < 768 px: read-only Overview/Mentions acceptable; admin forms not optimised.
 
 ## 5. Copy guidelines
