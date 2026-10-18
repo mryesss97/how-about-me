@@ -19,8 +19,8 @@ describe("KpiCards (FR-132)", () => {
   it("TC-DASH-006 / FR-140: info icon shows definition + denominator; sub-text shows denominator", async () => {
     render(<KpiCards kpis={overviewFixture().kpis} />);
     for (const label of [
-      "Tổng lượt nhắc liên quan",
-      "Tăng trưởng lượt nhắc",
+      "Tổng bài nhắc liên quan",
+      "Tăng trưởng bài nhắc",
       "Tỷ lệ tích cực",
       "Tỷ lệ tiêu cực",
       "Tỷ lệ nhạy cảm + nghiêm trọng",
@@ -32,7 +32,7 @@ describe("KpiCards (FR-132)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Giải thích Tỷ lệ tích cực" }));
     const tip = await screen.findByRole("dialog");
     expect(within(tip).getByText(/cảm xúc = tích cực/)).toBeInTheDocument();
-    expect(within(tip).getByText(/Mẫu số: lượt nhắc liên quan đã có nhãn cảm xúc/)).toBeInTheDocument();
+    expect(within(tip).getByText(/Mẫu số: bài nhắc liên quan đã có nhãn cảm xúc/)).toBeInTheDocument();
     fireEvent.keyDown(tip, { key: "Escape" });
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.getAllByText("trên 2.410 đã phân tích").length).toBeGreaterThan(0);
@@ -63,12 +63,12 @@ describe("KpiCards (FR-132)", () => {
     const base = overviewFixture().kpis;
     const empty = { value: null, numerator: 0, denominator: 0 };
     render(<KpiCards kpis={{ ...base, positiveRate: empty, negativeRate: empty }} />);
-    const [first, ...rest] = screen.getAllByRole("button", { name: "Chưa có lượt nhắc đã phân tích trong khoảng này" });
+    const [first, ...rest] = screen.getAllByRole("button", { name: "Chưa có bài nhắc đã phân tích trong khoảng này" });
     expect(rest).toHaveLength(1);
     expect(screen.queryByText("0%")).toBeNull();
     expect(screen.queryByText("0,0%")).toBeNull();
     await focusTrigger(first as HTMLElement);
-    expect(await screen.findByRole("tooltip")).toHaveTextContent("Chưa có lượt nhắc đã phân tích trong khoảng này");
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Chưa có bài nhắc đã phân tích trong khoảng này");
   });
 
   it("shows severe count only when > 0 (BR-017: safety is its own card)", () => {
@@ -93,14 +93,14 @@ describe("KpiCards (FR-132)", () => {
     const kpis = { ...base, safetyRiskRate: { ...base.safetyRiskRate, severeCount: 3 } };
     render(<KpiCards kpis={kpis} hrefFor={hrefFor} />);
     for (const [label, id] of [
-      ["Tổng lượt nhắc liên quan", "mentions"],
-      ["Tăng trưởng lượt nhắc", "growth"],
+      ["Tổng bài nhắc liên quan", "mentions"],
+      ["Tăng trưởng bài nhắc", "growth"],
       ["Tỷ lệ tích cực", "positive"],
       ["Tỷ lệ tiêu cực", "negative"],
       ["Tỷ lệ nhạy cảm + nghiêm trọng", "safety"],
       ["Tỷ lệ phàn nàn", "complaint"],
     ]) {
-      expect(screen.getByRole("link", { name: `Xem lượt nhắc: ${label}` })).toHaveAttribute(
+      expect(screen.getByRole("link", { name: `Xem bài nhắc: ${label}` })).toHaveAttribute(
         "href",
         `/mentions?kpi=${id}`,
       );

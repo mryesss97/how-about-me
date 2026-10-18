@@ -108,6 +108,6 @@ export function HorizontalBarChart<R extends BarRow>({
 /** Multi-label note (FR-138/139): shares are not normalised. */
 export function MultiLabelNote({ noun }: { noun: string }) {
   return (
-    <p className="text-xs text-tertiary">{`Một lượt nhắc có thể thuộc nhiều ${noun}, nên tổng tỷ lệ có thể vượt 100%.`}</p>
+    <p className="text-xs text-tertiary">{`Một bài nhắc có thể thuộc nhiều ${noun}, nên tổng tỷ lệ có thể vượt 100%.`}</p>
   );
 }

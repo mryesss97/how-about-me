@@ -5,7 +5,7 @@ import { ChartCard } from "./chart-card";
 import { openTable } from "./table-utils.test-utils";
 
 const table = {
-  columns: ["Thời gian", "Lượt nhắc"],
+  columns: ["Thời gian", "Bài nhắc"],
   rows: [
     ["06/10", "5"],
     ["07/10", "0"],
@@ -23,7 +23,7 @@ async function press(el: HTMLElement, key: string) {
 describe("ChartCard", () => {
   it("TC-DASH-022 / NFR-032: keyboard toggles to a table with the same numbers and aria-pressed", async () => {
     render(
-      <ChartCard title="Lượt nhắc theo thời gian" table={table}>
+      <ChartCard title="Bài nhắc theo thời gian" table={table}>
         <div>chart</div>
       </ChartCard>,
     );
@@ -37,7 +37,7 @@ describe("ChartCard", () => {
     await press(toggle, "Enter");
     expect(toggle).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "Biểu đồ" })).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByRole("grid", { name: "Lượt nhắc theo thời gian (bảng)" })).toBeInTheDocument();
+    expect(screen.getByRole("grid", { name: "Bài nhắc theo thời gian (bảng)" })).toBeInTheDocument();
     expect(screen.getByText("07/10")).toBeInTheDocument();
     expect(screen.queryByText("chart")).not.toBeInTheDocument();
     await press(screen.getByRole("button", { name: "Biểu đồ" }), " ");
@@ -50,7 +50,7 @@ describe("ChartCard", () => {
         <div>chart</div>
       </ChartCard>,
     );
-    expect(screen.getByText("Không có lượt nhắc trong khoảng này")).toBeInTheDocument();
+    expect(screen.getByText("Không có bài nhắc trong khoảng này")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Bảng" })).not.toBeInTheDocument();
   });
 
@@ -128,7 +128,7 @@ describe("ChartCard — axe (#95, TC-DASH-022, NFR-032)", () => {
   it("has no serious/critical axe violations in chart and table mode", async () => {
     const { container } = render(
       <main>
-        <ChartCard title="Lượt nhắc theo thời gian" table={table}>
+        <ChartCard title="Bài nhắc theo thời gian" table={table}>
           <div>chart</div>
         </ChartCard>
       </main>,

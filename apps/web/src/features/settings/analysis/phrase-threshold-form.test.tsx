@@ -20,7 +20,7 @@ let qc: QueryClient;
 const wrapper = ({ children }: { children: ReactNode }) => (
   <QueryClientProvider client={qc}>{children}</QueryClientProvider>
 );
-const input = () => screen.getByRole("spinbutton", { name: /Số lượt nhắc tối thiểu mỗi cụm từ/ });
+const input = () => screen.getByRole("spinbutton", { name: /Số bài nhắc tối thiểu mỗi cụm từ/ });
 const setValue = (v: string) => fireEvent.change(input(), { target: { value: v } });
 
 beforeEach(() => {

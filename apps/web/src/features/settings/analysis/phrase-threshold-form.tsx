@@ -12,7 +12,7 @@ import { SettingsSaveBar } from "../settings-save-bar";
 const HINT =
   "Cụm từ xuất hiện trong ít bài nhắc hơn sẽ bị ẩn khỏi bản đồ cảm xúc ở chế độ Cụm từ. Số nguyên từ 1 đến 50.";
 const INVALID = "Nhập số nguyên từ 1 đến 50.";
-const LABEL = "Số lượt nhắc tối thiểu mỗi cụm từ";
+const LABEL = "Số bài nhắc tối thiểu mỗi cụm từ";
 
 /** Parses the string draft; `null` when it is not an integer 1–50 (FR-032, #251). */
 export function parsePhraseThreshold(draft: string): number | null {

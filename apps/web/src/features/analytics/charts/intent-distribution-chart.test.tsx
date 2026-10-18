@@ -12,7 +12,7 @@ describe("IntentDistributionChart", () => {
     expect(header).toEqual(["Ý định", "Số lượng", "Tỷ lệ"]);
     expect(rows).toHaveLength(INTENT_LABELS.length + 1);
     expect(rows.find((r) => r[0] === "Tẩy chay")).toEqual(["Tẩy chay", "0", "0,0%"]);
-    expect(rows.at(-1)).toEqual(["Lượt nhắc có ý định", "50", "—"]);
+    expect(rows.at(-1)).toEqual(["Bài nhắc có ý định", "50", "—"]);
   });
 
   it("TC-DASH-016: shares may exceed 100% → note shown", () => {

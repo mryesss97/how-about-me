@@ -76,13 +76,13 @@ export function SafetyDistributionChart({
   return (
     <ChartCard
       title="Phân bố an toàn"
-      description="Tỷ lệ trên lượt nhắc đã đánh giá an toàn"
+      description="Tỷ lệ trên bài nhắc đã đánh giá an toàn"
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}
       // BR-032: denominator 0 → empty state.
       isEmpty={!!data && denominator === 0}
-      emptyTitle="Chưa có lượt nhắc đã phân tích trong khoảng này"
+      emptyTitle="Chưa có bài nhắc đã phân tích trong khoảng này"
       table={table}
       className={className}
     >
@@ -91,7 +91,7 @@ export function SafetyDistributionChart({
         getFill={(r) => safetyFill(r.key, idPrefix)}
         denominator={denominator}
         getRowHref={(r) => segmentHref(getHref, r)}
-        denominatorLabel="lượt nhắc đã phân tích"
+        denominatorLabel="bài nhắc đã phân tích"
         defs={<SafetyPatterns idPrefix={idPrefix} />}
         // #387 / NFR-030: icon + word + value + pattern on each row; no separate legend.
         renderLabelPrefix={(r) => {

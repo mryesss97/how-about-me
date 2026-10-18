@@ -33,19 +33,19 @@ export function IntentDistributionChart({
     columns: ["Ý định", "Số lượng", "Tỷ lệ"],
     rows: [
       ...rows.map((r) => [r.name, formatCount(r.count), formatRate(r.share)]),
-      ["Lượt nhắc có ý định", formatCount(denominator), "—"],
+      ["Bài nhắc có ý định", formatCount(denominator), "—"],
     ],
   };
 
   return (
     <ChartCard
       title="Phân bố ý định"
-      description="Lượt nhắc theo từng ý định"
+      description="Bài nhắc theo từng ý định"
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}
       isEmpty={!!data && denominator === 0}
-      emptyTitle="Chưa có lượt nhắc đã phân tích trong khoảng này"
+      emptyTitle="Chưa có bài nhắc đã phân tích trong khoảng này"
       table={table}
       className={className}
     >
@@ -54,7 +54,7 @@ export function IntentDistributionChart({
         getFill={(r) => (r.key === "other" ? "var(--color-utility-neutral-400)" : "var(--color-utility-brand-500)")}
         denominator={denominator}
         getRowHref={(r) => segmentHref(getHref, r)}
-        denominatorLabel="lượt nhắc có ý định"
+        denominatorLabel="bài nhắc có ý định"
       />
       {sumShares(rows) > 1 ? <MultiLabelNote noun="ý định" /> : null}
     </ChartCard>

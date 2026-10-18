@@ -1,5 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { formatDateTime, formatShortDateTime, formatRelativeOrAbsolute, tzLabel } from "./format";
+import { formatDateTime, formatShortDateTime, formatRelativeOrAbsolute, tzLabel, tzOffsetLabel } from "./format";
+
+describe("tzOffsetLabel (#388: chart subtitle shows offset, not zone id)", () => {
+  const at = new Date("2026-01-15T00:00:00Z");
+
+  it("returns only the GMT offset", () => {
+    expect(tzOffsetLabel("Asia/Ho_Chi_Minh", at)).toBe("GMT+7");
+    expect(tzOffsetLabel("Asia/Kolkata", at)).toBe("GMT+5:30");
+    expect(tzOffsetLabel("UTC", at)).toBe("GMT+0");
+    expect(tzOffsetLabel("America/New_York", at)).toBe("GMT-5");
+  });
+});
 
 describe("tzLabel", () => {
   const at = new Date("2026-01-15T00:00:00Z");

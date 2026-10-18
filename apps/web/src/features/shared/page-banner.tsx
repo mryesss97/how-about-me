@@ -119,9 +119,9 @@ export function AnalysisPendingBanner({
   return (
     <PageBanner
       tone="info"
-      title={`${formatCount(count)} lượt nhắc đang chờ phân tích.`}
-      description="Các tỷ lệ bên dưới chỉ tính lượt nhắc đã phân tích xong."
-      action={<BannerLink href={href}>Xem lượt nhắc đang chờ</BannerLink>}
+      title={`${formatCount(count)} bài nhắc đang chờ phân tích.`}
+      description="Các tỷ lệ bên dưới chỉ tính bài nhắc đã phân tích xong."
+      action={<BannerLink href={href}>Xem bài nhắc đang chờ</BannerLink>}
     />
   );
 }

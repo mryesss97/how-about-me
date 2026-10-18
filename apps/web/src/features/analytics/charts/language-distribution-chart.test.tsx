@@ -61,7 +61,7 @@ describe("LanguageDistributionChart", () => {
         })}
       />,
     );
-    expect(screen.getByText("Chưa có lượt nhắc nhận diện được ngôn ngữ trong khoảng này")).toBeInTheDocument();
+    expect(screen.getByText("Chưa có bài nhắc nhận diện được ngôn ngữ trong khoảng này")).toBeInTheDocument();
   });
 
   it("error state shows request ID and Retry", () => {

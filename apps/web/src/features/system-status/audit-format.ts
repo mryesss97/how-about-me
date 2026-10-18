@@ -178,7 +178,7 @@ const META_LABEL: Record<string, string> = {
   landingTerms: "Cụm từ trên landing",
   allowAnalystReanalyze: "Cho phép Phân tích viên chạy lại phân tích",
   allowViewerExport: "Cho phép Người xem xuất dữ liệu",
-  phraseMinMentions: "Số lượt nhắc tối thiểu mỗi cụm từ",
+  phraseMinMentions: "Số bài nhắc tối thiểu mỗi cụm từ",
   confidenceBands: "Ngưỡng độ tin cậy",
   high: "Cao",
   medium: "Trung bình",

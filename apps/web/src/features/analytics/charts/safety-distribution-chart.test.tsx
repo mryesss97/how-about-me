@@ -36,7 +36,7 @@ describe("SafetyDistributionChart", () => {
 
   it("BR-032: denominator 0 → empty state", () => {
     render(<SafetyDistributionChart data={safetyFixture({ denominator: 0, distribution: [] })} />);
-    expect(screen.getByText("Chưa có lượt nhắc đã phân tích trong khoảng này")).toBeInTheDocument();
+    expect(screen.getByText("Chưa có bài nhắc đã phân tích trong khoảng này")).toBeInTheDocument();
   });
 
   it("error state shows request ID and Retry", async () => {

@@ -55,13 +55,13 @@ export function LanguageDistributionChart({
   return (
     <ChartCard
       title="Phân bố ngôn ngữ"
-      description="Tỷ lệ trên lượt nhắc đã nhận diện ngôn ngữ"
+      description="Tỷ lệ trên bài nhắc đã nhận diện ngôn ngữ"
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}
       // Denominator 0 → empty state, no division by zero (BR-032).
       isEmpty={!!data && denominator === 0}
-      emptyTitle="Chưa có lượt nhắc nhận diện được ngôn ngữ trong khoảng này"
+      emptyTitle="Chưa có bài nhắc nhận diện được ngôn ngữ trong khoảng này"
       table={table}
       className={className}
     >
@@ -77,7 +77,7 @@ export function LanguageDistributionChart({
                     title={s.name}
                     lines={[{ name: s.name, count: s.count, share: s.share, color: LANGUAGE_COLORS[s.key] }]}
                     denominator={denominator}
-                    denominatorLabel="lượt nhắc có ngôn ngữ"
+                    denominatorLabel="bài nhắc có ngôn ngữ"
                     drillable={!!select?.canSelect(s)}
                   />
                 );

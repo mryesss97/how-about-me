@@ -218,7 +218,7 @@ describe("MentionsView (UX §3.3)", () => {
   it("TC-MEN-017: empty state with widen CTA", async () => {
     apiFetch.mockResolvedValueOnce(page(0, null, 0));
     setup();
-    expect(await screen.findByText("Không có lượt nhắc liên quan trong khoảng thời gian này.")).toBeInTheDocument();
+    expect(await screen.findByText("Không có bài nhắc liên quan trong khoảng thời gian này.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Mở rộng khoảng thời gian" })).toBeInTheDocument();
     // #245: page-level empty state uses the brand v2 illustration (decorative).
     expect(document.querySelector('img[src="/brand/illustrations/empty.svg"]')).not.toBeNull();
@@ -247,9 +247,9 @@ describe("MentionsView (UX §3.3)", () => {
     expect(
       await screen.findByText("Lần đồng bộ Threads gần nhất bị lỗi, dữ liệu có thể chưa đầy đủ."),
     ).toBeInTheDocument();
-    expect(screen.queryByText("Không có lượt nhắc liên quan trong khoảng thời gian này.")).toBeNull();
+    expect(screen.queryByText("Không có bài nhắc liên quan trong khoảng thời gian này.")).toBeNull();
     expect(screen.getByText("Lần đồng bộ Threads gần nhất bị lỗi. Dữ liệu có thể chưa đầy đủ.")).toBeInTheDocument();
-    expect(screen.getByText("12 lượt nhắc đang chờ phân tích.")).toBeInTheDocument();
+    expect(screen.getByText("12 bài nhắc đang chờ phân tích.")).toBeInTheDocument();
     // Banners need coverage only — no previous-period work.
     expect(nth(useOverview.mock.calls, -1)[1].compare).toBeUndefined();
   });
@@ -259,9 +259,9 @@ describe("MentionsView (UX §3.3)", () => {
     overviewData = overviewFixture({ coverage: { ...base.coverage, pendingMentions: 5 } });
     apiFetch.mockResolvedValueOnce(page(0, null, 0));
     setup("?sentiment=negative");
-    await screen.findAllByText("5 lượt nhắc đang chờ phân tích.");
-    await waitFor(() => expect(screen.getAllByRole("link", { name: "Xem lượt nhắc đang chờ" })).toHaveLength(2));
-    const links = screen.getAllByRole("link", { name: "Xem lượt nhắc đang chờ" });
+    await screen.findAllByText("5 bài nhắc đang chờ phân tích.");
+    await waitFor(() => expect(screen.getAllByRole("link", { name: "Xem bài nhắc đang chờ" })).toHaveLength(2));
+    const links = screen.getAllByRole("link", { name: "Xem bài nhắc đang chờ" });
     for (const l of links) {
       const sp = new URLSearchParams((l.getAttribute("href") ?? "").split("?")[1]);
       expect(sp.get("analysisStatus")).toBe("pending,processing");
@@ -272,7 +272,7 @@ describe("MentionsView (UX §3.3)", () => {
   });
 
   it.each([
-    ["pending", { pendingMentions: 1234 }, {}, "1.234 lượt nhắc đang chờ phân tích."],
+    ["pending", { pendingMentions: 1234 }, {}, "1.234 bài nhắc đang chờ phân tích."],
     [
       "sync partial",
       {},

@@ -11,7 +11,7 @@ export const SENTIMENT_COLORS: Record<SentimentLabel, string> = {
 
 /** Copy shared by every bubble surface (sentiment map #222, landing #262). */
 export const bubbleCopy = {
-  mentions: (n: number) => `${formatCount(n)} lượt nhắc`,
+  mentions: (n: number) => `${formatCount(n)} bài nhắc`,
   shareLine: (share: number, s: SentimentLabel) => `${formatRate(share)} ${sentimentBadge[s].label.toLowerCase()}`,
   /** #389 small-topics row item: "Giá · 33,3% tiêu cực (3)". */
   smallItem: (name: string, share: number, s: SentimentLabel, total: number) =>

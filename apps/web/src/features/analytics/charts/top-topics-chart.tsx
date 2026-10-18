@@ -26,19 +26,19 @@ export function TopTopicsChart({ data, isLoading, error, onRetry, className, get
     columns: ["Chủ đề", "Số lượng", "Tỷ lệ"],
     rows: [
       ...rows.map((r) => [r.name, formatCount(r.count), formatRate(r.share)]),
-      ["Lượt nhắc có chủ đề", formatCount(denominator), "—"],
+      ["Bài nhắc có chủ đề", formatCount(denominator), "—"],
     ],
   };
 
   return (
     <ChartCard
       title="Chủ đề nổi bật"
-      description="12 chủ đề có nhiều lượt nhắc nhất"
+      description="12 chủ đề có nhiều bài nhắc nhất"
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}
       isEmpty={!!data && (denominator === 0 || rows.length === 0)}
-      emptyTitle="Chưa có lượt nhắc đã phân tích trong khoảng này"
+      emptyTitle="Chưa có bài nhắc đã phân tích trong khoảng này"
       table={table}
       className={className}
     >
@@ -47,7 +47,7 @@ export function TopTopicsChart({ data, isLoading, error, onRetry, className, get
         getFill={(r) => (r.key === "other" ? "var(--color-utility-neutral-400)" : "var(--color-utility-brand-500)")}
         denominator={denominator}
         getRowHref={(r) => segmentHref(getHref, r)}
-        denominatorLabel="lượt nhắc có chủ đề"
+        denominatorLabel="bài nhắc có chủ đề"
       />
       {sumShares(rows) > 1 ? <MultiLabelNote noun="chủ đề" /> : null}
     </ChartCard>

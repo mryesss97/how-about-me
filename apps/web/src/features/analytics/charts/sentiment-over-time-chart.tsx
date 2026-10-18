@@ -71,7 +71,7 @@ export function SentimentOverTimeChart({
       error={error}
       onRetry={onRetry}
       isEmpty={!!data && rows.every((r) => r.total === 0)}
-      emptyTitle="Chưa có lượt nhắc đã phân tích trong khoảng này"
+      emptyTitle="Chưa có bài nhắc đã phân tích trong khoảng này"
       table={table}
       className={className}
     >
@@ -96,7 +96,7 @@ export function SentimentOverTimeChart({
                       color: SENTIMENT_COLORS[k],
                     }))}
                     denominator={row.total}
-                    denominatorLabel="lượt nhắc đã phân tích"
+                    denominatorLabel="bài nhắc đã phân tích"
                     drillable={drillable && row.total > 0}
                   />
                 );

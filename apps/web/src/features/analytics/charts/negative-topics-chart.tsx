@@ -16,7 +16,7 @@ export type NegativeTopicsChartProps = {
   className?: string;
 } & DrillDownProps<TopicLabel>;
 
-export const NEGATIVE_SHARE_NOTE = "Tỷ lệ = tiêu cực ÷ lượt nhắc có cảm xúc của chủ đề này.";
+export const NEGATIVE_SHARE_NOTE = "Tỷ lệ = tiêu cực ÷ bài nhắc có cảm xúc của chủ đề này.";
 
 /**
  * Negative-topic contributors (FR-144, T-149): topics with negative mentions ranked by negative count, label
@@ -34,12 +34,12 @@ export function NegativeTopicsChart({ data, isLoading, error, onRetry, className
   return (
     <ChartCard
       title="Chủ đề kéo tiêu cực"
-      description="Chủ đề xếp theo số lượt nhắc tiêu cực"
+      description="Chủ đề xếp theo số bài nhắc tiêu cực"
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}
       isEmpty={!!data && rows.length === 0}
-      emptyTitle="Không có lượt nhắc tiêu cực trong khoảng này"
+      emptyTitle="Không có bài nhắc tiêu cực trong khoảng này"
       table={table}
       className={className}
     >
@@ -48,7 +48,7 @@ export function NegativeTopicsChart({ data, isLoading, error, onRetry, className
         getFill={() => SENTIMENT_COLORS.negative}
         denominator={0}
         rowDenominator={(r) => r.total}
-        denominatorLabel="lượt nhắc có cảm xúc trong chủ đề này"
+        denominatorLabel="bài nhắc có cảm xúc trong chủ đề này"
         getRowHref={(r) => segmentHref(getHref, r)}
       />
       <p className="text-xs text-tertiary">{NEGATIVE_SHARE_NOTE}</p>

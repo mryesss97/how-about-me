@@ -78,7 +78,7 @@ export function ChartCard({
   error,
   onRetry,
   isEmpty,
-  emptyTitle = "Không có lượt nhắc trong khoảng này",
+  emptyTitle = "Không có bài nhắc trong khoảng này",
   emptyDescription,
   table,
   className,

@@ -46,7 +46,7 @@ export function QueryState({
   isForbidden,
   onRetry,
   skeleton,
-  emptyTitle = "Không có lượt nhắc liên quan trong khoảng thời gian này.",
+  emptyTitle = "Không có bài nhắc liên quan trong khoảng thời gian này.",
   emptyDescription = "Hãy mở rộng khoảng thời gian hoặc bỏ bớt bộ lọc.",
   emptyAction,
   emptyIllustration,
