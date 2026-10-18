@@ -64,3 +64,6 @@ export function formatDuration(seconds: number): string {
   const parts = [h ? `${h} giờ` : "", m ? `${m} phút` : "", s ? `${s} giây` : ""].filter(Boolean);
   return parts.join(" ");
 }
+
+/** "Xem lượt đồng bộ" target (#43). The sync-jobs detail view lands with #55/#56; the params are reserved for it. */
+export const jobHref = (jobId: string) => `/system-status?tab=sync-jobs&job=${jobId}`;

@@ -8,4 +8,9 @@ Listening Queries screen (UX §3.5, FR-050..062). See docs/02-architecture/03-fr
 - `query-actions-menu.tsx` — row menu: "Xem bài nhắc" (`/mentions?queryIds=<id>`, FR-062) for all roles; admin items render only when a handler is passed.
 - `listening-queries-view.tsx` — page body: fascia + "Thêm truy vấn" (admin), "Hiện truy vấn đã xoá" toggle (`?deleted=1`), loading/error/empty states, "Tải thêm".
 
-Drawer Create/Edit and mutations (run, enable/disable, delete/restore) are #43 [T-047]; they plug in via the view's handler props.
+- `api.ts` (also) — mutations `useCreate/Update/Delete/Restore/RunListeningQuery` (invalidate every list variant), `useListeningQuery(pid, id)` for `?edit=<id>`, `queryErrorMessage`, `duplicateExistingId`, `runningJobId`.
+- `query-form.ts` — pure form logic: values ↔ contract bodies, FR-052 validation via contract schemas, PATCH diff without immutable fields (FR-054), presets.
+- `term-input.tsx` — tag input for include/exclude terms (Enter/comma, case-insensitive dedupe).
+- `query-form-fields.tsx` / `query-form-drawer.tsx` — create/edit drawer (#43); duplicate → toast "Xem truy vấn".
+- `delete-query-dialog.tsx` — soft-delete confirm (FR-057).
+- `use-query-actions.ts` — run / toggle / delete / restore with toasts; "Xem lượt đồng bộ" → `jobHref` (`format.ts`).
