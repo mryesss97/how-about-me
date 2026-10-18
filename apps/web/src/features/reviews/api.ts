@@ -2,6 +2,7 @@
 
 import {
   MarkReviewedBodySchema,
+  MentionDetailSchema,
   MarkReviewedResponseSchema,
   ReviewQueuePageSchema,
   type ReviewQueuePage,
@@ -9,7 +10,14 @@ import {
   type ReviewStatus,
   type UserRole,
 } from "@how-about-me/contracts";
-import { useInfiniteQuery, useMutation, useQueryClient, type InfiniteData, type QueryKey } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type InfiniteData,
+  type QueryKey,
+} from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { notifyError } from "@/lib/toast";
@@ -153,4 +161,18 @@ export function useMarkReviewed(pid: string | null | undefined) {
         qc.invalidateQueries({ queryKey: ["project", p, "mention"] }),
       ]),
   });
+}
+
+/**
+ * #390: review state of one post (`MentionDetail.review`, status computed server-side per BR-040) for a deep link
+ * outside the loaded queue. Same key as the mention detail body → shared cache, no extra request; no polling here.
+ */
+export function useItemReview(pid: string | null | undefined, postId: string | null, enabled: boolean) {
+  const q = useQuery({
+    queryKey: qk.mention(pid ?? "", postId ?? ""),
+    queryFn: async () => MentionDetailSchema.parse(await apiFetch<unknown>(`/projects/${pid}/mentions/${postId}`)),
+    staleTime: staleTimes.mentions,
+    enabled: enabled && !!pid && !!postId,
+  });
+  return q.data?.review ?? undefined;
 }

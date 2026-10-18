@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReviewQueueItem } from "@how-about-me/contracts";
+import type { ReviewQueueItem, ReviewReason } from "@how-about-me/contracts";
 import { Fragment, type ReactNode } from "react";
 import { Button } from "@/components/base/buttons/button";
 import { DetailSlideout, type DetailSlideoutNav } from "@/features/shared/detail-slideout";
@@ -46,6 +46,8 @@ export function ReviewDetailSlideout({
   onMove,
   onClose,
   renderDetail,
+  fallbackReasons,
+  outOfList = false,
 }: {
   pid: string;
   postId: string;
@@ -59,6 +61,10 @@ export function ReviewDetailSlideout({
   onMove: (id: string) => void;
   onClose: () => void;
   renderDetail: RenderReviewDetail;
+  /** #390: reasons from the post's own review state when the item is outside the loaded pages. */
+  fallbackReasons?: readonly ReviewReason[];
+  /** #390: the item is not in the loaded pages (nav disabled + text hint, BR-017). */
+  outOfList?: boolean;
 }) {
   const mark = useMarkReviewed(pid);
   const hasNext = nav ? !nav.nextDisabled : false;
@@ -75,14 +81,22 @@ export function ReviewDetailSlideout({
     });
   };
 
-  const reasons = item ? (
+  const shown = item?.reasons ?? fallbackReasons;
+  const badges = shown?.length ? (
     <div className="flex flex-wrap items-center gap-1.5 text-sm">
-      <ReasonBadges reasons={item.reasons} />
-      {item.reasons.includes("low_confidence") && item.analysis.overallConfidence != null ? (
+      <ReasonBadges reasons={[...shown]} />
+      {item?.reasons.includes("low_confidence") && item.analysis.overallConfidence != null ? (
         <span className="text-secondary tabular-nums">{formatRate(item.analysis.overallConfidence)}</span>
       ) : null}
     </div>
   ) : null;
+  const reasons =
+    badges || outOfList ? (
+      <div className="flex flex-col gap-1">
+        {badges}
+        {outOfList ? <p className="text-sm text-tertiary">Mục này nằm ngoài danh sách đang tải</p> : null}
+      </div>
+    ) : null;
 
   const ctx: ReviewDetailContext = canMark ? { onOverrideSaved: (on) => on && markAndNext(postId) } : {};
 
