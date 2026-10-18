@@ -74,6 +74,8 @@ docs/
 - [04-risk-register.md](03-delivery/04-risk-register.md)
 - [05-definition-of-ready-done.md](03-delivery/05-definition-of-ready-done.md)
 - [06-release-plan-checklist.md](03-delivery/06-release-plan-checklist.md)
+- [07-release-notes-v0.1.0.md](03-delivery/07-release-notes-v0.1.0.md)
+- [08-stakeholder-onboarding.md](03-delivery/08-stakeholder-onboarding.md)
 
 ### 04 — QA
 
