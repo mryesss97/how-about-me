@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense } from "react";
 import {
   Activity,
   BarChartSquare02,
@@ -13,14 +13,12 @@ import {
 } from "@untitledui/icons";
 import { canAccess } from "@/features/auth/route-roles";
 import { useMe } from "@/features/auth/use-me";
-import { useCurrentProject } from "@/features/auth/use-current-project";
 import { useRole } from "@/features/auth/use-role";
 import { useSignOut } from "@/features/auth/use-sign-out";
 import { useMobileNav } from "@/components/application/app-navigation/base-components/mobile-header";
 import { SidebarNavigationSimple } from "@/components/application/app-navigation/sidebar-navigation/sidebar-simple";
 import type { NavItemType } from "@/components/application/app-navigation/config";
 import { ProjectSwitcher } from "./project-switcher";
-import { SETTINGS_DEFAULT_HREF, settingsHref, useSidebarIntegration } from "./settings-href";
 import { carryFilterQuery } from "@/lib/filters/carry";
 import { roleLabelVi } from "@/lib/semantics/labels";
 import { useHydrated } from "@/hooks/use-hydrated";
@@ -37,7 +35,7 @@ const items: ShellNavItem[] = [
 ];
 // #325: "Cài đặt" is current on every /settings/* tab.
 const footerItems: ShellNavItem[] = [
-  { label: "Cài đặt", href: SETTINGS_DEFAULT_HREF, icon: Settings01, match: "/settings" },
+  { label: "Cài đặt", href: "/settings/project", icon: Settings01, match: "/settings" },
 ];
 
 /**
@@ -94,12 +92,7 @@ function SidebarShell({ search }: { search: URLSearchParams | null }) {
   // Until the role loads only open routes are shown, so restricted items never flash.
   const visible = (list: ShellNavItem[]) => list.filter((i) => !i.href || canAccess(i.href, role));
   const navItems = withCarriedFilters(visible(items), pathname, search);
-  // #346: admins go straight to Kết nối while Threads needs attention; only after hydration (#361).
-  const { project } = useCurrentProject();
-  const [nowMs] = useState(() => Date.now());
-  const integration = useSidebarIntegration(project?.id ?? null, role === "admin");
-  const settings = settingsHref(role, integration.data, nowMs);
-  const navFooter = visible(footerItems).map((i) => (i.match === "/settings" ? { ...i, href: settings } : i));
+  const navFooter = visible(footerItems);
   const active = resolveActiveHref(pathname, [...navItems, ...navFooter]);
   // FR-011: sign out clears the session and the query cache.
   const account = (

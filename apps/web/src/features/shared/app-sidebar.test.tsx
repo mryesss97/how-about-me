@@ -2,7 +2,6 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { meFixture, P1, P2, projectFixture, Providers } from "@/features/auth/test-utils";
 import { AppSidebar, resolveActiveHref } from "./app-sidebar";
-import { settingsHref } from "./settings-href";
 
 const apiFetch = vi.fn();
 vi.mock("@/lib/api/client", () => ({ apiFetch: (...a: unknown[]) => apiFetch(...a) }));
@@ -144,34 +143,5 @@ describe("resolveActiveHref (#325)", () => {
     const hrefs = screen.getAllByRole("link", { hidden: true }).map((a) => a.getAttribute("href"));
     expect(hrefs).toContain("/overview");
     expect(hrefs).not.toContain("/overview?preset=30d");
-  });
-});
-
-// #346 flows-9
-describe("settingsHref", () => {
-  const NOW = Date.parse("2026-10-19T00:00:00.000Z");
-  const later = (d: number) => new Date(NOW + d * 86_400_000).toISOString();
-  it("admin + not connected → Kết nối", () => {
-    expect(settingsHref("admin", { status: "expired", tokenExpiresAt: null }, NOW)).toBe("/settings/integrations");
-  });
-  it("admin + token expiring soon (FR-046) → Kết nối", () => {
-    expect(settingsHref("admin", { status: "connected", tokenExpiresAt: later(3) }, NOW)).toBe(
-      "/settings/integrations",
-    );
-  });
-  it("admin + healthy, analyst, or unknown status → project tab", () => {
-    expect(settingsHref("admin", { status: "connected", tokenExpiresAt: later(30) }, NOW)).toBe("/settings/project");
-    expect(settingsHref("analyst", { status: "expired", tokenExpiresAt: null }, NOW)).toBe("/settings/project");
-    expect(settingsHref("admin", undefined, NOW)).toBe("/settings/project");
-  });
-});
-
-describe("AppSidebar settings link #346", () => {
-  it("FR-015: a viewer never requests the integration", async () => {
-    apiFetch.mockReset();
-    apiFetch.mockResolvedValue(meFixture([projectFixture(P1, "viewer")]));
-    render(<AppSidebar />, { wrapper: Providers });
-    expect(await screen.findAllByText("Chỉ xem")).not.toHaveLength(0);
-    expect(apiFetch.mock.calls.some(([p]) => String(p).includes("/integrations/"))).toBe(false);
   });
 });
