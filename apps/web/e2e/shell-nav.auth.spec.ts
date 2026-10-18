@@ -20,7 +20,8 @@ test.describe("shell navigation", () => {
       ["Tổng quan", "/overview"],
     ] as const) {
       await sidebar.getByRole("link", { name: label }).click();
-      await expect(page).toHaveURL(new RegExp(path));
+      // First visit of a route compiles on a dev server; allow it.
+      await expect(page).toHaveURL(new RegExp(path), { timeout: 15_000 });
       await settle(page);
       const current = sidebar.locator('[aria-current="page"]');
       await expect(current).toHaveCount(1);
@@ -51,7 +52,7 @@ test.describe("shell navigation", () => {
     expect((await link.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
 
     await link.click();
-    await expect(page).toHaveURL(/\/overview/);
+    await expect(page).toHaveURL(/\/overview/, { timeout: 15_000 });
     await expect(page.getByRole("dialog")).toHaveCount(0);
   });
 
