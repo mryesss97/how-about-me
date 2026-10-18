@@ -464,6 +464,8 @@ PATCH behaviour: one transaction, project row locked `FOR UPDATE` (concurrent ad
 
 ### `GET /projects/:projectId/system-status`
 
+Any project member may read. Computation rules: [09-observability.md §4](09-observability.md). v1 (T-057): the `analysis` block is a zero/`null` stub until T-077.
+
 ```json
 {
   "generatedAt": "…",
