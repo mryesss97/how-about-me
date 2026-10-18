@@ -87,7 +87,7 @@ function SidebarShell({ search }: { search: URLSearchParams | null }) {
   const meQuery = useMe();
   const me = hydrated ? meQuery : { ...meQuery, data: undefined };
   const { role: loadedRole } = useRole();
-  const role = hydrated ? loadedRole : undefined;
+  const role = hydrated ? loadedRole : null;
   const signOut = useSignOut();
   // Until the role loads only open routes are shown, so restricted items never flash.
   const visible = (list: ShellNavItem[]) => list.filter((i) => !i.href || canAccess(i.href, role));
