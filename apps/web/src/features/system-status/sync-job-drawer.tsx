@@ -2,6 +2,7 @@
 
 import { RefreshCcw01 } from "@untitledui/icons";
 import type { SyncJobDetail } from "@how-about-me/contracts";
+import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { SlideoutMenu } from "@/components/application/slideout-menus/slideout-menu";
@@ -10,8 +11,9 @@ import { PlaqueButton } from "@/features/shared/plaque-button";
 import { ErrorState, SkeletonBlock } from "@/features/shared/query-state";
 import { ApiError } from "@/lib/api/client";
 import { DASH, formatCount } from "@/lib/format/number";
+import { mentionsHref, mentionsWindowHref } from "@/lib/links/mentions";
 import { formatDateTime } from "@/lib/time/format";
-import { retryErrorMessage, useRetrySyncJob, useSyncJob } from "./api";
+import { retryErrorMessage, useQueryNames, useRetrySyncJob, useSyncJob } from "./api";
 import { jobStatusLabel, jobTriggerLabel, truncateMiddle } from "./format";
 import { StatusPlate } from "./status-plate";
 
@@ -22,6 +24,8 @@ export function SyncJobDrawer({ pid, jobId, tz, isAdmin, onClose }: Props) {
   const [open, setOpen] = useState(true);
   const job = useSyncJob(pid, jobId);
   const retry = useRetrySyncJob(pid);
+  const names = useQueryNames(pid);
+  const queryId = job.data?.queryId ?? null;
   const close = () => {
     setOpen(false);
     onClose();
@@ -62,6 +66,7 @@ export function SyncJobDrawer({ pid, jobId, tz, isAdmin, onClose }: Props) {
           <h2 className="text-lg font-semibold text-primary">Chi tiết lượt đồng bộ</h2>
           {retryButton ? <div className="ml-auto">{retryButton}</div> : null}
         </div>
+        {job.data ? <QueryLine queryId={queryId} names={names} /> : null}
       </SlideoutMenu.Header>
       <SlideoutMenu.Content role="region" aria-label="Chi tiết lượt đồng bộ" className="pb-6">
         {job.isLoading ? (
@@ -75,7 +80,44 @@ export function SyncJobDrawer({ pid, jobId, tz, isAdmin, onClose }: Props) {
           />
         )}
       </SlideoutMenu.Content>
+      {job.data && queryId ? (
+        // Close the loop back to the query and its mentions (#340 flows-6).
+        <SlideoutMenu.Footer className="flex flex-wrap justify-between gap-3 text-sm font-semibold">
+          <Link href="/listening-queries" className="text-secondary underline-offset-2 hover:underline">
+            ← Về truy vấn
+          </Link>
+          <Link
+            href={
+              job.data.windowSince && job.data.windowUntil
+                ? mentionsWindowHref(queryId, job.data.windowSince, job.data.windowUntil)
+                : mentionsHref(queryId, "30d")
+            }
+            className="text-brand-secondary underline-offset-2 hover:underline"
+          >
+            Xem bài nhắc của truy vấn →
+          </Link>
+        </SlideoutMenu.Footer>
+      ) : null}
     </SlideoutMenu>
+  );
+}
+
+const TYPE_VI = { keyword: "Từ khoá", topic_tag: "Chủ đề" } as const;
+
+/** "Truy vấn: 1zone (Từ khoá)" under the title; names come from the first 200 queries (incl. deleted). */
+function QueryLine({
+  queryId,
+  names,
+}: {
+  queryId: string | null;
+  names: { id: string; name: string; type: keyof typeof TYPE_VI }[];
+}) {
+  if (!queryId) return <p className="text-sm text-tertiary">Không gắn truy vấn</p>;
+  const found = names.find((n) => n.id === queryId);
+  return (
+    <p className="text-sm text-secondary" data-testid="job-query">
+      Truy vấn: {found ? `${found.name} (${TYPE_VI[found.type]})` : `Truy vấn ${queryId.slice(0, 8)}`}
+    </p>
   );
 }
 

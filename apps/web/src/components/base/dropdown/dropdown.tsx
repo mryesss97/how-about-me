@@ -39,9 +39,11 @@ interface DropdownItemProps extends AriaMenuItemProps {
     avatarUrl?: string;
     /** The selection indicator to be displayed on the item. */
     selectionIndicator?: "checkmark" | "checkbox" | "radio" | "toggle" | "none";
+    /** Local addition (#340, vendored file): "danger" colours the label for destructive items. */
+    tone?: "default" | "danger";
 }
 
-const DropdownItem = ({ label, children, addon, icon: Icon, avatarUrl, unstyled, selectionIndicator = "checkmark", ...props }: DropdownItemProps) => {
+const DropdownItem = ({ label, children, addon, icon: Icon, avatarUrl, unstyled, selectionIndicator = "checkmark", tone = "default", ...props }: DropdownItemProps) => {
     const SelectionIndicator = useCallback(
         (state: MenuItemRenderProps & { className?: string }) => {
             if (selectionIndicator === "checkmark") {
@@ -108,7 +110,13 @@ const DropdownItem = ({ label, children, addon, icon: Icon, avatarUrl, unstyled,
 
                     {Icon && <Icon aria-hidden="true" className="mr-2 size-4 shrink-0 stroke-[2.25px] text-fg-quaternary" />}
 
-                    <span className={cx("grow truncate text-sm font-semibold text-secondary", state.isFocused && "text-secondary_hover")}>
+                    <span
+                        className={cx(
+                            "grow truncate text-sm font-semibold text-secondary",
+                            state.isFocused && "text-secondary_hover",
+                            tone === "danger" && "text-error-primary",
+                        )}
+                    >
                         {label || (typeof children === "function" ? children(state) : children)}
                     </span>
 

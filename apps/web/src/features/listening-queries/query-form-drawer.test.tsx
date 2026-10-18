@@ -21,12 +21,21 @@ vi.mock("sonner", () => ({
 
 const onClose = vi.fn();
 const onOpenExisting = vi.fn();
+const onRunNow = vi.fn();
 
 function setup(mode: "create" | "edit", query?: ReturnType<typeof queryFixture>) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <QueryFormDrawer pid={PID} mode={mode} query={query} isOpen onClose={onClose} onOpenExisting={onOpenExisting} />
+      <QueryFormDrawer
+        pid={PID}
+        mode={mode}
+        query={query}
+        isOpen
+        onClose={onClose}
+        onOpenExisting={onOpenExisting}
+        onRunNow={onRunNow}
+      />
     </QueryClientProvider>,
   );
 }
@@ -40,6 +49,7 @@ beforeEach(() => {
   toastError.mockReset();
   onClose.mockReset();
   onOpenExisting.mockReset();
+  onRunNow.mockReset();
 });
 
 describe("QueryFormDrawer", () => {
@@ -73,10 +83,33 @@ describe("QueryFormDrawer", () => {
     fireEvent.change(field("Tên hiển thị"), { target: { value: "Eventista" } });
     fireEvent.change(field("Giá trị truy vấn"), { target: { value: "#eventista" } });
     fireEvent.click(screen.getByRole("button", { name: "Tạo truy vấn" }));
-    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Đã tạo truy vấn"));
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Đã tạo truy vấn", expect.anything()));
     expect(apiFetch.mock.calls[0]?.[0]).toBe(`/projects/${PID}/listening-queries`);
     expect(sentBody()).toMatchObject({ displayName: "Eventista", queryValue: "eventista", pollIntervalSeconds: 600 });
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it("#340 flows-6: create toast says when it syncs and offers 'Chạy ngay' (FR-058)", async () => {
+    const created = queryFixture({ enabled: true });
+    apiFetch.mockResolvedValue(created);
+    setup("create");
+    fireEvent.change(field("Tên hiển thị"), { target: { value: "Eventista" } });
+    fireEvent.change(field("Giá trị truy vấn"), { target: { value: "eventista" } });
+    fireEvent.click(screen.getByRole("button", { name: "Tạo truy vấn" }));
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalled());
+    const opts = toastSuccess.mock.calls[0]?.[1] as {
+      description: string;
+      action: { label: string; onClick: () => void };
+    };
+    expect(opts.description).toBe("Sẽ đồng bộ trong khoảng 1 phút.");
+    expect(opts.action.label).toBe("Chạy ngay");
+    opts.action.onClick();
+    expect(onRunNow).toHaveBeenCalledWith(created);
+  });
+
+  it("#340 ops-1: edit shows the creator read-only", () => {
+    setup("edit", queryFixture());
+    expect(screen.getByText("Người tạo: An Admin")).toBeInTheDocument();
   });
 
   it("FR-054 / BR-009: edit disables value + type and PATCHes only the diff", async () => {

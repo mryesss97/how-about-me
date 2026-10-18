@@ -57,3 +57,19 @@ export const jobHref = (jobId: string) => `/system-status?tab=sync-jobs&job=${jo
 export function isStaleError(q: Pick<ListeningQuery, "lastError" | "lastSuccessfulSyncAt">): boolean {
   return !!q.lastError && !!q.lastSuccessfulSyncAt && Date.parse(q.lastSuccessfulSyncAt) > Date.parse(q.lastError.at);
 }
+
+/**
+ * Second line under the query name (#340 ops-1): "#eventista · Chủ đề". The value is dropped when it repeats the name
+ * (case-insensitive, ignoring `#`).
+ */
+export function querySubline(q: Pick<ListeningQuery, "queryType" | "queryValue" | "displayName">): string {
+  const norm = (s: string) => s.replace(/^#/, "").trim().toLowerCase();
+  const type = queryTypeLabelVi[q.queryType];
+  return norm(q.queryValue) === norm(q.displayName) ? type : `${formatQueryValue(q)} · ${type}`;
+}
+
+/** A queued/running last job keeps the list polling (#340 flows-6). */
+export const isJobActive = (q: Pick<ListeningQuery, "lastJob" | "deletedAt">): boolean =>
+  !q.deletedAt && (q.lastJob?.status === "queued" || q.lastJob?.status === "running");
+
+export { mentionsHref, mentionsWindowHref } from "@/lib/links/mentions";

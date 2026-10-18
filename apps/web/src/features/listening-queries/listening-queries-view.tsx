@@ -16,6 +16,7 @@ import { flattenUnique } from "@/lib/query/infinite-list";
 import { useListeningQueries, useListeningQuery } from "./api";
 import { BackfillDialog } from "./backfill-dialog";
 import { DeleteQueryDialog } from "./delete-query-dialog";
+import { QueriesListMobile } from "./queries-list-mobile";
 import { QueriesTable } from "./queries-table";
 import { QueryFormDrawer } from "./query-form-drawer";
 import { useQueryActions } from "./use-query-actions";
@@ -43,6 +44,7 @@ export function ListeningQueriesView() {
   const includeDeleted = search?.get("deleted") === "1";
   const list = useListeningQueries(project?.id, { includeDeleted });
   const items = useMemo(() => flattenUnique(list.data?.pages ?? []), [list.data]);
+  const enabledCount = items.filter((q) => q.enabled && !q.deletedAt).length;
   const pagesLoaded = (list.data?.pages.length ?? 0) > 0;
   const pid = project?.id ?? "";
   const actions = useQueryActions(pid);
@@ -111,7 +113,12 @@ export function ListeningQueriesView() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Truy vấn theo dõi" actions={createButton} />
-      <div className="flex items-center gap-3">
+      {/* Toolbar panel (#340 ops-1): count of loaded queries; the API list has no total, so "đã tải" while more pages remain. */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-[var(--ink)] bg-[var(--enamel-white)] px-4 py-3">
+        <p className="text-sm text-secondary" data-testid="queries-count">
+          {list.hasNextPage ? "Đã tải " : ""}
+          {items.length} truy vấn · {enabledCount} đang bật
+        </p>
         <Toggle size="sm" label="Hiện truy vấn đã xoá" isSelected={includeDeleted} onChange={setIncludeDeleted} />
       </div>
       <QueryState
@@ -131,6 +138,13 @@ export function ListeningQueriesView() {
       >
         <div className="flex flex-col gap-3">
           <QueriesTable
+            items={items}
+            tz={project?.timezone ?? DEFAULT_TZ}
+            isAdmin={isAdmin}
+            busyId={actions.togglingId}
+            {...handlers}
+          />
+          <QueriesListMobile
             items={items}
             tz={project?.timezone ?? DEFAULT_TZ}
             isAdmin={isAdmin}
@@ -158,6 +172,7 @@ export function ListeningQueriesView() {
           isOpen
           onClose={closeDrawer}
           onOpenExisting={openExisting}
+          onRunNow={actions.onRun}
         />
       ) : null}
       {isAdmin && project ? (

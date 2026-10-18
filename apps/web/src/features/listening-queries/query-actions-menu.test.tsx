@@ -28,17 +28,37 @@ describe("QueryActionsMenu", () => {
   it("TC-LQ-021 / FR-018 / BR-033: viewer sees only 'Xem bài nhắc'", () => {
     open(false);
     expect(screen.getAllByRole("menuitem")).toHaveLength(1);
+    expect(screen.queryByRole("separator")).not.toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "Sửa" })).not.toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "Chạy ngay" })).not.toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "Xoá" })).not.toBeInTheDocument();
   });
 
-  it("TC-LQ-021: admin sees Sửa / Chạy ngay / Tắt / Xoá and actions call handlers", () => {
+  it("TC-LQ-021 / #340 ops-6: admin menu is grouped, has no Tắt/Bật, and Xoá is destructive", () => {
     const q = open(true);
-    for (const name of ["Sửa", "Chạy ngay", "Tắt", "Xoá"])
-      expect(screen.getByRole("menuitem", { name })).toBeInTheDocument();
+    expect(screen.getAllByRole("menuitem").map((e) => e.textContent)).toEqual([
+      "Xem bài nhắc",
+      "Sửa",
+      "Chạy ngay",
+      "Lấy dữ liệu cũ",
+      "Xoá",
+    ]);
+    expect(screen.getAllByRole("separator")).toHaveLength(2);
+    expect(screen.getByText("Xoá")).toHaveClass("text-error-primary");
     fireEvent.click(screen.getByRole("menuitem", { name: "Chạy ngay" }));
     expect(handlers.onRun).toHaveBeenCalledWith(q);
+  });
+
+  it("#340: 'Xoá' calls onDelete", () => {
+    const q = open(true);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Xoá" }));
+    expect(handlers.onDelete).toHaveBeenCalledWith(q);
+  });
+
+  it("#340 ops-2: the trigger is a 44px target", () => {
+    const q = queryFixture();
+    render(<QueryActionsMenu query={q} isAdmin={false} />);
+    expect(screen.getByRole("button", { name: `Thao tác cho ${q.displayName}` })).toHaveClass("size-11");
   });
 
   it("admin on a deleted query sees only Khôi phục besides 'Xem bài nhắc'", () => {
