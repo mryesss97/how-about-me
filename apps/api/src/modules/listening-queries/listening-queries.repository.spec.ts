@@ -26,4 +26,26 @@ describe("toListeningQuery", () => {
     expect(dto.deletedAt).toBe("2026-10-03T00:00:00.000Z");
     expect(ListeningQuerySchema.safeParse(dto).success).toBe(true);
   });
+  it("T-045 FR-061: maps lastJob / matchedPosts from the summary map", () => {
+    const row = makeRow();
+    const summaries = new Map([
+      [
+        row.id,
+        {
+          lastJob: {
+            id: "0192f000-0000-7000-8000-000000000001",
+            status: "success" as const,
+            recordsFetched: 40,
+            recordsInserted: 3,
+            completedAt: "2026-10-02T00:00:00.000Z",
+          },
+          matchedPosts: { total: 2, last24h: 1 },
+        },
+      ],
+    ]);
+    const dto = toListeningQuery(row, new Map(), summaries);
+    expect(dto.lastJob?.recordsFetched).toBe(40);
+    expect(dto.matchedPosts).toEqual({ total: 2, last24h: 1 });
+    expect(ListeningQuerySchema.safeParse(dto).success).toBe(true);
+  });
 });

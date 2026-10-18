@@ -101,6 +101,13 @@ Query: `enabled?`, `type?`, `includeDeleted?=false`, `cursor?`, `limit?=50`.
   "createdBy":{"id":"uuid","displayName":"Minh"},"createdAt":"…","updatedAt":"…","deletedAt":null }], "nextCursor":null }
 ```
 
+Sync summary (T-045, FR-061), computed in one batched SQL statement (LATERAL joins) for the page; `GET /:id`, create, PATCH and restore return the same fields:
+
+- `lastJob` — newest `sync_jobs` row of the query by `(created_at, id) DESC`, whatever its trigger or status (also `queued`/`running`, so `completedAt` may be `null`). `null` if the query never ran.
+- `matchedPosts.total` — distinct posts in `post_query_matches` for the query, excluding `excluded_by_terms = true`. Not filtered by relevance (this is an ingest metric, not analytics). A post matching several queries counts for each.
+- `matchedPosts.last24h` — same, with `first_matched_at >= now − 24h` (rolling UTC, no timezone bucket).
+- Soft-deleted queries (`includeDeleted=true`) keep their summary (BR-010).
+
 ### `POST /projects/:projectId/listening-queries` (admin) → 201
 
 ```json
