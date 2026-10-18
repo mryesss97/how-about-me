@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { QueryState } from "./query-state";
+import { ErrorState, QueryState } from "./query-state";
 
 const CONTENT = <p>62 mentions</p>;
 
@@ -40,7 +40,7 @@ describe("QueryState (UX §2.3, BR-032)", () => {
       </QueryState>,
     );
     expect(screen.getByRole("alert")).toBeInTheDocument();
-    expect(screen.getByText("Analytics unavailable.")).toBeInTheDocument();
+    expect(screen.getByText("Máy chủ gặp sự cố. Thử lại sau ít phút.")).toBeInTheDocument(); // #392
     expect(screen.getByTestId("request-id")).toHaveTextContent("req-abc-123");
   });
 
@@ -101,5 +101,37 @@ describe("QueryState (UX §2.3, BR-032)", () => {
     const link = screen.getByRole("link", { name: "Về Tổng quan" });
     expect(link).toHaveAttribute("href", "/overview");
     expect(link).toHaveClass("plaque-button");
+  });
+});
+
+describe("ErrorState copy (#392, UX §5)", () => {
+  it("INTERNAL: Vietnamese sentence, requestId and code in the mono line, no English message", () => {
+    const { container } = render(
+      <ErrorState error={{ code: "INTERNAL", message: "Internal server error", requestId: "r1" }} />,
+    );
+    expect(container.textContent).not.toContain("Internal server error");
+    expect(screen.getByText("Máy chủ gặp sự cố. Thử lại sau ít phút.")).toBeInTheDocument();
+    expect(screen.getByTestId("request-id")).toHaveTextContent("r1");
+    expect(container.textContent).toContain("INTERNAL");
+  });
+
+  it("NETWORK_ERROR: never prints 'Failed to fetch'", () => {
+    const { container } = render(<ErrorState error={{ code: "NETWORK_ERROR", message: "Failed to fetch" }} />);
+    expect(container.textContent).not.toContain("Failed");
+    expect(screen.getByText("Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.")).toBeInTheDocument();
+  });
+
+  it("UNKNOWN without requestId: no 'Mã yêu cầu' line, no statusText", () => {
+    const { container } = render(<ErrorState error={{ code: "UNKNOWN", message: "Internal Server Error" }} />);
+    expect(container.textContent).not.toContain("Mã yêu cầu");
+    expect(container.textContent).not.toContain("Internal Server Error");
+    expect(screen.getByText("Máy chủ tạm thời không phản hồi. Thử lại sau ít phút.")).toBeInTheDocument();
+  });
+
+  it("production: no raw-message tooltip", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const { container } = render(<ErrorState error={{ code: "INTERNAL", message: "Internal server error" }} />);
+    expect(container.querySelector("[title]")).toBeNull();
+    vi.unstubAllEnvs();
   });
 });

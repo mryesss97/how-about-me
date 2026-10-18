@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { RefreshCcw01 } from "@untitledui/icons";
 import { PlaqueButton } from "@/features/shared/plaque-button";
 import { QueryState, SkeletonBlock } from "@/features/shared/query-state";
-import { ApiError } from "@/lib/api/client";
+import { toQueryStateError } from "@/lib/semantics/api-errors";
 import { formatCount } from "@/lib/format/number";
 import { flattenUnique } from "@/lib/query/infinite-list";
 import { useFailedAnalysisRuns } from "./api";
@@ -12,13 +12,6 @@ import { AnalysisFailuresListMobile } from "./analysis-failures-list-mobile";
 import { AnalysisFailuresTable } from "./analysis-failures-table";
 import { RetryAllDialog } from "./retry-all-dialog";
 import { useRowRetry } from "./use-row-retry";
-
-const toStateError = (err: unknown) =>
-  err
-    ? err instanceof ApiError
-      ? { code: err.code, message: err.message, requestId: err.requestId }
-      : { message: "Phản hồi không hợp lệ từ máy chủ." }
-    : null;
 
 /** "Lỗi phân tích" tab (FR-175, UX §3.6). Visible to every member; retry actions are admin-only UX. */
 export function AnalysisFailuresTab({ pid, tz, isAdmin }: { pid: string; tz: string; isAdmin: boolean }) {
@@ -59,7 +52,7 @@ export function AnalysisFailuresTab({ pid, tz, isAdmin }: { pid: string; tz: str
       ) : null}
       <QueryState
         isLoading={list.isLoading}
-        error={toStateError(list.error)}
+        error={toQueryStateError(list.error)}
         onRetry={() => void list.refetch()}
         isEmpty={items.length === 0}
         skeleton={<SkeletonBlock lines={6} className="operate-board p-4" />}
