@@ -172,7 +172,7 @@ export function SentimentBubbleMap({
       className={className}
     >
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-        <div className="relative">
+        <div>
           <BubbleCanvas
             key={mode} // remount → grow-in again when switching mode
             all={all}
@@ -180,12 +180,15 @@ export function SentimentBubbleMap({
             selected={selected?.key ?? null}
             onSelect={setSelectedKey}
             reducedMotion={reducedMotion}
+            smallLabel={phrases ? copy.smallLabelPhrases : copy.smallLabel}
+            overlay={
+              filter !== "all" && shown.length === 0 ? (
+                <p className="absolute inset-0 flex items-center justify-center text-sm text-tertiary">
+                  {phrases ? copy.emptyFilteredPhrases(filter) : copy.emptyFiltered(filter)}
+                </p>
+              ) : null
+            }
           />
-          {filter !== "all" && shown.length === 0 ? (
-            <p className="absolute inset-0 flex items-center justify-center text-sm text-tertiary">
-              {phrases ? copy.emptyFilteredPhrases(filter) : copy.emptyFiltered(filter)}
-            </p>
-          ) : null}
         </div>
         <BubbleDetailPanel datum={selected} getHref={getHref} />
       </div>
