@@ -6,7 +6,10 @@ import { Badge } from "@/components/base/badges/badges";
 import { Toggle } from "@/components/base/toggle/toggle";
 import { formatCount } from "@/lib/format/number";
 import { formatDateTime, formatRelativeOrAbsolute } from "@/lib/time/format";
-import { mentionsHref, querySubline } from "./format";
+import { Tooltip, TooltipTrigger } from "@/components/base/tooltip/tooltip";
+import { mentionsAllRelevanceHref } from "@/lib/links/mentions";
+import { cx } from "@/utils/cx";
+import { querySubline } from "./format";
 import { LastErrorCell, SyncStatusCell } from "./sync-cells";
 
 /** Shared by the desktop table and the mobile cards (#340). */
@@ -66,26 +69,42 @@ export function SyncSummary({ q, tz, now }: { q: ListeningQuery; tz: string; now
   );
 }
 
-/** "Bài khớp" 24h / total, each a link to Mentions filtered to the query (#340 flows-6; total → 30d, no "all" preset). */
-export function MatchedLinks({ q }: { q: ListeningQuery }) {
-  const cls = "text-secondary underline-offset-2 hover:underline";
+const MATCHED_24H_HINT = "Bài khớp mới thu thập trong 24 giờ qua (gồm cả bài chưa phân tích hoặc không liên quan)";
+const MATCHED_TOTAL_HINT = "Bài khớp thu thập từ trước tới nay (gồm cả bài chưa phân tích hoặc không liên quan)";
+
+function CountWithHint({ value, hint }: { value: number; hint: string }) {
   return (
-    <span className="tabular-nums whitespace-nowrap">
-      {/* Server-side DISTINCT post_id counts; display only. */}
+    <Tooltip title={hint}>
+      <TooltipTrigger aria-label={`${formatCount(value)}: ${hint}`} className="cursor-help text-secondary tabular-nums">
+        {formatCount(value)}
+      </TooltipTrigger>
+    </Tooltip>
+  );
+}
+
+/**
+ * "Bài khớp mới" 24h / total (#391). These are ingest counts (DISTINCT matched posts by first match time, any
+ * relevance), so they are plain text + tooltip, not links: Mentions counts by published_at with BR-016 relevance and
+ * would show a different number (FR-142 exception documented in the UX spec §3.5). A separate number-free
+ * "Xem bài nhắc" link opens Mentions with every relevance label.
+ */
+export function MatchedCounts({ q, align = "end" }: { q: ListeningQuery; align?: "start" | "end" }) {
+  return (
+    <span className={cx("inline-flex flex-col gap-0.5", align === "end" ? "items-end" : "items-start")}>
+      <span className="whitespace-nowrap">
+        <CountWithHint value={q.matchedPosts.last24h} hint={MATCHED_24H_HINT} />
+        <span className="text-tertiary"> / </span>
+        <CountWithHint value={q.matchedPosts.total} hint={MATCHED_TOTAL_HINT} />
+      </span>
       <Link
-        href={mentionsHref(q.id, "24h")}
-        aria-label={`Xem ${formatCount(q.matchedPosts.last24h)} bài khớp 24 giờ qua của ${q.displayName}`}
-        className={cls}
+        href={mentionsAllRelevanceHref(q.id)}
+        aria-label={`Xem bài nhắc của ${q.displayName}`}
+        className={cx(
+          "text-xs text-secondary underline underline-offset-2",
+          align === "start" && "inline-flex min-h-11 items-center",
+        )}
       >
-        {formatCount(q.matchedPosts.last24h)}
-      </Link>
-      <span className="text-tertiary"> / </span>
-      <Link
-        href={mentionsHref(q.id, "30d")}
-        aria-label={`Xem bài khớp 30 ngày qua của ${q.displayName} (tổng ${formatCount(q.matchedPosts.total)})`}
-        className={cls}
-      >
-        {formatCount(q.matchedPosts.total)}
+        Xem bài nhắc
       </Link>
     </span>
   );

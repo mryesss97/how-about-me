@@ -3,7 +3,7 @@
 import type { ListeningQuery } from "@how-about-me/contracts";
 import { cx } from "@/utils/cx";
 import { formatDuration } from "./format";
-import { EnabledCell, MatchedLinks, QueryNameCell, SyncSummary, type QueryListProps } from "./query-cells";
+import { EnabledCell, MatchedCounts, QueryNameCell, SyncSummary, type QueryListProps } from "./query-cells";
 import { QueryActionsMenu, type QueryActionHandlers } from "./query-actions-menu";
 
 const TH = "whitespace-nowrap px-3 py-2 text-left text-xs font-semibold text-tertiary";
@@ -26,7 +26,7 @@ export function QueriesTable({ items, tz, isAdmin, now, busyId, ...handlers }: P
               <th className={TH}>Bật</th>
               <th className={TH}>Đồng bộ gần nhất</th>
               <th className={TH}>Lịch quét</th>
-              <th className={cx(TH, "text-right")}>Bài khớp (24 giờ / tất cả)</th>
+              <th className={cx(TH, "text-right")}>Bài khớp mới (24 giờ / tổng)</th>
               <th className={cx(TH, STICKY, "bg-secondary")}>
                 <span className="sr-only">Thao tác</span>
               </th>
@@ -82,7 +82,7 @@ function QueryRow({
         <p className="text-xs text-tertiary">chồng lấn {formatDuration(q.overlapSeconds)}</p>
       </td>
       <td className={cx(TD, "text-right")}>
-        <MatchedLinks q={q} />
+        <MatchedCounts q={q} />
       </td>
       <td className={cx(TD, STICKY, "bg-[var(--enamel-white)] py-1 text-right")}>
         <QueryActionsMenu query={q} isAdmin={isAdmin} {...handlers} />

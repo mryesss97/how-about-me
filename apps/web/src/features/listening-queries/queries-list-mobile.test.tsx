@@ -8,17 +8,21 @@ const renderCards = (items = [queryFixture()], isAdmin = false) =>
   render(<QueriesListMobile items={items} tz="Asia/Ho_Chi_Minh" isAdmin={isAdmin} now={NOW} onToggle={() => {}} />);
 
 describe("QueriesListMobile (#340 ops-2)", () => {
-  it("card shows name, status text (BR-017), Bài khớp links and a 44px menu trigger", () => {
+  it("card shows name, status text (BR-017), Bài khớp mới counts + link and a 44px menu trigger", () => {
     const q = queryFixture();
     renderCards([q]);
     const card = within(screen.getByTestId(`query-card-${q.id}`));
     expect(card.getByText(q.displayName)).toBeInTheDocument();
     expect(card.getByText("Thành công")).toBeInTheDocument();
-    expect(card.getByText("Bài khớp")).toBeInTheDocument();
-    expect(card.getByRole("link", { name: /bài khớp 24 giờ qua/ })).toHaveAttribute(
+    expect(card.getByText("Bài khớp mới")).toBeInTheDocument();
+    // #391 / BR-016: counts are not links; the separate link spans every relevance label.
+    expect(card.getByRole("button", { name: /^12: .*không liên quan/ })).toBeInTheDocument();
+    const link = card.getByRole("link", { name: `Xem bài nhắc của ${q.displayName}` });
+    expect(link).toHaveAttribute(
       "href",
-      `/mentions?queryIds=${q.id}&preset=24h`,
+      `/mentions?queryIds=${q.id}&preset=30d&relevance=relevant,uncertain,irrelevant`,
     );
+    expect(link).toHaveClass("min-h-11");
     expect(card.getByRole("button", { name: `Thao tác cho ${q.displayName}` })).toHaveClass("size-11");
   });
 
