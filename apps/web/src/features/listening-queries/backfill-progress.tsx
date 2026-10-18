@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { Button } from "@/components/base/buttons/button";
+import { syncErrorLabel } from "@/lib/semantics/sync-errors";
 import { formatDateTime } from "@/lib/time/format";
 import { useBackfillJobProgress, useInvalidateQueryList } from "./api";
 import { isTerminal, jobStatusLabel, progressSummary } from "./backfill-form";
@@ -56,7 +57,11 @@ export function BackfillProgress({ pid, jobId, alreadyRunning, onClose }: Props)
               Khoảng: {formatDateTime(job.windowSince)} – {formatDateTime(job.windowUntil)}
             </p>
           ) : null}
-          {job.error ? <p className="text-sm text-error-primary">{job.error.message}</p> : null}
+          {job.error ? (
+            <p className="text-sm text-error-primary" title={`${job.error.code}: ${job.error.message}`}>
+              {syncErrorLabel(job.error.code, job.error.message)}
+            </p>
+          ) : null}
         </div>
       ) : null}
       <div className="flex items-center justify-between gap-3">

@@ -91,6 +91,32 @@ describe("SyncJobDrawer", () => {
     expect(screen.getByText("Trùng").nextSibling).toHaveTextContent("7");
   });
 
+  it("#392 / BR-017: the error section opens with the Vietnamese label, raw code under 'Chi tiết kỹ thuật'", async () => {
+    setup(
+      jobDetailFixture({ status: "failed", error: { code: "THREADS_UPSTREAM_ERROR", message: "Bad gateway" } }),
+      false,
+    );
+    expect(await screen.findByTestId("job-error-label")).toHaveTextContent("Threads đang lỗi");
+    expect(screen.getByText("Chi tiết kỹ thuật")).toBeInTheDocument();
+    expect(screen.getByText("THREADS_UPSTREAM_ERROR")).toBeInTheDocument();
+  });
+
+  it("#392: a 500 load error shows Vietnamese copy, not the API message", async () => {
+    apiFetch.mockImplementation((path: string) =>
+      path.endsWith("/listening-queries")
+        ? Promise.resolve({ items: [], nextCursor: null })
+        : Promise.reject(new ApiError(500, "INTERNAL", "Internal server error", "req-5")),
+    );
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <SyncJobDrawer pid={PID} jobId="j-1" tz="Asia/Ho_Chi_Minh" isAdmin={false} onClose={() => {}} />
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText("Máy chủ gặp sự cố. Thử lại sau ít phút.")).toBeInTheDocument();
+    expect(document.body.textContent).not.toContain("Internal server error");
+  });
+
   it("TC-SYS-011 / FR-175: admin retries a failed job, invalidates and toasts", async () => {
     const job = failed();
     const { invalidate, onClose } = setup(job, true);

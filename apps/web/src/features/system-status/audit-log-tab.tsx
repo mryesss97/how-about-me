@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { PlaqueButton } from "@/features/shared/plaque-button";
 import { QueryState, SkeletonBlock } from "@/features/shared/query-state";
-import { ApiError } from "@/lib/api/client";
+import { toQueryStateError } from "@/lib/semantics/api-errors";
 import { flattenUnique } from "@/lib/query/infinite-list";
 import { useAuditLogs, useMemberNames, useQueryNames, type AuditLogFilters as ApiFilters } from "./api";
 import { AuditLogFilters } from "./audit-log-filters";
@@ -11,13 +11,6 @@ import { AuditLogListMobile } from "./audit-log-list-mobile";
 import { AuditLogTable } from "./audit-log-table";
 import { dayStartUtc, nextDayStartUtc } from "./format";
 import { useStatusParams, type AuditLogParams } from "./use-status-params";
-
-const toStateError = (err: unknown) =>
-  err
-    ? err instanceof ApiError
-      ? { code: err.code, message: err.message, requestId: err.requestId }
-      : { message: "Phản hồi không hợp lệ từ máy chủ." }
-    : null;
 
 /** "Nhật ký thao tác" tab (FR-201, TC-SYS-015). Only mounted for admins; filters live in the URL. */
 export function AuditLogTab({ pid, tz, projectName }: { pid: string; tz: string; projectName?: string }) {
@@ -54,7 +47,7 @@ export function AuditLogTab({ pid, tz, projectName }: { pid: string; tz: string;
       />
       <QueryState
         isLoading={list.isLoading}
-        error={toStateError(list.error)}
+        error={toQueryStateError(list.error)}
         onRetry={() => void list.refetch()}
         isEmpty={items.length === 0}
         skeleton={<SkeletonBlock lines={6} className="operate-board p-4" />}
