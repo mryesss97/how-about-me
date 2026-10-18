@@ -127,3 +127,23 @@ export function auditActionText(action: string): string {
 export function nextDayStartUtc(day: string, tz: string): string {
   return parseDate(day).add({ days: 1 }).toDate(tz).toISOString();
 }
+
+/** Audit entity types in Vietnamese (#56); unknown types are shown as stored. */
+const AUDIT_ENTITY_LABEL_VI: Record<string, string> = {
+  social_post: "Bài nhắc",
+  analysis_override: "Ghi đè",
+  analysis_run: "Lượt phân tích",
+  analysis_settings: "Cài đặt phân tích",
+  monitoring_project: "Dự án",
+  project: "Dự án",
+  member: "Thành viên",
+  query: "Truy vấn",
+  listening_query: "Truy vấn",
+  integration: "Kết nối",
+  integration_connection: "Kết nối",
+  sync_job: "Lượt đồng bộ",
+};
+
+export function auditEntityLabel(type: string): string {
+  return AUDIT_ENTITY_LABEL_VI[type] ?? type;
+}

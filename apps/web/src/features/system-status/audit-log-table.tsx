@@ -4,7 +4,7 @@ import type { AuditLog } from "@how-about-me/contracts";
 import { Fragment, useState } from "react";
 import { DASH } from "@/lib/format/number";
 import { formatDateTime } from "@/lib/time/format";
-import { auditActionText, truncateMiddle } from "./format";
+import { auditActionText, truncateMiddle, auditEntityLabel } from "./format";
 
 const TH = "whitespace-nowrap px-3 py-2 text-left text-xs font-semibold text-tertiary";
 const TD = "px-3 py-3 align-top text-sm text-primary";
@@ -52,7 +52,7 @@ export function AuditLogTable({ items, tz }: { items: AuditLog[]; tz: string }) 
                       {auditActionText(l.action)}
                     </td>
                     <td className={TD} title={l.entityId ?? undefined}>
-                      {l.entityType ?? DASH}
+                      {l.entityType ? auditEntityLabel(l.entityType) : DASH}
                       {l.entityId ? ` · ${truncateMiddle(l.entityId, 16)}` : ""}
                     </td>
                     <td className={`${TD} text-right`}>
