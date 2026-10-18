@@ -14,12 +14,18 @@ type Props = { board: LandingBoard; rect: BoardRect; rank: number; index: number
  */
 export function SignBoard({ board, rect, rank, index }: Props) {
   const compact = rect.width < 96 || rect.height < 72;
-  // BR-017: the share line always shows, on one line ("62,0% TIÊU CỰC" never breaks), sized to the board's width.
+  // BR-017: the share line always shows in full, sized to the board's width; #334: never under 13 px — when one line
+  // would need less, it wraps between the share and the label ("62,0%" / "TIÊU CỰC").
   const figure = board.empty ? copy.noMentions : `${viRate(board.dominantShare)} ${copy.sentiment[board.dominant]}`;
+  const oneLine = (rect.width - 28) / (figure.length * FIGURE_EM);
+  const wrap = oneLine < FIGURE_MIN;
+  const cut = figure.indexOf(" ");
+  const lines = wrap && cut > 0 ? [figure.slice(0, cut), figure.slice(cut + 1)] : [figure];
+  const longest = Math.max(...lines.map((l) => l.length));
   const figureSize = Math.round(
-    Math.max(10, Math.min(30, rect.height * 0.12, (rect.width - 28) / (figure.length * FIGURE_EM))),
+    Math.max(FIGURE_MIN, Math.min(30, rect.height * 0.12, wrap ? (rect.width - 28) / (longest * FIGURE_EM) : oneLine)),
   );
-  const textBox = rect.height - figureSize - 10;
+  const textBox = rect.height - figureSize * lines.length - 10;
   // The rank plate stays clear of the phrase: reserve its band only when the first line would reach it.
   let reserveTop = 0;
   let fit = phraseFit(board.name, rect.width, textBox);
@@ -66,7 +72,11 @@ export function SignBoard({ board, rect, rank, index }: Props) {
           ))}
         </span>
         <span className="sign-figure" style={{ fontSize: figureSize }}>
-          {figure}
+          {lines.map((l) => (
+            <span key={l} className="block">
+              {l}
+            </span>
+          ))}
         </span>
       </span>
       <span aria-hidden className={cx("sign-sub", rect.height < 64 && "sign-sub-tight")}>
@@ -81,6 +91,8 @@ export const termHref = (name: string) => `/terms/${encodeURIComponent(name)}?pr
 
 /** Saira Extra Condensed 700 caps, average advance per glyph incl. spaces and digits. */
 const FIGURE_EM = 0.5;
+/** Smallest share line (px), #334. */
+export const FIGURE_MIN = 13;
 
 /** True when the phrase's first line, centred in the board, would run into the rank plate (top-left). */
 function collidesWithPlate(fit: PhraseFit, rect: BoardRect, figureSize: number, compact: boolean): boolean {
