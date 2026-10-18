@@ -28,7 +28,7 @@ type Props = {
 export function SyncJobsFilters({ pid, value, onChange, onRefresh, isRefreshing }: Props) {
   const options = useQueryNames(pid);
   const quick = (
-    <div role="group" aria-label="Lọc nhanh theo trạng thái" className="flex gap-2 overflow-x-auto">
+    <div role="group" aria-label="Lọc nhanh theo trạng thái" className="flex flex-wrap gap-2">
       {QUICK.map((q) => {
         // A status picked in the select that has no plaque (queued/success/cancelled) lights none of them.
         const selected = value.status === q.status;

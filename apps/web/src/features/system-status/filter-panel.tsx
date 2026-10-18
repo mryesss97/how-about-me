@@ -31,7 +31,8 @@ export function FilterPanel({ fieldsId, activeCount, onRefresh, isRefreshing, qu
   return (
     <div className="flex flex-col gap-3 border-b-2 border-[var(--ink)] bg-[var(--enamel-white)] px-4 py-3">
       <div className="flex flex-wrap items-center gap-2">
-        {quick ? <div className="min-w-0 flex-1">{quick}</div> : null}
+        {/* Quick plaques wrap and take their own row under md, so none is clipped at 390 px (#343). */}
+        {quick ? <div className="w-full min-w-0 md:w-auto md:flex-1">{quick}</div> : null}
         <button
           type="button"
           className={plaqueClassName("sm", "min-h-11 md:hidden")}
