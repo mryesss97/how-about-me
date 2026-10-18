@@ -316,4 +316,96 @@ describe("Listening queries (T-042)", () => {
     expect(all).toHaveLength(7);
     expect(all).toEqual(await expected(true));
   });
+
+  it("TC-LQ-019: list/get carry lastJob, lastError, matchedPosts all-time/24h (FR-061, BR-010)", async () => {
+    const a = await create({ ...valid, queryValue: "alpha" });
+    const b = await create({ ...valid, queryValue: "beta" });
+    const c = await create({ ...valid, queryValue: "gamma" });
+    const bOther = await create({ ...valid, queryValue: "alpha" }, otherProjectId, "adminB");
+    const job = (
+      queryId: string,
+      pid: string,
+      status: "failed" | "success",
+      createdAt: Date,
+      extra: Partial<Prisma.SyncJobUncheckedCreateInput> = {},
+    ) =>
+      prisma.syncJob.create({
+        data: {
+          id: randomUUID(),
+          projectId: pid,
+          queryId,
+          status,
+          trigger: "scheduled",
+          searchType: "RECENT",
+          searchMode: "KEYWORD",
+          createdAt,
+          ...extra,
+        },
+      });
+    const now = Date.now();
+    await job(a, projectId, "failed", new Date(now - 7200_000));
+    const newest = await job(a, projectId, "success", new Date(now - 60_000), {
+      recordsFetched: 40,
+      recordsInserted: 3,
+      completedAt: new Date(now - 30_000),
+    });
+    await job(bOther, otherProjectId, "success", new Date(now), { recordsFetched: 99 });
+    const errAt = new Date(now - 10_000);
+    const okAt = new Date(now - 30_000);
+    await prisma.listeningQuery.update({
+      where: { id: a },
+      data: {
+        lastErrorCode: "PROVIDER_RATE_LIMITED",
+        lastErrorMessage: "slow",
+        lastErrorAt: errAt,
+        lastSuccessfulSyncAt: okAt,
+      },
+    });
+    const shared = await createPost(prisma, { projectId, queryId: a });
+    await prisma.postQueryMatch.create({
+      data: { postId: shared.id, queryId: b, firstMatchedAt: new Date(), lastMatchedAt: new Date() },
+    });
+    const old = await createPost(prisma, { projectId, queryId: a });
+    await prisma.postQueryMatch.update({
+      where: { postId_queryId: { postId: old.id, queryId: a } },
+      data: { firstMatchedAt: new Date(now - 2 * 86400_000) },
+    });
+    const excluded = await createPost(prisma, { projectId, queryId: a });
+    await prisma.postQueryMatch.update({
+      where: { postId_queryId: { postId: excluded.id, queryId: a } },
+      data: { excludedByTerms: true },
+    });
+
+    const list = await get("");
+    expect(list.status).toBe(200);
+    const byId = new Map(list.body.items.map((q: { id: string }) => [q.id, q]));
+    const qa = byId.get(a) as Record<string, unknown>;
+    expect(ListeningQuerySchema.safeParse(qa).success).toBe(true);
+    expect(qa.lastJob).toEqual({
+      id: newest.id,
+      status: "success",
+      recordsFetched: 40,
+      recordsInserted: 3,
+      completedAt: new Date(now - 30_000).toISOString(),
+    });
+    expect(qa.lastError).toEqual({ code: "PROVIDER_RATE_LIMITED", message: "slow", at: errAt.toISOString() });
+    expect(qa.lastSuccessfulSyncAt).toBe(okAt.toISOString());
+    expect(qa.matchedPosts).toEqual({ total: 2, last24h: 1 });
+    // overlap: the shared post counts for B too; B has no job of its own.
+    expect((byId.get(b) as Record<string, unknown>).matchedPosts).toEqual({ total: 1, last24h: 1 });
+    expect((byId.get(b) as Record<string, unknown>).lastJob).toBeNull();
+    expect((byId.get(c) as Record<string, unknown>).lastJob).toBeNull();
+    expect((byId.get(c) as Record<string, unknown>).matchedPosts).toEqual({ total: 0, last24h: 0 });
+
+    const one = await get(`/${a}`);
+    expect(one.body.lastJob).toEqual(qa.lastJob);
+    expect(one.body.matchedPosts).toEqual({ total: 2, last24h: 1 });
+
+    // BR-010: soft-deleted query keeps its summary under includeDeleted.
+    expect((await del(a)).status).toBe(204);
+    const withDeleted = await get("?includeDeleted=true");
+    const deleted = withDeleted.body.items.find((q: { id: string }) => q.id === a);
+    expect(deleted.matchedPosts).toEqual({ total: 2, last24h: 1 });
+    expect(deleted.lastJob.id).toBe(newest.id);
+  });
 });

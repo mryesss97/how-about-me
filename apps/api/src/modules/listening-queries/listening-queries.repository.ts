@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { Prisma, type QueryType } from "@prisma/client";
-import type { ListeningQuery, ListeningQueryListQuery } from "@how-about-me/contracts";
+import { JobStatusSchema, type ListeningQuery, type ListeningQueryListQuery } from "@how-about-me/contracts";
 import { findActiveQueryDuplicate } from "../../common/queries/find-active-query-duplicate";
 import {
   countWhere,
@@ -13,6 +13,18 @@ import { PrismaService } from "../../database/prisma.service";
 
 export type ListeningQueryRow = Prisma.ListeningQueryGetPayload<object>;
 export type CreatorRef = { id: string; displayName: string | null };
+export type QuerySyncSummary = { lastJob: ListeningQuery["lastJob"]; matchedPosts: ListeningQuery["matchedPosts"] };
+type SyncSummaryRow = {
+  id: string;
+  job_id: string | null;
+  status: string | null;
+  records_fetched: number | null;
+  records_inserted: number | null;
+  completed_at: Date | null;
+  total: number;
+  last24h: number;
+};
+const DAY_MS = 24 * 60 * 60 * 1000;
 export type ListeningQueryPage = { items: ListeningQuery[]; nextCursor: string | null; totalCount?: number };
 
 /** Prisma access for listening_queries (docs/02-architecture/04-data-model.md §4.6). Maps rows to contract DTOs. */
@@ -63,8 +75,14 @@ export class ListeningQueriesRepository {
     const page = orderByIds(ids, rows);
     const last = pageKeys.at(-1);
     const nextCursor = keys.length > q.limit && last ? encodeCreatedAtCursor(last) : null;
-    const creators = await this.loadCreators(page.map((r) => r.createdBy));
-    const result: ListeningQueryPage = { items: page.map((r) => toListeningQuery(r, creators)), nextCursor };
+    const [creators, summaries] = await Promise.all([
+      this.loadCreators(page.map((r) => r.createdBy)),
+      this.loadSyncSummaries(ids),
+    ]);
+    const result: ListeningQueryPage = {
+      items: page.map((r) => toListeningQuery(r, creators, summaries)),
+      nextCursor,
+    };
     if (q.count) result.totalCount = await countWhere(this.prisma, "listening_queries", where);
     return result;
   }
@@ -80,8 +98,39 @@ export class ListeningQueriesRepository {
     return new Map(profiles.map((p) => [p.id, p]));
   }
 
+  /**
+   * T-045 / FR-061: one batched statement (LATERAL joins, no N+1) for the page's ids.
+   * lastJob = newest sync_job by (created_at, id) whatever its status; matchedPosts counts
+   * post_query_matches rows (PK (post_id, query_id) ⇒ distinct posts), excluding excluded_by_terms,
+   * last24h by first_matched_at >= now − 24h (rolling, UTC). Soft-deleted queries keep counts (BR-010).
+   */
+  async loadSyncSummaries(ids: string[], now: Date = new Date()): Promise<Map<string, QuerySyncSummary>> {
+    if (ids.length === 0) return new Map();
+    const since = new Date(now.getTime() - DAY_MS);
+    const rows = await this.prisma.$queryRaw<SyncSummaryRow[]>(Prisma.sql`
+      SELECT q.id::text AS id,
+             j.id::text AS job_id, j.status::text AS status, j.records_fetched, j.records_inserted, j.completed_at,
+             COALESCE(m.total, 0)::int AS total, COALESCE(m.last24h, 0)::int AS last24h
+      FROM unnest(${ids}::uuid[]) AS q(id)
+      LEFT JOIN LATERAL (
+        SELECT id, status, records_fetched, records_inserted, completed_at
+        FROM sync_jobs WHERE query_id = q.id
+        ORDER BY created_at DESC, id DESC LIMIT 1
+      ) j ON true
+      LEFT JOIN LATERAL (
+        SELECT COUNT(*)::int AS total,
+               COUNT(*) FILTER (WHERE first_matched_at >= ${since})::int AS last24h
+        FROM post_query_matches WHERE query_id = q.id AND NOT excluded_by_terms
+      ) m ON true`);
+    return new Map(rows.map((r) => [r.id, toSyncSummary(r)]));
+  }
+
   async toDto(row: ListeningQueryRow): Promise<ListeningQuery> {
-    return toListeningQuery(row, await this.loadCreators([row.createdBy]));
+    const [creators, summaries] = await Promise.all([
+      this.loadCreators([row.createdBy]),
+      this.loadSyncSummaries([row.id]),
+    ]);
+    return toListeningQuery(row, creators, summaries);
   }
 }
 
@@ -101,7 +150,28 @@ export function buildListeningQueryWhereSql(projectId: string, q: ListeningQuery
 
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
 
-export function toListeningQuery(r: ListeningQueryRow, creators: Map<string, CreatorRef>): ListeningQuery {
+function toSyncSummary(r: SyncSummaryRow): QuerySyncSummary {
+  const lastJob =
+    r.job_id && r.status
+      ? {
+          id: r.job_id,
+          status: JobStatusSchema.parse(r.status),
+          recordsFetched: r.records_fetched ?? 0,
+          recordsInserted: r.records_inserted ?? 0,
+          completedAt: iso(r.completed_at),
+        }
+      : null;
+  return { lastJob, matchedPosts: { total: r.total, last24h: r.last24h } };
+}
+
+const EMPTY_SUMMARY: QuerySyncSummary = { lastJob: null, matchedPosts: { total: 0, last24h: 0 } };
+
+export function toListeningQuery(
+  r: ListeningQueryRow,
+  creators: Map<string, CreatorRef>,
+  summaries: Map<string, QuerySyncSummary> = new Map(),
+): ListeningQuery {
+  const summary = summaries.get(r.id) ?? EMPTY_SUMMARY;
   const creator = r.createdBy ? creators.get(r.createdBy) : undefined;
   return {
     id: r.id,
@@ -123,9 +193,9 @@ export function toListeningQuery(r: ListeningQueryRow, creators: Map<string, Cre
       r.lastErrorAt && r.lastErrorCode
         ? { code: r.lastErrorCode, message: r.lastErrorMessage ?? "", at: r.lastErrorAt.toISOString() }
         : null,
-    // Placeholders until T-045 (#41) fills job/match summaries.
-    lastJob: null,
-    matchedPosts: { total: 0, last24h: 0 },
+    // T-045 / FR-061: from loadSyncSummaries; empty when not loaded.
+    lastJob: summary.lastJob,
+    matchedPosts: { ...summary.matchedPosts },
     createdBy: creator ? { id: creator.id, displayName: creator.displayName } : null,
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
