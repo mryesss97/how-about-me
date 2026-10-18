@@ -1,4 +1,4 @@
-import type { AnalysisSettings, Member, Project } from "@how-about-me/contracts";
+import type { AnalysisSettings, Member, Project, ThreadsIntegrationStatus } from "@how-about-me/contracts";
 import { SAFETY_CATEGORIES } from "@how-about-me/taxonomy";
 import { P1 } from "@/features/auth/test-utils";
 
@@ -46,5 +46,16 @@ export const analysisSettingsData = (over: Partial<AnalysisSettings> = {}): Anal
   outdatedCount: 0,
   createdAt: null,
   createdBy: null,
+  ...over,
+});
+
+export const threadsStatusFixture = (over: Partial<ThreadsIntegrationStatus> = {}): ThreadsIntegrationStatus => ({
+  status: "connected",
+  accountIdentifier: "@brand_a",
+  grantedScopes: ["threads_basic", "threads_keyword_search"],
+  tokenExpiresAt: "2026-12-01T00:00:00.000Z",
+  lastVerifiedAt: "2026-10-01T03:00:00.000Z",
+  lastSuccessAt: "2026-10-01T03:00:00.000Z",
+  lastError: null,
   ...over,
 });

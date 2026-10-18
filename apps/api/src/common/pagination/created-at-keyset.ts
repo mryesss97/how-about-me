@@ -19,7 +19,7 @@ export function utcMicrosKeySql(expr: string): Prisma.Sql {
 export const CREATED_AT_KEY_SQL = utcMicrosKeySql("created_at");
 
 export type CreatedAtCursor = { key: string; id: string };
-export type CreatedAtTable = "audit_logs" | "listening_queries";
+export type CreatedAtTable = "audit_logs" | "listening_queries" | "sync_jobs";
 
 const KEY_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/;
 

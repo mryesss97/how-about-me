@@ -98,7 +98,7 @@ Implementation notes (T-052, `CollectorService` + `SyncJobRecorder`):
 
 - Scheduler `completeRun` owns `next_run_at`, `consecutive_failures`, `last_run_at`, `last_error_*` and the unlock; the runner owns `sync_jobs` and `last_successful_sync_at` (written with a `locked_by` guard).
 - The runner only moves `last_successful_sync_at` on `success` (= `window_until`). A RECENT run that reached `since` stops early and is a `success`, so the "all pages processed" case of the paragraph above never ends `partial`; every `partial` keeps the previous value.
-- A queued manual/retry job (`manualJobId`) is taken over (`queued → running`, guarded); its stored `window_*` and `last_cursor` win, so a retry job created with the cursor of a partial job resumes after the last committed page. Otherwise a `scheduled` job is created.
+- The scheduler claim treats a queued `manual` **or** `retry` job alike (due immediately, claimed first; T-055). A queued manual/retry job (`manualJobId`) is taken over (`queued → running`, guarded); its stored `window_*` and `last_cursor` win, so a retry job created with the cursor of a partial job resumes after the last committed page. Otherwise a `scheduled` job is created.
 - Page counters, `last_cursor`, `provider_usage` are written inside the page's ingestion transaction (`ingestPage(…, afterPage)`), so committed posts and counters never diverge. `provider_requests` counts every HTTP attempt incl. retries; attempts of a page that failed are added after the fact.
 - Page cap (`COLLECTOR_MAX_PAGES_PER_JOB`) with more pages left → `partial`, `error_code = null`, `error_message = "page cap reached (N)"`, `last_cursor` = next cursor.
 - Worker shutdown (abort signal) stops between pages with `INTERNAL`.
