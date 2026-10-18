@@ -1,5 +1,6 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, Optional } from "@nestjs/common";
 import { PinoLogger } from "nestjs-pino";
+import { MetricsService } from "../../common/metrics/metrics.service";
 import { APP_CONFIG, type AppConfig } from "../../config/config.module";
 import type { RunOutcome } from "../../jobs/collector-runner";
 import { CollectorStateRepository, type CollectorStateRow } from "./collector-state.repository";
@@ -40,6 +41,7 @@ export class CircuitBreakerService {
     @Inject(APP_CONFIG) private readonly cfg: AppConfig,
     private readonly repo: CollectorStateRepository,
     private readonly logger: PinoLogger,
+    @Optional() private readonly metrics: MetricsService | null = null,
   ) {
     this.logger.setContext(CircuitBreakerService.name);
   }
@@ -51,6 +53,7 @@ export class CircuitBreakerService {
     const threshold = this.cfg.COLLECTOR_CIRCUIT_FAILURE_THRESHOLD;
     if (outcome.status === "success") {
       const prev = await this.repo.reset(projectId);
+      this.metrics?.setCircuitOpen(projectId, false);
       if (prev !== null && prev >= threshold) this.logger.info({ projectId }, "collector circuit closed");
       return;
     }
@@ -59,6 +62,8 @@ export class CircuitBreakerService {
     const code = outcome.errorCode ?? "INTERNAL";
     const reason = `${code}: ${outcome.errorMessage ?? "Run failed"}`.slice(0, MAX_REASON_LENGTH);
     const row = await this.repo.recordFailure(projectId, threshold, this.cfg.COLLECTOR_CIRCUIT_OPEN_SECONDS, reason);
+    const open = row.circuitOpenUntil !== null && row.circuitOpenUntil.getTime() > Date.now();
+    this.metrics?.setCircuitOpen(projectId, open);
     if (row.consecutiveFailures >= threshold)
       this.logger.warn(
         { projectId, failures: row.consecutiveFailures, until: row.circuitOpenUntil, code },
