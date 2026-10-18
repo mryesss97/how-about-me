@@ -1,4 +1,5 @@
 import type { SentimentLabel } from "@how-about-me/taxonomy";
+import { type Filters, rangeLabel } from "@/lib/filters";
 import { formatCount } from "@/lib/format/number";
 import { sentimentBadge } from "@/lib/semantics/badges";
 import { bubbleCopy } from "@/features/shared/bubbles/sentiment-style";
@@ -53,8 +54,17 @@ export const termDetailCopy = {
   back: "Về bức tường cụm từ",
   allMentions: "Xem tất cả trong Bài nhắc",
   withSentiment: (n: string) => `${n} lượt nhắc có cảm xúc`,
+  /** Hero period (#332): relative presets as words, custom as its dates. */
+  period: (filters: Filters, now?: Date) => PERIOD[filters.preset] ?? rangeLabel(filters, now).replace(" – ", "–"),
   none: "Chưa ai nhắc tới cụm từ này trong khoảng thời gian đã chọn.",
   splitLabel: "Tỷ lệ cảm xúc",
   sentiment: { positive: "Tích cực", neutral: "Trung tính", negative: "Tiêu cực" },
   matchNote: "Đếm các bài có nội dung hoặc cụm từ khoá chứa cụm này (BR-042), giống biển ở trang chủ.",
 } as const;
+
+const PERIOD: Record<string, string | undefined> = {
+  "1h": "1 GIỜ QUA",
+  "24h": "24 GIỜ QUA",
+  "7d": "7 NGÀY QUA",
+  "30d": "30 NGÀY QUA",
+};
