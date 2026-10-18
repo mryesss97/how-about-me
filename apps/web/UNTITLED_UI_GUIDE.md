@@ -813,3 +813,8 @@ Use background color variables to manage all fill colors for elements in your de
 | bg-success-primary      | Primary success state background color for components.                                                                                                                                        |
 | bg-success-secondary    | Secondary success state background color for components such as featured icons.                                                                                                               |
 | bg-success-solid        | Default solid (dark) success state background color for components such as featured icons and metric items.                                                                                   |
+
+## Local changes to vendored components
+
+- `#385` `base/select/multi-select.tsx`: trigger `aria-labelledby` = label + current value; `aria-label` prop when there is no label; listbox fallback name "Tùy chọn".
+- `#385` `application/date-picker/date-range-picker.tsx`: trigger button gets its own Vietnamese `aria-label` (React Aria has no vi-VN string and would inject "Calendar").

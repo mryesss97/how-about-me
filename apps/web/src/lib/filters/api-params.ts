@@ -49,8 +49,13 @@ export function pinRange(filters: Filters, now: Date = new Date(), range?: { fro
 }
 
 /** Drill-down link (FR-142): pins the resolved range as `custom` so Mentions shows the same post set; no `compare`. */
-export function toMentionsHref(filters: Filters, extra: Partial<Filters> = {}, now: Date = new Date()): string {
-  return `/mentions${serializeFilters({ ...pinRange({ ...filters, ...extra }, now), compare: null })}`;
+export function toMentionsHref(
+  filters: Filters,
+  extra: Partial<Filters> = {},
+  now: Date = new Date(),
+  range?: { from: string; to: string },
+): string {
+  return `/mentions${serializeFilters({ ...pinRange({ ...filters, ...extra }, now, range), compare: null })}`;
 }
 
 /**

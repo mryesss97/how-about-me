@@ -61,30 +61,32 @@ describe("QueriesTable", () => {
     expect(row.queryByText(/lấy ·/)).not.toBeInTheDocument();
   });
 
-  it("BR-017 / #340: an error replaces the job counts and keeps the code: message tooltip", () => {
+  it("BR-017 / #340: an error replaces the job counts", () => {
     const q = queryFixture({
       lastSuccessfulSyncAt: null,
       lastError: { code: "X", message: "m", at: "2026-10-13T02:00:00.000Z" },
     });
     renderTable([q]);
     const row = within(screen.getByTestId(`query-row-${q.id}`));
-    expect(row.getByRole("button", { name: "X: m" })).toBeInTheDocument();
+    expect(row.getByRole("button", { name: "m" })).toBeInTheDocument();
     expect(row.queryByText(/lấy ·/)).not.toBeInTheDocument();
   });
 
-  it("known error codes read in Vietnamese; the tooltip keeps the full code: message", () => {
+  it("#385: known error codes read in Vietnamese; the name never exposes the raw code", () => {
     const message = "Threads API rate limit exceeded for this token, retry after the window resets";
     const q = queryFixture({ lastError: { code: "THREADS_RATE_LIMITED", message, at: "2026-10-13T03:00:00.000Z" } });
     renderTable([q]);
-    const trigger = screen.getByRole("button", { name: `THREADS_RATE_LIMITED: ${message}` });
+    const trigger = screen.getByRole("button", { name: "Threads giới hạn tần suất gọi" });
     expect(trigger.textContent).toBe("Threads giới hạn tần suất gọi");
+    expect(trigger.getAttribute("aria-label")).not.toMatch(/[A-Z_]{6,}/);
   });
 
   it("unknown error codes show the truncated provider message", () => {
     const message = "Something unexpected happened upstream while paging the search results, giving up";
     const q = queryFixture({ lastError: { code: "SOMETHING_NEW", message, at: "2026-10-13T03:00:00.000Z" } });
     renderTable([q]);
-    const trigger = screen.getByRole("button", { name: `SOMETHING_NEW: ${message}` });
+    const trigger = screen.getByRole("button", { name: /…$/ });
+    expect(trigger.getAttribute("aria-label")).not.toMatch(/SOMETHING_NEW/);
     expect(trigger.textContent?.endsWith("…")).toBe(true);
   });
 
@@ -133,7 +135,7 @@ describe("QueriesTable", () => {
     const failed = { ...q, lastJob: job };
     renderTable([failed]);
     const row = within(screen.getByTestId(`query-row-${q.id}`));
-    expect(row.getByRole("button", { name: "X: m" })).toHaveClass("text-error-primary");
+    expect(row.getByRole("button", { name: "m" })).toHaveClass("text-error-primary");
     expect(row.getByRole("link", { name: "Xem lượt lỗi" })).toHaveAttribute(
       "href",
       `/system-status?tab=sync-jobs&queryId=${q.id}&job=${job.id}`,

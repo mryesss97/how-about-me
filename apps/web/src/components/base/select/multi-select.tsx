@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode, RefAttributes } from "react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useId, useRef, useState } from "react";
 import { ChevronDown, SearchLg } from "@untitledui/icons";
 import { useFilter } from "react-aria";
 import type { Selection } from "react-aria-components";
@@ -121,6 +121,8 @@ const MultiSelectEmptyState = ({
 );
 
 interface MultiSelectProps extends RefAttributes<HTMLDivElement>, CommonProps {
+    /** #385: accessible name used when there is no visible `label`. */
+    "aria-label"?: string;
     /** The items to display in the listbox. */
     items?: SelectItemType[];
     /** The children to render for each item. */
@@ -199,7 +201,11 @@ const MultiSelectRoot = ({
     searchPlaceholder = "Search",
     resetLabel,
     selectAllLabel,
+    "aria-label": ariaLabel,
 }: MultiSelectProps) => {
+    // #385: trigger name = visible label + current value ("Cảm xúc Tất cả").
+    const labelId = useId();
+    const valueId = useId();
     const { contains } = useFilter({ sensitivity: "base" });
     const [searchValue, setSearchValue] = useState("");
 
@@ -224,7 +230,7 @@ const MultiSelectRoot = ({
             <div className={cx("flex flex-col gap-1.5", className)}>
                 {label && (
                     <Label isRequired={hideRequiredIndicator ? false : isRequired} isInvalid={isInvalid} tooltip={tooltip}>
-                        {label}
+                        <span id={labelId}>{label}</span>
                     </Label>
                 )}
 
@@ -232,6 +238,8 @@ const MultiSelectRoot = ({
                     <AriaButton
                         ref={triggerRef}
                         isDisabled={isDisabled}
+                        aria-labelledby={label ? `${labelId} ${valueId}` : undefined}
+                        aria-label={label ? undefined : ariaLabel}
                         onClick={onResize}
                         className={(state) =>
                             cx(
@@ -249,14 +257,14 @@ const MultiSelectRoot = ({
                             )}
                         >
                             {hasSelection ? (
-                                <span className={cx("flex items-center", sizes[size].textContainer)}>
+                                <span id={valueId} className={cx("flex items-center", sizes[size].textContainer)}>
                                     <span className={cx("font-medium text-primary", sizes[size].text)}>
                                         {selectedCountFormatter ? selectedCountFormatter(selectedCount) : `${selectedCount} selected`}
                                     </span>
                                     {supportingText && <span className={cx("text-tertiary", sizes[size].text)}>{supportingText}</span>}
                                 </span>
                             ) : (
-                                <span className={cx("text-placeholder", sizes[size].text)}>{placeholder}</span>
+                                <span id={valueId} className={cx("text-placeholder", sizes[size].text)}>{placeholder}</span>
                             )}
 
                             <ChevronDown
@@ -302,7 +310,7 @@ const MultiSelectRoot = ({
                                 )}
 
                                 <AriaListBox
-                                    aria-label={label || "Options"}
+                                    aria-label={label || ariaLabel || "Tùy chọn"}
                                     items={items}
                                     selectionMode="multiple"
                                     selectedKeys={selectedKeys}

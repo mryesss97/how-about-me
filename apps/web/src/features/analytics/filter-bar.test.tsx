@@ -50,7 +50,7 @@ describe("FilterBar (UX §2.1)", () => {
     const { onUrlUpdate } = setup("?relevance=uncertain");
     expect(screen.getByText("Mức liên quan")).toBeInTheDocument();
     // The trigger shows the single selected value (#329).
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Chưa chắc" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Mức liên quan Chưa chắc" })));
     await act(async () => fireEvent.click(await screen.findByRole("option", { name: /Chưa chắc/ })));
     await waitFor(() => expect(onUrlUpdate).toHaveBeenCalled());
     // Default [relevant] is cleared from the URL, i.e. relevance stays relevant.
@@ -59,7 +59,7 @@ describe("FilterBar (UX §2.1)", () => {
 
   it("BR-016: Bỏ chọn on Mức liên quan resets to relevant, never empty", async () => {
     const { onUrlUpdate } = setup("?relevance=uncertain,irrelevant");
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "2 đã chọn" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /^Mức liên quan 2 đã chọn/ })));
     await act(async () => fireEvent.click(await screen.findByRole("button", { name: "Bỏ chọn" })));
     await waitFor(() => expect(onUrlUpdate).toHaveBeenCalled());
     expect(onUrlUpdate.mock.calls.at(-1)?.[0].searchParams.get("relevance")).toBeNull();
@@ -99,6 +99,15 @@ describe("FilterBar (UX §2.1)", () => {
     expect(screen.getByRole("group", { name: /^Khoảng ngày: \d{2}\/\d{2} – \d{2}\/\d{2}$/ })).toBeInTheDocument();
   });
 
+  it("#385: multi-select triggers are named by label + value; the date trigger has no English 'Calendar'", () => {
+    setup();
+    expect(screen.getByRole("button", { name: /^Truy vấn/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Mức liên quan/ })).toBeInTheDocument();
+    const names = screen.getAllByRole("button").map((b) => b.getAttribute("aria-label") ?? "");
+    expect(names.some((n) => /Calendar/.test(n))).toBe(false);
+    expect(screen.queryByRole("button", { name: /Calendar/ })).not.toBeInTheDocument();
+  });
+
   it("#240: switching tz on a custom range keeps the calendar dates in the URL", async () => {
     // 1–7 Oct in Asia/Ho_Chi_Minh (GMT+7).
     const { lastQuery, onUrlUpdate } = setup(
@@ -124,7 +133,7 @@ describe("FilterBar (UX §2.1)", () => {
     setup();
     expect(screen.getByText("Truy vấn")).toBeInTheDocument();
     // Truy vấn is the only multi-select in the row showing "Tất cả" (secondary ones sit in "Bộ lọc khác").
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Tất cả" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Truy vấn Tất cả" })));
     const options = await screen.findAllByRole("option");
     expect(options.map((o) => o.textContent)).toEqual(["1zone", "#1zone", "eventista refundĐã xoá"]);
   });

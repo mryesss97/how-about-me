@@ -61,6 +61,17 @@ export function TermMentions({ term, counts, total }: TermMentionsProps) {
   const pathname = usePathname();
   const search = useSearchParams()?.toString() ?? "";
   const backPath = `${pathname}${search ? `?${search}` : ""}`;
+  // FR-142 / #385: href built from the list's pinned range, never `new Date()` at render (SSR/client mismatch).
+  const mentionsHref = useMemo(
+    () =>
+      toMentionsHref(
+        { ...filters, term },
+        tab ? { sentiment: [tab] } : {},
+        undefined,
+        params.from && params.to ? { from: params.from, to: params.to } : undefined,
+      ),
+    [filters, term, tab, params.from, params.to],
+  );
   const pagesLoaded = (list.data?.pages.length ?? 0) > 0;
 
   return (
@@ -72,10 +83,7 @@ export function TermMentions({ term, counts, total }: TermMentionsProps) {
             {copy.listTitle(term)}
           </h2>
           {/* FR-142: the one link to /mentions, range pinned, tab carried as `sentiment`. */}
-          <PlaqueButton
-            href={toMentionsHref({ ...filters, term }, tab ? { sentiment: [tab] } : {})}
-            iconTrailing={ArrowRight}
-          >
+          <PlaqueButton href={mentionsHref} iconTrailing={ArrowRight}>
             {copy.openInMentions}
           </PlaqueButton>
         </div>
