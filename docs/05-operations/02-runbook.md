@@ -27,7 +27,7 @@ Mutating routes below require role `admin` unless stated (FR-015); others return
 1. Confirm in Settings → Integrations (admin).
 2. Obtain a new long-lived token (Meta flow documented in POC report) — Admin pastes it in "Update token", then "Verify".
 3. Scheduler resumes automatically on `connected`. Check next sync within 2 min in Sync jobs.
-4. Gap recovery: if outage > overlap, use the §4 workaround (backfill is **P1, not in MVP**).
+4. Gap recovery: if outage > overlap, run a backfill for the gap window (§4, T-140).
 5. If `permission_error` persists: check Meta app status/App Review; escalate to owner.
 6. Token refresh (T-040): once the POC confirms Threads refresh and the real adapter implements it, set `THREADS_TOKEN_REFRESH_MODE=on` on the worker (cron `THREADS_TOKEN_REFRESH_CRON`, window `THREADS_TOKEN_REFRESH_WINDOW_DAYS`). Failed refreshes show in Audit log as `integration.refresh_failed` (filter by action); a 401/403 there also moves the integration to `expired`/`permission_error`.
 
