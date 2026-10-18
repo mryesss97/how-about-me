@@ -240,6 +240,23 @@ describe("MentionsView (UX §3.3)", () => {
     expect(nth(useOverview.mock.calls, -1)[1].compare).toBeUndefined();
   });
 
+  it("#328: pending banner + empty state link keep the pinned range and ask for pending,processing", async () => {
+    const base = overviewFixture();
+    overviewData = overviewFixture({ coverage: { ...base.coverage, pendingMentions: 5 } });
+    apiFetch.mockResolvedValueOnce(page(0, null, 0));
+    setup("?sentiment=negative");
+    await screen.findAllByText("5 lượt nhắc đang chờ phân tích.");
+    await waitFor(() => expect(screen.getAllByRole("link", { name: "Xem lượt nhắc đang chờ" })).toHaveLength(2));
+    const links = screen.getAllByRole("link", { name: "Xem lượt nhắc đang chờ" });
+    for (const l of links) {
+      const sp = new URLSearchParams((l.getAttribute("href") ?? "").split("?")[1]);
+      expect(sp.get("analysisStatus")).toBe("pending,processing");
+      expect(sp.get("preset")).toBe("custom");
+      expect(sp.get("to")).toBeTruthy();
+      expect(sp.has("sentiment")).toBe(false);
+    }
+  });
+
   it.each([
     ["pending", { pendingMentions: 1234 }, {}, "1.234 lượt nhắc đang chờ phân tích."],
     [

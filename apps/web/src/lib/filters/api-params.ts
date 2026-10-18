@@ -1,3 +1,4 @@
+import { isUnlabelledStatusFilter } from "@how-about-me/contracts";
 import { displayLabel } from "@/lib/semantics/labels";
 import { serializeFilters } from "./parsers";
 import { type ArrayFilterKey, DEFAULT_RELEVANCE, type Filters } from "./schema";
@@ -19,7 +20,8 @@ const ARRAY_KEYS: ArrayFilterKey[] = [
 
 /**
  * FE filters → API query params (FR-130). Maps `tz` → `timezone`, drops `preset`, CSV-encodes arrays,
- * omits empty arrays, always sends `relevance` (BR-016), keeps only fields valid for `target`.
+ * omits empty arrays, always sends `relevance` (BR-016), keeps only fields valid for `target`. For Mentions the server
+ * still keeps NULL-relevance posts when the status filter is pending/processing/failed only (BR-016 exception, #328).
  * Keys are sorted so the output is a stable query key.
  */
 export function toApiParams(filters: Filters, opts: { target: ApiTarget; now?: Date }): Record<string, string> {
@@ -72,6 +74,8 @@ export interface AppliedChip {
   key: ChipKey;
   value: string;
   label: string;
+  /** Info chips explain a server-side rule and have no close button (default true). */
+  removable?: boolean;
 }
 
 const LABEL_PREFIX: Record<ArrayFilterKey, string> = {
@@ -97,8 +101,15 @@ function valueLabel(key: ArrayFilterKey, value: string, queryNames: Record<strin
   }
 }
 
-/** Chips for active non-default filters (relevance = [relevant] yields no chip, BR-016). */
-export function appliedChips(filters: Filters, queryNames: Record<string, string> = {}): AppliedChip[] {
+/**
+ * Chips for active non-default filters (relevance = [relevant] yields no chip, BR-016). `mentions` adds the
+ * BR-016 exception info chip (#328) — analytics never applies that rule.
+ */
+export function appliedChips(
+  filters: Filters,
+  queryNames: Record<string, string> = {},
+  opts: { mentions?: boolean } = {},
+): AppliedChip[] {
   const isDefaultRelevance = filters.relevance.length === 1 && filters.relevance[0] === "relevant";
   const chips: AppliedChip[] = ARRAY_KEYS.flatMap((key) => {
     if (key === "relevance" && isDefaultRelevance) return [];
@@ -108,6 +119,15 @@ export function appliedChips(filters: Filters, queryNames: Record<string, string
       label: `${LABEL_PREFIX[key]}: ${valueLabel(key, value, queryNames)}`,
     }));
   });
+  // BR-016 exception (#328): status-only list also includes posts not analysed yet.
+  if (opts.mentions && isUnlabelledStatusFilter(filters.analysisStatus)) {
+    chips.push({
+      key: "relevance",
+      value: "unanalysed",
+      label: "Mức liên quan: gồm cả chưa phân tích",
+      removable: false,
+    });
+  }
   // BR-042 (#273): term shown verbatim.
   if (filters.term) chips.push({ key: "term", value: filters.term, label: `Cụm từ: ${filters.term}` });
   return chips;

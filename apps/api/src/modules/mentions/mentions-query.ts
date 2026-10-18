@@ -157,7 +157,8 @@ export function runPolicyBandsJoin(analysisIdExpr: Prisma.Sql): Prisma.Sql {
 }
 
 export function withMentionsBase(scope: AnalyticsScope, body: Prisma.Sql): Prisma.Sql {
-  return Prisma.sql`WITH ${buildBaseSetCte(scope)} ${body}`;
+  // BR-016 exception (#328): status-only filters keep posts with no relevance yet (list, count, export, bulk).
+  return Prisma.sql`WITH ${buildBaseSetCte(scope, { unlabelledMatchRelevance: true })} ${body}`;
 }
 
 export type MentionsScope = {

@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { toApiParams, toMentionsHref } from "./api-params";
 import {
   bucketDrillDown,
+  coverageDrillDown,
   kpiDrillDown,
   phraseSentimentDrillDown,
   queryDrillDown,
@@ -176,5 +177,19 @@ describe("phraseSentimentDrillDown (#243, FR-148, FR-142)", () => {
     expect(parsed.preset).toBe("custom");
     const api = MentionsListQuerySchema.parse(toApiParams(parsed, { target: "mentions", now }));
     expect(api.phrase).toEqual(["giá vé"]);
+  });
+
+  describe("coverageDrillDown (#328, metric-definitions §2)", () => {
+    it("pending,processing with label filters cleared and default relevance (BR-016)", () => {
+      expect(coverageDrillDown()).toEqual({
+        analysisStatus: ["pending", "processing"],
+        relevance: ["relevant"],
+        sentiment: [],
+        safety: [],
+        intent: [],
+        topic: [],
+        language: [],
+      });
+    });
   });
 });

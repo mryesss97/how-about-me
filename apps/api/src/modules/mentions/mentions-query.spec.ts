@@ -91,6 +91,11 @@ describe("mentions-query", () => {
     expect(s).not.toContain("JOIN post_query_matches");
   });
 
+  it("BR-016 exception (#328): status-only filter keeps NULL-relevance posts on the mentions base set", () => {
+    const { scope } = resolveMentionsScope(MentionsListQuerySchema.parse({ analysisStatus: "failed" }), PID, now);
+    expect(norm(withMentionsBase(scope, mentionsFromWhere(undefined)))).toContain("OR e.relevance_label IS NULL");
+  });
+
   it("resolveMentionsScope: default 7×24h range, relevance=relevant (BR-016), reviewStatus kept out of filters", () => {
     const r = resolveMentionsScope(MentionsListQuerySchema.parse({ reviewStatus: "reviewed" }), PID, now);
     expect(r.scope.range.to).toEqual(now);

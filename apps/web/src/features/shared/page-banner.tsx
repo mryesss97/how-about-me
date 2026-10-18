@@ -90,7 +90,7 @@ export function SyncFailedBanner({ href = "/system-status" }: { href?: string })
 /** Count comes from the coverage block, so "waiting" never gets confused with "analysed as neutral". */
 export function AnalysisPendingBanner({
   count,
-  href = "/mentions?analysisStatus=pending",
+  href = "/mentions?analysisStatus=pending,processing",
 }: {
   count: number;
   href?: string;

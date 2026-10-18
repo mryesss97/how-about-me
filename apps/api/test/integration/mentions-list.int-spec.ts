@@ -67,7 +67,7 @@ describe("Mentions list (T-095)", () => {
     text?: string;
     matches?: Record<string, boolean>;
     labels?: Labels | null;
-    runStatus?: "pending" | "failed";
+    runStatus?: "pending" | "processing" | "failed";
     errorCode?: string;
     project?: string;
   }) {
@@ -310,6 +310,47 @@ describe("Mentions list (T-095)", () => {
       );
       expect(res.body.totalCount).toBe(rows[0]?.n);
     }
+  });
+
+  it("BR-016 exception (#328): status-only filters keep NULL-relevance posts; analytics unchanged", async () => {
+    const pendingNull = await seedPost({ labels: null });
+    const processingNull = await seedPost({ labels: null, runStatus: "processing" });
+    const failedNull = await seedPost({ labels: null, runStatus: "failed" });
+    const failedRerunIrr = await seedPost({ labels: { relevance: "irrelevant" }, runStatus: "failed" });
+    const failedRerunRel = await seedPost({ runStatus: "failed" });
+    const relevantDone = await seedPost({});
+    const ids = async (f: Record<string, string>) =>
+      ((await get(f).expect(200)).body as { items: { id: string }[] }).items.map((x) => x.id).sort();
+
+    expect(await ids({ analysisStatus: "failed" })).toEqual([failedNull, failedRerunRel].sort());
+    expect(await ids({ analysisStatus: "failed", relevance: "irrelevant" })).toEqual(
+      [failedNull, failedRerunIrr].sort(),
+    );
+    expect(await ids({ analysisStatus: "pending,processing" })).toEqual([pendingNull, processingNull].sort());
+    expect(await ids({ analysisStatus: "pending,completed" })).toEqual([relevantDone]);
+    // Default list: no NULL-relevance post, no irrelevant one (BR-016 unchanged).
+    expect(await ids({})).toEqual([failedRerunRel, relevantDone].sort());
+    expect(await ids({ analysisStatus: "failed", sentiment: "neutral" })).toEqual([failedRerunRel]);
+
+    const listCount = (await get({ analysisStatus: "pending,processing", count: "true" }).expect(200)).body
+      .totalCount as number;
+    expect(listCount).toBe(2);
+    // Coverage equivalence (metric-definitions §2): no labelled pending re-run in this seed.
+    const overview = await api(app, token)
+      .get(`/projects/${projectId}/analytics/overview?${qs({})}`)
+      .expect(200);
+    expect(overview.body.coverage.pendingMentions).toBe(listCount);
+    expect(overview.body.coverage.failedMentions).toBe(1);
+
+    // Analytics base set never applies the exception.
+    const { scope } = resolveMentionsScope(
+      MentionsListQuerySchema.parse({ ...WEEK, analysisStatus: "failed" }),
+      projectId,
+    );
+    const rows = await prisma.$queryRaw<{ n: number }[]>(
+      withBase(scope, Prisma.sql`SELECT count(*)::int AS n FROM base`),
+    );
+    expect(rows[0]?.n).toBe(1);
   });
 
   it("drill-down: language=other includes codes outside taxonomy (#201, FR-143)", async () => {

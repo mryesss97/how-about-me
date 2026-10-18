@@ -2,7 +2,7 @@
  * Analytics foundation (T-090): resolves filters into a scope and builds the shared base set `B`
  * — docs/01-product/07-metric-definitions.md §0, §5. Every analytics widget must start from `base`.
  */
-import type { AnalysisFilters, AnalyticsQuery } from "@how-about-me/contracts";
+import { type AnalysisFilters, type AnalyticsQuery, isUnlabelledStatusFilter } from "@how-about-me/contracts";
 import { LANGUAGE_CODES } from "@how-about-me/taxonomy";
 import { Prisma } from "@prisma/client";
 import { type Range, resolveRange } from "../../common/time/range";
@@ -67,12 +67,26 @@ export function languageFilter(values: readonly string[]): Prisma.Sql {
 }
 
 /**
+ * Relevance clause. `keepUnlabelled` (BR-016 exception, #328) also keeps posts with no relevance yet (NULL);
+ * labelled posts still follow the filter, so `irrelevant` stays out by default.
+ */
+export function relevanceFilter(values: readonly string[], keepUnlabelled: boolean): Prisma.Sql {
+  if (values.length === 0) return Prisma.empty;
+  if (!keepUnlabelled) return anyOf("e.relevance_label", values, "relevance_label");
+  return Prisma.sql`AND (e.relevance_label = ANY(${values}::relevance_label[]) OR e.relevance_label IS NULL)`;
+}
+
+/**
  * CTE `base` — one row per post_id (FR-147): effective analysis (BR-025 via view), range [from,to),
  * ≥1 match with excluded_by_terms=false (all project queries incl. soft-deleted when queryIds empty, BR-010).
  * Default relevance=relevant comes from the schema (BR-016); pending/failed posts have NULL labels and drop out
- * whenever a label filter applies. Use `ignore` for coverage-style counts.
+ * whenever a label filter applies. Use `ignore` for coverage-style counts. Mentions passes `unlabelledMatchRelevance`
+ * (BR-016 exception, #328): a status-only filter (pending/processing/failed) keeps NULL-relevance posts.
  */
-export function buildBaseSetCte(scope: AnalyticsScope, opts: { ignore?: readonly IgnorableFilter[] } = {}): Prisma.Sql {
+export function buildBaseSetCte(
+  scope: AnalyticsScope,
+  opts: { ignore?: readonly IgnorableFilter[]; unlabelledMatchRelevance?: boolean } = {},
+): Prisma.Sql {
   const f = scope.filters;
   const skip = new Set(opts.ignore ?? []);
   const pick = <T>(k: IgnorableFilter, v: readonly T[]): readonly T[] => (skip.has(k) ? [] : v);
@@ -81,6 +95,7 @@ export function buildBaseSetCte(scope: AnalyticsScope, opts: { ignore?: readonly
   const intent = pick("intent", f.intent);
   const topic = pick("topic", f.topic);
   const phrase = pick("phrase", f.phrase);
+  const keepUnlabelled = opts.unlabelledMatchRelevance === true && isUnlabelledStatusFilter(f.analysisStatus);
   // BR-042 term filter (#273): keep posts whose text or current-analysis phrases mention the term.
   const term = f.term && !skip.has("term") ? f.term : undefined;
   const termFilter = term
@@ -99,7 +114,7 @@ export function buildBaseSetCte(scope: AnalyticsScope, opts: { ignore?: readonly
        AND ${col} >= ${scope.range.from} AND ${col} < ${scope.range.to}
        AND EXISTS (SELECT 1 FROM post_query_matches m
                     WHERE m.post_id = e.post_id AND m.excluded_by_terms = false ${queryFilter})
-       ${anyOf("e.relevance_label", pick("relevance", f.relevance), "relevance_label")}
+       ${relevanceFilter(pick("relevance", f.relevance), keepUnlabelled)}
        ${anyOf("e.sentiment_label", pick("sentiment", f.sentiment), "sentiment_label")}
        ${anyOf("e.safety_level", pick("safety", f.safety), "safety_level")}
        ${languageFilter(pick("language", f.language))}

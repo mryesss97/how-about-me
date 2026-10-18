@@ -11,7 +11,7 @@ export default function MentionsPage() {
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 lg:px-8">
       <PageHeader title="Bài nhắc" />
       <Suspense fallback={null}>
-        <FilterBar />
+        <FilterBar mentions />
         <MentionsView />
       </Suspense>
     </div>

@@ -14,7 +14,15 @@ describe("page banners (UX §2.3, BR-032)", () => {
     expect(screen.getByText(/1.240 lượt nhắc đang chờ phân tích/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /lượt nhắc đang chờ/i })).toHaveAttribute(
       "href",
-      "/mentions?analysisStatus=pending",
+      "/mentions?analysisStatus=pending,processing",
+    );
+  });
+
+  it("#328: a passed href (current range/queries) replaces the default link", () => {
+    render(<AnalysisPendingBanner count={3} href="/mentions?analysisStatus=pending,processing&preset=custom" />);
+    expect(screen.getByRole("link", { name: /lượt nhắc đang chờ/i })).toHaveAttribute(
+      "href",
+      "/mentions?analysisStatus=pending,processing&preset=custom",
     );
   });
 

@@ -8,6 +8,8 @@ import { useCurrentProject } from "@/features/auth/use-current-project";
 import { useRole } from "@/features/auth/use-role";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { ApiError } from "@/lib/api/client";
+import { toMentionsHref } from "@/lib/filters/api-params";
+import { coverageDrillDown } from "@/lib/filters/drill-down";
 import { useFilters } from "@/lib/filters/use-filters";
 import { flattenUnique, useMentionsList } from "./api";
 import { MentionsList } from "./mentions-list";
@@ -55,6 +57,13 @@ export function MentionsView() {
   const list = useMentionsList(project?.id, apiParams);
   // FR-159: sync-failed / analysis-pending banners reuse the overview coverage for the same range.
   const overview = useOverview(project?.id, analyticsParams);
+  // #328: pending link pinned to the same range as the banner count (metric-definitions §2).
+  const pinnedTo = analyticsParams.to;
+  const pendingHref = toMentionsHref(
+    { ...filters, q: null },
+    coverageDrillDown(),
+    pinnedTo ? new Date(pinnedTo) : undefined,
+  );
 
   const items = useMemo(() => flattenUnique(list.data?.pages ?? []), [list.data]);
   const firstPage = list.data?.pages[0];
@@ -68,7 +77,9 @@ export function MentionsView() {
 
   return (
     <div className="flex flex-col gap-4">
-      {overview.data ? <OverviewBanners data={overview.data} canManage={role === "admin"} /> : null}
+      {overview.data ? (
+        <OverviewBanners data={overview.data} canManage={role === "admin"} pendingHref={pendingHref} />
+      ) : null}
       <MentionsToolbar
         q={filters.q}
         sort={filters.sort}
@@ -105,6 +116,7 @@ export function MentionsView() {
         emptyReason={emptyReasonFor(overview.data)}
         pendingCount={overview.data?.coverage.pendingMentions ?? 0}
         canManage={role === "admin"}
+        pendingHref={pendingHref}
       />
       {item ? (
         <MentionDetailSlideout key={item} mentionId={item} onClose={closeItem} fullPageHref={detailHref(item)} />

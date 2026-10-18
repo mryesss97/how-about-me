@@ -28,6 +28,7 @@ type Props = {
   emptyReason?: EmptyReason;
   pendingCount?: number;
   canManage?: boolean;
+  pendingHref?: string;
 };
 
 export function MentionsListSkeleton() {
@@ -69,6 +70,7 @@ export function MentionsList(p: Props) {
     pendingCount: p.pendingCount ?? 0,
     canManage: p.canManage ?? false,
     onWidenRange: p.onWidenRange,
+    pendingHref: p.pendingHref,
   });
 
   return (

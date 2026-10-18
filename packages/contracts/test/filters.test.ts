@@ -6,6 +6,7 @@ import {
   AuditLogsQuerySchema,
   BulkReanalyzeBodySchema,
   CreateOverrideBodySchema,
+  isUnlabelledStatusFilter,
   MentionsListQuerySchema,
   RetryFailedBodySchema,
   SyncJobsListQuerySchema,
@@ -103,5 +104,14 @@ describe("term filter (BR-042, #273)", () => {
     for (const term of ["", "   ", "!!!", "a".repeat(61)]) {
       expect(AnalysisFiltersSchema.safeParse({ term }).success).toBe(false);
     }
+  });
+});
+
+describe("isUnlabelledStatusFilter (BR-016 exception, #328)", () => {
+  it.each([[["pending"]], [["pending", "processing"]], [["failed"]]] as const)("%j → true", (v) => {
+    expect(isUnlabelledStatusFilter(v)).toBe(true);
+  });
+  it.each([[[]], [["pending", "completed"]], [["skipped"]], [["stale"]]] as const)("%j → false", (v) => {
+    expect(isUnlabelledStatusFilter(v)).toBe(false);
   });
 });

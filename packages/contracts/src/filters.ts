@@ -10,6 +10,7 @@ import {
   withDateRange,
 } from "./common.js";
 import {
+  type AnalysisStatus,
   AnalysisStatusSchema,
   IntentLabelSchema,
   LanguageCodeSchema,
@@ -35,7 +36,8 @@ export const TermFilterSchema = z
   .transform((v) => normalizePhrase(v))
   .pipe(z.string({ error: "Invalid term" }));
 
-/** Shared analytics/mentions filters — docs/02-architecture/05-api-contract.md §6–§7. Default relevance = relevant (BR-016).
+/** Shared analytics/mentions filters — docs/02-architecture/05-api-contract.md §6–§7. Default relevance = relevant (BR-016);
+ * Mentions also keeps NULL-relevance posts when analysisStatus ⊆ UNLABELLED_ANALYSIS_STATUSES (#328).
  * Unrefined base so resources can `.extend()` it; wrap the final schema with `withDateRange`. */
 export const AnalysisFiltersBaseSchema = z.object({
   from: IsoDateTimeSchema.optional(),
@@ -77,3 +79,19 @@ export const PhrasesQuerySchema = withDateRange(
   }),
 );
 export type PhrasesQuery = z.infer<typeof PhrasesQuerySchema>;
+
+/**
+ * Statuses whose posts may have no relevance yet (BR-016 exception, #328). Mentions list/count/export/bulk only —
+ * analytics never applies the exception.
+ */
+export const UNLABELLED_ANALYSIS_STATUSES = [
+  "pending",
+  "processing",
+  "failed",
+] as const satisfies readonly AnalysisStatus[];
+
+/** BR-016 exception (#328): true when the status filter is non-empty and holds only unlabelled statuses. */
+export function isUnlabelledStatusFilter(statuses: readonly AnalysisStatus[]): boolean {
+  const unlabelled: readonly AnalysisStatus[] = UNLABELLED_ANALYSIS_STATUSES;
+  return statuses.length > 0 && statuses.every((s) => unlabelled.includes(s));
+}

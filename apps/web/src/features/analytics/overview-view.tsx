@@ -22,14 +22,20 @@ import { useOverviewDrillDown } from "./use-overview-drill-down";
 export function OverviewView() {
   const { project } = useCurrentProject();
   const { filters, apiParams } = useFilters("analytics");
-  const { href, navigate, kpiHref } = useOverviewDrillDown(filters, apiParams);
+  const { href, navigate, kpiHref, pendingHref } = useOverviewDrillDown(filters, apiParams);
   const topicSentiment = useTopicSentiment(project?.id, apiParams);
   const row = { projectId: project?.id, apiParams, isProjectLoading: !project, href, navigate };
 
   return (
     <div className="flex flex-col gap-6">
       <FilterBar showCompare />
-      <OverviewKpiSection projectId={project?.id} apiParams={apiParams} isProjectLoading={!project} kpiHref={kpiHref} />
+      <OverviewKpiSection
+        projectId={project?.id}
+        apiParams={apiParams}
+        isProjectLoading={!project}
+        kpiHref={kpiHref}
+        pendingHref={pendingHref}
+      />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <OverviewTrendRow {...row} />
         <OverviewTopicRows {...row} topicSentiment={topicSentiment} />

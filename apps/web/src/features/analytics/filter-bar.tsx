@@ -15,6 +15,8 @@ import { useQueryFilterOptions } from "./use-query-options";
 
 interface FilterBarProps {
   showCompare?: boolean;
+  /** Mentions list mode: shows list-only info chips (#328). */
+  mentions?: boolean;
 }
 
 const MULTI_SELECTS: { key: Exclude<EnumFilterKey, "relevance">; label: string }[] = [
@@ -27,7 +29,7 @@ const MULTI_SELECTS: { key: Exclude<EnumFilterKey, "relevance">; label: string }
 ];
 
 /** Sticky shared filter bar for Overview & Mentions — UX §2.1, FR-130/131. State lives in the URL (nuqs). */
-export function FilterBar({ showCompare = false }: FilterBarProps) {
+export function FilterBar({ showCompare = false, mentions = false }: FilterBarProps) {
   const { filters, setFilters, reset } = useFilters();
   // FR-051/FR-130: options come from the project's listening queries (incl. soft-deleted, #329).
   const { items: queryItems, names: queryNames } = useQueryFilterOptions();
@@ -85,7 +87,7 @@ export function FilterBar({ showCompare = false }: FilterBarProps) {
           Đặt lại
         </Button>
       </div>
-      <AppliedFilterChips filters={filters} setFilters={setFilters} queryNames={queryNames} />
+      <AppliedFilterChips filters={filters} setFilters={setFilters} queryNames={queryNames} mentions={mentions} />
     </section>
   );
 }

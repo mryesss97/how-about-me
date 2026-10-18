@@ -14,10 +14,11 @@ type Props = {
   apiParams: OverviewApiParams;
   isProjectLoading: boolean;
   kpiHref: (id: DrillKpiId) => string;
+  pendingHref?: string;
 };
 
 /** Banners + KPI cards (T-099). */
-export function OverviewKpiSection({ projectId, apiParams, isProjectLoading, kpiHref }: Props) {
+export function OverviewKpiSection({ projectId, apiParams, isProjectLoading, kpiHref, pendingHref }: Props) {
   const { role } = useRole();
   const query = useOverview(projectId, apiParams);
   return (
@@ -33,7 +34,7 @@ export function OverviewKpiSection({ projectId, apiParams, isProjectLoading, kpi
       {query.data ? (
         <div className="flex flex-col gap-4">
           {/* FR-015: canManage is UX only; the API enforces roles. */}
-          <OverviewBanners data={query.data} canManage={role === "admin"} />
+          <OverviewBanners data={query.data} canManage={role === "admin"} pendingHref={pendingHref} />
           <KpiCards kpis={query.data.kpis} hrefFor={kpiHref} />
         </div>
       ) : null}

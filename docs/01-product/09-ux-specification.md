@@ -63,24 +63,24 @@ Display labels are Vietnamese since #275 (`lib/semantics/badges.ts`): Tích cự
 
 ### 2.3 States (every data widget)
 
-| State               | Pattern                                                                                                          |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Loading             | Skeleton matching final layout; no spinners longer than 300 ms                                                   |
-| Empty (no data)     | Empty-state illustration + "No relevant mentions found in this period." + CTA "Widen time range"                 |
-| Sync failed         | Amber alert banner on top of page: "Latest Threads sync failed. Data may be incomplete." + link to System Status |
-| Analysis pending    | Blue info banner: "124 mentions are waiting for analysis." (count from coverage)                                 |
-| Integration expired | Red alert banner: "Threads connection needs attention." + link to Settings → Integrations (admin)                |
-| Error               | Inline error card with `requestId` and "Retry"                                                                   |
-| Forbidden           | Full-page "You don't have permission to view this page." + back link                                             |
+| State               | Pattern                                                                                                                           |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Loading             | Skeleton matching final layout; no spinners longer than 300 ms                                                                    |
+| Empty (no data)     | Empty-state illustration + "No relevant mentions found in this period." + CTA "Widen time range"                                  |
+| Sync failed         | Amber alert banner on top of page: "Latest Threads sync failed. Data may be incomplete." + link to System Status                  |
+| Analysis pending    | Blue info banner: "124 mentions are waiting for analysis." (count from coverage); link to the same list as the empty state (#328) |
+| Integration expired | Red alert banner: "Threads connection needs attention." + link to Settings → Integrations (admin)                                 |
+| Error               | Inline error card with `requestId` and "Retry"                                                                                    |
+| Forbidden           | Full-page "You don't have permission to view this page." + back link                                                              |
 
 Mentions empty state by cause (FR-159, BR-032, #92). When the list is empty the empty state names only the highest-priority cause (integration > sync > pending, same order as the banners); banners above still show every cause. Overview data loading/failed → "none".
 
-| Cause         | Title (VI)                                                              | Action                                        |
-| ------------- | ----------------------------------------------------------------------- | --------------------------------------------- |
-| `integration` | "Kết nối Threads cần được kiểm tra."                                    | Link Settings → Integrations (admin only, UX) |
-| `sync`        | "Lần đồng bộ Threads gần nhất bị lỗi, dữ liệu có thể chưa đầy đủ."      | Link System Status                            |
-| `pending`     | "{N} lượt nhắc đang chờ phân tích." (+ note that filters may hide them) | Link `/mentions?analysisStatus=pending`       |
-| `none`        | "Không có lượt nhắc liên quan trong khoảng thời gian này."              | CTA "Mở rộng khoảng thời gian"                |
+| Cause         | Title (VI)                                                              | Action                                                                                                 |
+| ------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `integration` | "Kết nối Threads cần được kiểm tra."                                    | Link Settings → Integrations (admin only, UX)                                                          |
+| `sync`        | "Lần đồng bộ Threads gần nhất bị lỗi, dữ liệu có thể chưa đầy đủ."      | Link System Status                                                                                     |
+| `pending`     | "{N} lượt nhắc đang chờ phân tích." (+ note that filters may hide them) | Link `/mentions?analysisStatus=pending,processing` keeping range/queries, label filters cleared (#328) |
+| `none`        | "Không có lượt nhắc liên quan trong khoảng thời gian này."              | CTA "Mở rộng khoảng thời gian"                                                                         |
 
 Illustrations (#245): page-level empty states (Mentions list, Reviews queue, "not a member of any project") show the brand v2 `empty` illustration; card/widget states (chart cards, small panels) keep the compact icon. `pending` and `sync-attention` illustrations are reserved for page-level states: System Status (T-060) uses `sync-attention` for "connection needs attention / last sync failed", a future analysis-pending page uses `pending`. Banners above a page stay banners (no illustration). In light mode the illustration panel is Sky Tint (`#E0F2FE`), not Mist, so it stays visible on Mist pages (#253). Illustrations are decorative (`alt=""`, `aria-hidden`); the heading carries the meaning.
 
@@ -195,7 +195,7 @@ Chart details (#222, decided 2026-10-13):
   - With a relative preset, the resolved range is pinned when the page loads or a filter changes, so a new minute never resets the loaded pages.
   - Matched-query chips whose exclude terms matched (`excludedByTerms`) are hidden in the list (FR-059, TC-MEN-021); detail (T-104) shows them as "excluded".
   - `Esc` in the search box clears it. On rows, `Esc` has no action of its own; inside the detail slide-out (T-104) it closes the slide-out and returns focus to the row.
-  - Sync-failed / analysis-pending banners reuse the Overview coverage for the same range (FR-159). Re-analyze is not on the row; it belongs to detail (T-104).
+  - Sync-failed / analysis-pending banners reuse the Overview coverage for the same range (FR-159). With a status-only filter (`pending`/`processing`/`failed`) a non-removable chip "Mức liên quan: gồm cả chưa phân tích" explains that unanalysed posts are included (BR-016 exception, #328). Re-analyze is not on the row; it belongs to detail (T-104).
 
 ### 3.4 Mention Detail (`/mentions/[id]`) — P0
 
