@@ -14,6 +14,7 @@ import { AnalysisModule } from "./modules/analysis/analysis.module";
 import { AuditModule } from "./modules/audit/audit.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { CollectorModule } from "./modules/collector/collector.module";
+import { IntegrationsModule } from "./modules/integrations/integrations.module";
 import { ListeningQueriesModule } from "./modules/listening-queries/listening-queries.module";
 import { MentionsModule } from "./modules/mentions/mentions.module";
 import { ReviewsModule } from "./modules/reviews/reviews.module";
@@ -45,7 +46,8 @@ import { SchedulerModule } from "./jobs/scheduler.module";
     MentionsModule,
     ReviewsModule,
     AnalyticsModule,
-    // M2+: IntegrationsModule, SyncJobsModule, SystemStatusModule
+    IntegrationsModule,
+    // M2+: SyncJobsModule, SystemStatusModule
     // M6: T-147 export lives in MentionsModule (route must precede `:mentionId`)
   ],
   providers: [
