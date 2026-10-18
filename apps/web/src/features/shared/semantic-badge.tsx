@@ -101,12 +101,34 @@ export const AnalysisStatusBadge = ({ value, size }: { value: AnalysisStatus; si
  * BR-020/BR-021: confidence is an uncalibrated prioritisation signal, so `high` shows nothing at all —
  * marking every row would train people to ignore the marker that actually matters.
  */
-export function ConfidenceMarker({ band, size = "sm" }: { band: ConfidenceBand; size?: BadgeSize }) {
+export function ConfidenceMarker({
+  band,
+  size = "sm",
+  variant = "full",
+}: {
+  band: ConfidenceBand;
+  size?: BadgeSize;
+  /** UX §2.2 (#337): `compact` renders medium as a gray "≈" with the full label as accessible name. */
+  variant?: "full" | "compact";
+}) {
   const marker = confidenceMarker[band];
   if (!marker.show) return null;
+  const hint = "Độ tin cậy ước tính của mô hình — dùng để ưu tiên xem lại, không phải xác suất";
+  if (variant === "compact" && band === "medium") {
+    return (
+      <span
+        role="img"
+        aria-label={`${marker.label} — ${hint}`}
+        title={`${marker.label} — ${hint}`}
+        className="text-sm font-medium text-tertiary"
+      >
+        {marker.short}
+      </span>
+    );
+  }
   return (
     <Badge type="pill-color" color={band === "low" ? "warning" : "gray"} size={size}>
-      <span title="Độ tin cậy ước tính của mô hình — dùng để ưu tiên xem lại, không phải xác suất">{marker.label}</span>
+      <span title={hint}>{variant === "compact" ? marker.short : marker.label}</span>
     </Badge>
   );
 }

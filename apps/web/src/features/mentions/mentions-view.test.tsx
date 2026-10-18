@@ -85,7 +85,16 @@ describe("MentionsView (UX §3.3)", () => {
     apiFetch.mockResolvedValueOnce(page(1, null, 1));
     setup();
     await waitFor(() => expect(screen.getAllByTestId("mention-row")).toHaveLength(1));
-    expect(screen.queryByRole("button", { name: /phân tích lại/i }) !== null).toBe(visible);
+    expect(screen.queryByRole("button", { name: "Phân tích lại theo bộ lọc" }) !== null).toBe(visible);
+  });
+
+  it("#337: admin toolbar puts Export before the bulk re-analysis action", async () => {
+    roleState = { role: "admin", settings: { allowViewerExport: true } };
+    apiFetch.mockResolvedValueOnce(page(1, null, 1));
+    setup();
+    const bulk = await screen.findByRole("button", { name: "Phân tích lại theo bộ lọc" });
+    const exp = screen.getByRole("button", { name: /xuất csv/i });
+    expect(exp.compareDocumentPosition(bulk) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it.each([

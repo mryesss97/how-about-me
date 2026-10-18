@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { seriousViolations } from "@/test/axe";
 import { describe, expect, it, vi } from "vitest";
 import { mentionFixture, uuid } from "./fixtures.test-utils";
-import { MentionRow, safePermalink } from "./mention-row";
+import { labelLine, MentionRow, safePermalink, summaryAddsInfo } from "./mention-row";
 
 const TZ = "Asia/Ho_Chi_Minh";
 const lab = <T extends string>(label: T) => ({ label, confidence: 0.7 });
@@ -20,11 +20,8 @@ describe("MentionRow (UX §3.3)", () => {
     expect(screen.getByText("@alice")).toBeInTheDocument();
     expect(container.querySelector("time")?.getAttribute("dateTime")).toBe(item.publishedAt);
     expect(screen.getByText("Giá vé concert quá cao")).toBeInTheDocument();
-    expect(screen.getByText("Phàn nàn")).toBeInTheDocument();
-    expect(screen.getByText("Câu hỏi")).toBeInTheDocument();
-    expect(screen.queryByText("Tẩy chay")).toBeNull();
-    expect(screen.getByText("+1")).toBeInTheDocument();
-    expect(screen.getByText("Giá")).toBeInTheDocument();
+    // #337: intents + topics share one muted line, 2 labels total then +n.
+    expect(screen.getByText("Phàn nàn · Câu hỏi · +3")).toBeInTheDocument();
     expect(screen.queryByText(/^Completed$/i)).toBeNull();
   });
 
@@ -80,6 +77,57 @@ describe("MentionRow (UX §3.3)", () => {
     render(<MentionRow item={item} tz={TZ} href="/mentions/x" onOpen={() => {}} />);
     expect(screen.getByText("Brand A")).toBeInTheDocument();
     expect(screen.queryByText("Brand B")).toBeNull();
+  });
+});
+
+describe("MentionRow — verdict stack (#337)", () => {
+  const verdicts = () => screen.getByTestId("mention-verdicts");
+  const renderRow = (over: Parameters<typeof mentionFixture>[0]) =>
+    render(<MentionRow item={mentionFixture(over)} tz={TZ} href="/mentions/x" onOpen={() => {}} />);
+
+  it("BR-021: a quiet row (safe, relevant, high, completed, vi) shows only the sentiment verdict", () => {
+    const { container } = renderRow({});
+    expect(verdicts().children).toHaveLength(1);
+    expect(screen.getByText("Tiêu cực")).toBeInTheDocument();
+    for (const quiet of ["An toàn", "Liên quan", "Tiếng Việt", "Threads"]) expect(screen.queryByText(quiet)).toBeNull();
+    expect(container.textContent).not.toContain("Độ tin cậy");
+  });
+
+  it.each([
+    [{ safety: { level: "sensitive" as const } }, "Nhạy cảm"],
+    [{ safety: { level: "severe" as const } }, "Nghiêm trọng"],
+    [{ relevance: { label: "uncertain" as const, confidence: 0.5 } }, "Chưa chắc"],
+    [{ relevance: { label: "irrelevant" as const, confidence: 0.9 } }, "Không liên quan"],
+    [{ confidenceBand: "low" as const }, "Độ tin cậy thấp"],
+    [{ hasOverride: true }, "Chuyên viên"],
+    [{ status: "pending" as const, sentiment: null, safety: null }, "Chờ phân tích"],
+  ])("BR-017: %o shows a text verdict %s", (analysis, label) => {
+    renderRow({ analysis });
+    expect(verdicts().textContent).toContain(label);
+  });
+
+  it("BR-021: medium confidence shows no marker in the row", () => {
+    renderRow({ analysis: { confidenceBand: "medium" } });
+    expect(screen.queryByText(/Độ tin cậy|≈/)).toBeNull();
+  });
+
+  it("first-time failure without previous verdicts has no Lần trước:", () => {
+    renderRow({ analysis: { status: "failed", sentiment: null, safety: null } });
+    expect(screen.queryByText("Lần trước:")).toBeNull();
+    expect(screen.getByText("Phân tích lỗi")).toBeInTheDocument();
+  });
+
+  it("language shows only when it is not vi", () => {
+    const a = mentionFixture({ analysis: { language: "en", intents: [lab("question")] } }).analysis;
+    expect(labelLine(a)).toBe("Câu hỏi · Tiếng Anh");
+    expect(labelLine(mentionFixture().analysis)).toBe("");
+  });
+
+  it("summary hides when it only repeats the start of the text", () => {
+    expect(summaryAddsInfo("Giá vé concert", "Giá vé concert quá cao")).toBe(false);
+    expect(summaryAddsInfo("Khách chê giá vé", "Giá vé concert quá cao")).toBe(true);
+    expect(summaryAddsInfo("Tóm tắt", null)).toBe(true);
+    expect(summaryAddsInfo(null, "x")).toBe(false);
   });
 });
 
