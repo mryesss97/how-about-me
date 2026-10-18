@@ -58,8 +58,10 @@ type Props = {
   mention: MentionDetail;
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (body: CreateOverrideBody) => void;
+  onSubmit: (body: CreateOverrideBody, opts: { followUp: boolean }) => void;
   isPending: boolean;
+  /** #339 (Reviews slide-out): a "mark reviewed after saving" checkbox, checked by default. */
+  followUp?: { label: string };
   /** Field preselected on open — from a per-field "Sửa" or `defaultOverrideField` (#338). */
   initialField?: OverrideField;
 };
@@ -69,7 +71,15 @@ type Props = {
  * Reason is required in the UI (FR-191 "with reason") although the contract keeps it optional.
  * State is local and only seeded on open, so the 5 s detail polling never resets what the user typed.
  */
-export function OverrideDialog({ mention, isOpen, onClose, onSubmit, isPending, initialField = "sentiment" }: Props) {
+export function OverrideDialog({
+  mention,
+  isOpen,
+  onClose,
+  onSubmit,
+  isPending,
+  initialField = "sentiment",
+  followUp,
+}: Props) {
   return (
     <SettingsDialog isOpen={isOpen} onClose={onClose} title="Ghi đè kết quả phân tích">
       {isOpen ? (
@@ -79,17 +89,26 @@ export function OverrideDialog({ mention, isOpen, onClose, onSubmit, isPending, 
           onSubmit={onSubmit}
           isPending={isPending}
           initialField={initialField}
+          followUp={followUp}
         />
       ) : null}
     </SettingsDialog>
   );
 }
 
-function OverrideForm({ mention, onClose, onSubmit, isPending, initialField = "sentiment" }: Omit<Props, "isOpen">) {
+function OverrideForm({
+  mention,
+  onClose,
+  onSubmit,
+  isPending,
+  initialField = "sentiment",
+  followUp,
+}: Omit<Props, "isOpen">) {
   const [field, setField] = useState<OverrideField>(initialField);
   const [values, setValues] = useState<string[]>(() => effectiveValue(mention, initialField));
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [follow, setFollow] = useState(true);
   const multi = isMulti(field);
   const replaces = !!activeOverrides(mention.overrides)[field];
   const unchanged = sameSet(values, effectiveValue(mention, field));
@@ -110,7 +129,7 @@ function OverrideForm({ mention, onClose, onSubmit, isPending, initialField = "s
       setError(multi ? `Chọn tối đa ${MULTI_MAX} nhãn.` : "Hãy chọn giá trị.");
       return;
     }
-    onSubmit(parsed.data);
+    onSubmit(parsed.data, { followUp: !!followUp && follow });
   };
 
   return (
@@ -169,6 +188,7 @@ function OverrideForm({ mention, onClose, onSubmit, isPending, initialField = "s
           {error}
         </p>
       ) : null}
+      {followUp ? <Checkbox label={followUp.label} isSelected={follow} onChange={setFollow} /> : null}
       <div className="flex justify-end gap-2">
         <Button size="sm" color="secondary" onClick={onClose}>
           Huỷ

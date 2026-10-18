@@ -19,4 +19,5 @@ Review queue — T-144 (FR-195, BR-040). Contract: docs/02-architecture/05-api-c
   Scope: BR-007 matches, effective relevance ≠ irrelevant (BR-016). SQL in `review-queue.repository.ts`.
 - `POST …/reviews/mark-reviewed` (admin · analyst) `{ postIds ≤ 50 }` → `{ marked }`; sets `social_posts.reviewed_at/by`;
   other-project ids skipped; audit `review.marked` `{ count, postIds }` (skipped when 0).
+- `ReviewQueueRepository` is exported; `findState(projectId, postId)` reuses the queue CTE for one post → mention detail `review` (#339).
 - BR-040: reviewed while `reviewed_at` ≥ latest run `created_at` (`review-state.sql.ts`, also used by mentions `reviewStatus[]`).

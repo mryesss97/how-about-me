@@ -8,11 +8,11 @@ import { ReviewQueueController } from "./review-queue.controller";
 import { ReviewQueueRepository } from "./review-queue.repository";
 import { ReviewQueueService } from "./review-queue.service";
 
-/** Analyst review: overrides (T-142) and review queue (T-144). Exports the repository so mention detail can read override history. */
+/** Analyst review: overrides (T-142) and review queue (T-144). Exports repositories so mention detail can read override history and review state (#339). */
 @Module({
   imports: [PrismaModule, AuditModule],
   controllers: [OverridesController, ReviewQueueController],
   providers: [OverridesService, OverridesRepository, ReviewQueueService, ReviewQueueRepository],
-  exports: [OverridesRepository],
+  exports: [OverridesRepository, ReviewQueueRepository],
 })
 export class ReviewsModule {}

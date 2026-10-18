@@ -3,7 +3,9 @@
 import { MARK_REVIEWED_MAX, type ReviewQueueItem } from "@how-about-me/contracts";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { ErrorState, QueryState, SkeletonBlock, type QueryStateError } from "@/features/shared/query-state";
+import { ReviewCard } from "./review-card";
 import { ReviewRow } from "./review-row";
+import { useRovingRows } from "./use-roving-rows";
 import { PlaqueButton } from "@/features/shared/plaque-button";
 
 type Props = {
@@ -30,7 +32,11 @@ export function selectAllCapped(items: readonly { id: string }[]): Set<string> {
 
 const TH = "px-3 py-2 text-left text-xs font-semibold text-tertiary";
 
-/** Review queue table (UX §3.8): selection ≤ 50, load more, empty / error / loading states. */
+/**
+ * Review queue table (UX §3.8): selection ≤ 50, load more, empty / error / loading states.
+ * #339: table from `md`, cards below (both rendered, CSS picks — no `useBreakpoint`, avoids hydration mismatch);
+ * ↑/↓ roving focus, Space selects, Enter opens. The 50-cap helper lives in the selection bar.
+ */
 export function ReviewTable(p: Props) {
   const full = p.selected.size >= MARK_REVIEWED_MAX;
   const allSelected = p.items.length > 0 && p.items.slice(0, MARK_REVIEWED_MAX).every((i) => p.selected.has(i.id));
@@ -40,6 +46,14 @@ export function ReviewTable(p: Props) {
     else next.delete(id);
     p.onSelect(next);
   };
+  const rows = useRovingRows();
+  const cards = useRovingRows();
+  const keyFor = (nav: ReturnType<typeof useRovingRows>, i: number, id: string) => {
+    const isSel = p.selected.has(id);
+    const canToggle = p.selectable && !(full && !isSel);
+    return nav.onKey(i, () => p.onOpen(id), canToggle ? () => toggle(id, !isSel) : undefined);
+  };
+  const selectAll = (on: boolean) => p.onSelect(on ? selectAllCapped(p.items) : new Set());
   return (
     <QueryState
       emptyIllustration="empty"
@@ -52,9 +66,8 @@ export function ReviewTable(p: Props) {
       emptyDescription={p.showReviewed ? "Các mục bạn đánh dấu đã xem lại sẽ hiện ở đây." : "Đã xem hết."}
     >
       <div className="flex flex-col gap-3">
-        {p.selectable && full ? <p className="text-sm text-tertiary">Tối đa {MARK_REVIEWED_MAX} mục mỗi lần</p> : null}
         {/* #278: table sits in an enamel board; it scrolls horizontally inside the board, never the page. */}
-        <div className="operate-board min-w-0">
+        <div className="operate-board hidden min-w-0 md:block">
           <span aria-hidden className="sign-keyline" />
           <div className="relative overflow-x-auto p-3">
             <table className="w-full" aria-busy={p.isFetchingNextPage}>
@@ -66,7 +79,7 @@ export function ReviewTable(p: Props) {
                         aria-label="Chọn tất cả"
                         isSelected={allSelected}
                         isIndeterminate={!allSelected && p.selected.size > 0}
-                        onChange={(on) => p.onSelect(on ? selectAllCapped(p.items) : new Set())}
+                        onChange={selectAll}
                       />
                     </th>
                   ) : null}
@@ -80,9 +93,11 @@ export function ReviewTable(p: Props) {
                 </tr>
               </thead>
               <tbody>
-                {p.items.map((item) => (
+                {p.items.map((item, i) => (
                   <ReviewRow
                     key={item.id}
+                    ref={rows.setRef(i)}
+                    onKeyDown={keyFor(rows, i, item.id)}
                     item={item}
                     tz={p.tz}
                     selectable={p.selectable}
@@ -96,6 +111,36 @@ export function ReviewTable(p: Props) {
               </tbody>
             </table>
           </div>
+        </div>
+        <div className="flex flex-col gap-3 md:hidden" data-testid="review-cards">
+          {p.selectable ? (
+            <div className="flex min-h-11 items-center px-1">
+              <Checkbox
+                label="Chọn tất cả"
+                isSelected={allSelected}
+                isIndeterminate={!allSelected && p.selected.size > 0}
+                onChange={selectAll}
+              />
+            </div>
+          ) : null}
+          <ul className="flex flex-col gap-3">
+            {p.items.map((item, i) => (
+              <li key={item.id}>
+                <ReviewCard
+                  ref={cards.setRef(i)}
+                  onKeyDown={keyFor(cards, i, item.id)}
+                  item={item}
+                  tz={p.tz}
+                  selectable={p.selectable}
+                  selected={p.selected.has(item.id)}
+                  disabled={full && !p.selected.has(item.id)}
+                  showReviewed={p.showReviewed}
+                  onToggle={toggle}
+                  onOpen={p.onOpen}
+                />
+              </li>
+            ))}
+          </ul>
         </div>
         {p.nextPageError ? <ErrorState error={p.nextPageError} onRetry={p.fetchNextPage} /> : null}
         {p.hasNextPage && !p.nextPageError ? (

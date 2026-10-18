@@ -1,5 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { MarkReviewedResponseSchema, MentionsPageSchema, ReviewQueuePageSchema } from "@how-about-me/contracts";
+import {
+  MarkReviewedResponseSchema,
+  MentionDetailSchema,
+  MentionsPageSchema,
+  ReviewQueuePageSchema,
+} from "@how-about-me/contracts";
 import type { INestApplication } from "@nestjs/common";
 import type { PrismaService } from "../../src/database/prisma.service";
 import { encodeSortCursor } from "../../src/common/pagination/cursor";
@@ -223,6 +228,36 @@ describe("Review queue (T-144)", () => {
     await addRun(id, projectId, "failed", undefined, new Date((reviewedAt ?? new Date()).getTime() + 1000));
     expect((await queue()).items.map((i) => i.id)).toEqual([id]);
     expect(await mentions("unreviewed")).toEqual([id]);
+  });
+
+  it("#339 / FR-195 / BR-040 / BR-016: mention detail exposes the review state", async () => {
+    const s = await seedStandard();
+    const detail = async (id: string) => {
+      const r = await api(app, viewer).get(`${base()}/mentions/${id}`);
+      expect(r.status).toBe(200);
+      return MentionDetailSchema.parse(r.body).review;
+    };
+    expect(await detail(s.uncertain)).toEqual({ reasons: ["uncertain"], status: "unreviewed", reviewedAt: null });
+    expect(await detail(s.high)).toBeNull();
+    expect(await detail(s.irrelevantLow)).toBeNull();
+    expect(await detail(s.excluded)).toBeNull();
+    // Other project → 404, no review state leaks.
+    expect((await api(app, viewer).get(`${base()}/mentions/${s.otherProject}`)).status).toBe(404);
+    // Mark → reviewed; a later run re-opens it (BR-040).
+    expect((await mark([s.failed])).status).toBe(200);
+    const reviewed = await detail(s.failed);
+    expect(reviewed).toMatchObject({ reasons: ["failed"], status: "reviewed" });
+    expect(reviewed?.reviewedAt).not.toBeNull();
+    const { reviewedAt } = await prisma.socialPost.findUniqueOrThrow({ where: { id: s.failed } });
+    await addRun(s.failed, projectId, "failed", undefined, new Date((reviewedAt ?? new Date()).getTime() + 1000));
+    expect(await detail(s.failed)).toMatchObject({ status: "unreviewed" });
+    // Override → irrelevant leaves the scope (BR-025, BR-016).
+    const ov = await api(app, analyst.token).post(`${base()}/mentions/${s.uncertain}/overrides`, {
+      field: "relevance",
+      value: "irrelevant",
+    });
+    expect(ov.status).toBe(201);
+    expect(await detail(s.uncertain)).toBeNull();
   });
 
   it("FR-015: viewer can list but not mark; non-member is forbidden", async () => {
