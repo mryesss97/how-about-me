@@ -23,6 +23,7 @@ import { ProjectsModule } from "./modules/projects/projects.module";
 import { ProvidersModule } from "./modules/providers/providers.module";
 import { RetentionJobModule } from "./jobs/retention-job.module";
 import { SchedulerModule } from "./jobs/scheduler.module";
+import { SyncJobsModule } from "./modules/sync-jobs/sync-jobs.module";
 
 @Module({
   imports: [
@@ -47,7 +48,8 @@ import { SchedulerModule } from "./jobs/scheduler.module";
     ReviewsModule,
     AnalyticsModule,
     IntegrationsModule,
-    // M2+: SyncJobsModule, SystemStatusModule
+    SyncJobsModule,
+    // M2+: SystemStatusModule
     // M6: T-147 export lives in MentionsModule (route must precede `:mentionId`)
   ],
   providers: [

@@ -46,7 +46,17 @@ export const SyncJobsListQuerySchema = withDateRange(
   }),
 );
 export const SyncJobsPageSchema = pageOf(SyncJobSchema);
-/** `GET …/sync-jobs/:id` returns the full job object. */
-export const SyncJobDetailSchema = SyncJobSchema;
+/** `GET …/sync-jobs/:id` returns the full job object plus the last provider usage snapshot (raw headers never exposed). */
+export const SyncJobDetailSchema = SyncJobSchema.extend({
+  providerUsage: z
+    .object({
+      remaining: z.number().nullable(),
+      resetAt: IsoDateTimeSchema.nullable(),
+      observedAt: IsoDateTimeSchema,
+    })
+    .nullable(),
+});
+export type SyncJobDetail = z.infer<typeof SyncJobDetailSchema>;
+export type SyncJobsListQuery = z.infer<typeof SyncJobsListQuerySchema>;
 /** `POST …/sync-jobs/:id/retry` → 202. */
 export const RetrySyncJobResponseSchema = QueuedJobResponseSchema;

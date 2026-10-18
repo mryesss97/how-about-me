@@ -29,10 +29,10 @@ export class QueryClaimRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Claims up to `limit` due queries. Due = next_run_at <= now() OR NULL (new query) OR a queued manual job.
+   * Claims up to `limit` due queries. Due = next_run_at <= now() OR NULL (new query) OR a queued manual/retry job (T-055).
    * Skips disabled/soft-deleted (BR-010), projects with an open circuit or without a connected Threads
    * integration (ingestion §3), and queries locked less than `staleMinutes` ago (TC-COL-023).
-   * Manual jobs first (FR-058, TC-COL-027), then oldest next_run_at.
+   * Manual/retry jobs first (FR-058, FR-175, TC-COL-027), then oldest next_run_at.
    */
   async claimDueQueries(workerId: string, limit: number, staleMinutes: number): Promise<ClaimedQuery[]> {
     const rows = await this.prisma.$queryRaw<ClaimRow[]>(Prisma.sql`
@@ -43,7 +43,7 @@ export class QueryClaimRepository {
             FROM listening_queries lq
             LEFT JOIN LATERAL (
               SELECT sj.id FROM sync_jobs sj
-               WHERE sj.query_id = lq.id AND sj.status = 'queued' AND sj.trigger = 'manual'
+               WHERE sj.query_id = lq.id AND sj.status = 'queued' AND sj.trigger IN ('manual', 'retry')
                ORDER BY sj.created_at
                LIMIT 1
             ) mj ON true

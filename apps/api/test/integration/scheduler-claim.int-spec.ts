@@ -159,6 +159,25 @@ describe("scheduler claiming (T-048, FR-086)", () => {
     expect(claimed).toEqual([expect.objectContaining({ id: y, manualJobId: jobId })]);
   });
 
+  it("T-055 / FR-175: a queued retry job is claimed like a manual one", async () => {
+    await seedQuery({ nextRunAt: minutesAgo(30) });
+    const y = await seedQuery({ nextRunAt: new Date(Date.now() + 3_600_000) });
+    const jobId = randomUUID();
+    await prisma.syncJob.create({
+      data: {
+        id: jobId,
+        projectId,
+        queryId: y,
+        status: "queued",
+        trigger: "retry",
+        searchType: "RECENT",
+        searchMode: "KEYWORD",
+      },
+    });
+    const claimed = await repoA.claimDueQueries("A", 1, STALE);
+    expect(claimed).toEqual([expect.objectContaining({ id: y, manualJobId: jobId })]);
+  });
+
   it("new query with next_run_at NULL is due", async () => {
     const id = await seedQuery({ nextRunAt: null });
     expect((await repoA.claimDueQueries("A", 5, STALE)).map((c) => c.id)).toEqual([id]);
