@@ -74,7 +74,7 @@ export function ExportButton({ pid, params }: { pid: string; params: QueryParams
       disabled={m.isPending}
       aria-busy={m.isPending}
       onClick={() => m.mutate(params)}
-      className="plaque-button inline-flex items-center gap-2 px-3 py-1.5 outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60"
+      className="plaque-button inline-flex min-h-11 md:min-h-0 items-center gap-2 px-3 py-1.5 outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60"
     >
       <Download01 className="size-4" aria-hidden />
       Xuất CSV

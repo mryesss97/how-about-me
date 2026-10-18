@@ -124,7 +124,7 @@ function rateProps(rate: Rate) {
   };
 }
 
-const GRID = "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6";
+const GRID = "isolate grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6";
 
 /** FR-132: six KPI cards for /overview. */
 export function KpiCards({

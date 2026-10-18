@@ -9,10 +9,13 @@ interface EnumMultiSelectProps {
   items: SelectItemType[];
   value: readonly string[];
   onChange: (next: string[]) => void;
+  /** "Bỏ chọn" target; BR-016 relevance resets to [relevant], never empty. */
+  onReset?: () => void;
+  className?: string;
 }
 
 /** Thin controlled wrapper: URL array ↔ React Aria `Selection`. */
-export function EnumMultiSelect({ label, items, value, onChange }: EnumMultiSelectProps) {
+export function EnumMultiSelect({ label, items, value, onChange, onReset, className = "w-44" }: EnumMultiSelectProps) {
   const toArray = (keys: Selection) => (keys === "all" ? items.map((i) => String(i.id)) : [...keys].map(String));
   // One value → its label (filter label already sits above); more → "N đã chọn" (#329).
   const formatCount = (count: number) =>
@@ -31,9 +34,9 @@ export function EnumMultiSelect({ label, items, value, onChange }: EnumMultiSele
       items={items}
       selectedKeys={new Set(value)}
       onSelectionChange={(keys) => onChange(toArray(keys))}
-      onReset={() => onChange([])}
+      onReset={onReset ?? (() => onChange([]))}
       onSelectAll={() => onChange(items.map((i) => String(i.id)))}
-      className="w-44"
+      className={className}
     >
       {(item) => <MultiSelect.Item id={item.id} label={item.label} supportingText={item.supportingText} />}
     </MultiSelect>
