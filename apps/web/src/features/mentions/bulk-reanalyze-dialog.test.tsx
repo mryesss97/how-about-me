@@ -14,6 +14,8 @@ vi.mock("@/lib/api/client", async (orig) => ({
 const toastSuccess = vi.fn();
 vi.mock("sonner", () => ({ toast: { success: (...a: unknown[]) => toastSuccess(...a) } }));
 
+// #337: the confirm button names the count, e.g. "Phân tích lại 42 bài".
+const CONFIRM = /^Phân tích lại [\d.,]+ bài$/;
 const PARAMS = { relevance: "relevant", sentiment: "negative,neutral", sort: "newest", tz: "Asia/Ho_Chi_Minh" };
 type Init = { method?: string; body?: string };
 const bodies = () =>
@@ -30,7 +32,7 @@ function open() {
       <BulkReanalyzeButton pid={PID} params={PARAMS} />
     </QueryClientProvider>,
   );
-  fireEvent.click(screen.getByRole("button", { name: /phân tích lại/i }));
+  fireEvent.click(screen.getByRole("button", { name: "Phân tích lại theo bộ lọc" }));
 }
 
 beforeEach(() => {
@@ -50,6 +52,7 @@ describe("BulkReanalyzeDialog (T-146, FR-196)", () => {
     apiFetch.mockResolvedValueOnce({ matched: 42, enqueued: 0, cap: 500 });
     open();
     await screen.findByText(/42 bài nhắc khớp bộ lọc hiện tại/);
+    expect(screen.getByRole("button", { name: "Phân tích lại 42 bài" })).toBeTruthy();
     expect(screen.getByText(/Tối đa 500 bài/)).toBeTruthy();
     expect(screen.queryByText(/Thu hẹp bộ lọc/)).toBeNull();
     const [body] = bodies();
@@ -61,7 +64,7 @@ describe("BulkReanalyzeDialog (T-146, FR-196)", () => {
     apiFetch.mockResolvedValueOnce({ matched: 42, enqueued: 0, cap: 500 });
     apiFetch.mockResolvedValueOnce({ matched: 42, enqueued: 40, cap: 500 });
     open();
-    fireEvent.click(await screen.findByRole("button", { name: "Xác nhận" }));
+    fireEvent.click(await screen.findByRole("button", { name: CONFIRM }));
     await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Đã xếp hàng phân tích lại 40 bài"));
     const [dry, real] = bodies();
     expect(real).toEqual({ ...dry, dryRun: false });
@@ -72,7 +75,7 @@ describe("BulkReanalyzeDialog (T-146, FR-196)", () => {
     apiFetch.mockResolvedValueOnce({ matched: 3, enqueued: 0, cap: 500 });
     apiFetch.mockResolvedValueOnce({ matched: 3, enqueued: 0, cap: 500 });
     open();
-    fireEvent.click(await screen.findByRole("button", { name: "Xác nhận" }));
+    fireEvent.click(await screen.findByRole("button", { name: CONFIRM }));
     await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Không có bài nào cần phân tích lại"));
   });
 
@@ -80,7 +83,7 @@ describe("BulkReanalyzeDialog (T-146, FR-196)", () => {
     apiFetch.mockResolvedValueOnce({ matched: 0, enqueued: 0, cap: 500 });
     open();
     await screen.findByText("Không có bài nhắc nào khớp bộ lọc hiện tại.");
-    expect(screen.queryByRole("button", { name: "Xác nhận" })).toBeNull();
+    expect(screen.queryByRole("button", { name: CONFIRM })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Đóng" }));
     expect(apiFetch).toHaveBeenCalledTimes(1);
   });
@@ -91,13 +94,19 @@ describe("BulkReanalyzeDialog (T-146, FR-196)", () => {
     await screen.findByText(/Thu hẹp bộ lọc để phân tích lại phần còn lại/);
   });
 
+  it("#337: confirm names min(matched, cap) — 42 matched → 42, 1200 matched with cap 500 → 500", async () => {
+    apiFetch.mockResolvedValueOnce({ matched: 1200, enqueued: 0, cap: 500 });
+    open();
+    expect(await screen.findByRole("button", { name: "Phân tích lại 500 bài" })).toBeTruthy();
+  });
+
   it("TC-REV-009: 429 shows the wait time and disables Confirm", async () => {
     apiFetch.mockResolvedValueOnce({ matched: 10, enqueued: 0, cap: 500 });
     apiFetch.mockRejectedValueOnce(new ApiError(429, "RATE_LIMITED", "slow down", "req-1", { retryAfterSeconds: 240 }));
     open();
-    fireEvent.click(await screen.findByRole("button", { name: "Xác nhận" }));
+    fireEvent.click(await screen.findByRole("button", { name: CONFIRM }));
     expect((await screen.findByRole("alert")).textContent).toContain("Thử lại sau 4 phút");
-    expect(screen.getByRole("button", { name: "Xác nhận" }).hasAttribute("disabled")).toBe(true);
+    expect(screen.getByRole("button", { name: CONFIRM }).hasAttribute("disabled")).toBe(true);
   });
 
   it("a failed dry run shows the request ID and Retry", async () => {
