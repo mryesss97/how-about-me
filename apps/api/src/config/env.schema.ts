@@ -91,6 +91,8 @@ export const EnvSchema = z
 
     EXPORT_MAX_ROWS: int(10_000),
     METRICS_TOKEN: z.string().optional(),
+    // NFR-017: global request budget per client per minute; raised only for perf runs (T-120).
+    THROTTLE_GLOBAL_LIMIT: int(300),
     // NFR-054: min(1) so 0/negative never wipes everything.
     RETENTION_POSTS_DAYS: z.coerce.number().int().min(1).default(365),
     RETENTION_RUNS_DAYS: z.coerce.number().int().min(1).default(365),

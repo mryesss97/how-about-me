@@ -3,6 +3,9 @@ services:
     image: postgres:16-alpine
     container_name: how-about-me-postgres
     restart: unless-stopped
+    # Docker's default /dev/shm (64 MB) breaks parallel queries under load ("could not resize shared memory
+    # segment", SQLSTATE 53100) — seen in the T-120 20 VU run on the 100k perf dataset.
+    shm_size: 256mb
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres

@@ -58,7 +58,7 @@ Source: [../02-architecture/08-security-secrets.md §10](../02-architecture/08-s
 
 ## 6. Operational readiness
 
-- [ ] Staging soak ≥ 5 days · [ ] alerts wired & tested · [ ] runbook reviewed · [ ] backups verified · [ ] purge tested on staging · [ ] Meta terms/retention reviewed · [ ] on-call rota for launch week · [ ] rollback rehearsed (redeploy previous tag on staging)
+- [ ] Staging soak ≥ 5 days · [ ] alerts wired & tested · [ ] runbook reviewed & every procedure validated on staging (runbook §11) · [ ] backups verified · [ ] purge tested on staging · [ ] Meta terms/retention reviewed · [ ] on-call rota for launch week · [ ] rollback rehearsed (redeploy previous tag on staging)
 
 ## 7. Communication
 
