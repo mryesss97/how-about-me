@@ -92,12 +92,13 @@ export function ChartCard({
   return (
     <section className={cx("operate-board flex flex-col gap-4 p-5", className)}>
       <span aria-hidden className="sign-keyline" />
-      <header className="relative flex items-start justify-between gap-3">
-        <div>
+      {/* #327: stack header under sm so the title never collapses to one word per line at 390px. */}
+      <header className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <h3 className="operate-board-title">{title}</h3>
           {description ? <p className="text-sm text-tertiary">{description}</p> : null}
         </div>
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+        <div className="flex max-w-full min-w-0 flex-wrap items-center gap-2 self-start sm:shrink-0 sm:justify-end">
           {headerAction}
           {ready && viewToggle ? (
             <ButtonGroup

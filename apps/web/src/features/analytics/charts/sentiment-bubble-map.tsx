@@ -114,7 +114,7 @@ export function SentimentBubbleMap({
     </ButtonGroup>
   );
 
-  const toolbar = <div className="flex flex-wrap items-center gap-2">{filterChips}</div>;
+  const toolbar = <div className="flex max-w-full min-w-0 flex-wrap items-center gap-2">{filterChips}</div>;
 
   // #243: mode switch lives in the header so it stays reachable in empty/error states (QA blocker).
   const modeToggle = onModeChange ? (

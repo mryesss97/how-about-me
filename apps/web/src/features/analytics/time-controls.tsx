@@ -59,7 +59,7 @@ export function TimeControls({ filters, setFilters }: TimeControlsProps) {
   };
 
   return (
-    <div className="flex flex-wrap items-end gap-3">
+    <div className="flex min-w-0 flex-wrap items-end gap-3">
       <ButtonGroup
         size="sm"
         aria-label="Khoảng thời gian"

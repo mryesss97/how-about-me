@@ -12,8 +12,9 @@ describe("TopicSentimentHeatmap (T-149)", () => {
     render(<TopicSentimentHeatmap data={topicSentimentFixture()} getCellHref={getCellHref} />);
     const headers = screen.getAllByRole("rowheader").map((h) => h.textContent);
     expect(headers).toHaveLength(12);
-    expect(headers[0]).toBe("Vé");
-    expect(headers.at(-1)).toBe("Khác");
+    // #327: row header also carries the mobile-only total line.
+    expect(headers[0]).toBe("Vé4 có cảm xúc");
+    expect(headers.at(-1)).toMatch(/^Khác/);
     expect(screen.getByRole("link", { name: /^Vé · Tiêu cực: 2 lượt nhắc, 50,0% trên 4/ })).toHaveTextContent(
       "2 · 50,0%",
     );
@@ -35,9 +36,9 @@ describe("TopicSentimentHeatmap (T-149)", () => {
   it("NFR-032: View as table lists every topic with row denominator and negative share; row header drills topic", async () => {
     render(<TopicSentimentHeatmap data={topicSentimentFixture()} getCellHref={getCellHref} />);
     const [header, ...rows] = await openTable();
-    expect(header).toEqual(["Chủ đề", "Tích cực", "Trung tính", "Tiêu cực", "Có cảm xúc", "Tỷ lệ tiêu cực"]);
+    expect(header).toEqual(["Chủ đề", "Tiêu cực", "Trung tính", "Tích cực", "Có cảm xúc", "Tỷ lệ tiêu cực"]);
     expect(rows).toHaveLength(12);
-    expect(rows[0]).toEqual(["Vé", "1", "1", "2", "4", "50,0%"]);
+    expect(rows[0]).toEqual(["Vé", "2", "1", "1", "4", "50,0%"]);
     expect(rows.map((r) => r[0])).not.toContain("Tổng");
     expect(screen.getByRole("link", { name: "Vé" })).toHaveAttribute("href", "/mentions?topic=ticket");
     expect(screen.queryByRole("link", { name: "Nghệ sĩ" })).toBeNull();
@@ -59,5 +60,13 @@ describe("TopicSentimentHeatmap (T-149)", () => {
     expect(screen.getByText(/req-7/)).toBeInTheDocument();
     screen.getByRole("button", { name: /thử lại/i }).click();
     expect(onRetry).toHaveBeenCalled();
+  });
+
+  it("#327 / BR-017: columns run Tiêu cực → Trung tính → Tích cực and every cell prints its count", () => {
+    const { container } = render(<TopicSentimentHeatmap data={topicSentimentFixture()} getCellHref={getCellHref} />);
+    const cols = [...container.querySelectorAll("thead th")].map((th) => th.textContent);
+    expect(cols.slice(1, 4)).toEqual(["Tiêu cực", "Trung tính", "Tích cực"]);
+    const firstRowCells = [...container.querySelectorAll("tbody tr:first-child td")].slice(0, 3);
+    expect(firstRowCells.map((td) => td.textContent)).toEqual(["2 · 50,0%", "1 · 25,0%", "1 · 25,0%"]);
   });
 });
