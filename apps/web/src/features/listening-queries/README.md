@@ -13,7 +13,7 @@ Listening Queries screen (UX §3.5, FR-050..062). See docs/02-architecture/03-fr
 - `api.ts` (also) — mutations `useCreate/Update/Delete/Restore/RunListeningQuery` (invalidate every list variant), `useListeningQuery(pid, id)` for `?edit=<id>`, `queryErrorMessage`, `duplicateExistingId`, `runningJobId`.
 - `query-form.ts` — pure form logic: values ↔ contract bodies, FR-052 validation via contract schemas, PATCH diff without immutable fields (FR-054), presets.
 - `term-input.tsx` — tag input for include/exclude terms (Enter/comma, case-insensitive dedupe).
-- `query-form-fields.tsx` / `query-form-drawer.tsx` — create/edit drawer (#43); duplicate → toast "Xem truy vấn".
+- `query-form-fields.tsx` / `query-form-drawer.tsx` — create/edit drawer (#43), grouped Truy vấn / Lịch quét / Nâng cao with minute inputs sent as seconds (#341); `minutes-field.tsx` = presets + "Khác…" input; duplicate → toast "Xem truy vấn".
 - `delete-query-dialog.tsx` — soft-delete confirm (FR-057).
 - `api.ts` (backfill, #112) — `useBackfillListeningQuery` (FR-063), `useBackfillJobProgress` (polls `GET …/sync-jobs/:id` every 3 s while queued/running, off when hidden), `useInvalidateQueryList`.
 - `backfill-form.ts` — pure: calendar range ↔ UTC body in the project tz (until clamped to now), 30-day hint validation, status labels (BR-017), counters.
