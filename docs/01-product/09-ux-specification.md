@@ -197,7 +197,7 @@ Chart details (#222, decided 2026-10-13):
 
 ### 3.4 Mention Detail (`/mentions/[id]`) — P0
 
-Two-column (≥ 1024 px) or stacked. Clicking a row in `/mentions` opens the detail as a slide-out over the list (URL becomes `/mentions/:id?<filters>`; Esc/close returns to the list with filters kept and focus back on the row); a deep link or refresh renders the full page (T-104).
+Two-column (≥ 1024 px) or stacked. Clicking a row in `/mentions` opens the detail as a slide-out over the list (URL becomes `/mentions?<filters>&item=<id>`; Back/Esc/close closes it with filters, scroll and loaded pages kept and focus back on the row). Each row is a real link to `/mentions/:id?<filters>`: cmd/ctrl/middle-click opens the full page in a new tab; a deep link or refresh of `/mentions/:id` renders the full page (T-104, #326).
 
 - **Original**: full text (plain, links auto-detected as text with external icon), `@username`, published (tz), permalink button "Open on Threads", media metadata (type, thumbnail URL as image if allowed, alt text), quote/repost indicators, matched queries, first seen / last seen, revision.
 - **Analysis** (tabs: _Current_, _History_):
