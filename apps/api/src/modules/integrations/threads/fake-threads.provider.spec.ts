@@ -42,6 +42,16 @@ describe("FakeThreadsProvider (FR-112, FR-047)", () => {
     expect(new Set(seen).size).toBe(5);
   });
 
+  it("TC-COL-024: fake-fail-page-3 serves pages 1–2 then fails page 3 every time", async () => {
+    const p1 = await provider.search(search("fake-fail-page-3"), CTX);
+    const p2 = await provider.search(search("fake-fail-page-3", { cursor: p1.nextCursor }), CTX);
+    expect(p2.nextCursor).toBe("fake-page-2");
+    for (let i = 0; i < 2; i++)
+      await expect(provider.search(search("fake-fail-page-3", { cursor: p2.nextCursor }), CTX)).rejects.toMatchObject({
+        code: "THREADS_MALFORMED_RESPONSE",
+      });
+  });
+
   it("TC-COL-012: the same post is returned by two different queries (one post, two matches)", async () => {
     const oneZone = await provider.search(search("1zone"), CTX);
     const eventista = await provider.search(search("eventista"), CTX);

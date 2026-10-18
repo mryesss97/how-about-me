@@ -64,6 +64,7 @@ export class FakeThreadsProvider implements SocialDiscoveryProvider {
       throw toProviderError(scenario.transientFailure);
 
     const pageIndex = parseCursor(input.cursor);
+    if (scenario.failOnPage && scenario.failOnPage.index === pageIndex) throw toProviderError(scenario.failOnPage);
     if (pageIndex === 0) this.runs.set(scenario.key, (this.runs.get(scenario.key) ?? 0) + 1);
 
     const page = scenario.pages[pageIndex] ?? [];

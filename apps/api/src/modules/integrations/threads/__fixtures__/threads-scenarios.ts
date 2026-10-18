@@ -32,6 +32,8 @@ export type ScenarioDefinition = {
   transientFailure?: ScenarioFailure & { count: number };
   /** Fails every call (TC-COL-017, TC-COL-021). */
   fatalFailure?: ScenarioFailure;
+  /** Every call for page `index` (0-based) fails — a mid-run failure after earlier pages committed (TC-COL-024). */
+  failOnPage?: ScenarioFailure & { index: number };
   /** Serves a body that does not match the expected shape → `THREADS_MALFORMED_RESPONSE`. */
   malformed?: boolean;
   /** From the second run on, the first item's text changes → `revision++`, stale analysis (TC-COL-013). */
@@ -178,6 +180,17 @@ export function buildScenarios(now: Date): Map<string, ScenarioDefinition> {
       key: "fake-multipage",
       description: "3 pages — pagination and MAX_PAGES cap (TC-COL-007, TC-COL-008)",
       pages: pages(now, MULTIPAGE),
+    },
+    {
+      key: "fake-fail-page-3",
+      description: "3 pages, page 3 always fails (non-retryable) — partial job, pages 1–2 kept (TC-COL-024)",
+      pages: pages(now, MULTIPAGE),
+      failOnPage: {
+        index: 2,
+        code: "THREADS_MALFORMED_RESPONSE",
+        message: "Response body is not valid JSON",
+        providerStatus: 200,
+      },
     },
     { key: "fake-empty", description: "One empty page — the '0 mentions' state (BR-032)", pages: [[]] },
     {
