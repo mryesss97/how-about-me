@@ -28,7 +28,7 @@ export function OverviewView() {
 
   return (
     <div className="flex flex-col gap-6">
-      <FilterBar showCompare queryOptions={[]} />
+      <FilterBar showCompare />
       <OverviewKpiSection projectId={project?.id} apiParams={apiParams} isProjectLoading={!project} kpiHref={kpiHref} />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <OverviewTrendRow {...row} />

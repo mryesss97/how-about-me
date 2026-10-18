@@ -46,6 +46,12 @@ describe("LanguageDistributionChart", () => {
     expect(items).toEqual(["Tiếng Việt · 70,0%", "Tiếng Anh · 20,0%", "Không xác định · 6,0%", "Khác · 4,0%"]);
   });
 
+  it("#329: centre label is Vietnamese", () => {
+    render(<LanguageDistributionChart data={fixture()} />);
+    expect(screen.getByText("có ngôn ngữ")).toBeInTheDocument();
+    expect(screen.queryByText("with a language")).not.toBeInTheDocument();
+  });
+
   it("BR-032: denominator 0 → empty state", () => {
     render(
       <LanguageDistributionChart

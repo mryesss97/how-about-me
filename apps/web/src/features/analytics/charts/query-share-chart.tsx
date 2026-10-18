@@ -13,10 +13,12 @@ export type QueryShareChartProps = {
   error?: QueryStateError | null;
   onRetry?: () => void;
   className?: string;
+  /** id → display label (tags as `#name`, #329); falls back to the API `displayName`. */
+  queryNames?: Record<string, string>;
 } & DrillDownProps<string>;
 
 export const OVERLAP_NOTE =
-  "A mention can match several queries, so it is counted once under each query and shares can add up to more than 100%.";
+  "Một bài nhắc có thể khớp nhiều truy vấn, nên được tính một lần cho mỗi truy vấn và tổng tỷ lệ có thể vượt 100%.";
 
 /**
  * Keyword share (FR-145, T-150): distinct mentions per listening query, API order (count desc). Overlap is allowed
@@ -28,13 +30,14 @@ export function QueryShareChart({
   error,
   onRetry,
   className,
+  queryNames,
   getHref,
   onNavigate,
 }: QueryShareChartProps) {
   const denominator = data?.denominator ?? 0;
   const rows: BarRow[] = (data?.distribution ?? []).map((d) => ({
     key: d.queryId,
-    name: d.displayName,
+    name: queryNames?.[d.queryId] ?? d.displayName,
     count: d.count,
     share: d.share,
   }));

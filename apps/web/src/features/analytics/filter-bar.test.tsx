@@ -2,6 +2,21 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { NuqsTestingAdapter, type UrlUpdateEvent } from "nuqs/adapters/testing";
 import { describe, expect, it, vi } from "vitest";
 import { FilterBar } from "./filter-bar";
+import type * as QueryOptionsModule from "./use-query-options";
+import { toQueryFilterOptions } from "./use-query-options";
+
+const Q_KW = "00000000-0000-4000-8000-000000000001";
+const Q_TAG = "00000000-0000-4000-8000-000000000002";
+const Q_DEL = "00000000-0000-4000-8000-000000000003";
+const queries = [
+  { id: Q_DEL, displayName: "eventista refund", queryType: "keyword" as const, deletedAt: "2026-10-01T00:00:00.000Z" },
+  { id: Q_KW, displayName: "1zone", queryType: "keyword" as const, deletedAt: null },
+  { id: Q_TAG, displayName: "1zone", queryType: "topic_tag" as const, deletedAt: null },
+];
+vi.mock("./use-query-options", async (orig) => {
+  const mod: typeof QueryOptionsModule = await orig();
+  return { ...mod, useQueryFilterOptions: () => mod.toQueryFilterOptions(queries) };
+});
 
 function setup(search = "", props: { showCompare?: boolean } = {}) {
   const onUrlUpdate = vi.fn<(e: UrlUpdateEvent) => void>();
@@ -64,6 +79,28 @@ describe("FilterBar (UX §2.1)", () => {
     expect(params.get("tz")).toBe("UTC");
     expect(params.get("from")).toBe("2026-10-01T00:00:00.000Z");
     expect(params.get("to")).toBe("2026-10-08T00:00:00.000Z");
+  });
+
+  it("#329 / FR-051: Truy vấn lists project queries, active first, deleted marked, tags with #", async () => {
+    setup();
+    // "Truy vấn" is the first multi-select in the bar.
+    await act(async () => fireEvent.click(screen.getAllByRole("button", { name: /Tất cả/ })[0]));
+    const options = await screen.findAllByRole("option");
+    expect(options.map((o) => o.textContent)).toEqual(["1zone", "#1zone", "eventista refundĐã xoá"]);
+  });
+
+  it("#329: a drill-down queryIds chip shows the query name, also for a soft-deleted query", () => {
+    setup(`?queryIds=${Q_TAG},${Q_DEL}`);
+    expect(screen.getByText("Truy vấn: #1zone")).toBeInTheDocument();
+    expect(screen.getByText("Truy vấn: eventista refund")).toBeInTheDocument();
+    expect(screen.queryByText(new RegExp(Q_TAG.slice(0, 8)))).not.toBeInTheDocument();
+  });
+
+  it("#329: toQueryFilterOptions never doubles # on tags", () => {
+    const { names } = toQueryFilterOptions([
+      { id: Q_TAG, displayName: "#1zone", queryType: "topic_tag", deletedAt: null },
+    ]);
+    expect(names[Q_TAG]).toBe("#1zone");
   });
 
   it("hides compare unless showCompare", () => {

@@ -33,6 +33,13 @@ describe("QueryShareChart (T-150)", () => {
     expect(screen.getByText(OVERLAP_NOTE)).toBeInTheDocument();
   });
 
+  it("#329: tags render with # via queryNames; overlap note is Vietnamese", async () => {
+    render(<QueryShareChart data={fixture()} queryNames={{ [Q2]: "#beta" }} />);
+    expect(OVERLAP_NOTE).toMatch(/^Một bài nhắc/);
+    const [, ...rows] = await openTable();
+    expect(rows.map((r) => r[0])).toEqual(["#beta", "alpha", "gamma", "Lượt nhắc (không trùng)"]);
+  });
+
   it("BR-032: denominator 0 → empty state", () => {
     render(<QueryShareChart data={{ denominator: 0, distribution: [], note: "overlapping" }} />);
     expect(screen.getByText("Không có lượt nhắc trong khoảng này")).toBeInTheDocument();
