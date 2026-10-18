@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { seriousViolations } from "@/test/axe";
 import { describe, expect, it, vi } from "vitest";
 import { mentionFixture, uuid } from "./fixtures.test-utils";
 import { MentionRow, safePermalink } from "./mention-row";
@@ -70,5 +71,16 @@ describe("MentionRow (UX §3.3)", () => {
     render(<MentionRow item={item} tz={TZ} onOpen={() => {}} />);
     expect(screen.getByText("Brand A")).toBeInTheDocument();
     expect(screen.queryByText("Brand B")).toBeNull();
+  });
+});
+
+describe("MentionRow — axe (#95, NFR-031)", () => {
+  it("has no serious/critical axe violations", async () => {
+    const { container } = render(
+      <main>
+        <MentionRow item={mentionFixture()} tz={TZ} onOpen={() => {}} />
+      </main>,
+    );
+    expect(await seriousViolations(container)).toEqual([]);
   });
 });

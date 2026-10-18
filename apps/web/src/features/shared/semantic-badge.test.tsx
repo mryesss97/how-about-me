@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { seriousViolations } from "@/test/axe";
 import { describe, expect, it } from "vitest";
 import { ANALYSIS_STATUSES, CONFIDENCE_BAND_VALUES } from "@how-about-me/contracts";
 import { RELEVANCE_LABELS, SAFETY_LEVELS, SENTIMENT_LABELS } from "@how-about-me/taxonomy";
@@ -83,5 +84,21 @@ describe("semantic badges (UX §2.2, NFR-035)", () => {
     );
     expect(screen.getByText("AI")).toBeInTheDocument();
     expect(screen.getByText("Chuyên viên")).toBeInTheDocument();
+  });
+});
+
+describe("semantic badges — axe (#95, BR-017, NFR-032)", () => {
+  it("has no serious/critical axe violations", async () => {
+    const { container } = render(
+      <main>
+        {SENTIMENT_LABELS.map((v) => (
+          <SentimentBadge key={v} value={v} />
+        ))}
+        {SAFETY_LEVELS.map((v) => (
+          <SafetyBadge key={v} value={v} />
+        ))}
+      </main>,
+    );
+    expect(await seriousViolations(container)).toEqual([]);
   });
 });
