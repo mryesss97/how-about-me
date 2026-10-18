@@ -1,3 +1,4 @@
+import { MetricsService } from "../../src/common/metrics/metrics.service";
 import type { INestApplication } from "@nestjs/common";
 import { SchedulerRegistry } from "@nestjs/schedule";
 import type { PinoLogger } from "nestjs-pino";
@@ -46,6 +47,7 @@ describe("Analysis pipeline (T-074)", () => {
       app.get<AppConfig>(APP_CONFIG),
       silent,
       new AnalysisPauseService(prisma, app.get<AppConfig>(APP_CONFIG)),
+      new MetricsService(),
       app.get(AnalysisPipelineService),
     );
   });
@@ -194,6 +196,7 @@ describe("Analysis pipeline (T-074)", () => {
       cfg,
       silent,
       app.get(AnalysisPolicyService),
+      new MetricsService(),
     );
     const twoStep = new AnalysisWorkerService(
       svc,
@@ -201,6 +204,7 @@ describe("Analysis pipeline (T-074)", () => {
       cfg,
       silent,
       new AnalysisPauseService(prisma, cfg),
+      new MetricsService(),
       pipeline,
     );
     try {

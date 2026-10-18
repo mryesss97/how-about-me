@@ -9,6 +9,7 @@ import {
 import { SchedulerRegistry } from "@nestjs/schedule";
 import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 import { v7 as uuidv7 } from "uuid";
+import { MetricsService } from "../../common/metrics/metrics.service";
 import { APP_CONFIG, type AppConfig } from "../../config/config.module";
 import { runWithConcurrency } from "../../jobs/run-with-concurrency";
 import { ANALYSIS_AUTH_PAUSE_MS, AnalysisLockLostError, backoffMs, decideFailure } from "./analysis-failure-policy";
@@ -54,6 +55,7 @@ export class AnalysisWorkerService implements OnApplicationBootstrap, BeforeAppl
     @Inject(APP_CONFIG) private readonly cfg: AppConfig,
     @InjectPinoLogger(AnalysisWorkerService.name) private readonly logger: PinoLogger,
     private readonly pause: AnalysisPauseService,
+    private readonly metrics: MetricsService,
     @Optional() @Inject(ANALYSIS_RUN_PROCESSOR) private readonly processor?: RunProcessor,
   ) {}
 
@@ -106,6 +108,14 @@ export class AnalysisWorkerService implements OnApplicationBootstrap, BeforeAppl
     try {
       const stuck = await this.analysis.requeueStuck();
       if (stuck.requeued + stuck.failed > 0) this.logger.warn(stuck, "watchdog recovered stuck analysis runs");
+      // FR-174: refresh the gauge every tick, also while paused; a count failure must not break the tick.
+      await this.analysis
+        .queueDepth()
+        .then((d) => {
+          this.metrics.setAnalysisQueueDepth("pending", d.pending);
+          this.metrics.setAnalysisQueueDepth("processing", d.processing);
+        })
+        .catch((e: unknown) => this.logger.warn({ err: e }, "analysis queue depth count failed"));
       const state = await this.pause.getState();
       const authUntil = Math.max(this.authPausedUntil, state.auth.pausedUntil?.getTime() ?? 0);
       if (authUntil > Date.now()) {
@@ -153,22 +163,30 @@ export class AnalysisWorkerService implements OnApplicationBootstrap, BeforeAppl
       await this.analysis.release(run.id, w).catch(log);
       return;
     }
+    const started = Date.now();
     try {
       await processor.process(run);
+      this.metrics.observeAnalysisDuration("total", Date.now() - started);
     } catch (error: unknown) {
       if (error instanceof AnalysisLockLostError) {
         this.logger.warn({ runId: run.id }, "analysis run lock lost; left to its new holder");
         return;
       }
+      // Processing time of a failed run, measured before any backoff sleep.
+      this.metrics.observeAnalysisDuration("total", Date.now() - started);
       const d = decideFailure(error);
       this.logger.warn({ runId: run.id, code: d.code, action: d.action }, "analysis run failed");
       if (d.action === "retry") {
         // FR-113: back off inside the slot, except on the last attempt (requeue then marks it failed).
         if (run.attemptCount < this.cfg.ANALYSIS_MAX_ATTEMPTS) await this.sleep(backoffMs(run.attemptCount, error));
-        await this.analysis.requeue(run.id, w, d.code, d.message).catch(log);
+        const st = await this.analysis.requeue(run.id, w, d.code, d.message).catch(log);
+        // Count only transitions this worker actually made (null = lock lost).
+        if (st === "pending") this.metrics.incAnalysisRun("retried", run.trigger);
+        else if (st === "failed") this.metrics.incAnalysisRun("failed", run.trigger);
         return;
       }
-      await this.analysis.markFailed(run.id, w, d.code, d.message).catch(log);
+      const failed = await this.analysis.markFailed(run.id, w, d.code, d.message).catch(log);
+      if (failed === true) this.metrics.incAnalysisRun("failed", run.trigger);
       if (d.action === "fail_and_pause") {
         this.authPausedUntil = Date.now() + ANALYSIS_AUTH_PAUSE_MS;
         this.pause.invalidate();

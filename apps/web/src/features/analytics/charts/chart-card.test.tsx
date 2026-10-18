@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import { seriousViolations } from "@/test/axe";
 import { describe, expect, it } from "vitest";
 import { ChartCard } from "./chart-card";
 
@@ -100,5 +101,21 @@ describe("ChartCard viewToggle / toolbar / footer (#222)", () => {
     expect(screen.queryByText("chips")).toBeNull();
     expect(screen.queryByText("legend")).toBeNull();
     expect(screen.queryByRole("radio")).toBeNull();
+  });
+});
+
+describe("ChartCard — axe (#95, TC-DASH-022, NFR-032)", () => {
+  it("has no serious/critical axe violations in chart and table mode", async () => {
+    const { container } = render(
+      <main>
+        <ChartCard title="Lượt nhắc theo thời gian" table={table}>
+          <div>chart</div>
+        </ChartCard>
+      </main>,
+    );
+    expect(await seriousViolations(container)).toEqual([]);
+    await press(screen.getByRole("button", { name: "Xem dạng bảng" }), "Enter");
+    expect(screen.getByRole("grid")).toBeInTheDocument();
+    expect(await seriousViolations(container)).toEqual([]);
   });
 });

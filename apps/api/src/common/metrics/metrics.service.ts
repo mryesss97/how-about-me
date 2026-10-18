@@ -5,6 +5,12 @@ export type ProviderOutcome = "ok" | "rate_limited" | "error" | "timeout";
 export type RecordKind = "fetched" | "inserted" | "updated" | "duplicated" | "invalid" | "excluded";
 export type SyncJobStatus = "success" | "partial" | "failed";
 export type SyncTrigger = "scheduled" | "manual";
+/** `analysis_runs_total.status`: terminal outcomes plus `retried` (requeued after a retryable failure). */
+export type AnalysisRunOutcome = "completed" | "skipped" | "failed" | "retried";
+export type AnalysisStep = "relevance" | "safety" | "classify" | "total";
+export type AnalysisQueueStatus = "pending" | "processing";
+/** Mirrors the `AnalysisTrigger` enum; kept as a literal union so `common/` stays Prisma-free. */
+export type AnalysisRunTrigger = "ingest" | "content_change" | "manual" | "bulk" | "retry" | "version_change";
 
 const MS_BUCKETS = [50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000];
 
@@ -13,6 +19,7 @@ export type MetricSnapshot = Record<string, Array<{ labels: Record<string, strin
 
 /**
  * Prometheus metrics — docs/02-architecture/09-observability.md §2 (FR-174, TC-SYS-010).
+ * Collector (`collector_*`), HTTP (`http_*`) and analysis (`analysis_*`, #310) series.
  * Own `Registry` per instance (not the prom-client global) so test apps stay isolated.
  */
 @Injectable()
@@ -68,6 +75,73 @@ export class MetricsService {
     buckets: MS_BUCKETS,
     registers: [this.registry],
   });
+
+  private readonly analysisRuns = new Counter({
+    name: "analysis_runs_total",
+    help: "Analysis runs finished or requeued, by status and trigger",
+    labelNames: ["status", "trigger"] as const,
+    registers: [this.registry],
+  });
+  private readonly analysisQueueDepth = new Gauge({
+    name: "analysis_queue_depth",
+    help: "Analysis runs waiting or in progress (system-wide), by status",
+    labelNames: ["status"] as const,
+    registers: [this.registry],
+  });
+  private readonly analysisDuration = new Histogram({
+    name: "analysis_run_duration_ms",
+    help: "Analysis duration in milliseconds, by step (relevance, safety, classify, total)",
+    labelNames: ["step"] as const,
+    buckets: MS_BUCKETS,
+    registers: [this.registry],
+  });
+  private readonly analysisProviderCalls = new Counter({
+    name: "analysis_provider_calls_total",
+    help: "AI provider calls, by provider and outcome (ok or error code)",
+    labelNames: ["provider", "outcome"] as const,
+    registers: [this.registry],
+  });
+  private readonly analysisTokens = new Counter({
+    name: "analysis_tokens_total",
+    help: "Classifier tokens of completed analysis runs, by direction",
+    labelNames: ["direction"] as const,
+    registers: [this.registry],
+  });
+  private readonly analysisCost = new Counter({
+    name: "analysis_estimated_cost_usd_total",
+    help: "Estimated provider cost (USD) of completed analysis runs, by provider",
+    labelNames: ["provider"] as const,
+    registers: [this.registry],
+  });
+
+  incAnalysisRun(status: AnalysisRunOutcome, trigger: AnalysisRunTrigger): void {
+    this.analysisRuns.inc({ status, trigger });
+  }
+
+  setAnalysisQueueDepth(status: AnalysisQueueStatus, n: number): void {
+    this.analysisQueueDepth.set({ status }, n);
+  }
+
+  observeAnalysisDuration(step: AnalysisStep, ms: number): void {
+    this.analysisDuration.observe({ step }, ms);
+  }
+
+  incAnalysisProviderCall(provider: string, outcome: string): void {
+    this.analysisProviderCalls.inc({ provider, outcome });
+  }
+
+  /** Only positive finite amounts are added (prom-client rejects negative increments). */
+  addAnalysisUsage(
+    provider: string,
+    usage: { inputTokens?: number; outputTokens?: number; estimatedCostUsd?: number },
+  ): void {
+    const add = (n: number | undefined, inc: (v: number) => void) => {
+      if (n !== undefined && Number.isFinite(n) && n > 0) inc(n);
+    };
+    add(usage.inputTokens, (v) => this.analysisTokens.inc({ direction: "input" }, v));
+    add(usage.outputTokens, (v) => this.analysisTokens.inc({ direction: "output" }, v));
+    add(usage.estimatedCostUsd, (v) => this.analysisCost.inc({ provider }, v));
+  }
 
   incSyncJob(status: SyncJobStatus, trigger: SyncTrigger): void {
     this.syncJobs.inc({ status, trigger });

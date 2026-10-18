@@ -1,3 +1,4 @@
+import { MetricsService } from "../../src/common/metrics/metrics.service";
 import type { INestApplication } from "@nestjs/common";
 import { SchedulerRegistry } from "@nestjs/schedule";
 import type { PinoLogger } from "nestjs-pino";
@@ -72,6 +73,7 @@ describe("Analysis runs (T-070)", () => {
       cfg,
       silent,
       app.get(AnalysisPauseService),
+      new MetricsService(),
       processor,
     );
   }
