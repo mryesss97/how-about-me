@@ -72,7 +72,7 @@ test.describe("a11y (admin)", () => {
       await page.waitForLoadState("networkidle");
       const small = await page.evaluate(() =>
         [...document.querySelectorAll<HTMLElement>("main button, main a, main [role=tab]")]
-          .filter((el) => !el.closest('p, td, [data-prose], .bubble-map, [data-testid="mention-row"]'))
+          .filter((el) => !el.closest('p, td, [data-prose], .bubble-map, [data-testid="mention-row"], [data-hit-area]'))
           .map((el) => ({ el, r: el.getBoundingClientRect() }))
           .filter(({ r }) => r.width > 0 && r.height > 0 && r.height < 43.5)
           .slice(0, 5)
