@@ -62,7 +62,9 @@ test.describe("a11y (admin)", () => {
     });
   }
 
-  // #386: every interactive control in main is ≥ 44 px tall at 390 (inline prose links excluded).
+  // #386: every interactive control in main is ≥ 44 px tall at 390. Excluded: inline prose links; bubbles in the
+  // sentiment map (sized by data — the "Chủ đề nhỏ" plaques and table mode are the 44 px alternatives); links inside a
+  // mention card (the whole card is the target via the row link's stretched ::after).
   for (const path of ["/overview", "/mentions", "/settings/project", "/system-status"]) {
     test(`#386: ${path} @390 touch targets ≥ 44 px`, async ({ page }) => {
       await page.setViewportSize({ width: 390, height: 844 });
@@ -70,7 +72,7 @@ test.describe("a11y (admin)", () => {
       await page.waitForLoadState("networkidle");
       const small = await page.evaluate(() =>
         [...document.querySelectorAll<HTMLElement>("main button, main a, main [role=tab]")]
-          .filter((el) => !el.closest("p, td, [data-prose]"))
+          .filter((el) => !el.closest('p, td, [data-prose], .bubble-map, [data-testid="mention-row"]'))
           .map((el) => ({ el, r: el.getBoundingClientRect() }))
           .filter(({ r }) => r.width > 0 && r.height > 0 && r.height < 43.5)
           .slice(0, 5)
