@@ -18,8 +18,7 @@ apps/web/src/
 │  └─ (app)/                     authenticated shell (sidebar + header), guards
 │     ├─ layout.tsx
 │     ├─ overview/page.tsx
-│     ├─ mentions/layout.tsx (children + @detail slot) · mentions/page.tsx · mentions/[id]/page.tsx (full page)
-│     ├─ mentions/@detail/default.tsx · mentions/@detail/page.tsx (null, closes the slide-out on soft nav to `/mentions`, #250) · mentions/@detail/(.)[id]/page.tsx (intercepted slide-out, T-104)
+│     ├─ mentions/page.tsx (list + slide-out on `?item=<id>`, #326) · mentions/[id]/page.tsx (full page)
 │     ├─ listening-queries/page.tsx
 │     ├─ reviews/page.tsx (P1)
 │     ├─ system-status/page.tsx

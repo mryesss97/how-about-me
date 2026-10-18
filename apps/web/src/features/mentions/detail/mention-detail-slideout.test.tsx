@@ -13,7 +13,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("./mention-detail", () => ({ MentionDetail: () => <p>body</p> }));
 
 describe("MentionDetailSlideout (TC-MEN-009)", () => {
-  it("Esc closes, navigates back to the list and returns focus to the row that opened it", async () => {
+  it("Esc calls onClose (#326: clears `?item`) and returns focus to the row that opened it", async () => {
     render(
       <QueryClientProvider client={new QueryClient()}>
         <button type="button">row</button>
@@ -21,7 +21,7 @@ describe("MentionDetailSlideout (TC-MEN-009)", () => {
     );
     const row = screen.getByRole("button", { name: "row" });
     row.focus();
-    render(<MentionDetailSlideout mentionId="00000000-0000-4000-8000-000000000001" />);
+    render(<MentionDetailSlideout mentionId="00000000-0000-4000-8000-000000000001" onClose={back} />);
     expect(await screen.findByText("body")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Mở trang đầy đủ/ })).toHaveAttribute(
       "href",
@@ -29,7 +29,7 @@ describe("MentionDetailSlideout (TC-MEN-009)", () => {
     );
     fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
     await waitFor(() => expect(screen.queryByText("body")).toBeNull());
-    expect(back.mock.calls.length + push.mock.calls.length).toBe(1);
+    expect(back).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(row).toHaveFocus());
   });
 });

@@ -96,7 +96,8 @@ export const ButtonGroup = ({ children, size = "md", className, ...otherProps }:
         <ButtonGroupContext.Provider value={{ size }}>
             <AriaToggleButtonGroup
                 selectionMode="single"
-                className={cx("relative z-0 inline-flex w-max -space-x-px rounded-lg shadow-xs", className)}
+                className={cx(// #327 (local edit to vendored file): never push the page wider than its container; scroll inside instead.
+                    "relative z-0 inline-flex w-max max-w-full -space-x-px overflow-x-auto rounded-lg p-0.5 shadow-xs [scrollbar-width:none]", className)}
                 {...otherProps}
             >
                 {children}

@@ -22,6 +22,8 @@ export default async function MentionDetailPage({
     if (typeof v === "string") sp.set(k, v);
     else v?.forEach((x) => sp.append(k, x));
   }
+  // `item` belongs to the list slide-out (#326), not to the list filters.
+  sp.delete("item");
   const qs = sp.toString();
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 lg:px-8">
