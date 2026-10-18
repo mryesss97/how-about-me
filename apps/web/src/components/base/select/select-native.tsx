@@ -33,11 +33,13 @@ export const NativeSelect = ({ label, hint, options, className, selectClassName,
     const id = useId();
     const selectId = `select-native-${id}`;
     const hintId = `select-native-hint-${id}`;
+    // Own id for the label (was the select's id, so the select labelled itself); fixes getByLabelText / a11y name.
+    const labelId = `select-native-label-${id}`;
 
     return (
         <div className={cx("w-full in-data-input-wrapper:w-max", className)}>
             {label && (
-                <Label htmlFor={selectId} id={selectId} className="mb-1.5">
+                <Label htmlFor={selectId} id={labelId} className="mb-1.5">
                     {label}
                 </Label>
             )}
@@ -46,8 +48,8 @@ export const NativeSelect = ({ label, hint, options, className, selectClassName,
                 <select
                     {...props}
                     id={selectId}
-                    aria-describedby={hintId}
-                    aria-labelledby={selectId}
+                    aria-describedby={hint ? hintId : undefined}
+                    aria-labelledby={label ? labelId : undefined}
                     className={cx(
                         "appearance-none rounded-lg bg-primary font-medium text-primary shadow-xs ring-1 ring-primary outline-hidden transition duration-100 ease-linear ring-inset placeholder:text-fg-quaternary focus-visible:ring-2 focus-visible:ring-brand disabled:cursor-not-allowed disabled:opacity-50",
 
