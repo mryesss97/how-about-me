@@ -138,6 +138,8 @@ Implementation notes (T-051, `IngestionService.ingestPage`): one transaction per
 
 Circuit breaker: `collector_state(project_id, consecutive_provider_failures, circuit_open_until, reason)`. Open after `COLLECTOR_CIRCUIT_FAILURE_THRESHOLD=5` consecutive failed jobs (any query); half-open after `COLLECTOR_CIRCUIT_OPEN_SECONDS=600` (one probe job); close on success. System Status shows `collector.status=paused` with reason.
 
+Implementation (T-054, `modules/collector/circuit-breaker.service.ts`): a failure = a job ending `failed` (thrown runs included); `partial` neither counts nor resets; `success` resets the counter and closes. Increment and open are one atomic upsert. In half-open the scheduler calls `tryAcquireProbe` before running: the winner extends `circuit_open_until` by `COLLECTOR_CIRCUIT_OPEN_SECONDS` at acquire time, so claiming blocks the project's other queries (denied queries just release their lock, schedule unchanged). A failed probe keeps the counter ≥ threshold and re-opens for another `COLLECTOR_CIRCUIT_OPEN_SECONDS`; a stuck/dead probe self-heals when that extension expires. `reason` = `errorCode: message` truncated to 200 chars. `getState(projectId)` → `closed|open|half_open` for System Status (T-057).
+
 ## 8. Idempotency & concurrency guarantees
 
 - Uniqueness constraints make re-processing any page safe.

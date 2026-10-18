@@ -3,6 +3,7 @@ import type { PinoLogger } from "nestjs-pino";
 import { AppError } from "../common/errors/app.error";
 import type { AppConfig } from "../config/config.module";
 import type { ClaimedQuery, CollectorRunner, RunOutcome } from "./collector-runner";
+import type { CircuitBreakerService } from "../modules/collector/circuit-breaker.service";
 import type { QueryClaimRepository } from "./query-claim.repository";
 import { COLLECTOR_TICK_INTERVAL, SchedulerService } from "./scheduler.service";
 
@@ -16,7 +17,13 @@ const q = (id: string): ClaimedQuery => ({
   workerId: "w",
 });
 
-function setup(role: AppConfig["APP_ROLE"], runner: CollectorRunner | null, claimed: ClaimedQuery[], limit = 3) {
+function setup(
+  role: AppConfig["APP_ROLE"],
+  runner: CollectorRunner | null,
+  claimed: ClaimedQuery[],
+  limit = 3,
+  breaker: Partial<Record<"tryAcquireProbe" | "recordOutcome", jest.Mock>> | null = null,
+) {
   const cfg = {
     APP_ROLE: role,
     COLLECTOR_TICK_MS: 60_000,
@@ -27,6 +34,7 @@ function setup(role: AppConfig["APP_ROLE"], runner: CollectorRunner | null, clai
     claimDueQueries: jest.fn().mockResolvedValue(claimed),
     completeRun: jest.fn().mockResolvedValue(1),
     releaseLocks: jest.fn().mockResolvedValue(0),
+    releaseLock: jest.fn().mockResolvedValue(1),
   };
   const registry = { addInterval: jest.fn(), doesExist: jest.fn().mockReturnValue(false), deleteInterval: jest.fn() };
   const logger = { setContext: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
@@ -36,8 +44,9 @@ function setup(role: AppConfig["APP_ROLE"], runner: CollectorRunner | null, clai
     repo as unknown as QueryClaimRepository,
     registry as unknown as SchedulerRegistry,
     logger as unknown as PinoLogger,
+    breaker as unknown as CircuitBreakerService | null,
   );
-  return { svc, repo, registry };
+  return { svc, repo, registry, logger };
 }
 
 const ok = (): Promise<RunOutcome> => Promise.resolve({ status: "success", completedAt: new Date() });
@@ -125,5 +134,45 @@ describe("SchedulerService (FR-070, FR-086)", () => {
     const { svc, repo } = setup("all", { run: ok }, []);
     await svc.beforeApplicationShutdown();
     expect(repo.releaseLocks).toHaveBeenCalledWith(svc.workerId);
+  });
+
+  describe("circuit breaker hook (FR-084, TC-COL-020)", () => {
+    it("denied half-open probe: runner not called, lock released, schedule untouched", async () => {
+      const run = jest.fn(ok);
+      const breaker = { tryAcquireProbe: jest.fn().mockResolvedValue(false), recordOutcome: jest.fn() };
+      const { svc, repo } = setup("all", { run }, [q("a")], 3, breaker);
+      await svc.tick();
+      expect(run).not.toHaveBeenCalled();
+      expect(repo.releaseLock).toHaveBeenCalledWith("a", svc.workerId);
+      expect(repo.completeRun).not.toHaveBeenCalled();
+      expect(breaker.recordOutcome).not.toHaveBeenCalled();
+    });
+
+    it("records the outcome of each run, including thrown failures", async () => {
+      const breaker = { tryAcquireProbe: jest.fn().mockResolvedValue(true), recordOutcome: jest.fn() };
+      const { svc } = setup(
+        "all",
+        { run: () => Promise.reject(new AppError("THREADS_TIMEOUT", "slow")) },
+        [q("a")],
+        3,
+        breaker,
+      );
+      await svc.tick();
+      expect(breaker.recordOutcome).toHaveBeenCalledWith(
+        "p",
+        expect.objectContaining({ status: "failed", errorCode: "THREADS_TIMEOUT" }),
+      );
+    });
+
+    it("a throwing breaker does not break the tick", async () => {
+      const breaker = {
+        tryAcquireProbe: jest.fn().mockResolvedValue(true),
+        recordOutcome: jest.fn().mockRejectedValue(new Error("db")),
+      };
+      const { svc, repo, logger } = setup("all", { run: ok }, [q("a"), q("b")], 3, breaker);
+      await expect(svc.tick()).resolves.toBeUndefined();
+      expect(repo.completeRun).toHaveBeenCalledTimes(2);
+      expect(logger.error).toHaveBeenCalled();
+    });
   });
 });

@@ -92,6 +92,14 @@ export class QueryClaimRepository {
     `);
   }
 
+  /** Releases one lock without touching the schedule (half-open probe denied, FR-084). */
+  async releaseLock(queryId: string, workerId: string): Promise<number> {
+    return this.prisma.$executeRaw(Prisma.sql`
+      UPDATE listening_queries SET locked_at = NULL, locked_by = NULL
+       WHERE id = ${queryId}::uuid AND locked_by = ${workerId}
+    `);
+  }
+
   /** Releases every lock held by this worker (graceful shutdown). */
   async releaseLocks(workerId: string): Promise<number> {
     return this.prisma.$executeRaw(Prisma.sql`
