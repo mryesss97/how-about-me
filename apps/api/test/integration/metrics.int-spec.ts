@@ -44,6 +44,12 @@ describe("GET /metrics (T-058)", () => {
       "collector_circuit_open",
       "http_requests_total",
       "http_request_duration_ms",
+      "analysis_runs_total",
+      "analysis_queue_depth",
+      "analysis_run_duration_ms",
+      "analysis_provider_calls_total",
+      "analysis_tokens_total",
+      "analysis_estimated_cost_usd_total",
     ])
       expect(res.text).toContain(`# HELP ${name}`);
     expect(res.text).toContain('http_requests_total{route="/health/live",method="GET",status="200"}');

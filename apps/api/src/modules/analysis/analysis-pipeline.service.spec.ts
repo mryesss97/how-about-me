@@ -6,6 +6,7 @@ import {
 } from "@how-about-me/taxonomy";
 import type { PinoLogger } from "nestjs-pino";
 import { ProviderError } from "../../common/errors/provider.error";
+import { MetricsService } from "../../common/metrics/metrics.service";
 import type { AppConfig } from "../../config/config.module";
 import type { PrismaService } from "../../database/prisma.service";
 import { AnalysisLockLostError } from "./analysis-failure-policy";
@@ -85,6 +86,7 @@ function make(opts: { text?: string | null; revision?: number; twoStep?: boolean
   };
   const cfg = { ANALYSIS_TWO_STEP: opts.twoStep ?? false, ANALYSIS_BRAND_CONTEXT: "brand" } as AppConfig;
   const logger = { info: jest.fn(), warn: jest.fn() } as unknown as PinoLogger;
+  const metrics = new MetricsService();
   const svc = new AnalysisPipelineService(
     prisma as unknown as PrismaService,
     analysis as unknown as AnalysisService,
@@ -93,8 +95,9 @@ function make(opts: { text?: string | null; revision?: number; twoStep?: boolean
     cfg,
     logger,
     policies as unknown as AnalysisPolicyService,
+    metrics,
   );
-  return { svc, tx, analysis, spies, policies };
+  return { svc, tx, analysis, spies, policies, metrics };
 }
 
 describe("AnalysisPipelineService (T-074)", () => {
@@ -306,5 +309,79 @@ describe("AnalysisPipelineService key phrases retry (FR-113, FR-120)", () => {
     expect(m.tx.analysisPhrase.createMany).toHaveBeenCalledWith({
       data: [{ analysisId: expect.any(String), phrase: "giá vé", position: 0 }],
     });
+  });
+});
+
+describe("AnalysisPipelineService metrics (FR-174, #310)", () => {
+  const usage = { inputTokens: 10, outputTokens: 5, estimatedCostUsd: 0.25 };
+  const valid = {
+    relevance: { label: "relevant" as const, confidence: 0.9, explanation: "x" },
+    sentiment: { label: "positive" as const, confidence: 0.9 },
+    intents: [{ label: "praise" as const, confidence: 0.9 }],
+    topics: [{ label: "ticket" as const, confidence: 0.9 }],
+    language: "vi" as const,
+    summary: "s",
+    keyPhrases: ["giá vé"],
+    usage,
+  };
+
+  it("completed → runs_total, step histograms, tokens and cost by provider", async () => {
+    const m = make();
+    m.spies.classify.mockResolvedValueOnce(valid);
+    await m.svc.process(run);
+    const text = await m.metrics.render();
+    expect(text).toContain('analysis_runs_total{status="completed",trigger="ingest"} 1');
+    expect(text).toContain('analysis_run_duration_ms_count{step="classify"} 1');
+    expect(text).toContain('analysis_run_duration_ms_count{step="safety"} 1');
+    expect(text).toContain('analysis_provider_calls_total{provider="fake",outcome="ok"} 2');
+    expect(text).toContain('analysis_tokens_total{direction="input"} 10');
+    expect(text).toContain('analysis_tokens_total{direction="output"} 5');
+    expect(text).toContain('analysis_estimated_cost_usd_total{provider="fake"} 0.25');
+  });
+
+  it("two-step irrelevant → only the relevance step, counted as completed", async () => {
+    const m = make({ text: "đổi time zone trên máy", twoStep: true });
+    await m.svc.process(run);
+    const text = await m.metrics.render();
+    expect(text).toContain('analysis_run_duration_ms_count{step="relevance"} 1');
+    expect(text).not.toContain('step="safety"');
+    expect(text).not.toContain('step="classify"');
+    expect(text).toContain('analysis_runs_total{status="completed",trigger="ingest"} 1');
+  });
+
+  it("FR-113: corrective retry → each provider call counted (ok = 3 incl. moderation)", async () => {
+    const m = make();
+    const bad = { ...valid, intents: [{ label: "ticketing", confidence: 0.9 }] } as unknown as typeof valid;
+    m.spies.classify.mockResolvedValueOnce(bad).mockResolvedValueOnce(valid);
+    await m.svc.process(run);
+    const text = await m.metrics.render();
+    expect(text).toContain('analysis_run_duration_ms_count{step="classify"} 2');
+    expect(text).toContain('analysis_provider_calls_total{provider="fake",outcome="ok"} 3');
+    expect(text).toContain('analysis_tokens_total{direction="input"} 20');
+  });
+
+  it("provider error → outcome is the error code, no completed run", async () => {
+    const m = make();
+    m.spies.classify.mockRejectedValueOnce(new ProviderError("ANALYSIS_PROVIDER_ERROR", "500"));
+    await expect(m.svc.process(run)).rejects.toBeInstanceOf(ProviderError);
+    const text = await m.metrics.render();
+    expect(text).toContain('analysis_provider_calls_total{provider="fake",outcome="ANALYSIS_PROVIDER_ERROR"} 1');
+    expect(text).not.toContain('status="completed"');
+  });
+
+  it("superseded / empty_text → skipped", async () => {
+    for (const m of [make({ revision: 2 }), make({ text: " " })]) {
+      await m.svc.process(run);
+      expect(await m.metrics.render()).toContain('analysis_runs_total{status="skipped",trigger="ingest"} 1');
+    }
+  });
+
+  it("lock lost on persist → no completed, no tokens", async () => {
+    const m = make();
+    m.analysis.markCompleted.mockResolvedValueOnce(false);
+    await expect(m.svc.process(run)).rejects.toBeInstanceOf(AnalysisLockLostError);
+    const text = await m.metrics.render();
+    expect(text).not.toContain("analysis_runs_total{");
+    expect(text).not.toContain("analysis_tokens_total{");
   });
 });

@@ -1,3 +1,4 @@
+import { MetricsService } from "../../src/common/metrics/metrics.service";
 import type { INestApplication } from "@nestjs/common";
 import { SchedulerRegistry } from "@nestjs/schedule";
 import type { PinoLogger } from "nestjs-pino";
@@ -77,8 +78,17 @@ describe("Analysis failure handling (T-075)", () => {
       c,
       silent,
       app.get(AnalysisPolicyService),
+      new MetricsService(),
     );
-    const w = new AnalysisWorkerService(svc, app.get(SchedulerRegistry), c, silent, pause, pipeline);
+    const w = new AnalysisWorkerService(
+      svc,
+      app.get(SchedulerRegistry),
+      c,
+      silent,
+      pause,
+      new MetricsService(),
+      pipeline,
+    );
     w.sleep = async () => undefined;
     return { w, pause };
   }

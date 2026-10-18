@@ -3,6 +3,7 @@ import type { PinoLogger } from "nestjs-pino";
 import type { AppConfig } from "../../config/config.module";
 import { ANALYSIS_WORKER_INTERVAL, AnalysisWorkerService } from "./analysis-worker.service";
 import { ProviderError } from "../../common/errors/provider.error";
+import { MetricsService } from "../../common/metrics/metrics.service";
 import { ANALYSIS_AUTH_PAUSE_MS, AnalysisLockLostError } from "./analysis-failure-policy";
 import type { AnalysisPauseService, AnalysisPauseState } from "./analysis-pause.service";
 import type { AnalysisService, ClaimedRun } from "./analysis.service";
@@ -13,8 +14,9 @@ function make(cfg: Partial<AppConfig>, processor?: RunProcessor) {
   const analysis = {
     requeueStuck: jest.fn(async () => ({ requeued: 0, failed: 0 })),
     claimBatch: jest.fn(async (): Promise<ClaimedRun[]> => []),
-    requeue: jest.fn(async () => "pending"),
+    requeue: jest.fn(async (): Promise<string | null> => "pending"),
     markFailed: jest.fn(async () => true),
+    queueDepth: jest.fn(async () => ({ pending: 7, processing: 2 })),
     release: jest.fn(async () => true),
   };
   const state = (over: { exceeded?: boolean; pausedUntil?: Date | null } = {}): AnalysisPauseState => ({
@@ -38,19 +40,21 @@ function make(cfg: Partial<AppConfig>, processor?: RunProcessor) {
     ANALYSIS_MAX_ATTEMPTS: 3,
     ...cfg,
   } as AppConfig;
+  const metrics = new MetricsService();
   const svc = new AnalysisWorkerService(
     analysis as unknown as AnalysisService,
     scheduler as unknown as SchedulerRegistry,
     full,
     logger as unknown as PinoLogger,
     pause as unknown as AnalysisPauseService,
+    metrics,
     processor,
   );
   const sleeps: number[] = [];
   svc.sleep = async (ms) => {
     sleeps.push(ms);
   };
-  return { svc, scheduler, analysis, pause, state, sleeps };
+  return { svc, scheduler, analysis, pause, state, sleeps, metrics };
 }
 
 const proc: RunProcessor = { process: jest.fn(async () => undefined) };
@@ -197,6 +201,7 @@ describe("AnalysisWorkerService backoff sleep (FR-113)", () => {
         {} as AppConfig,
         { info: jest.fn() } as unknown as PinoLogger,
         {} as AnalysisPauseService,
+        new MetricsService(),
       );
       let woke = false;
       const sleeping = svc.sleep(30_000).then(() => (woke = true));
@@ -209,5 +214,72 @@ describe("AnalysisWorkerService backoff sleep (FR-113)", () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+});
+
+describe("AnalysisWorkerService metrics (FR-174, #310)", () => {
+  const run = (id: string) => ({ id, attemptCount: 1, trigger: "ingest" }) as ClaimedRun;
+  const failing = (e: unknown): RunProcessor => ({ process: jest.fn(async () => Promise.reject(e)) });
+  const retryErr = () => new ProviderError("ANALYSIS_PROVIDER_ERROR", "500");
+
+  it.each([
+    ["pending", 'analysis_runs_total{status="retried",trigger="ingest"} 1'],
+    ["failed", 'analysis_runs_total{status="failed",trigger="ingest"} 1'],
+  ] as const)("FR-113: requeue → %s is counted", async (st, line) => {
+    const m = make({}, failing(retryErr()));
+    m.analysis.requeue.mockResolvedValueOnce(st);
+    m.analysis.claimBatch.mockResolvedValueOnce([run("a")]);
+    await m.svc.tick();
+    const text = await m.metrics.render();
+    expect(text).toContain(line);
+    expect(text).toContain('analysis_run_duration_ms_count{step="total"} 1');
+  });
+
+  it("requeue lost the lock (null) → not counted", async () => {
+    const m = make({}, failing(retryErr()));
+    m.analysis.requeue.mockResolvedValueOnce(null);
+    m.analysis.claimBatch.mockResolvedValueOnce([run("a")]);
+    await m.svc.tick();
+    expect(await m.metrics.render()).not.toContain("analysis_runs_total{");
+  });
+
+  it("ANALYSIS_SCHEMA_INVALID → failed", async () => {
+    const m = make({}, failing(new ProviderError("ANALYSIS_SCHEMA_INVALID", "bad")));
+    m.analysis.claimBatch.mockResolvedValueOnce([run("a")]);
+    await m.svc.tick();
+    expect(await m.metrics.render()).toContain('analysis_runs_total{status="failed",trigger="ingest"} 1');
+  });
+
+  it("markFailed false → not counted", async () => {
+    const m = make({}, failing(new ProviderError("ANALYSIS_SCHEMA_INVALID", "bad")));
+    m.analysis.markFailed.mockResolvedValueOnce(false);
+    m.analysis.claimBatch.mockResolvedValueOnce([run("a")]);
+    await m.svc.tick();
+    expect(await m.metrics.render()).not.toContain("analysis_runs_total{");
+  });
+
+  it("lock lost → nothing counted, no total histogram", async () => {
+    const m = make({}, failing(new AnalysisLockLostError("a")));
+    m.analysis.claimBatch.mockResolvedValueOnce([run("a")]);
+    await m.svc.tick();
+    const text = await m.metrics.render();
+    expect(text).not.toContain("analysis_runs_total{");
+    expect(text).not.toContain('step="total"');
+  });
+
+  it("tick sets queue depth, also while auth-paused", async () => {
+    const m = make({}, proc);
+    m.pause.getState.mockResolvedValueOnce(m.state({ pausedUntil: new Date(Date.now() + 60_000) }));
+    await m.svc.tick();
+    const text = await m.metrics.render();
+    expect(text).toContain('analysis_queue_depth{status="pending"} 7');
+    expect(text).toContain('analysis_queue_depth{status="processing"} 2');
+  });
+
+  it("queueDepth failure does not break the tick", async () => {
+    const m = make({}, proc);
+    m.analysis.queueDepth.mockRejectedValueOnce(new Error("db"));
+    m.analysis.claimBatch.mockResolvedValueOnce([run("a")]);
+    expect(await m.svc.tick()).toBe(1);
   });
 });

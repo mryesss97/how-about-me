@@ -10,6 +10,7 @@ import type { AnalysisPolicy } from "@how-about-me/taxonomy";
 import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 import { v7 as uuidv7 } from "uuid";
 import { ProviderError } from "../../common/errors/provider.error";
+import { MetricsService, type AnalysisStep } from "../../common/metrics/metrics.service";
 import { APP_CONFIG, type AppConfig } from "../../config/config.module";
 import { PrismaService } from "../../database/prisma.service";
 import { AnalysisLockLostError, truncateMessage } from "./analysis-failure-policy";
@@ -100,7 +101,26 @@ export class AnalysisPipelineService implements RunProcessor {
     @Inject(APP_CONFIG) private readonly cfg: AppConfig,
     @InjectPinoLogger(AnalysisPipelineService.name) private readonly logger: PinoLogger,
     private readonly policies: AnalysisPolicyService,
+    private readonly metrics: MetricsService,
   ) {}
+
+  /**
+   * FR-174: times one provider call (`analysis_run_duration_ms{step}`) and counts it in
+   * `analysis_provider_calls_total{provider,outcome}` — `ok`, the `ProviderError` code, or `INTERNAL`.
+   */
+  private async timed<T>(step: AnalysisStep, provider: string, fn: () => Promise<T>): Promise<T> {
+    const started = Date.now();
+    try {
+      const out = await fn();
+      this.metrics.incAnalysisProviderCall(provider, "ok");
+      return out;
+    } catch (e: unknown) {
+      this.metrics.incAnalysisProviderCall(provider, e instanceof ProviderError ? e.code : "INTERNAL");
+      throw e;
+    } finally {
+      this.metrics.observeAnalysisDuration(step, Date.now() - started);
+    }
+  }
 
   private get validateClassify() {
     return validateClassifyFor(classifierSchemaVersionOf(this.classifier.promptVersion));
@@ -113,13 +133,17 @@ export class AnalysisPipelineService implements RunProcessor {
     });
     // doc 07 §1: the post changed (or vanished) after the run was enqueued.
     if (!post || post.revision !== run.sourceRevision) {
-      await this.analysis.markSkipped(run.id, run.lockedBy, "superseded");
+      if (await this.analysis.markSkipped(run.id, run.lockedBy, "superseded")) {
+        this.metrics.incAnalysisRun("skipped", run.trigger);
+      }
       return;
     }
     const text = post.text?.trim() ?? "";
     // TC-ANA-023: no provider call for empty text.
     if (!text) {
-      await this.analysis.markSkipped(run.id, run.lockedBy, "empty_text");
+      if (await this.analysis.markSkipped(run.id, run.lockedBy, "empty_text")) {
+        this.metrics.incAnalysisRun("skipped", run.trigger);
+      }
       return;
     }
 
@@ -136,6 +160,9 @@ export class AnalysisPipelineService implements RunProcessor {
     const ctx: AnalysisContext = { requestId: run.id, projectId: run.projectId, runId: run.id };
     const outcome = await this.callProviders(input, ctx, policy);
     await this.persist(run, outcome, policy);
+    // Counted only after commit (lock-lost rollbacks throw above). Irrelevant results are `completed` too.
+    this.metrics.incAnalysisRun("completed", run.trigger);
+    this.metrics.addAnalysisUsage(this.classifier.provider, sumUsage(outcome.usage));
     this.logger.info({ runId: run.id, kind: outcome.kind }, "analysis run completed");
   }
 
@@ -144,7 +171,7 @@ export class AnalysisPipelineService implements RunProcessor {
     const usage: Usage[] = [];
     if (this.cfg.ANALYSIS_TWO_STEP) {
       const rel = await this.withCorrection<RelevanceResult>(
-        (i) => this.classifier.relevance(i, ctx),
+        (i) => this.timed("relevance", this.classifier.provider, () => this.classifier.relevance(i, ctx)),
         validateRelevance,
         input,
         ctx,
@@ -154,9 +181,11 @@ export class AnalysisPipelineService implements RunProcessor {
         // TC-ANA-005: classify() and moderate() are not called for irrelevant posts.
         return { kind: "irrelevant", relevance: rel.relevance, language: rel.language ?? null, usage };
       }
-      const safety = await this.safety.moderate({ text: input.text }, ctx);
+      const safety = await this.timed("safety", this.safety.name, () =>
+        this.safety.moderate({ text: input.text }, ctx),
+      );
       const { usage: _cu, ...output } = await this.withCorrection(
-        (i) => this.classifier.classify(i, ctx),
+        (i) => this.timed("classify", this.classifier.provider, () => this.classifier.classify(i, ctx)),
         this.validateClassify,
         { ...input, languageHint: rel.language },
         ctx,
@@ -166,7 +195,7 @@ export class AnalysisPipelineService implements RunProcessor {
     }
     // Single-step: classify first, gate on its relevance, then moderate (sequential, saves moderation calls).
     const { usage: _cu, ...output } = await this.withCorrection(
-      (i) => this.classifier.classify(i, ctx),
+      (i) => this.timed("classify", this.classifier.provider, () => this.classifier.classify(i, ctx)),
       this.validateClassify,
       input,
       ctx,
@@ -175,7 +204,7 @@ export class AnalysisPipelineService implements RunProcessor {
     if (output.relevance.label === "irrelevant") {
       return { kind: "irrelevant", relevance: output.relevance, language: output.language, usage };
     }
-    const safety = await this.safety.moderate({ text: input.text }, ctx);
+    const safety = await this.timed("safety", this.safety.name, () => this.safety.moderate({ text: input.text }, ctx));
     return { kind: "full", output, safety: toSafetyAnalysis(safety, policy), usage };
   }
 

@@ -425,6 +425,15 @@ export class AnalysisService implements AnalysisEnqueuer {
     );
   }
 
+  /** System-wide count of `pending` / `processing` runs for `analysis_queue_depth` (FR-174, #310). */
+  async queueDepth(): Promise<{ pending: number; processing: number }> {
+    const rows = await this.prisma.$queryRaw<{ status: AnalysisStatus; n: number }[]>(Prisma.sql`
+      SELECT status, count(*)::int AS n FROM analysis_runs
+      WHERE status IN ('pending', 'processing') GROUP BY status`);
+    const count = (s: AnalysisStatus) => rows.find((r) => r.status === s)?.n ?? 0;
+    return { pending: count("pending"), processing: count("processing") };
+  }
+
   /**
    * Watchdog (doc 07 §8, TC-ANA-003): runs stuck in `processing` longer than `ANALYSIS_STUCK_MINUTES`
    * go back to `pending` with the lock cleared; runs that already used all attempts become `failed`
