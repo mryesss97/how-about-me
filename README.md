@@ -25,6 +25,7 @@ scripts/        backlog → WBS renderer, GitHub issue sync, FE secret check
 nvm use && pnpm install
 cp apps/api/.env.example apps/api/.env && cp apps/web/.env.example apps/web/.env.local   # fill REQUIRED values
 pnpm db:up && pnpm db:migrate && pnpm db:seed
+pnpm db:seed:demo   # optional: demo data for every screen (local DB only)
 pnpm dev        # web http://localhost:3000 · api http://localhost:4000/api/docs
 ```
 
