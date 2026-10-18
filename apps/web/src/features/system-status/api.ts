@@ -1,7 +1,11 @@
 "use client";
 
 import {
+  AnalysisRunsPageSchema,
   ListeningQueryPageSchema,
+  RetryAnalysisRunResponseSchema,
+  RetryFailedBodySchema,
+  RetryFailedResponseSchema,
   RetrySyncJobResponseSchema,
   SyncJobDetailSchema,
   SyncJobsPageSchema,
@@ -16,6 +20,9 @@ import { qk, staleTimes } from "@/lib/query/keys";
 /** FR-170: the overview auto-refreshes every 30 s while the browser tab is visible (TC-SYS-001). */
 export const SYSTEM_STATUS_REFETCH_MS = 30_000;
 export const SYNC_JOBS_PAGE_SIZE = 50;
+export const ANALYSIS_FAILURES_PAGE_SIZE = 50;
+/** FR-175: "retry all failed" re-queues at most 500 runs per call (contract max). */
+export const RETRY_ALL_LIMIT = 500;
 
 export type SyncJobFilters = { queryId?: string; status?: JobStatus; from?: string; to?: string };
 
@@ -76,11 +83,70 @@ export function useRetrySyncJob(pid: string) {
   });
 }
 
+/** FR-175: failed analysis runs, newest first (GET is open to every member). */
+export function useFailedAnalysisRuns(pid: string | null | undefined) {
+  return useInfiniteQuery({
+    queryKey: qk.analysisRuns(pid ?? "", { status: "failed" }),
+    initialPageParam: null as string | null,
+    queryFn: async ({ pageParam }) =>
+      AnalysisRunsPageSchema.parse(
+        await apiFetch<unknown>(`/projects/${pid}/analysis-runs`, {
+          params: {
+            status: "failed",
+            limit: String(ANALYSIS_FAILURES_PAGE_SIZE),
+            ...(pageParam ? { cursor: pageParam } : {}),
+          },
+        }),
+      ),
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    enabled: !!pid,
+  });
+}
+
+function useInvalidateAnalysis(pid: string) {
+  const qc = useQueryClient();
+  return () => {
+    void qc.invalidateQueries({ queryKey: ["project", pid, "analysis-runs"] });
+    void qc.invalidateQueries({ queryKey: qk.systemStatus(pid) });
+  };
+}
+
+/** FR-175 / BR-024: admin retry of one failed run in place (server enforces `@Roles("admin")`, FR-015). */
+export function useRetryAnalysisRun(pid: string) {
+  const invalidate = useInvalidateAnalysis(pid);
+  return useMutation({
+    mutationFn: async (runId: string) =>
+      RetryAnalysisRunResponseSchema.parse(
+        await apiFetch<unknown>(`/projects/${pid}/analysis-runs/${runId}/retry`, { method: "POST" }),
+      ),
+    onSuccess: invalidate,
+  });
+}
+
+/** FR-175 / BR-024: admin re-queues up to 500 failed runs (TC-SYS-012). */
+export function useRetryAllFailedAnalysis(pid: string) {
+  const invalidate = useInvalidateAnalysis(pid);
+  return useMutation({
+    mutationFn: async () =>
+      RetryFailedResponseSchema.parse(
+        await apiFetch<unknown>(`/projects/${pid}/analysis-runs/retry-failed`, {
+          method: "POST",
+          body: JSON.stringify(RetryFailedBodySchema.parse({ limit: RETRY_ALL_LIMIT })),
+        }),
+      ),
+    onSuccess: invalidate,
+  });
+}
+
 export function retryErrorMessage(err: unknown): string {
   if (!(err instanceof ApiError)) return "Đã có lỗi xảy ra. Vui lòng thử lại.";
   switch (err.code) {
     case "SYNC_JOB_NOT_RETRYABLE":
       return "Lượt đồng bộ này không thể thử lại.";
+    case "ANALYSIS_RUN_NOT_RETRYABLE":
+      return "Lượt phân tích này không còn ở trạng thái lỗi.";
+    case "ANALYSIS_ALREADY_PENDING":
+      return "Bài này đã có lượt phân tích đang chờ.";
     case "FORBIDDEN_ROLE":
     case "FORBIDDEN_PROJECT":
       return "Bạn không có quyền thực hiện thao tác này.";

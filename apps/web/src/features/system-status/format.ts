@@ -1,4 +1,10 @@
-import type { IntegrationStatus, JobStatus, JobTrigger, SystemStatusResponse } from "@how-about-me/contracts";
+import type {
+  AnalysisTrigger,
+  IntegrationStatus,
+  JobStatus,
+  JobTrigger,
+  SystemStatusResponse,
+} from "@how-about-me/contracts";
 import { parseDate } from "@internationalized/date";
 import { DASH } from "@/lib/format/number";
 
@@ -54,6 +60,15 @@ export const jobTriggerLabel: Record<JobTrigger, string> = {
   manual: "Thủ công",
   backfill: "Quét bù",
   retry: "Thử lại",
+};
+
+export const analysisTriggerLabel: Record<AnalysisTrigger, string> = {
+  ingest: "Thu thập",
+  content_change: "Nội dung đổi",
+  manual: "Thủ công",
+  bulk: "Hàng loạt",
+  retry: "Thử lại",
+  version_change: "Đổi phiên bản",
 };
 
 /** `YYYY-MM-DD` (calendar day in `tz`) → UTC ISO start of that day. */
