@@ -50,4 +50,24 @@ describe("HorizontalBarChart (#335, FR-142)", () => {
     expect(screen.getByRole("link")).toHaveAccessibleName("Alpha: 30 · 30,0% trên 60 — Xem bài nhắc");
     expect(screen.queryByText(/trên 0 x/)).toBeNull();
   });
+
+  it("#387 / BR-017: @container wrapper; DOM order label → value → bar; label prefix rendered in the row", () => {
+    const { container } = render(
+      <HorizontalBarChart
+        rows={rows}
+        getFill={() => "red"}
+        denominator={100}
+        denominatorLabel="lượt nhắc"
+        renderLabelPrefix={(r) => <i data-testid={`prefix-${r.key}`} />}
+      />,
+    );
+    expect(container.firstElementChild).toHaveClass("@container");
+    const row = screen.getAllByRole("listitem")[0]?.firstElementChild as HTMLElement;
+    const kids = Array.from(row.children);
+    expect(kids).toHaveLength(3);
+    expect(kids[0]).toHaveTextContent("Alpha");
+    expect(kids[1]).toHaveTextContent("30 · 30,0%");
+    expect(kids[2]?.tagName.toLowerCase()).toBe("svg");
+    expect(kids[0]?.querySelector('[data-testid="prefix-a"]')).not.toBeNull();
+  });
 });
