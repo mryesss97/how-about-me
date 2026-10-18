@@ -23,7 +23,7 @@ import {
   TopicLabelSchema,
 } from "./enums.js";
 import { AnalysisFiltersBaseSchema } from "./filters.js";
-import { ReviewStatusSchema } from "./reviews.js";
+import { MentionReviewStateSchema, ReviewStatusSchema } from "./reviews.js";
 
 export const MENTION_SORTS = ["newest", "oldest", "safety_desc", "confidence_asc", "relevance_desc"] as const;
 export const MentionSortSchema = z.enum(MENTION_SORTS);
@@ -139,6 +139,8 @@ export const MentionDetailSchema = MentionListItemSchema.extend({
     phrases: z.array(z.string()).nullable().optional(),
   }),
   overrides: z.array(OverrideSchema).optional(),
+  /** Additive (#339): review queue state of this post; `null` = outside the queue scope. */
+  review: MentionReviewStateSchema.nullable().optional(),
   runs: z.array(
     z.object({
       id: UuidSchema,

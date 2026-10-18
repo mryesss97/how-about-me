@@ -44,6 +44,9 @@ function serve(items = [reviewFixture(), reviewFixture()], extra: Record<string,
   });
 }
 
+/** Table and cards render side by side (CSS picks, #339) — scope checkbox lookups to the table. */
+const tableCheck = (name: string) => within(screen.getByRole("table")).getByLabelText(name);
+
 function setup() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
@@ -103,8 +106,8 @@ describe("ReviewsView (UX §3.8, FR-195, TC-REV-007)", () => {
         ? new Promise((r) => (resolve = r))
         : Promise.resolve({ items: [items[2]], nextCursor: null, counts }),
     );
-    fireEvent.click(screen.getByLabelText(`Chọn mục của @${items[0]?.username}`));
-    fireEvent.click(screen.getByLabelText(`Chọn mục của @${items[1]?.username}`));
+    fireEvent.click(tableCheck(`Chọn mục của @${items[0]?.username}`));
+    fireEvent.click(tableCheck(`Chọn mục của @${items[1]?.username}`));
     fireEvent.click(screen.getByRole("button", { name: "Đánh dấu đã xem lại (2)" }));
     await waitFor(() => expect(screen.getAllByTestId("review-row")).toHaveLength(1));
     expect(JSON.parse(markCalls()[0]?.[1].body ?? "{}")).toEqual({ postIds: [items[0]?.id, items[1]?.id] });
@@ -122,7 +125,7 @@ describe("ReviewsView (UX §3.8, FR-195, TC-REV-007)", () => {
         ? Promise.reject(new ApiError(403, "FORBIDDEN_ROLE", "Forbidden", "req-1"))
         : Promise.resolve({ items, nextCursor: null, counts }),
     );
-    fireEvent.click(screen.getByLabelText(`Chọn mục của @${items[0]?.username}`));
+    fireEvent.click(tableCheck(`Chọn mục của @${items[0]?.username}`));
     fireEvent.click(screen.getByRole("button", { name: "Đánh dấu đã xem lại (1)" }));
     await waitFor(() => expect(toastError).toHaveBeenCalled());
     expect(screen.getAllByTestId("review-row")).toHaveLength(2);
@@ -132,9 +135,11 @@ describe("ReviewsView (UX §3.8, FR-195, TC-REV-007)", () => {
     serve(Array.from({ length: 60 }, () => reviewFixture()));
     setup();
     await waitFor(() => expect(screen.getAllByTestId("review-row")).toHaveLength(60));
-    fireEvent.click(screen.getByLabelText("Chọn tất cả"));
-    expect(screen.getByRole("button", { name: "Đánh dấu đã xem lại (50)" })).toBeInTheDocument();
-    expect(screen.getByText("Tối đa 50 mục mỗi lần")).toBeInTheDocument();
+    fireEvent.click(tableCheck("Chọn tất cả"));
+    // #339: the cap helper lives in the selection bar.
+    const bar = screen.getByRole("region", { name: "Mục đã chọn" });
+    expect(within(bar).getByRole("button", { name: "Đánh dấu đã xem lại (50)" })).toBeInTheDocument();
+    expect(within(bar).getByText("Tối đa 50 mục mỗi lần")).toBeInTheDocument();
   });
 
   it("FR-015: viewer sees the queue without checkboxes or Mark reviewed", async () => {
@@ -165,10 +170,10 @@ describe("ReviewsView (UX §3.8, FR-195, TC-REV-007)", () => {
   it("#338: failed rows show the Vietnamese error label (code in title), Lần trước:; confidence % and band (BR-020)", async () => {
     serve([reviewFixture({ reasons: ["failed"], analysis: { status: "failed", errorCode: "LLM_TIMEOUT" } })]);
     setup();
-    const label = await screen.findByText("Bộ phân tích phản hồi quá lâu");
+    const row = await screen.findByTestId("review-row");
+    const label = within(row).getByText("Bộ phân tích phản hồi quá lâu");
     expect(label).toHaveAttribute("title", "LLM_TIMEOUT");
     expect(screen.queryByText("LLM_TIMEOUT")).toBeNull();
-    const row = screen.getByTestId("review-row");
     expect(within(row).getAllByText("Lần trước:").length).toBeGreaterThan(0);
     expect(within(row).getByText("42,0%")).toBeInTheDocument();
     expect(within(row).getByText("Thấp")).toBeInTheDocument();
@@ -182,7 +187,7 @@ describe("ReviewsView (UX §3.8, FR-195, TC-REV-007)", () => {
     expect(push).toHaveBeenCalledWith(`/reviews?item=${item.id}`);
   });
 
-  it("slide-out Mark reviewed posts 1 id and closes", async () => {
+  it("BR-040: slide-out Mark reviewed on the only item posts 1 id and closes", async () => {
     const item = reviewFixture();
     search = `item=${item.id}`;
     serve([item]);
@@ -209,5 +214,151 @@ describe("ReviewsView (UX §3.8, FR-195, TC-REV-007)", () => {
     apiFetch.mockRejectedValue(new ApiError(500, "INTERNAL", "Boom", "req-9"));
     setup();
     expect(await screen.findByText(/req-9/)).toBeInTheDocument();
+  });
+
+  describe("#339 selection bar, keyboard, slide-out flow", () => {
+    it("UX §3.8: no idle (0) button; bar on select; Bỏ chọn and Esc clear", async () => {
+      const items = [reviewFixture(), reviewFixture()];
+      serve(items);
+      setup();
+      await waitFor(() => expect(screen.getAllByTestId("review-row")).toHaveLength(2));
+      expect(screen.queryByRole("button", { name: /Đánh dấu đã xem lại/ })).toBeNull();
+      fireEvent.click(tableCheck(`Chọn mục của @${items[0]?.username}`));
+      const bar = screen.getByRole("region", { name: "Mục đã chọn" });
+      expect(within(bar).getByText("1 mục đã chọn")).toBeInTheDocument();
+      fireEvent.click(within(bar).getByRole("button", { name: "Bỏ chọn" }));
+      expect(screen.queryByRole("region", { name: "Mục đã chọn" })).toBeNull();
+      fireEvent.click(tableCheck(`Chọn mục của @${items[1]?.username}`));
+      fireEvent.keyDown(document.body, { key: "Escape" });
+      expect(screen.queryByRole("region", { name: "Mục đã chọn" })).toBeNull();
+    });
+
+    it("FR-015: viewer has no bar and no mark in the slide-out but can navigate", async () => {
+      role = "viewer";
+      const items = [reviewFixture(), reviewFixture()];
+      search = `item=${items[0]?.id}`;
+      serve(items);
+      setup();
+      const dialog = await screen.findByRole("dialog");
+      await waitFor(() => expect(within(dialog).getByText("1 / 2")).toBeInTheDocument());
+      expect(within(dialog).queryByRole("button", { name: /Đánh dấu đã xem lại/ })).toBeNull();
+      fireEvent.click(within(dialog).getByRole("button", { name: "Mục sau" }));
+      await waitFor(() => expect(replace).toHaveBeenCalledWith(`/reviews?item=${items[1]?.id}`));
+    });
+
+    it("rows: ↓/↑ move focus, Space toggles, Enter opens", async () => {
+      const items = [reviewFixture(), reviewFixture()];
+      serve(items);
+      setup();
+      await waitFor(() => expect(screen.getAllByTestId("review-row")).toHaveLength(2));
+      const [r0, r1] = screen.getAllByTestId("review-row");
+      r0?.focus();
+      fireEvent.keyDown(r0 as HTMLElement, { key: "ArrowDown" });
+      expect(document.activeElement).toBe(r1);
+      fireEvent.keyDown(r1 as HTMLElement, { key: "ArrowUp" });
+      expect(document.activeElement).toBe(r0);
+      fireEvent.keyDown(r0 as HTMLElement, { key: " " });
+      expect(screen.getByText("1 mục đã chọn")).toBeInTheDocument();
+      fireEvent.keyDown(r0 as HTMLElement, { key: "Enter" });
+      expect(push).toHaveBeenCalledWith(`/reviews?item=${items[0]?.id}`);
+    });
+
+    it("slide-out: n / N, J/K replace ?item, reasons under the title", async () => {
+      const items = [reviewFixture(), reviewFixture({ reasons: ["uncertain", "low_confidence"] }), reviewFixture()];
+      search = `item=${items[1]?.id}`;
+      serve(items);
+      setup();
+      const dialog = await screen.findByRole("dialog");
+      await waitFor(() => expect(within(dialog).getByText("2 / 3")).toBeInTheDocument());
+      expect(within(dialog).getByText("Chưa chắc")).toBeInTheDocument();
+      expect(within(dialog).getByText("42,0%")).toBeInTheDocument();
+      const target = within(dialog).getByText("detail body");
+      fireEvent.keyDown(target, { key: "j" });
+      await waitFor(() => expect(replace).toHaveBeenLastCalledWith(`/reviews?item=${items[2]?.id}`));
+      fireEvent.keyDown(target, { key: "k" });
+      expect(replace).toHaveBeenLastCalledWith(`/reviews?item=${items[0]?.id}`);
+      expect(within(dialog).getByRole("button", { name: "Mục trước" })).not.toBeDisabled();
+    });
+
+    it("› on the last loaded item loads the next page when there is one", async () => {
+      const items = [reviewFixture(), reviewFixture()];
+      const more = reviewFixture();
+      search = `item=${items[1]?.id}`;
+      apiFetch.mockImplementation((path: string, init: { params?: Record<string, string> }) =>
+        Promise.resolve(
+          init.params?.cursor
+            ? { items: [more], nextCursor: null }
+            : { items, nextCursor: "c2", totalCount: 3, counts },
+        ),
+      );
+      setup();
+      const dialog = await screen.findByRole("dialog");
+      await waitFor(() => expect(within(dialog).getByText("2 / 2+")).toBeInTheDocument());
+      fireEvent.click(within(dialog).getByRole("button", { name: "Mục sau" }));
+      await waitFor(() => expect(replace).toHaveBeenCalledWith(`/reviews?item=${more.id}`));
+    });
+
+    it("BR-040 mark-and-next: posts 1 id then opens the next item (no close)", async () => {
+      const items = [reviewFixture(), reviewFixture(), reviewFixture()];
+      search = `item=${items[1]?.id}`;
+      serve(items);
+      setup();
+      const dialog = await screen.findByRole("dialog");
+      apiFetch.mockImplementation((path: string) =>
+        path.endsWith("/mark-reviewed")
+          ? Promise.resolve({ marked: 1 })
+          : Promise.resolve({ items: [items[0], items[2]], nextCursor: null, counts }),
+      );
+      fireEvent.click(await within(dialog).findByRole("button", { name: "Đánh dấu đã xem lại · tiếp" }));
+      await waitFor(() => expect(replace).toHaveBeenCalledWith(`/reviews?item=${items[2]?.id}`));
+      expect(JSON.parse(markCalls()[0]?.[1].body ?? "{}")).toEqual({ postIds: [items[1]?.id] });
+      expect(replace).not.toHaveBeenCalledWith("/reviews");
+    });
+
+    it("mark-and-next failure stays on the item and toasts (BR-040 rollback)", async () => {
+      const items = [reviewFixture(), reviewFixture()];
+      search = `item=${items[0]?.id}`;
+      serve(items);
+      setup();
+      const dialog = await screen.findByRole("dialog");
+      apiFetch.mockImplementation((path: string) =>
+        path.endsWith("/mark-reviewed")
+          ? Promise.reject(new ApiError(500, "INTERNAL", "Boom", "req-2"))
+          : Promise.resolve({ items, nextCursor: null, counts }),
+      );
+      fireEvent.click(await within(dialog).findByRole("button", { name: "Đánh dấu đã xem lại · tiếp" }));
+      await waitFor(() => expect(toastError).toHaveBeenCalled());
+      expect(replace).not.toHaveBeenCalled();
+      expect(screen.getAllByTestId("review-row")).toHaveLength(2);
+    });
+
+    it("J/K are ignored while typing in a text field", async () => {
+      const items = [reviewFixture(), reviewFixture()];
+      search = `item=${items[0]?.id}`;
+      serve(items);
+      const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      render(
+        <QueryClientProvider client={qc}>
+          <ReviewsView renderDetail={() => <textarea aria-label="Lý do" />} />
+        </QueryClientProvider>,
+      );
+      const dialog = await screen.findByRole("dialog");
+      await waitFor(() => expect(within(dialog).getByText("1 / 2")).toBeInTheDocument());
+      fireEvent.keyDown(within(dialog).getByLabelText("Lý do"), { key: "j" });
+      expect(replace).not.toHaveBeenCalled();
+    });
+
+    it("full page link returns to the same tab (?back=/reviews?reason=…)", async () => {
+      const item = reviewFixture();
+      search = `reason=uncertain&item=${item.id}`;
+      serve([item]);
+      setup();
+      const dialog = await screen.findByRole("dialog");
+      const link = within(dialog).getByRole("link", { name: "Mở trang đầy đủ" });
+      expect(link).toHaveAttribute(
+        "href",
+        `/mentions/${item.id}?back=${encodeURIComponent("/reviews?reason=uncertain")}`,
+      );
+    });
   });
 });

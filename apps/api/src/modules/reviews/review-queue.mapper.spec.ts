@@ -1,4 +1,4 @@
-import { reasonsOf, toReviewQueueItem } from "./review-queue.mapper";
+import { reasonsOf, toMentionReviewState, toReviewQueueItem } from "./review-queue.mapper";
 import type { ReviewQueueRow } from "./review-queue.repository";
 
 const PID = "00000000-0000-7000-8000-000000000001";
@@ -61,5 +61,27 @@ describe("review queue mapper", () => {
     expect(item.reviewedBy).toEqual({ id: UID, displayName: "An", email: "a@x.io" });
     expect(toReviewQueueItem(row({ reviewed_at: at, reviewed_by: UID }), new Map()).reviewedBy).toBeNull();
     expect(item.publishedAt).toBe("2026-10-12T03:00:00.000Z");
+  });
+});
+
+// #339, FR-195, BR-040: review state on mention detail.
+describe("toMentionReviewState", () => {
+  const st = { is_uncertain: false, is_low: false, is_failed: false, is_reviewed: false, reviewed_at: null };
+  it("no row or no reason → null", () => {
+    expect(toMentionReviewState(null)).toBeNull();
+    expect(toMentionReviewState(st)).toBeNull();
+  });
+  it("reasons in fixed order; status follows is_reviewed (BR-040)", () => {
+    const at = new Date("2026-10-12T03:00:00Z");
+    expect(toMentionReviewState({ ...st, is_low: true, is_failed: true, is_uncertain: true })).toEqual({
+      reasons: ["failed", "uncertain", "low_confidence"],
+      status: "unreviewed",
+      reviewedAt: null,
+    });
+    expect(toMentionReviewState({ ...st, is_low: true, is_reviewed: true, reviewed_at: at })).toEqual({
+      reasons: ["low_confidence"],
+      status: "reviewed",
+      reviewedAt: at.toISOString(),
+    });
   });
 });

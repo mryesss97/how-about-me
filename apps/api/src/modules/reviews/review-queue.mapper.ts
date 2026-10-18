@@ -1,7 +1,7 @@
-import type { ReviewQueueItem, ReviewReason, UserRef } from "@how-about-me/contracts";
+import type { MentionReviewState, ReviewQueueItem, ReviewReason, UserRef } from "@how-about-me/contracts";
 import { confidenceBand } from "@how-about-me/taxonomy";
 import type { OverrideUser } from "./overrides.repository";
-import type { ReviewQueueRow } from "./review-queue.repository";
+import type { ReviewQueueRow, ReviewStateRow } from "./review-queue.repository";
 
 /** Fixed display order (REVIEW_REASONS): failed, uncertain, low_confidence. */
 export function reasonsOf(row: Pick<ReviewQueueRow, "is_failed" | "is_uncertain" | "is_low">): ReviewReason[] {
@@ -46,5 +46,17 @@ export function toReviewQueueItem(row: ReviewQueueRow, users: Map<string, Overri
     },
     reviewedAt: row.reviewed_at ? row.reviewed_at.toISOString() : null,
     reviewedBy: userRef(row.reviewed_by, users),
+  };
+}
+
+/** #339: queue state on mention detail — null outside scope / without reasons (FR-195); status per BR-040. */
+export function toMentionReviewState(row: ReviewStateRow | null): MentionReviewState | null {
+  if (!row) return null;
+  const reasons = reasonsOf(row);
+  if (reasons.length === 0) return null;
+  return {
+    reasons,
+    status: row.is_reviewed ? "reviewed" : "unreviewed",
+    reviewedAt: row.reviewed_at ? row.reviewed_at.toISOString() : null,
   };
 }

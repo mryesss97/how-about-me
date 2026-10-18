@@ -1,8 +1,17 @@
 import type { ReviewQueuePage } from "@how-about-me/contracts";
-import type { InfiniteData } from "@tanstack/react-query";
-import { describe, expect, it } from "vitest";
-import { canMarkReviewed, removeFromQueue, reviewQueueParams } from "./api";
+import { QueryClient, QueryClientProvider, type InfiniteData } from "@tanstack/react-query";
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { createElement, type ReactNode } from "react";
+import { describe, expect, it, vi } from "vitest";
+import type * as ClientModule from "@/lib/api/client";
+import { canMarkReviewed, removeFromQueue, reviewQueueParams, useMarkReviewed } from "./api";
 import { reviewFixture } from "./fixtures.test-utils";
+
+vi.mock("@/lib/api/client", async (orig) => ({
+  ...(await orig<typeof ClientModule>()),
+  apiFetch: () => Promise.resolve({ marked: 1 }),
+}));
+vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const a = reviewFixture({ reasons: ["uncertain", "low_confidence"] });
 const b = reviewFixture({ reasons: ["failed"] });
@@ -57,5 +66,26 @@ describe("canMarkReviewed", () => {
     expect(canMarkReviewed("analyst")).toBe(true);
     expect(canMarkReviewed("viewer")).toBe(false);
     expect(canMarkReviewed(null)).toBe(false);
+  });
+});
+
+// #339: mention detail carries `review.status` (BR-040) → re-synced after marking.
+describe("useMarkReviewed cache", () => {
+  it("invalidates reviews, mentions and mention detail", async () => {
+    const qc = new QueryClient();
+    const spy = vi.spyOn(qc, "invalidateQueries");
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client: qc }, children);
+    const { result } = renderHook(() => useMarkReviewed("p1"), { wrapper });
+    act(() => result.current.mutate([a.id]));
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    const keys = spy.mock.calls.map(([f]) => f?.queryKey);
+    expect(keys).toEqual(
+      expect.arrayContaining([
+        ["project", "p1", "reviews"],
+        ["project", "p1", "mentions"],
+        ["project", "p1", "mention"],
+      ]),
+    );
   });
 });

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type * as ClientModule from "@/lib/api/client";
 import { ApiError } from "@/lib/api/client";
@@ -33,11 +33,11 @@ vi.mock("@/features/auth/use-role", () => ({
 
 const m = detailFixture({ platformPostId: "post-42", permalink: "https://www.threads.net/@alice/post/42" });
 
-function setup() {
+function setup(reviewContext?: { onOverrideSaved?: (markReviewed: boolean) => void }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={qc}>
-      <MentionDetail mentionId={m.id} variant="page" />
+      <MentionDetail mentionId={m.id} variant="page" reviewContext={reviewContext} />
     </QueryClientProvider>,
   );
 }
@@ -292,5 +292,36 @@ describe("Override (FR-191, FR-193, FR-015)", () => {
       }),
     );
     expect(toast.success).toHaveBeenCalledWith("Đã thu hồi ghi đè");
+  });
+});
+
+// #339: Mentions ↔ Reviews link.
+describe("MentionDetail review link (#339)", () => {
+  const queued = { ...m, review: { reasons: ["uncertain" as const], status: "unreviewed" as const, reviewedAt: null } };
+
+  it("FR-195: pending review → note + link to the queue", async () => {
+    apiFetch.mockResolvedValue(queued);
+    setup();
+    expect(await screen.findByText("Đang chờ xem lại · Chưa chắc")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Mở trong Cần xem lại" })).toHaveAttribute("href", `/reviews?item=${m.id}`);
+  });
+
+  it("inside the Reviews slide-out the note is hidden; saving an override reports followUp", async () => {
+    const onOverrideSaved = vi.fn();
+    apiFetch.mockImplementation((path: string, init?: { method?: string }) =>
+      Promise.resolve(init?.method === "POST" ? overrideFixture() : queued),
+    );
+    setup({ onOverrideSaved });
+    await screen.findByRole("region", { name: "Bài gốc" });
+    expect(screen.queryByText(/Đang chờ xem lại/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /^Ghi đè/ }));
+    const dialog = await screen.findByRole("dialog");
+    const selects = within(dialog).getAllByRole("combobox") as HTMLSelectElement[];
+    fireEvent.change(selects[0] as HTMLSelectElement, { target: { value: "sentiment" } });
+    fireEvent.change(selects[1] as HTMLSelectElement, { target: { value: "neutral" } });
+    fireEvent.change(within(dialog).getByRole("textbox"), { target: { value: "ok" } });
+    expect(within(dialog).getByRole("checkbox", { name: "Đánh dấu đã xem lại sau khi lưu" })).toBeChecked();
+    fireEvent.click(within(dialog).getByRole("button", { name: /Lưu ghi đè/ }));
+    await waitFor(() => expect(onOverrideSaved).toHaveBeenCalledWith(true));
   });
 });

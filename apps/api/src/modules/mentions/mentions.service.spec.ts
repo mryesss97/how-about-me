@@ -9,6 +9,7 @@ import { MentionsService } from "./mentions.service";
 import type { AppConfig } from "../../config/config.module";
 import type { BulkReanalyzeThrottle } from "../analysis/bulk-reanalyze-throttle";
 import type { OverridesRepository } from "../reviews/overrides.repository";
+import type { ReviewQueueRepository } from "../reviews/review-queue.repository";
 
 const PID = "00000000-0000-7000-8000-000000000001";
 const MID = "00000000-0000-7000-8000-000000000002";
@@ -41,6 +42,7 @@ function setup(opts: { post?: MentionForReanalyze | null; open?: boolean; create
     { assertAllowed: jest.fn() } as unknown as BulkReanalyzeThrottle,
     { ANALYSIS_BULK_MAX: 2000 } as AppConfig,
     {} as OverridesRepository,
+    {} as ReviewQueueRepository,
   );
   return { svc, repo, analysis, audit, tx };
 }
@@ -134,6 +136,7 @@ function listSetup(rows: MentionPageRow[], count: number | null = 7) {
     {} as BulkReanalyzeThrottle,
     {} as AppConfig,
     {} as OverridesRepository,
+    {} as ReviewQueueRepository,
   );
   return { svc, repo, logger };
 }
@@ -205,7 +208,7 @@ describe("MentionsService.list tampered keys (#195)", () => {
 
 /** T-096 — FR-154: GET …/mentions/:mentionId. */
 describe("MentionsService.detail", () => {
-  const mk = (row: unknown) => {
+  const mk = (row: unknown, reviewState: unknown = null) => {
     const repo = {
       findDetail: jest.fn().mockResolvedValue(row),
       hydrate: jest
@@ -215,6 +218,7 @@ describe("MentionsService.detail", () => {
       listPhrases: jest.fn().mockResolvedValue(["giá vé"]),
     };
     const overrides = { listForPost: jest.fn().mockResolvedValue([]) };
+    const reviewQueue = { findState: jest.fn().mockResolvedValue(reviewState) };
     const svc = new MentionsService(
       repo as unknown as MentionsRepository,
       {} as AnalysisService,
@@ -223,8 +227,9 @@ describe("MentionsService.detail", () => {
       {} as BulkReanalyzeThrottle,
       {} as AppConfig,
       overrides as unknown as OverridesRepository,
+      reviewQueue as unknown as ReviewQueueRepository,
     );
-    return { svc, repo, overrides };
+    return { svc, repo, overrides, reviewQueue };
   };
 
   it("not found / other project → AppError NOT_FOUND", async () => {
@@ -253,6 +258,29 @@ describe("MentionsService.detail", () => {
     expect(repo.listRuns).toHaveBeenCalledWith(MID);
     // #250: no analysis → no phrase lookup.
     expect(repo.listPhrases).not.toHaveBeenCalled();
+  });
+
+  it("#339 / FR-195 / BR-040: attaches the review state read from the queue CTE", async () => {
+    const row = {
+      post_id: MID,
+      analysis_id: null,
+      published_at: new Date(),
+      first_seen_at: new Date(),
+      last_seen_at: new Date(),
+      analyzed_at: null,
+      safety_category_scores: null,
+      has_override: false,
+      high_band: 0.8,
+      medium_band: 0.6,
+      latest_run_status: null,
+    };
+    const state = { is_uncertain: true, is_low: false, is_failed: false, is_reviewed: false, reviewed_at: null };
+    const { svc, reviewQueue } = mk(row, state);
+    const res = await svc.detail(PID, MID);
+    expect(reviewQueue.findState).toHaveBeenCalledWith(PID, MID);
+    expect(res.review).toEqual({ reasons: ["uncertain"], status: "unreviewed", reviewedAt: null });
+    const outside = await mk(row, null).svc.detail(PID, MID);
+    expect(outside.review).toBeNull();
   });
 
   it("#250 / FR-120 / BR-026: reads phrases of the current analysis and returns them", async () => {
@@ -304,6 +332,7 @@ describe("MentionsService.bulkReanalyze", () => {
       throttle as unknown as BulkReanalyzeThrottle,
       { ANALYSIS_BULK_MAX: 3 } as AppConfig,
       {} as OverridesRepository,
+      {} as ReviewQueueRepository,
     );
     return { svc, repo, analysis, audit, throttle, tx };
   }

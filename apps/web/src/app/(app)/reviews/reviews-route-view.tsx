@@ -8,5 +8,9 @@ import { ReviewsView } from "@/features/reviews/reviews-view";
  * never imports `features/mentions`. A client file because a render function can't cross the server boundary.
  */
 export function ReviewsRouteView() {
-  return <ReviewsView renderDetail={(postId) => <MentionDetail mentionId={postId} variant="slideout" />} />;
+  return (
+    <ReviewsView
+      renderDetail={(postId, ctx) => <MentionDetail mentionId={postId} variant="slideout" reviewContext={ctx} />}
+    />
+  );
 }

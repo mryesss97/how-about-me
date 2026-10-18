@@ -1,18 +1,20 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import { Button } from "@/components/base/buttons/button";
+import { MARK_REVIEWED_MAX } from "@how-about-me/contracts";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Toggle } from "@/components/base/toggle/toggle";
 import { useCurrentProject } from "@/features/auth/use-current-project";
 import { useRole } from "@/features/auth/use-role";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { flattenUnique } from "@/lib/query/infinite-list";
 import { ApiError } from "@/lib/api/client";
 import { env } from "@/lib/env";
-import { formatCount } from "@/lib/format/number";
 import { canMarkReviewed, useMarkReviewed, useReviewQueue, type ReviewFilters } from "./api";
 import { ReviewDetailSlideout, type RenderReviewDetail } from "./review-detail-slideout";
 import { ReviewTable } from "./review-table";
 import { ReviewTabs } from "./review-tabs";
+import { SelectionBar } from "./selection-bar";
+import { useQueueNav } from "./use-queue-nav";
 import { useReviewParams } from "./use-review-params";
 
 const EMPTY: ReadonlySet<string> = new Set();
@@ -24,7 +26,17 @@ const toStateError = (err: unknown) =>
       : { message: "Máy chủ trả về phản hồi không hợp lệ." }
     : null;
 
-/** /reviews body (UX §3.8, FR-195): tabs by reason → toolbar → table → slide-out. Viewer is read-only. */
+/** Esc must not clear the selection while typing or while a dialog is open (#339). */
+function escClearsSelection(e: KeyboardEvent): boolean {
+  if (e.key !== "Escape" || document.querySelector('[role="dialog"]')) return false;
+  const t = e.target;
+  return !(t instanceof Element && t.closest('input, textarea, select, [contenteditable="true"]'));
+}
+
+/**
+ * /reviews body (UX §3.8, FR-195): tabs by reason → toolbar → table/cards → selection bar → slide-out.
+ * Viewer is read-only (FR-015). Role-dependent UI waits for hydration (#339: no SSR/client mismatch).
+ */
 export function ReviewsView({ renderDetail }: { renderDetail: RenderReviewDetail }) {
   const { project } = useCurrentProject();
   const { role } = useRole();
@@ -37,7 +49,8 @@ export function ReviewsView({ renderDetail }: { renderDetail: RenderReviewDetail
   const tz = project?.timezone ?? env.NEXT_PUBLIC_DEFAULT_TIMEZONE;
 
   const showReviewed = status === "reviewed";
-  const canMark = canMarkReviewed(role) && !showReviewed;
+  const hydrated = useHydrated();
+  const canMark = hydrated && canMarkReviewed(role) && !showReviewed;
   const items = useMemo(() => flattenUnique(list.data?.pages ?? []), [list.data]);
   const counts = list.data?.pages[0]?.counts;
   const pagesLoaded = (list.data?.pages.length ?? 0) > 0;
@@ -58,19 +71,40 @@ export function ReviewsView({ renderDetail }: { renderDetail: RenderReviewDetail
     setSelected(new Set());
     mark.mutate(ids);
   }, [mark, visibleSelected, setSelected]);
+  const onClear = useCallback(() => setSelected(new Set()), [setSelected]);
+
+  // Esc clears the selection while the slide-out is closed (UX §3.8, #339).
+  const hasSelection = visibleSelected.size > 0;
+  useEffect(() => {
+    if (!hasSelection || item) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (escClearsSelection(e)) onClear();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [hasSelection, item, onClear]);
+
+  const { fetchNextPage } = list;
+  const fetchNextIds = useCallback(async () => {
+    const r = await fetchNextPage();
+    return r.data ? flattenUnique(r.data.pages).map((i) => i.id) : null;
+  }, [fetchNextPage]);
+  const { nav, isCurrent } = useQueueNav({
+    items,
+    item,
+    hasNextPage: list.hasNextPage,
+    isFetchingNextPage: list.isFetchingNextPage,
+    fetchNextIds,
+    onMove: params.moveToItem,
+  });
 
   return (
     <div className="flex flex-col gap-4">
       {/* #278: white enamel panel with a 2px navy rule, same language as the Overview filter bar. */}
       <div className="flex min-w-0 flex-col gap-3 border-b-2 border-[var(--ink)] bg-[var(--enamel-white)] px-4 py-3">
         <ReviewTabs reason={reason} counts={counts} onChange={params.setReason} />
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-h-11 flex-wrap items-center gap-3 md:min-h-0">
           <Toggle label="Hiện mục đã xem lại" isSelected={showReviewed} onChange={params.setShowReviewed} />
-          {canMark ? (
-            <Button size="sm" isDisabled={visibleSelected.size === 0 || mark.isPending} onClick={onMark}>
-              {`Đánh dấu đã xem lại (${formatCount(visibleSelected.size)})`}
-            </Button>
-          ) : null}
         </div>
       </div>
       <ReviewTable
@@ -89,11 +123,24 @@ export function ReviewsView({ renderDetail }: { renderDetail: RenderReviewDetail
         fetchNextPage={() => void list.fetchNextPage()}
         onOpen={params.openItem}
       />
+      {canMark && hasSelection ? (
+        <SelectionBar
+          count={visibleSelected.size}
+          full={visibleSelected.size >= MARK_REVIEWED_MAX}
+          isPending={mark.isPending}
+          onClear={onClear}
+          onMark={onMark}
+        />
+      ) : null}
       {pid && item ? (
         <ReviewDetailSlideout
           pid={pid}
           postId={item}
+          item={items.find((i) => i.id === item)}
           canMark={canMark && items.some((i) => i.id === item)}
+          nav={nav}
+          isCurrent={isCurrent}
+          onMove={params.moveToItem}
           onClose={params.closeItem}
           renderDetail={renderDetail}
         />
