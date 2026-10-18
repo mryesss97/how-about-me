@@ -13,6 +13,14 @@ const SIZE: Record<PlaqueSize, string> = {
 const BASE =
   "plaque-button inline-flex items-center outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 
+/**
+ * Plaque classes for a React Aria trigger (DialogTrigger / Slideout trigger need an `AriaButton`, not a native
+ * button). Same look as PlaqueButton; use only where a React Aria pressable is required.
+ */
+export function plaqueClassName(size: PlaqueSize = "sm", extra = ""): string {
+  return [BASE, SIZE[size], extra].filter(Boolean).join(" ");
+}
+
 type IconType = FC<{ className?: string; "aria-hidden"?: boolean | "true" }>;
 
 export type PlaqueButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "disabled"> & {
