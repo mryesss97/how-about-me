@@ -77,7 +77,7 @@ List rows (Mentions Explorer, #337) show **verdicts only**: confidence `low` onl
 | Sync failed         | Amber alert banner on top of page: "Latest Threads sync failed. Data may be incomplete." + link to System Status                                                        |
 | Analysis pending    | Blue info banner: "124 mentions are waiting for analysis." (count from coverage); link to the same list as the empty state (#328)                                       |
 | Integration expired | Shell health strip (below); on Overview/Mentions the page banner "Kết nối Threads cần được xử lý." + "Đến trang Kết nối" (admin) shows only when the strip is not shown |
-| Error               | Inline error card with `requestId` and "Retry"                                                                                                                          |
+| Error               | Inline error card: Vietnamese sentence (#392, §5), small mono line "Mã yêu cầu: {requestId} · {code}" (code only when there is no requestId), "Retry"                   |
 | Forbidden           | Full-page "You don't have permission to view this page." + back link                                                                                                    |
 
 Banner look (#336): flat white enamel board (3px corners) with a 2px left rule in the tone colour (amber / blue / red), icon + title always (never colour alone, BR-017); the action is a plaque link (`next/link`), right-aligned, wrapping below the text under `sm` (44 px tall). On /overview banners sit between the fascia and the filter bar.
@@ -317,17 +317,18 @@ Built in #219 (`apps/web/src/features/reviews`):
 
 **Từ vựng giao diện (#344).** One concept, one word on every screen. Codes stay in the API/URL; the UI shows the word.
 
-| Khái niệm                                                          | Dùng                                                   | Không dùng                     |
-| ------------------------------------------------------------------ | ------------------------------------------------------ | ------------------------------ |
-| Mention (post)                                                     | Bài nhắc                                               | bài viết, đề cập               |
-| Backfill                                                           | Lấy dữ liệu cũ (nút "Bắt đầu lấy dữ liệu")             | quét bù, backfill              |
-| Job / analysis `failed`                                            | Lỗi / Phân tích lỗi                                    | thất bại                       |
-| Failed user action (toast)                                         | "Không <động từ> được …" (e.g. "Không xuất được CSV.") | "… thất bại"                   |
-| Analyst override                                                   | Ghi đè / Thu hồi ghi đè / Có ghi đè                    | chỉnh sửa nhãn, đã chỉnh sửa   |
-| `RECENT` / `TOP`                                                   | Thứ tự lấy: Mới nhất trước / Nổi bật trước             | RECENT, TOP, Gần đây, Kiểu tìm |
-| `KEYWORD`/`TAG`, `keyword`/`topic_tag`                             | Từ khoá / Chủ đề                                       | KEYWORD, TAG, topic tag        |
-| Job not tied to a query                                            | Tất cả truy vấn                                        | Toàn cục                       |
-| Technical codes (cursor, migration, effective version, error code) | only in a `title` or with the suffix "(kỹ thuật)"      | as a primary label             |
+| Khái niệm                                                          | Dùng                                                                                                 | Không dùng                                                   |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Mention (post)                                                     | Bài nhắc                                                                                             | bài viết, đề cập                                             |
+| Backfill                                                           | Lấy dữ liệu cũ (nút "Bắt đầu lấy dữ liệu")                                                           | quét bù, backfill                                            |
+| Job / analysis `failed`                                            | Lỗi / Phân tích lỗi                                                                                  | thất bại                                                     |
+| Failed user action (toast)                                         | "Không <động từ> được …" (e.g. "Không xuất được CSV.")                                               | "… thất bại"                                                 |
+| Analyst override                                                   | Ghi đè / Thu hồi ghi đè / Có ghi đè                                                                  | chỉnh sửa nhãn, đã chỉnh sửa                                 |
+| `RECENT` / `TOP`                                                   | Thứ tự lấy: Mới nhất trước / Nổi bật trước                                                           | RECENT, TOP, Gần đây, Kiểu tìm                               |
+| `KEYWORD`/`TAG`, `keyword`/`topic_tag`                             | Từ khoá / Chủ đề                                                                                     | KEYWORD, TAG, topic tag                                      |
+| Job not tied to a query                                            | Tất cả truy vấn                                                                                      | Toàn cục                                                     |
+| Technical codes (cursor, migration, effective version, error code) | only in a `title` or with the suffix "(kỹ thuật)"                                                    | as a primary label                                           |
+| Load error (API / network, #392)                                   | Vietnamese sentence from `lib/semantics/api-errors.ts`; code + requestId only in the small mono line | the API's English `message`, "Failed to fetch", `statusText` |
 
 Shared maps live in `apps/web/src/lib/semantics/labels.ts` (`jobStatusLabelVi`, `jobTriggerLabelVi`, `searchTypeLabelVi`, `searchModeLabelVi`, `queryTypeLabelVi`); audit metadata values for these keys are translated too.
 

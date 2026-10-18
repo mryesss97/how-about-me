@@ -1,6 +1,6 @@
 "use client";
 
-import { RefreshCcw01 } from "@untitledui/icons";
+import { AlertCircle, RefreshCcw01 } from "@untitledui/icons";
 import type { QueryType, SyncJobDetail } from "@how-about-me/contracts";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
@@ -9,7 +9,8 @@ import { SlideoutMenu } from "@/components/application/slideout-menus/slideout-m
 import { Button } from "@/components/base/buttons/button";
 import { PlaqueButton } from "@/features/shared/plaque-button";
 import { ErrorState, SkeletonBlock } from "@/features/shared/query-state";
-import { ApiError } from "@/lib/api/client";
+import { toQueryStateError } from "@/lib/semantics/api-errors";
+import { syncErrorLabel } from "@/lib/semantics/sync-errors";
 import { DASH, formatCount } from "@/lib/format/number";
 import { mentionsHref, mentionsWindowHref } from "@/lib/links/mentions";
 import { queryTypeLabelVi, searchModeLabelVi, searchTypeLabelVi } from "@/lib/semantics/labels";
@@ -31,7 +32,6 @@ export function SyncJobDrawer({ pid, jobId, tz, isAdmin, onClose }: Props) {
     setOpen(false);
     onClose();
   };
-  const err = job.error instanceof ApiError ? job.error : null;
 
   // Retry only for `failed` (UX §3.6); the button is UX only — the server answers 403 for non-admins (FR-015).
   const retryButton =
@@ -76,10 +76,7 @@ export function SyncJobDrawer({ pid, jobId, tz, isAdmin, onClose }: Props) {
         ) : job.data ? (
           <JobDetail job={job.data} tz={tz} />
         ) : (
-          <ErrorState
-            error={err ? { code: err.code, message: err.message, requestId: err.requestId } : {}}
-            onRetry={() => void job.refetch()}
-          />
+          <ErrorState error={toQueryStateError(job.error) ?? {}} onRetry={() => void job.refetch()} />
         )}
       </SlideoutMenu.Content>
       {job.data && queryId ? (
@@ -172,8 +169,14 @@ function JobDetail({ job, tz }: { job: SyncJobDetail; tz: string }) {
       ) : null}
       {job.error ? (
         <Section title="Lỗi">
-          <p className="font-mono text-xs text-error-primary">{job.error.code}</p>
-          <p className="text-sm break-words text-primary">{job.error.message}</p>
+          {/* #392: Vietnamese label first (same as the jobs table); icon + text so colour never stands alone (BR-017). */}
+          <p className="flex items-start gap-2 text-sm font-medium text-error-primary" data-testid="job-error-label">
+            <AlertCircle aria-hidden className="mt-0.5 size-4 shrink-0" />
+            {syncErrorLabel(job.error.code, job.error.message)}
+          </p>
+          <p className="text-xs text-tertiary">Chi tiết kỹ thuật</p>
+          <p className="font-mono text-xs text-tertiary">{job.error.code}</p>
+          <p className="text-xs break-words text-tertiary">{job.error.message}</p>
         </Section>
       ) : null}
       {job.lastCursor ? (

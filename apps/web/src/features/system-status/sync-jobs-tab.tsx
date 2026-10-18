@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { PlaqueButton } from "@/features/shared/plaque-button";
 import { QueryState, SkeletonBlock } from "@/features/shared/query-state";
-import { ApiError } from "@/lib/api/client";
+import { toQueryStateError } from "@/lib/semantics/api-errors";
 import { flattenUnique } from "@/lib/query/infinite-list";
 import { useQueryNames, useSyncJobs, type SyncJobFilters } from "./api";
 import { dayEndUtc, dayStartUtc } from "./format";
@@ -12,13 +12,6 @@ import { SyncJobsFilters } from "./sync-jobs-filters";
 import { SyncJobsListMobile } from "./sync-jobs-list-mobile";
 import { SyncJobsTable } from "./sync-jobs-table";
 import { useStatusParams, type SyncJobsParams } from "./use-status-params";
-
-const toStateError = (err: unknown) =>
-  err
-    ? err instanceof ApiError
-      ? { code: err.code, message: err.message, requestId: err.requestId }
-      : { message: "Phản hồi không hợp lệ từ máy chủ." }
-    : null;
 
 /** "Lượt đồng bộ" tab (FR-081, TC-SYS-013). Filters + open job live in the URL. */
 export function SyncJobsTab({ pid, tz, isAdmin }: { pid: string; tz: string; isAdmin: boolean }) {
@@ -58,7 +51,7 @@ export function SyncJobsTab({ pid, tz, isAdmin }: { pid: string; tz: string; isA
       />
       <QueryState
         isLoading={list.isLoading}
-        error={toStateError(list.error)}
+        error={toQueryStateError(list.error)}
         onRetry={() => void list.refetch()}
         isEmpty={items.length === 0}
         skeleton={<SkeletonBlock lines={6} className="operate-board p-4" />}

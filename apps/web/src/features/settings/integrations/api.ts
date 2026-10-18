@@ -7,6 +7,7 @@ import {
   type ThreadsIntegrationStatus,
 } from "@how-about-me/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiErrorMessageVi } from "@/lib/semantics/api-errors";
 import { ApiError, apiFetch } from "@/lib/api/client";
 import { qk } from "@/lib/query/keys";
 
@@ -35,7 +36,7 @@ export function integrationErrorMessage(err: unknown): string {
     case "FORBIDDEN_PROJECT":
       return "Bạn không có quyền thực hiện thao tác này.";
     default:
-      return err.requestId ? `${err.message} (Mã yêu cầu: ${err.requestId})` : err.message;
+      return err.requestId ? `${apiErrorMessageVi(err)} (Mã yêu cầu: ${err.requestId})` : apiErrorMessageVi(err);
   }
 }
 

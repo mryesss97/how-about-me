@@ -90,6 +90,19 @@ describe("ListeningQueriesView", () => {
     apiFetch.mockReturnValue(new Promise(() => {}));
     setup();
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    // #392: no "0 truy vấn" while loading — a skeleton line holds the toolbar instead.
+    expect(screen.queryByTestId("queries-count")).not.toBeInTheDocument();
+    expect(screen.queryByText(/0 truy vấn/)).not.toBeInTheDocument();
+    expect(screen.getByTestId("queries-count-skeleton")).toBeInTheDocument();
+  });
+
+  it("#392: a 500 load error shows Vietnamese copy, no count and no English message", async () => {
+    apiFetch.mockRejectedValue(new ApiError(500, "INTERNAL", "Internal server error", "req-7"));
+    setup();
+    expect(await screen.findByText("Máy chủ gặp sự cố. Thử lại sau ít phút.")).toBeInTheDocument();
+    expect(screen.queryByTestId("queries-count")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("queries-count-skeleton")).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toContain("Internal server error");
   });
 
   it("error state shows requestId and retries", async () => {

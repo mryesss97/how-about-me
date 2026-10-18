@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { AlertCircle, Inbox01, Lock01, RefreshCcw01 } from "@untitledui/icons";
 import { PlaqueButton } from "./plaque-button";
+import { apiErrorMessageVi } from "@/lib/semantics/api-errors";
 import { cx } from "@/utils/cx";
 import { StateIllustration, type StateIllustrationName } from "./state-illustration";
 
@@ -93,7 +94,8 @@ export function ForbiddenState({ className, backHref = "/overview" }: { classNam
 }
 
 /**
- * `requestId` is shown verbatim: it is the one thing that lets an engineer find the matching log line.
+ * Body text is a Vietnamese sentence from `apiErrorMessageVi` (#392) — never the API's English `message`.
+ * Code and `requestId` go in the small mono line: the requestId is the one thing that lets an engineer find the matching log line.
  * #348: `board` = enamel board with a red keyline; `inline` = red left rule only, for use inside a board
  * (chart card, settings board) so boards never nest. The heading text carries the meaning (BR-017).
  */
@@ -108,17 +110,24 @@ export function ErrorState({
   className?: string;
   variant?: "board" | "inline";
 }) {
+  const showRaw = process.env.NODE_ENV !== "production";
   const body = (
     <div className="relative flex flex-col gap-3">
       <div className="flex items-start gap-3">
         <AlertCircle aria-hidden className="mt-0.5 size-5 shrink-0 text-[var(--red-enamel)]" />
         <div className="flex min-w-0 flex-col gap-1">
           <p className="text-sm font-semibold text-primary">Đã xảy ra lỗi khi tải dữ liệu.</p>
-          <p className="text-sm text-tertiary">{error.message ?? "Vui lòng thử lại sau giây lát."}</p>
+          {/* #392: Vietnamese copy only; the raw (English) message is a dev-only tooltip. */}
+          <p className="text-sm text-tertiary" title={showRaw ? error.message : undefined}>
+            {apiErrorMessageVi(error)}
+          </p>
           {error.requestId ? (
             <p className="font-mono text-xs text-quaternary">
               Mã yêu cầu: <span data-testid="request-id">{error.requestId}</span>
+              {error.code ? ` · ${error.code}` : null}
             </p>
+          ) : error.code ? (
+            <p className="font-mono text-xs text-quaternary">{error.code}</p>
           ) : null}
         </div>
       </div>
