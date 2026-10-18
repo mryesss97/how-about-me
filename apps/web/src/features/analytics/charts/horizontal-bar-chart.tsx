@@ -10,8 +10,13 @@ export const barValueLabel = (row: BarRow) => `${formatCount(row.count)} · ${fo
 
 export const ROW_DRILL_HINT = "Xem bài nhắc";
 
+/**
+ * #387, BR-017: container-query layout. Narrow cards (<420px) stack each row — label + value on line 1, a full-width
+ * 8px bar on line 2 — so small shares stay visible with their pattern. Wide cards keep the single-line grid.
+ * Rows stay ≥44px on narrow cards at every breakpoint (FR-142).
+ */
 const ROW_CLASS =
-  "grid min-h-11 grid-cols-[minmax(0,140px)_minmax(0,1fr)_auto] items-center gap-3 rounded-[3px] px-2 text-xs md:min-h-9";
+  "grid min-h-11 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 rounded-[3px] px-2 py-1.5 text-xs @[420px]:grid-cols-[minmax(0,140px)_minmax(0,1fr)_auto] @[420px]:gap-y-0 @[420px]:py-0 @[420px]:md:min-h-9";
 
 /**
  * Shared horizontal bar list for distributions (internal; not exported via index). #335: rendered as HTML rows,
@@ -25,6 +30,7 @@ export function HorizontalBarChart<R extends BarRow>({
   rowDenominator,
   defs,
   getRowHref,
+  renderLabelPrefix,
 }: {
   rows: readonly R[];
   getFill: (row: R) => string;
@@ -36,10 +42,12 @@ export function HorizontalBarChart<R extends BarRow>({
   defs?: ReactNode;
   /** FR-142 drill-down href per row; null = plain row (zero count, topic "other"). */
   getRowHref?: (row: R) => string | null;
+  /** Optional node before the label (e.g. safety icon, #387 / NFR-030). */
+  renderLabelPrefix?: (row: R) => ReactNode;
 }) {
   const max = Math.max(1, ...rows.map((r) => r.count));
   return (
-    <div className="flex w-full flex-col gap-2">
+    <div className="@container flex w-full flex-col gap-2">
       {defs ? (
         <svg aria-hidden width="0" height="0" className="absolute">
           <defs>{defs}</defs>
@@ -53,16 +61,24 @@ export function HorizontalBarChart<R extends BarRow>({
           // Zero-count rows keep their row with an empty bar (TC-DASH-016).
           const body = (
             <>
-              <span className="truncate text-secondary" title={r.name}>
-                {r.name}
+              <span className="flex min-w-0 items-center gap-1.5 text-secondary">
+                {renderLabelPrefix?.(r)}
+                <span className="truncate" title={r.name}>
+                  {r.name}
+                </span>
               </span>
-              <svg aria-hidden width="100%" height="10" className="block">
-                <rect width={`${(r.count / max) * 100}%`} height="10" rx="2" fill={getFill(r)} />
-              </svg>
-              <span className="text-right whitespace-nowrap text-tertiary tabular-nums">
+              <span className="text-right whitespace-nowrap text-tertiary tabular-nums @[420px]:col-start-3">
                 {value}
-                {sub ? <span className="hidden sm:inline">{sub}</span> : null}
+                {sub ? <span className="hidden @[420px]:inline">{sub}</span> : null}
               </span>
+              {/* DOM order label → value → bar; wide cards place the bar back in column 2 (#387). */}
+              <svg
+                aria-hidden
+                width="100%"
+                className="col-span-2 block h-2 @[420px]:col-span-1 @[420px]:col-start-2 @[420px]:row-start-1 @[420px]:h-2.5"
+              >
+                <rect width={`${(r.count / max) * 100}%`} height="100%" rx="2" fill={getFill(r)} />
+              </svg>
             </>
           );
           return (

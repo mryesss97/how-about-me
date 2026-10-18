@@ -93,23 +93,19 @@ export function SafetyDistributionChart({
         getRowHref={(r) => segmentHref(getHref, r)}
         denominatorLabel="lượt nhắc đã phân tích"
         defs={<SafetyPatterns idPrefix={idPrefix} />}
-      />
-      <ul className="flex flex-wrap justify-center gap-x-4 gap-y-1">
-        {rows.map((r) => {
+        // #387 / NFR-030: icon + word + value + pattern on each row; no separate legend.
+        renderLabelPrefix={(r) => {
           const Icon = ICONS[safetyBadge[r.key].icon as keyof typeof ICONS];
           return (
-            <li key={r.key} className="flex items-center gap-1.5 text-sm text-tertiary">
-              <Icon
-                aria-hidden
-                data-icon={safetyBadge[r.key].icon}
-                className="size-4"
-                style={{ color: SAFETY_COLORS[r.key] }}
-              />
-              {r.name} · {formatRate(r.share)}
-            </li>
+            <Icon
+              aria-hidden
+              data-icon={safetyBadge[r.key].icon}
+              className="size-4 shrink-0"
+              style={{ color: SAFETY_COLORS[r.key] }}
+            />
           );
-        })}
-      </ul>
+        }}
+      />
     </ChartCard>
   );
 }
