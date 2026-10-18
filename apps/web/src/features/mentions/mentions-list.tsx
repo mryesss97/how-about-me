@@ -2,8 +2,9 @@
 
 import type { MentionListItem } from "@how-about-me/contracts";
 import { useEffect, useRef, type KeyboardEvent } from "react";
-import { Button } from "@/components/base/buttons/button";
+import type { EmptyReason } from "@/features/shared/overview-banners";
 import { ErrorState, QueryState, SkeletonBlock, type QueryStateError } from "@/features/shared/query-state";
+import { mentionsEmptyCopy } from "./empty-copy";
 import { MentionRow } from "./mention-row";
 
 type Props = {
@@ -20,6 +21,10 @@ type Props = {
   fetchNextPage: () => void;
   onOpen: (id: string) => void;
   onWidenRange: () => void;
+  /** FR-159: cause of an empty list (defaults to "none"). */
+  emptyReason?: EmptyReason;
+  pendingCount?: number;
+  canManage?: boolean;
 };
 
 export function MentionsListSkeleton() {
@@ -56,6 +61,13 @@ export function MentionsList(p: Props) {
     rowRefs.current[next]?.focus();
   };
 
+  const empty = mentionsEmptyCopy({
+    reason: p.emptyReason ?? "none",
+    pendingCount: p.pendingCount ?? 0,
+    canManage: p.canManage ?? false,
+    onWidenRange: p.onWidenRange,
+  });
+
   return (
     <QueryState
       emptyIllustration="empty"
@@ -64,11 +76,9 @@ export function MentionsList(p: Props) {
       onRetry={p.onRetry}
       isEmpty={p.items.length === 0}
       skeleton={<MentionsListSkeleton />}
-      emptyAction={
-        <Button color="secondary" size="sm" onClick={p.onWidenRange}>
-          Mở rộng khoảng thời gian
-        </Button>
-      }
+      emptyTitle={empty.title}
+      emptyDescription={empty.description}
+      emptyAction={empty.action}
     >
       <div className="flex flex-col gap-3">
         <div role="feed" aria-busy={isFetchingNextPage} className="flex flex-col gap-3">
