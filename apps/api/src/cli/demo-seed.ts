@@ -210,7 +210,12 @@ async function writeDataset(prisma: PrismaClient, projectId: string, d: DemoData
         data: d.analyses.flatMap((a) => a.phrases.map((phrase, position) => ({ analysisId: a.id, phrase, position }))),
       });
       await tx.analysisOverride.createMany({ data: d.overrides.map((o) => ({ ...o, projectId })) });
-      await tx.syncJob.createMany({ data: d.syncJobs.map((j) => ({ ...j, projectId, lockedBy: "demo-seed" })) });
+      // A running collector may have picked up a demo job (lockedBy changes), so the delete above misses it; keep
+      // that row as-is instead of failing the whole re-run on its deterministic id (#393).
+      await tx.syncJob.createMany({
+        data: d.syncJobs.map((j) => ({ ...j, projectId, lockedBy: "demo-seed" })),
+        skipDuplicates: true,
+      });
       await tx.auditLog.createMany({
         data: d.auditLogs.map((l) => ({ ...l, projectId, metadata: l.metadata as Prisma.InputJsonObject })),
       });
