@@ -41,7 +41,7 @@ Target: **2026-11-14** (M5). Release manager: Tech Lead. Approver: Product Owner
 
 ## 6. Operational readiness
 
-- [ ] Staging soak ≥ 5 days · [ ] alerts wired & tested · [ ] runbook reviewed · [ ] backups verified · [ ] purge tested on staging · [ ] Meta terms/retention reviewed · [ ] on-call rota for launch week · [ ] rollback rehearsed (redeploy previous tag on staging)
+- [ ] Staging soak ≥ 5 days · [ ] alerts wired & tested · [ ] runbook reviewed & every procedure validated on staging (runbook §11) · [ ] backups verified · [ ] purge tested on staging · [ ] Meta terms/retention reviewed · [ ] on-call rota for launch week · [ ] rollback rehearsed (redeploy previous tag on staging)
 
 ## 7. Communication
 

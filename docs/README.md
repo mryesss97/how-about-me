@@ -89,6 +89,7 @@ docs/
 - [02-runbook.md](05-operations/02-runbook.md)
 - [03-cost-model.md](05-operations/03-cost-model.md)
 - [04-data-retention-purge.md](05-operations/04-data-retention-purge.md)
+- [incidents/](05-operations/incidents/README.md) — incident notes and template
 
 ### 06 — Engineering handbook
 
