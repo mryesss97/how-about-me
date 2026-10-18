@@ -64,3 +64,4 @@ Source: [../02-architecture/08-security-secrets.md §10](../02-architecture/08-s
 
 - Release notes (features, known limitations: reply trees not crawled; `uncertain` handling; P1 items upcoming).
 - Stakeholder onboarding session (30 min) + glossary link.
+- v0.1.0: [release notes](07-release-notes-v0.1.0.md), [onboarding plan](08-stakeholder-onboarding.md).
