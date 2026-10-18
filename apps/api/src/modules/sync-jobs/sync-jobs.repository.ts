@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { Prisma, type SyncJob as SyncJobRow } from "@prisma/client";
+import { Prisma, type SearchMode, type SyncJob as SyncJobRow } from "@prisma/client";
 import { v7 as uuidv7 } from "uuid";
 import type { SyncJob, SyncJobDetail, SyncJobsListQuery } from "@how-about-me/contracts";
 import {
@@ -12,6 +12,9 @@ import {
 import { PrismaService } from "../../database/prisma.service";
 
 export type SyncJobsPage = { items: SyncJob[]; nextCursor: string | null; totalCount?: number };
+
+/** Query fields checked before a manual run is queued (T-043, BR-010). */
+export type RunnableQuery = { id: string; enabled: boolean; deleted: boolean; searchMode: SearchMode };
 
 /** Fields of a job needed to build its retry (FR-175). */
 export type RetrySource = Pick<
@@ -68,6 +71,42 @@ export class SyncJobsRepository {
         WHERE id = ${queryId}::uuid FOR UPDATE`,
     );
     return rows[0]?.runnable === true;
+  }
+
+  /** T-043: locks the project's query row (FOR UPDATE, race guard) and returns its run state; null = not found. */
+  async findRunnableQueryTx(
+    tx: Prisma.TransactionClient,
+    projectId: string,
+    queryId: string,
+  ): Promise<RunnableQuery | null> {
+    const rows = await tx.$queryRaw<{ id: string; enabled: boolean; deleted: boolean; search_mode: SearchMode }[]>(
+      Prisma.sql`SELECT id::text AS id, enabled, (deleted_at IS NOT NULL) AS deleted, search_mode::text AS search_mode
+        FROM listening_queries WHERE id = ${queryId}::uuid AND project_id = ${projectId}::uuid FOR UPDATE`,
+    );
+    const r = rows[0];
+    return r ? { id: r.id, enabled: r.enabled, deleted: r.deleted, searchMode: r.search_mode } : null;
+  }
+
+  /** T-043 / FR-058: new queued `manual` job; window/cursor left null so the recorder computes them on take-over. */
+  async createManualTx(
+    tx: Prisma.TransactionClient,
+    q: { projectId: string; queryId: string; searchMode: SearchMode },
+    requestedBy: string,
+  ): Promise<string> {
+    const id = uuidv7();
+    await tx.syncJob.create({
+      data: {
+        id,
+        projectId: q.projectId,
+        queryId: q.queryId,
+        status: "queued",
+        trigger: "manual",
+        searchType: "RECENT",
+        searchMode: q.searchMode,
+        requestedBy,
+      },
+    });
+    return id;
   }
 
   async findActiveForQueryTx(tx: Prisma.TransactionClient, queryId: string): Promise<string | null> {

@@ -143,6 +143,7 @@ Behaviour notes (T-042, FR-051…FR-057):
 - Scheduling: create with `enabled=true` → `nextRunAt = now`; `enabled=false` → `nextRunAt = null`. Re-enabling, or restoring an enabled query → `nextRunAt = now`. Disabling keeps `nextRunAt` (scheduler skips disabled). Changing `pollIntervalSeconds` does not reschedule the pending run.
 - `DELETE` on an already deleted query → `204` no-op. Soft delete keeps `enabled`, matches, jobs and posts (BR-010). `restore` on a non-deleted query → `200` no-op; `409 QUERY_DUPLICATE` if an active duplicate exists.
 - Audit (BR-034): `query.created|updated|enabled|disabled|deleted|restored`; `query.updated` metadata `{ fields, before, after }`. A PATCH changing `enabled` and other fields writes two rows.
+- Run now (T-043, FR-058, NFR-017): inserts a `queued` job `trigger=manual`, `searchType=RECENT`, `searchMode` from the query, window/cursor left null; the collector takes it over on the next scheduler tick. Order of checks: throttle (10 successful calls per 60 s per project, DB-backed: per-project advisory lock + count of `query.run_requested` audit rows; exceeded → `429 RATE_LIMITED`, header `Retry-After`, `details.retryAfterSeconds`) → `404 NOT_FOUND` (unknown, other project or soft-deleted query) → `400 VALIDATION_ERROR` (query disabled, BR-010) → `409 SYNC_ALREADY_RUNNING {details:{jobId}}` (query has a `queued`/`running` job). Only `202` consumes quota. Audit `query.run_requested` (entity `listening_query`, metadata `{ jobId }`).
 - Until T-045, `lastJob` is `null` and `matchedPosts` is `{ total: 0, last24h: 0 }` (placeholders).
 
 ## 6. Analytics
@@ -463,6 +464,8 @@ PATCH behaviour: one transaction, project row locked `FOR UPDATE` (concurrent ad
 ## 10. System status
 
 ### `GET /projects/:projectId/system-status`
+
+Any project member may read. Computation rules: [09-observability.md §4](09-observability.md). v1 (T-057): the `analysis` block is a zero/`null` stub until T-077.
 
 ```json
 {

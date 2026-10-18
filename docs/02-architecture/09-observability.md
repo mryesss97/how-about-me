@@ -51,6 +51,15 @@ Business gauges derived on demand by System Status (not exported as metrics): ap
 | `collectionLagSeconds` | `now − max(last_successful_sync_at)` over enabled queries                                                                                                    |
 | `analysisLagSeconds`   | `now − min(created_at)` of pending/processing runs, else 0                                                                                                   |
 
+Computation notes (T-057):
+
+- `successRate24h` = `(success + partial) / (success + partial + failed)` over `sync_jobs` created in the last 24 h; `queued`/`running`/`cancelled` are excluded; empty sample → `null` (ignored by the `degraded` rule).
+- `failedJobs24h` / `partialJobs24h` count jobs by status with `created_at ≥ now − 24h`. `jobsInProgress` counts only `running` jobs (not `queued`).
+- `collectionLagSeconds` is `null` when no enabled query exists or none has synced yet (ignored by the `degraded` rule); disabled queries never count. Integer seconds (floor).
+- No integration row → `threads.status = disconnected` → collector `paused`.
+- `database.approxPosts/approxAnalyses` come from `pg_class.reltuples` (clamped ≥ 0); `lastMigration` is the latest finished `_prisma_migrations` row, `null` if unreadable.
+- The `analysis` section is a zero/`null` stub until T-077.
+
 ## 5. Dashboards & alerts (staging/prod, host-provided or Grafana Cloud free)
 
 Panels: sync success rate, provider latency p95, inserted vs duplicates, rate-limit events, queue depth, analysis failures, AI cost/day, API p95 by route, DB connections/storage.
