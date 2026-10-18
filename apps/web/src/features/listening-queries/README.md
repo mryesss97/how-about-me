@@ -13,4 +13,7 @@ Listening Queries screen (UX §3.5, FR-050..062). See docs/02-architecture/03-fr
 - `term-input.tsx` — tag input for include/exclude terms (Enter/comma, case-insensitive dedupe).
 - `query-form-fields.tsx` / `query-form-drawer.tsx` — create/edit drawer (#43); duplicate → toast "Xem truy vấn".
 - `delete-query-dialog.tsx` — soft-delete confirm (FR-057).
+- `api.ts` (backfill, #112) — `useBackfillListeningQuery` (FR-063), `useBackfillJobProgress` (polls `GET …/sync-jobs/:id` every 3 s while queued/running, off when hidden), `useInvalidateQueryList`.
+- `backfill-form.ts` — pure: calendar range ↔ UTC body in the project tz (until clamped to now), 30-day hint validation, status labels (BR-017), counters.
+- `backfill-dialog.tsx` / `backfill-progress.tsx` — "Lấy dữ liệu cũ" dialog: form step → progress step; 409 SYNC_ALREADY_RUNNING follows the active job (BR-010).
 - `use-query-actions.ts` — run / toggle / delete / restore with toasts; "Xem lượt đồng bộ" → `jobHref` (`format.ts`).

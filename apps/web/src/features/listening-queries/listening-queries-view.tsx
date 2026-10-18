@@ -13,6 +13,7 @@ import { ErrorState, QueryState, SkeletonBlock } from "@/features/shared/query-s
 import { ApiError } from "@/lib/api/client";
 import { flattenUnique } from "@/lib/query/infinite-list";
 import { useListeningQueries, useListeningQuery } from "./api";
+import { BackfillDialog } from "./backfill-dialog";
 import { DeleteQueryDialog } from "./delete-query-dialog";
 import { QueriesTable } from "./queries-table";
 import { QueryFormDrawer } from "./query-form-drawer";
@@ -46,6 +47,7 @@ export function ListeningQueriesView() {
   const actions = useQueryActions(pid);
   const [drawer, setDrawer] = useState<DrawerState | null>(null);
   const [deleting, setDeleting] = useState<ListeningQuery | null>(null);
+  const [backfillTarget, setBackfillTarget] = useState<ListeningQuery | null>(null);
 
   // `?edit=<id>`: opens the edit drawer for a query, fetched when outside the loaded list (duplicate link, FR-053).
   const editId = isAdmin ? (search?.get("edit") ?? null) : null;
@@ -92,6 +94,7 @@ export function ListeningQueriesView() {
     ? {
         onEdit: (q: ListeningQuery) => setDrawer({ mode: "edit", query: q }),
         onRun: actions.onRun,
+        onBackfill: setBackfillTarget,
         onToggle: actions.onToggle,
         onDelete: setDeleting,
         onRestore: actions.onRestore,
@@ -160,6 +163,14 @@ export function ListeningQueriesView() {
           isOpen
           onClose={closeDrawer}
           onOpenExisting={openExisting}
+        />
+      ) : null}
+      {isAdmin && project ? (
+        <BackfillDialog
+          pid={project.id}
+          query={backfillTarget}
+          tz={project.timezone ?? DEFAULT_TZ}
+          onClose={() => setBackfillTarget(null)}
         />
       ) : null}
       {isAdmin ? (

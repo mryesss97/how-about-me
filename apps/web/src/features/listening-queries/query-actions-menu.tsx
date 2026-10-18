@@ -8,6 +8,7 @@ import { Dropdown } from "@/components/base/dropdown/dropdown";
 export type QueryActionHandlers = {
   onEdit?: (q: ListeningQuery) => void;
   onRun?: (q: ListeningQuery) => void;
+  onBackfill?: (q: ListeningQuery) => void;
   onToggle?: (q: ListeningQuery) => void;
   onDelete?: (q: ListeningQuery) => void;
   onRestore?: (q: ListeningQuery) => void;
@@ -22,12 +23,25 @@ type Props = QueryActionHandlers & { query: ListeningQuery; isAdmin: boolean };
  * Row actions (UX §3.5). "Xem bài nhắc" for every role; admin items only when `isAdmin` and a handler is wired
  * (#43 wires mutations). Hiding is UX only — the API enforces `@Roles("admin")` (BR-033, FR-015).
  */
-export function QueryActionsMenu({ query: q, isAdmin, onEdit, onRun, onToggle, onDelete, onRestore }: Props) {
+export function QueryActionsMenu({
+  query: q,
+  isAdmin,
+  onEdit,
+  onRun,
+  onBackfill,
+  onToggle,
+  onDelete,
+  onRestore,
+}: Props) {
   const deleted = !!q.deletedAt;
   const admin = isAdmin
     ? [
         !deleted && onEdit ? { id: "edit", label: "Sửa", run: () => onEdit(q) } : null,
         !deleted && onRun ? { id: "run", label: "Chạy ngay", run: () => onRun(q) } : null,
+        // FR-063: disabled queries are rejected by the API (400), so the item is hidden for them.
+        !deleted && q.enabled && onBackfill
+          ? { id: "backfill", label: "Lấy dữ liệu cũ", run: () => onBackfill(q) }
+          : null,
         !deleted && onToggle ? { id: "toggle", label: q.enabled ? "Tắt" : "Bật", run: () => onToggle(q) } : null,
         !deleted && onDelete ? { id: "delete", label: "Xoá", run: () => onDelete(q) } : null,
         deleted && onRestore ? { id: "restore", label: "Khôi phục", run: () => onRestore(q) } : null,
