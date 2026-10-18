@@ -89,6 +89,21 @@ describe("LandingTermsForm", () => {
     render(<LandingTermsForm project={withTerms([])} canEdit={false} />, { wrapper });
     expect(screen.queryByRole("button", { name: "Lưu" })).not.toBeInTheDocument();
     expect(screen.getByText("Chưa có cụm từ nào.")).toBeInTheDocument();
-    expect(screen.getByText("Chỉ quản trị viên dự án mới thay đổi được các cài đặt này.")).toBeInTheDocument();
+  });
+
+  it("#347: non-admin sees terms as static text without remove buttons", () => {
+    render(<LandingTermsForm project={withTerms(["giá vé", "app"])} canEdit={false} />, { wrapper });
+    expect(screen.getByRole("list", { name: "Cụm từ trên landing" })).toHaveTextContent("giá vé");
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.queryByRole("textbox")).toBeNull();
+  });
+
+  it("#347: 'Huỷ thay đổi' drops the draft back to the saved terms", () => {
+    render(<LandingTermsForm project={withTerms(["app"])} canEdit />, { wrapper });
+    add("giá vé");
+    expect(screen.getByText("Có thay đổi chưa lưu")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Huỷ thay đổi" }));
+    expect(screen.queryByText("giá vé")).toBeNull();
+    expect(screen.getByText("Chưa có thay đổi")).toBeInTheDocument();
   });
 });

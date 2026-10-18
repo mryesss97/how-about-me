@@ -171,7 +171,7 @@ describe("ThreadsIntegrationCard", () => {
   it("TC-INT-012 / FR-015: analyst card is read-only", () => {
     renderCard(threadsStatusFixture(), false);
     expect(screen.queryByRole("button")).toBeNull();
-    expect(screen.getByText("Chỉ quản trị viên dự án mới thay đổi được các cài đặt này.")).toBeInTheDocument();
+    expect(screen.queryByText("Chỉ quản trị viên dự án mới thay đổi được các cài đặt này.")).toBeNull();
   });
 
   it.each(INTEGRATION_STATUSES)("FR-044: status %s renders its label", (s) => {
