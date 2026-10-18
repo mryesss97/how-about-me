@@ -41,6 +41,7 @@ function setup(mode: "create" | "edit", query?: ReturnType<typeof queryFixture>)
 }
 
 const field = (name: string) => screen.getByRole("textbox", { name: new RegExp(`^${name.replace(/[()]/g, "\\$&")}`) });
+const presets = (name: string) => screen.getByRole("group", { name });
 const sentBody = (i = 0) => JSON.parse((apiFetch.mock.calls[i] as [string, { body: string }])[1].body) as unknown;
 
 beforeEach(() => {
@@ -55,10 +56,11 @@ beforeEach(() => {
 describe("QueryFormDrawer", () => {
   it("TC-LQ-023 / FR-052: invalid interval shows an inline error and disables submit", () => {
     setup("create");
-    const interval = field("Chu kỳ quét (giây)");
-    fireEvent.change(interval, { target: { value: "59" } });
+    fireEvent.click(within(presets("Chu kỳ quét có sẵn")).getByRole("button", { name: "Khác…" }));
+    const interval = field("Chu kỳ quét (phút)");
+    fireEvent.change(interval, { target: { value: "0" } });
     fireEvent.blur(interval);
-    expect(screen.getByText("Chu kỳ quét 60–86400 giây.")).toBeInTheDocument();
+    expect(screen.getByText("Chu kỳ quét 1–1440 phút.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Tạo truy vấn" })).toBeDisabled();
   });
 
@@ -69,12 +71,49 @@ describe("QueryFormDrawer", () => {
     expect(apiFetch).not.toHaveBeenCalled();
   });
 
-  it("preset fills the poll interval in seconds", () => {
+  it("#341: preset picks minutes and POSTs seconds; no label mentions giây", async () => {
+    apiFetch.mockResolvedValue(queryFixture());
     setup("create");
-    fireEvent.click(
-      within(screen.getByRole("group", { name: "Chu kỳ quét có sẵn" })).getAllByRole("button")[2] as HTMLElement,
-    );
-    expect(field("Chu kỳ quét (giây)")).toHaveValue("1800");
+    expect(screen.queryByText(/giây/)).not.toBeInTheDocument();
+    const btn = within(presets("Chu kỳ quét có sẵn")).getByRole("button", { name: "30 phút" });
+    fireEvent.click(btn);
+    expect(btn).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(within(presets("Chu kỳ quét có sẵn")).getByRole("button", { name: "Khác…" }));
+    expect(field("Chu kỳ quét (phút)")).toHaveValue("30");
+    fireEvent.change(field("Giá trị truy vấn"), { target: { value: "x" } });
+    fireEvent.click(screen.getByRole("button", { name: "Tạo truy vấn" }));
+    await waitFor(() => expect(apiFetch).toHaveBeenCalled());
+    expect(sentBody()).toMatchObject({ pollIntervalSeconds: 1800, overlapSeconds: 1200 });
+  });
+
+  it("#341: display name follows the value until edited by hand", () => {
+    setup("create");
+    fireEvent.change(field("Giá trị truy vấn"), { target: { value: "eventista" } });
+    expect(field("Tên hiển thị")).toHaveValue("eventista");
+    fireEvent.change(field("Tên hiển thị"), { target: { value: "Eventista VN" } });
+    fireEvent.change(field("Giá trị truy vấn"), { target: { value: "eventista2" } });
+    expect(field("Tên hiển thị")).toHaveValue("Eventista VN");
+  });
+
+  it("#341: 'Bật' sits in the footer; advanced opens to show an overlap error", () => {
+    setup("create");
+    const footer = screen.getByRole("button", { name: "Tạo truy vấn" }).closest("footer") as HTMLElement;
+    expect(within(footer).getByRole("switch", { name: "Bật" })).toBeInTheDocument();
+    const adv = screen.getByRole("button", { name: "Nâng cao" });
+    expect(adv).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(adv);
+    fireEvent.click(within(presets("Chồng lấn có sẵn")).getByRole("button", { name: "Khác…" }));
+    fireEvent.change(field("Chồng lấn (phút)"), { target: { value: "-1" } });
+    fireEvent.click(adv);
+    fireEvent.click(screen.getByRole("button", { name: "Tạo truy vấn" }));
+    expect(screen.getByRole("button", { name: "Nâng cao" })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("Chồng lấn 0–1440 phút.")).toBeInTheDocument();
+  });
+
+  it("#341: topic tag shows the # prefix hint", () => {
+    setup("create");
+    fireEvent.click(screen.getByRole("radio", { name: "Chủ đề" }));
+    expect(screen.getByText("Nhập không có dấu #")).toBeInTheDocument();
   });
 
   it("create POSTs the parsed body (BR-004 strips #)", async () => {
@@ -107,9 +146,10 @@ describe("QueryFormDrawer", () => {
     expect(onRunNow).toHaveBeenCalledWith(created);
   });
 
-  it("#340 ops-1: edit shows the creator read-only", () => {
+  it("#340 ops-1 / #341: edit shows creator · date, hides backfill", () => {
     setup("edit", queryFixture());
-    expect(screen.getByText("Người tạo: An Admin")).toBeInTheDocument();
+    expect(screen.getByText("Người tạo: An Admin · 01/10/2026")).toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: /^Lấy dữ liệu cũ/ })).not.toBeInTheDocument();
   });
 
   it("FR-054 / BR-009: edit disables value + type and PATCHes only the diff", async () => {

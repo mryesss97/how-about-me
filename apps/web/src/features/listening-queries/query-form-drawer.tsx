@@ -5,12 +5,14 @@ import { useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { SlideoutMenu } from "@/components/application/slideout-menus/slideout-menu";
 import { Button } from "@/components/base/buttons/button";
+import { Toggle } from "@/components/base/toggle/toggle";
 import { ApiError } from "@/lib/api/client";
 import { DASH } from "@/lib/format/number";
 import { duplicateExistingId, queryErrorMessage, useCreateListeningQuery, useUpdateListeningQuery } from "./api";
 import {
   emptyValues,
   serverIssuesToErrors,
+  suggestDisplayName,
   toCreateBody,
   toUpdateBody,
   validate,
@@ -21,6 +23,13 @@ import {
   type QueryFormValues,
 } from "./query-form";
 import { QueryFormFields } from "./query-form-fields";
+
+const DATE_FMT = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Asia/Ho_Chi_Minh",
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
 
 type Props = {
   pid: string;
@@ -44,11 +53,15 @@ export function QueryFormDrawer({ pid, mode, query, isOpen, onClose, onOpenExist
   const [submitted, setSubmitted] = useState(false);
   const [serverErrors, setServerErrors] = useState<QueryFormErrors>({});
   const [formError, setFormError] = useState<string>();
+  const [displayNameEdited, setDisplayNameEdited] = useState(false);
   const create = useCreateListeningQuery(pid);
   const update = useUpdateListeningQuery(pid);
   const pending = create.isPending || update.isPending;
 
-  const allErrors = useMemo(() => ({ ...validate(values, mode), ...serverErrors }), [values, mode, serverErrors]);
+  const allErrors = useMemo(
+    () => ({ ...validate(values, mode, query), ...serverErrors }),
+    [values, mode, query, serverErrors],
+  );
   const shown: QueryFormErrors = submitted
     ? allErrors
     : Object.fromEntries(Object.entries(allErrors).filter(([f]) => touched[f as QueryFormField]));
@@ -57,7 +70,10 @@ export function QueryFormDrawer({ pid, mode, query, isOpen, onClose, onOpenExist
   const unchanged = mode === "edit" && !hasErrors && updateBody === null;
 
   const set = <K extends QueryFormField>(field: K, value: QueryFormValues[K]) => {
-    setValues((v) => ({ ...v, [field]: value }));
+    // #341: in create, the display name follows the query value until the admin types a name.
+    const prefill = mode === "create" && field === "queryValue" && !displayNameEdited && typeof value === "string";
+    if (field === "displayName") setDisplayNameEdited(true);
+    setValues((v) => ({ ...v, [field]: value, ...(prefill ? { displayName: suggestDisplayName(value) } : {}) }));
     setServerErrors(({ [field]: _drop, ...rest }) => rest);
   };
   const touch = (field: QueryFormField) => setTouched((t) => (t[field] ? t : { ...t, [field]: true }));
@@ -68,6 +84,7 @@ export function QueryFormDrawer({ pid, mode, query, isOpen, onClose, onOpenExist
     setSubmitted(false);
     setServerErrors({});
     setFormError(undefined);
+    setDisplayNameEdited(false);
     onClose();
   };
 
@@ -130,14 +147,15 @@ export function QueryFormDrawer({ pid, mode, query, isOpen, onClose, onOpenExist
     <SlideoutMenu isOpen={isOpen} onOpenChange={(o) => !o && close()} isDismissable className="z-50">
       <SlideoutMenu.Header onClose={close}>
         <h2 className="operate-board-title pr-8 text-[var(--ink)]">{title}</h2>
+        {mode === "edit" && query ? (
+          <p className="text-sm text-tertiary">
+            Người tạo: {query.createdBy ? (query.createdBy.displayName ?? query.createdBy.email ?? DASH) : DASH} ·{" "}
+            {DATE_FMT.format(new Date(query.createdAt))}
+          </p>
+        ) : null}
       </SlideoutMenu.Header>
       <form onSubmit={onSubmit} noValidate aria-label={title} className="flex min-h-0 flex-1 flex-col">
         <SlideoutMenu.Content role="region" aria-label="Thông tin truy vấn" className="pb-6">
-          {mode === "edit" && query ? (
-            <p className="text-sm text-tertiary">
-              Người tạo: {query.createdBy ? (query.createdBy.displayName ?? query.createdBy.email ?? DASH) : DASH}
-            </p>
-          ) : null}
           <QueryFormFields mode={mode} values={values} errors={shown} set={set} touch={touch} />
           {formError ? (
             <p role="alert" className="text-sm text-error-primary">
@@ -145,13 +163,17 @@ export function QueryFormDrawer({ pid, mode, query, isOpen, onClose, onOpenExist
             </p>
           ) : null}
         </SlideoutMenu.Content>
-        <SlideoutMenu.Footer className="flex justify-end gap-3">
-          <Button type="button" color="secondary" onClick={close}>
-            Huỷ
-          </Button>
-          <Button type="submit" isDisabled={Object.keys(shown).length > 0 || unchanged} isLoading={pending}>
-            {mode === "create" ? "Tạo truy vấn" : "Lưu"}
-          </Button>
+        <SlideoutMenu.Footer className="flex flex-wrap items-center justify-between gap-3">
+          {/* Saved with the form (Lưu), unlike the row toggle which saves immediately. */}
+          <Toggle size="sm" label="Bật" isSelected={values.enabled} onChange={(v) => set("enabled", v)} />
+          <div className="flex gap-3">
+            <Button type="button" color="secondary" onClick={close}>
+              Huỷ
+            </Button>
+            <Button type="submit" isDisabled={Object.keys(shown).length > 0 || unchanged} isLoading={pending}>
+              {mode === "create" ? "Tạo truy vấn" : "Lưu"}
+            </Button>
+          </div>
         </SlideoutMenu.Footer>
       </form>
     </SlideoutMenu>

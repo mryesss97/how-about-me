@@ -8,10 +8,13 @@ export function PageHeader({
   title,
   description,
   actions,
+  meta,
 }: {
   title: string;
   description?: ReactNode;
   actions?: ReactNode;
+  /** #336: small Inter status line (e.g. "Đồng bộ lần cuối …") on the right; drops below the title under sm. */
+  meta?: ReactNode;
 }) {
   return (
     <header className="page-fascia">
@@ -21,6 +24,7 @@ export function PageHeader({
           <h1 className="page-fascia-title">{title}</h1>
           {description ? <p className="text-sm text-secondary">{description}</p> : null}
         </div>
+        {meta ? <div className="basis-full sm:basis-auto">{meta}</div> : null}
         {actions}
       </div>
     </header>

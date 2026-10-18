@@ -40,7 +40,7 @@ describe("NegativeTopicsChart (T-149)", () => {
 
   it("loading hides the table toggle; error shows request ID and Retry", () => {
     const { unmount } = render(<NegativeTopicsChart isLoading />);
-    expect(screen.queryByRole("button", { name: "Xem dạng bảng" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Bảng" })).toBeNull();
     unmount();
     const onRetry = vi.fn();
     render(<NegativeTopicsChart error={{ code: "INTERNAL", message: "boom", requestId: "req-8" }} onRetry={onRetry} />);

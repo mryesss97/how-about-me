@@ -10,7 +10,11 @@ import type {
 import { parseDate } from "@internationalized/date";
 import { DASH, formatCount } from "@/lib/format/number";
 
-export type Tone = "success" | "warning" | "error" | "progress" | "neutral";
+import type { Tone } from "@/features/shared/status-plate";
+import { TOKEN_WARN_DAYS, tokenDaysLeft } from "@/lib/semantics/token-expiry";
+
+export type { Tone };
+export { TOKEN_WARN_DAYS, tokenDaysLeft };
 export type StatusLabel = { label: string; tone: Tone };
 
 /** Lag in seconds → "45 giây" / "12 phút" / "3 giờ"; null → "—". */
@@ -150,18 +154,6 @@ export function auditEntityLabel(type: string): string {
 }
 
 // ── Overview summary (#342, UX §3.6) ─────────────────────────────────────────────────────────────────────────
-
-/** Token warning window: "Sắp hết hạn" when the Threads token expires within this many days. */
-export const TOKEN_WARN_DAYS = 7;
-const DAY_MS = 86_400_000;
-
-/** Whole days until the token expires (ceil, by elapsed ms, not calendar days); ≤ 0 = expired; null = unknown. */
-export function tokenDaysLeft(expiresAt: string | null, nowMs: number): number | null {
-  if (!expiresAt) return null;
-  const t = Date.parse(expiresAt);
-  if (!Number.isFinite(t)) return null;
-  return Math.ceil((t - nowMs) / DAY_MS);
-}
 
 type Threads = SystemStatusResponse["threads"];
 
