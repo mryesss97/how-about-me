@@ -89,7 +89,7 @@ export const PERMISSION_MATRIX: readonly PermissionEntry[] = [
   { method: "GET", path: `${P}/sync-jobs`, ...ALL, status: "implemented" },
   { method: "GET", path: `${P}/sync-jobs/:jobId`, ...ALL, status: "implemented" },
   { method: "POST", path: `${P}/sync-jobs/:jobId/retry`, ...ADMIN_ONLY, status: "implemented" },
-  { method: "GET", path: `${P}/system-status`, ...ALL, status: "planned" },
+  { method: "GET", path: `${P}/system-status`, ...ALL, status: "implemented" },
   { method: "GET", path: `${P}/analytics/sentiment`, ...ALL, status: "implemented" },
   { method: "GET", path: `${P}/analytics/safety`, ...ALL, status: "implemented" },
   { method: "GET", path: `${P}/analytics/intents`, ...ALL, status: "implemented" },
