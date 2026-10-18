@@ -11,16 +11,10 @@ import { displayLabel } from "@/lib/semantics/labels";
 import { AppliedFilterChips } from "./applied-filter-chips";
 import { EnumMultiSelect } from "./enum-multi-select";
 import { TimeControls } from "./time-controls";
-
-export interface QueryOption {
-  id: string;
-  name: string;
-  type: "keyword" | "tag";
-}
+import { useQueryFilterOptions } from "./use-query-options";
 
 interface FilterBarProps {
   showCompare?: boolean;
-  queryOptions?: QueryOption[];
 }
 
 const MULTI_SELECTS: { key: Exclude<EnumFilterKey, "relevance">; label: string }[] = [
@@ -33,9 +27,10 @@ const MULTI_SELECTS: { key: Exclude<EnumFilterKey, "relevance">; label: string }
 ];
 
 /** Sticky shared filter bar for Overview & Mentions — UX §2.1, FR-130/131. State lives in the URL (nuqs). */
-export function FilterBar({ showCompare = false, queryOptions = [] }: FilterBarProps) {
+export function FilterBar({ showCompare = false }: FilterBarProps) {
   const { filters, setFilters, reset } = useFilters();
-  const queryNames = Object.fromEntries(queryOptions.map((q) => [q.id, q.type === "tag" ? `#${q.name}` : q.name]));
+  // FR-051/FR-130: options come from the project's listening queries (incl. soft-deleted, #329).
+  const { items: queryItems, names: queryNames } = useQueryFilterOptions();
 
   return (
     <section
@@ -46,7 +41,7 @@ export function FilterBar({ showCompare = false, queryOptions = [] }: FilterBarP
         <TimeControls filters={filters} setFilters={setFilters} />
         <EnumMultiSelect
           label="Truy vấn"
-          items={queryOptions.map((q) => ({ id: q.id, label: queryNames[q.id] }))}
+          items={queryItems}
           value={filters.queryIds}
           onChange={(queryIds) => setFilters({ queryIds })}
         />

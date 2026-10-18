@@ -3,6 +3,7 @@
 import { queryDrillDown, segmentDrillDown, topicSentimentDrillDown } from "@/lib/filters/drill-down";
 import { useLanguagesDistribution, useQueryShare } from "./api";
 import { LanguageDistributionChart, NegativeTopicsChart, QueryShareChart, TopicSentimentHeatmap } from "./charts";
+import { useQueryFilterOptions } from "./use-query-options";
 import type { OverviewRowProps, TopicSentimentQuery } from "./overview-row-props";
 import { toQueryError } from "./query-error";
 
@@ -12,6 +13,8 @@ type Props = OverviewRowProps & { topicSentiment: TopicSentimentQuery };
 export function OverviewP1Row({ projectId, apiParams, isProjectLoading, href, navigate, topicSentiment }: Props) {
   const languages = useLanguagesDistribution(projectId, apiParams);
   const queryShare = useQueryShare(projectId, apiParams);
+  // Same cache entry as FilterBar → no extra request; gives tags their `#` (#329).
+  const { names: queryNames } = useQueryFilterOptions();
 
   return (
     <>
@@ -29,6 +32,7 @@ export function OverviewP1Row({ projectId, apiParams, isProjectLoading, href, na
         onNavigate={navigate}
         className="lg:col-span-4"
         data={queryShare.data}
+        queryNames={queryNames}
         isLoading={isProjectLoading || queryShare.isLoading}
         error={toQueryError(queryShare.error)}
         onRetry={() => void queryShare.refetch()}

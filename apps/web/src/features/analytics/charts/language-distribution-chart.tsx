@@ -103,7 +103,7 @@ export function LanguageDistributionChart({
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-x-0 top-[calc(50%-2rem)] flex flex-col items-center">
           <span className="text-display-xs font-semibold text-primary">{formatCount(denominator)}</span>
-          <span className="text-xs text-tertiary">with a language</span>
+          <span className="text-xs text-tertiary">có ngôn ngữ</span>
         </div>
       </div>
       {/* Colour is never the only cue: label + share as text (NFR-030). */}

@@ -41,6 +41,8 @@ Concept: an ear + a speech bubble — "Lắng nghe. Thấu hiểu." Palette: Sky
 - Changing the timezone keeps a custom range's **calendar dates** (#240): the selected days are re-read as `[from 00:00, to+1 00:00)` in the new timezone (e.g. 1–7 Oct stays 1–7 Oct). Only ranges whose ends are both 00:00 in the old timezone are re-zoned; exact-instant ranges (e.g. hour-bucket drill-down, FR-142) keep their instants. Relative presets (1h/24h/7d/30d) only change `tz`. `tz`/`from`/`to` update in one URL change.
 - All filters sync to the URL query string (`nuqs`). Changing a filter refetches all widgets.
 - Applied filters show as removable chips under the bar.
+- **Queries** options are the project's listening queries (FR-051), loaded by the filter bar itself (#329): active first, then soft-deleted ones marked "Đã xoá" so old drill-down links still show a name. Tags render as `#name` (no double `#`) in the select, the chips and the "Tỷ trọng từ khoá" chart.
+- Multi-select copy is Vietnamese (#329): search "Tìm…", empty "Không có kết quả" / "Thử từ khoá khác.", footer "Bỏ chọn" / "Chọn tất cả"; trigger shows "Tất cả" (none), the value label (one) or "N đã chọn" (several). The keyword-share overlap note (FR-147) is Vietnamese too.
 
 ### 2.2 Semantic badges (never colour alone)
 
