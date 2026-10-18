@@ -15,16 +15,17 @@ describe("SafetyDistributionChart", () => {
     expect(rows[3]?.[1]).toBe("200");
   });
 
-  it("TC-DASH-023 / NFR-030: legend has label, icon and share text per level", () => {
+  it("TC-DASH-023 / NFR-030 / #387: each bar row carries icon, label and share; no separate legend", () => {
     render(<SafetyDistributionChart data={safetyFixture()} />);
-    // Legend is the last list; the first is the bar rows (#335).
-    const legend = screen.getAllByRole("list").at(-1) as HTMLElement;
-    const items = within(legend)
-      .getAllByRole("listitem")
-      .map((li) => li.textContent);
-    expect(items).toEqual(["An toàn · 85,0%", "Nhạy cảm · 12,0%", "Nghiêm trọng · 3,0%"]);
-    const icons = Array.from(legend.querySelectorAll("li svg[data-icon]")).map((s) => s.getAttribute("data-icon"));
+    const lists = screen.getAllByRole("list");
+    expect(lists).toHaveLength(1);
+    const items = within(lists[0] as HTMLElement).getAllByRole("listitem");
+    const icons = items.map((li) => li.querySelector("svg[data-icon]")?.getAttribute("data-icon"));
     expect(icons).toEqual(["ShieldTick", "AlertTriangle", "AlertOctagon"]);
+    expect(items[0]).toHaveTextContent("An toàn");
+    expect(items[0]).toHaveTextContent("· 85,0%");
+    expect(items[1]).toHaveTextContent("Nhạy cảm");
+    expect(items[2]).toHaveTextContent("Nghiêm trọng");
   });
 
   it("NFR-030: sensitive/severe bars use SVG patterns, safe is solid", () => {
