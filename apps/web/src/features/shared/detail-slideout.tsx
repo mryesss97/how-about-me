@@ -1,12 +1,13 @@
 "use client";
 
 import { Expand06 } from "@untitledui/icons";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useState, type ReactNode } from "react";
 import { SlideoutMenu } from "@/components/application/slideout-menus/slideout-menu";
 
 /**
- * Slide-out frame shared by Mentions (intercepting route, UX §3.4, TC-MEN-009) and Reviews (#219, #233).
+ * Slide-out frame shared by Mentions (`?item=`, UX §3.4, TC-MEN-009, #326) and Reviews (#219, #233).
  * Esc / close → back to the list with its filters; React Aria returns focus to the element that opened it.
  */
 export function DetailSlideout({
@@ -56,14 +57,14 @@ export function DetailSlideout({
       <SlideoutMenu.Header onClose={close}>
         <div className="flex items-center gap-3 pr-8">
           <h2 className="text-lg font-semibold text-primary">{title}</h2>
-          {/* Plain <a> on purpose: a full navigation escapes the intercepting route and renders the page. */}
-          <a
+          {/* Soft navigation to the full page; no intercepting route any more (#326). */}
+          <Link
             href={fullPageHref(qs)}
             className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--ink)] underline-offset-2 hover:underline"
           >
             <Expand06 className="size-4" aria-hidden />
             Mở trang đầy đủ
-          </a>
+          </Link>
           {actions ? <div className="ml-auto">{actions}</div> : null}
         </div>
       </SlideoutMenu.Header>
