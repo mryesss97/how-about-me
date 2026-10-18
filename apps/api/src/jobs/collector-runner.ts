@@ -1,7 +1,6 @@
 /**
- * DI token for the per-query run implementation. SchedulerModule binds it to `null` until T-052 rebinds it
- * to CollectorService; with no runner bound the tick never starts, so no query is claimed and no
- * `next_run_at` / `last_run_at` is advanced by a run that did not happen.
+ * DI token for the per-query run implementation, bound to `CollectorService` (T-052). With no runner bound
+ * (tests may override it with `null`) the tick never starts, so no query is claimed.
  */
 export const COLLECTOR_RUNNER = Symbol("COLLECTOR_RUNNER");
 
@@ -14,6 +13,8 @@ export interface ClaimedQuery {
   nextRunAt: Date | null;
   /** Oldest queued manual job for this query, if any (FR-058, processed ahead of scheduled). */
   manualJobId: string | null;
+  /** Worker holding the lock (`locked_by`); the runner guards its own `listening_queries` writes with it. */
+  workerId: string;
 }
 
 export type RunStatus = "success" | "partial" | "failed";

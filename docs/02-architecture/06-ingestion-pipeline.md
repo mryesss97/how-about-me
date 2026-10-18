@@ -89,10 +89,19 @@ loop pages (≤ MAX_PAGES):
   if !page.nextCursor or oldestItem < since (RECENT) → break
 finish:
   status = pages_ok && no error ? success : (pages_ok>0 ? partial : failed)
-  update query: last_run_at, last_successful_sync_at (= window_until when success; = oldest processed page time when partial), next_run_at, errors, consecutive_failures, unlock
+  update query: last_run_at, last_successful_sync_at (= window_until when success; unchanged when partial/failed — BR-014), next_run_at, errors, consecutive_failures, unlock
 ```
 
 `last_successful_sync_at` on `partial`: set to `window_until` only if the failure happened after all pages within the window were processed; otherwise keep previous value so the next window re-covers the gap (overlap handles the rest).
+
+Implementation notes (T-052, `CollectorService` + `SyncJobRecorder`):
+
+- Scheduler `completeRun` owns `next_run_at`, `consecutive_failures`, `last_run_at`, `last_error_*` and the unlock; the runner owns `sync_jobs` and `last_successful_sync_at` (written with a `locked_by` guard).
+- The runner only moves `last_successful_sync_at` on `success` (= `window_until`). A RECENT run that reached `since` stops early and is a `success`, so the "all pages processed" case of the paragraph above never ends `partial`; every `partial` keeps the previous value.
+- A queued manual/retry job (`manualJobId`) is taken over (`queued → running`, guarded); its stored `window_*` and `last_cursor` win, so a retry job created with the cursor of a partial job resumes after the last committed page. Otherwise a `scheduled` job is created.
+- Page counters, `last_cursor`, `provider_usage` are written inside the page's ingestion transaction (`ingestPage(…, afterPage)`), so committed posts and counters never diverge. `provider_requests` counts every HTTP attempt incl. retries; attempts of a page that failed are added after the fact.
+- Page cap (`COLLECTOR_MAX_PAGES_PER_JOB`) with more pages left → `partial`, `error_code = null`, `error_message = "page cap reached (N)"`, `last_cursor` = next cursor.
+- Worker shutdown (abort signal) stops between pages with `INTERNAL`.
 
 ## 6. Ingestion & deduplication (FR-074…FR-079, FR-088)
 
@@ -137,7 +146,7 @@ Circuit breaker: `collector_state(project_id, consecutive_provider_failures, cir
 
 ## 9. Observability (per job)
 
-Log lines with `job_id, query_id, project_id, provider='threads', page, status, duration_ms, result_count, error_code`. Metrics per [09-observability.md](09-observability.md). Rate-limit headers recorded raw in `provider_usage` for POC learning.
+Log lines with `job_id, query_id, project_id, provider='threads', page, status, duration_ms, result_count, error_code`. Metrics per [09-observability.md](09-observability.md). Rate-limit headers recorded raw in `provider_usage` for POC learning. Shape (snapshot of the last page carrying rate-limit info): `{ "remaining": number|null, "resetAt": ISO|null, "raw": Record<string,string>, "observedAt": ISO }`; header names matching `authorization|token|cookie` are dropped. The collector logs one `collector run done` line per job with `jobId, queryId, windowReason, status, errorCode, pages, fetched, inserted, updated, duplicated, invalid`.
 
 ## 10. Configuration
 
