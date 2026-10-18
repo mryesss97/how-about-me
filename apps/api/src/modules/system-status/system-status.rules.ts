@@ -43,3 +43,38 @@ export function deriveCollectorStatus(i: CollectorStatusInput): CollectorStatus 
     return "degraded";
   return "healthy";
 }
+
+export type AnalysisStatus = "healthy" | "degraded" | "budget_paused";
+
+/** Above this 24h failure rate analysis is `degraded` (doc 09 §4). */
+export const ANALYSIS_FAILURE_RATE_DEGRADED_ABOVE = 0.1;
+/** Oldest open run older than this is `degraded` (doc 09 §4). */
+export const ANALYSIS_LAG_DEGRADED_SECONDS = 1800;
+
+/** FR-176: age of the oldest pending|processing run; 0 when none is open (doc 09 §4). */
+export function computeAnalysisLagSeconds(oldestOpenCreatedAt: Date | null, now: Date): number {
+  if (!oldestOpenCreatedAt) return 0;
+  return Math.max(0, Math.floor((now.getTime() - oldestOpenCreatedAt.getTime()) / 1000));
+}
+
+/** failed / (failed + completed) over 24h; empty sample → null. */
+export function computeAnalysisFailureRate(c: { failed: number; completed: number }): number | null {
+  const total = c.failed + c.completed;
+  return total === 0 ? null : c.failed / total;
+}
+
+export type AnalysisStatusInput = {
+  budgetExceeded: boolean;
+  authPaused: boolean;
+  failureRate24h: number | null;
+  lagSeconds: number;
+};
+
+/** doc 09 §4 / doc 07 §9: budget_paused > degraded (auth pause, failure rate, lag) > healthy. */
+export function deriveAnalysisStatus(i: AnalysisStatusInput): AnalysisStatus {
+  if (i.budgetExceeded) return "budget_paused";
+  if (i.authPaused) return "degraded";
+  if (i.failureRate24h !== null && i.failureRate24h > ANALYSIS_FAILURE_RATE_DEGRADED_ABOVE) return "degraded";
+  if (i.lagSeconds > ANALYSIS_LAG_DEGRADED_SECONDS) return "degraded";
+  return "healthy";
+}

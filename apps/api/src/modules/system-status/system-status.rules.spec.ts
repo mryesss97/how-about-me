@@ -1,4 +1,11 @@
-import { computeCollectionLagSeconds, computeSuccessRate, deriveCollectorStatus } from "./system-status.rules";
+import {
+  computeAnalysisFailureRate,
+  computeAnalysisLagSeconds,
+  computeCollectionLagSeconds,
+  computeSuccessRate,
+  deriveAnalysisStatus,
+  deriveCollectorStatus,
+} from "./system-status.rules";
 
 const now = new Date("2026-10-18T00:00:00Z");
 const ago = (s: number) => new Date(now.getTime() - s * 1000);
@@ -36,5 +43,36 @@ describe("system-status rules (doc 09 §4, FR-176, TC-SYS-003/005)", () => {
   it("success rate counts partial as success; empty → null", () => {
     expect(computeSuccessRate({ success: 6, partial: 2, failed: 2 })).toBe(0.8);
     expect(computeSuccessRate({ success: 0, partial: 0, failed: 0 })).toBeNull();
+  });
+});
+
+describe("analysis status rules (T-077, doc 09 §4, TC-SYS-004)", () => {
+  const ok = { budgetExceeded: false, authPaused: false, failureRate24h: 0, lagSeconds: 0 };
+
+  it("lag: no open run → 0; floors seconds; never negative", () => {
+    expect(computeAnalysisLagSeconds(null, now)).toBe(0);
+    expect(computeAnalysisLagSeconds(new Date(now.getTime() - 1999), now)).toBe(1);
+    expect(computeAnalysisLagSeconds(new Date(now.getTime() + 5000), now)).toBe(0);
+  });
+
+  it("failure rate: empty sample → null; failed/(failed+completed)", () => {
+    expect(computeAnalysisFailureRate({ failed: 0, completed: 0 })).toBeNull();
+    expect(computeAnalysisFailureRate({ failed: 1, completed: 3 })).toBe(0.25);
+  });
+
+  it("budget_paused wins over every degraded signal", () => {
+    expect(deriveAnalysisStatus({ budgetExceeded: true, authPaused: true, failureRate24h: 1, lagSeconds: 9999 })).toBe(
+      "budget_paused",
+    );
+  });
+
+  it("degraded on auth pause, rate > 0.1, lag > 1800; boundaries stay healthy", () => {
+    expect(deriveAnalysisStatus(ok)).toBe("healthy");
+    expect(deriveAnalysisStatus({ ...ok, authPaused: true })).toBe("degraded");
+    expect(deriveAnalysisStatus({ ...ok, failureRate24h: 0.11 })).toBe("degraded");
+    expect(deriveAnalysisStatus({ ...ok, failureRate24h: 0.1 })).toBe("healthy");
+    expect(deriveAnalysisStatus({ ...ok, failureRate24h: null })).toBe("healthy");
+    expect(deriveAnalysisStatus({ ...ok, lagSeconds: 1801 })).toBe("degraded");
+    expect(deriveAnalysisStatus({ ...ok, lagSeconds: 1800 })).toBe("healthy");
   });
 });

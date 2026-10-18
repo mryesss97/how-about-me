@@ -446,6 +446,8 @@ Details (T-055):
 
 **Mark stale by version (T-145, BR-023).** In the project, `pending|completed` runs of `version` → `stale`; then up to `cap = ANALYSIS_BULK_MAX` affected posts (newest `published_at` first, without an open run, effective relevance not `irrelevant` — BR-016) get a new run `trigger=version_change` at the current effective version. `dryRun=true` returns the would-be `marked` count and changes nothing. Audit `analysis.bulk_reanalyze_requested` with `scope:"version_change"`, `filters:{ version }`, `counts:{ marked, enqueued, cap }`.
 
+**Analysis runs ops (T-077, FR-175).** List sorted `createdAt desc, id desc` (keyset cursor, `count=true` adds `totalCount`); `from`/`to` filter `created_at` (`[from, to)`). Retry is **in place**: the same run goes `failed → pending` (same `id`, `attempt_count = 0`, lock/started/completed/error fields cleared). Errors: `404 NOT_FOUND` (not in the project); `409 ANALYSIS_RUN_NOT_RETRYABLE` (status not `failed`); `409 ANALYSIS_ALREADY_PENDING` when the post has another `pending|processing` run (BR-024). `retry-failed` resets at most `limit` failed runs, newest first, only the latest failed run per post and only posts without an open run (BR-024); no throttle. Both audit `analysis.retry_requested` (single: `entity_type=analysis_run`, metadata `{ postIds:[postId] }`; bulk: `entity_type=monitoring_project`, metadata `{ scope:"failed", counts:{ enqueued, limit } }`). While the daily budget is exceeded the worker does not claim retried runs; they stay `pending` until the UTC reset (doc 07 §9).
+
 Run object: `{ id, postId, status, trigger, effectiveVersion, attemptCount, errorCode, errorMessage, startedAt, completedAt, createdAt }`.
 
 ### Analysis settings (P1, FR-190, T-151)
@@ -465,7 +467,7 @@ PATCH behaviour: one transaction, project row locked `FOR UPDATE` (concurrent ad
 
 ### `GET /projects/:projectId/system-status`
 
-Any project member may read. Computation rules: [09-observability.md §4](09-observability.md). v1 (T-057): the `analysis` block is a zero/`null` stub until T-077.
+Any project member may read. Computation rules: [09-observability.md §4](09-observability.md). The `analysis` block is filled by T-077.
 
 ```json
 {
@@ -524,23 +526,23 @@ Any project member may read. Computation rules: [09-observability.md §4](09-obs
 
 ## 13. Error codes
 
-| Code                                                                                                                                                      | HTTP      | When                                              |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------------------------------------------------- |
-| `VALIDATION_ERROR`                                                                                                                                        | 400       | Zod failure; `details.issues[]`                   |
-| `QUERY_IMMUTABLE_FIELD`                                                                                                                                   | 400       | patching `queryValue/queryType`                   |
-| `BACKFILL_WINDOW_INVALID`                                                                                                                                 | 400       | until ≤ since or > max days                       |
-| `AUTH_MISSING_TOKEN` / `AUTH_INVALID_TOKEN` / `AUTH_TOKEN_EXPIRED`                                                                                        | 401       |                                                   |
-| `FORBIDDEN_ROLE` / `FORBIDDEN_PROJECT`                                                                                                                    | 403       |                                                   |
-| `NOT_FOUND`                                                                                                                                               | 404       |                                                   |
-| `QUERY_DUPLICATE` / `SYNC_ALREADY_RUNNING` / `SYNC_JOB_NOT_RETRYABLE` / `LAST_ADMIN` / `MEMBER_EXISTS` / `ANALYSIS_ALREADY_PENDING` / `OVERRIDE_CONFLICT` | 409       |                                                   |
-| `EXPORT_TOO_LARGE`                                                                                                                                        | 413       |                                                   |
-| `RATE_LIMITED`                                                                                                                                            | 429       | internal throttling                               |
-| `THREADS_UNAUTHORIZED` / `THREADS_FORBIDDEN`                                                                                                              | 502       | surfaced on verify; jobs store code               |
-| `THREADS_RATE_LIMITED` / `THREADS_UPSTREAM_ERROR` / `THREADS_TIMEOUT` / `THREADS_MALFORMED_RESPONSE`                                                      | 503 / 502 |                                                   |
-| `INTEGRATION_NOT_CONFIGURED`                                                                                                                              | 409       | run/verify without token                          |
-| `INTERNAL`                                                                                                                                                | 500       | never leaks stack                                 |
-| `ANALYSIS_PROVIDER_ERROR` (retryable: 429/5xx/timeout/network) / `ANALYSIS_PROVIDER_AUTH` (401/403) / `ANALYSIS_PROVIDER_BAD_REQUEST` (other 4xx)         | 502       | run `error_code` only (T-071)                     |
-| `ANALYSIS_SCHEMA_INVALID`                                                                                                                                 | 500       | provider response shape invalid; run `error_code` |
+| Code                                                                                                                                                                                     | HTTP      | When                                              |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------------------------------------------------- |
+| `VALIDATION_ERROR`                                                                                                                                                                       | 400       | Zod failure; `details.issues[]`                   |
+| `QUERY_IMMUTABLE_FIELD`                                                                                                                                                                  | 400       | patching `queryValue/queryType`                   |
+| `BACKFILL_WINDOW_INVALID`                                                                                                                                                                | 400       | until ≤ since or > max days                       |
+| `AUTH_MISSING_TOKEN` / `AUTH_INVALID_TOKEN` / `AUTH_TOKEN_EXPIRED`                                                                                                                       | 401       |                                                   |
+| `FORBIDDEN_ROLE` / `FORBIDDEN_PROJECT`                                                                                                                                                   | 403       |                                                   |
+| `NOT_FOUND`                                                                                                                                                                              | 404       |                                                   |
+| `QUERY_DUPLICATE` / `SYNC_ALREADY_RUNNING` / `SYNC_JOB_NOT_RETRYABLE` / `ANALYSIS_RUN_NOT_RETRYABLE` / `LAST_ADMIN` / `MEMBER_EXISTS` / `ANALYSIS_ALREADY_PENDING` / `OVERRIDE_CONFLICT` | 409       |                                                   |
+| `EXPORT_TOO_LARGE`                                                                                                                                                                       | 413       |                                                   |
+| `RATE_LIMITED`                                                                                                                                                                           | 429       | internal throttling                               |
+| `THREADS_UNAUTHORIZED` / `THREADS_FORBIDDEN`                                                                                                                                             | 502       | surfaced on verify; jobs store code               |
+| `THREADS_RATE_LIMITED` / `THREADS_UPSTREAM_ERROR` / `THREADS_TIMEOUT` / `THREADS_MALFORMED_RESPONSE`                                                                                     | 503 / 502 |                                                   |
+| `INTEGRATION_NOT_CONFIGURED`                                                                                                                                                             | 409       | run/verify without token                          |
+| `INTERNAL`                                                                                                                                                                               | 500       | never leaks stack                                 |
+| `ANALYSIS_PROVIDER_ERROR` (retryable: 429/5xx/timeout/network) / `ANALYSIS_PROVIDER_AUTH` (401/403) / `ANALYSIS_PROVIDER_BAD_REQUEST` (other 4xx)                                        | 502       | run `error_code` only (T-071)                     |
+| `ANALYSIS_SCHEMA_INVALID`                                                                                                                                                                | 500       | provider response shape invalid; run `error_code` |
 
 ## 14. Versioning & compatibility
 
