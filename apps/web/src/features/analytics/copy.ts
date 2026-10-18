@@ -13,6 +13,9 @@ export const bubbleMapCopy = {
   filterLabel: "Lọc theo cảm xúc chủ đạo",
   filterAll: "Tất cả",
   canvasLabel: "Bong bóng bản đồ cảm xúc",
+  // #389: bubbles too small for in-bubble text are listed under the canvas.
+  smallLabel: "Chủ đề nhỏ:",
+  smallLabelPhrases: "Cụm từ nhỏ:",
   empty: "Chưa có lượt nhắc đã phân tích trong khoảng này",
   emptyFiltered: (s: SentimentLabel) => `Không có chủ đề nào mà cảm xúc ${sentimentWord(s)} chiếm ưu thế.`,
   legend: "Diện tích = lượt nhắc có cảm xúc · Độ đậm = tỷ lệ cảm xúc chủ đạo",

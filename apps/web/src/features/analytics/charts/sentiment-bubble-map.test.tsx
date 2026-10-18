@@ -1,6 +1,8 @@
-import type { PhraseSentimentResponse } from "@how-about-me/contracts";
+import type { PhraseSentimentResponse, TopicSentimentResponse } from "@how-about-me/contracts";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { BubbleLabel } from "@/features/shared/bubbles/bubble-3d";
+import { type BubbleDatum, toTopicBubbles } from "./bubble-layout";
 import { SentimentBubbleMap } from "./sentiment-bubble-map";
 import { emptyTopicSentiment, topicSentimentFixture } from "./topic-sentiment-fixture.test-utils";
 
@@ -219,5 +221,88 @@ describe("SentimentBubbleMap (#222)", () => {
       await click(screen.getByRole("radio", { name: "Chủ đề" }));
       expect(onModeChange).toHaveBeenCalledWith("topics");
     });
+  });
+});
+
+describe("#389 sentiment always has a word or icon (BR-017)", () => {
+  const [datum] = toTopicBubbles([
+    { topic: "ticket", positive: 3, neutral: 0, negative: 1, total: 4, negativeShare: 0.25 },
+  ]);
+  const rows = (): TopicSentimentResponse => ({
+    rows: [
+      { topic: "ticket", positive: 300, neutral: 50, negative: 50, total: 400, negativeShare: 0.125 },
+      { topic: "price", positive: 1, neutral: 1, negative: 1, total: 3, negativeShare: 1 / 3 },
+    ],
+  });
+  afterEach(() => vi.restoreAllMocks());
+  // Small canvas so the minimum radius (25 % of the largest) falls below LABEL_COMPACT_R.
+  function smallCanvas() {
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(200);
+    vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(150);
+  }
+
+  it("BR-017 #389: compact label (r ≥ 44) carries the sentiment word", () => {
+    const { container } = render(<BubbleLabel d={datum as BubbleDatum} r={50} tipBelow={false} />);
+    expect(container.querySelector("span[aria-hidden].flex")?.textContent).toContain("75,0% tích cực");
+  });
+
+  it("BR-017 #389: narrow compact label (36–44) carries the sentiment icon + %", () => {
+    const { container } = render(<BubbleLabel d={datum as BubbleDatum} r={40} tipBelow={false} />);
+    const label = container.querySelector("span[aria-hidden].flex");
+    expect(label?.querySelector('[data-icon="positive"]')).not.toBeNull();
+    expect(label?.textContent).toContain("75,0%");
+  });
+
+  it("BR-017 #389: full label keeps the share line and mentions", () => {
+    const { container } = render(<BubbleLabel d={datum as BubbleDatum} r={60} tipBelow={false} />);
+    expect(container.textContent).toContain("75,0% tích cực");
+    expect(container.textContent).toContain("4 lượt nhắc");
+  });
+
+  it("#389: tiny bubbles are listed in the 'Chủ đề nhỏ:' row; clicking selects the bubble", async () => {
+    smallCanvas();
+    render(<SentimentBubbleMap data={rows()} getHref={getHref} />);
+    await act(async () => {});
+    expect(screen.getByText("Chủ đề nhỏ:")).toBeInTheDocument();
+    const plate = screen.getByRole("button", { name: "Giá · 33,3% tiêu cực (3)" });
+    await click(plate);
+    expect(plate).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Giá, 33,3% tiêu cực, 3 lượt nhắc" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("complementary")).toHaveTextContent("Giá");
+  });
+
+  it("#389: no tiny bubbles → no row", () => {
+    render(<SentimentBubbleMap data={rows()} />);
+    expect(screen.queryByText("Chủ đề nhỏ:")).toBeNull();
+  });
+
+  it("#389: a chip that hides the tiny topic removes it from the row", async () => {
+    smallCanvas();
+    render(<SentimentBubbleMap data={rows()} />);
+    await act(async () => {});
+    expect(screen.getByText("Chủ đề nhỏ:")).toBeInTheDocument();
+    await click(screen.getByRole("radio", { name: /Tích cực/ }));
+    expect(screen.queryByText("Chủ đề nhỏ:")).toBeNull();
+  });
+
+  it("#389 phrases: row heading is 'Cụm từ nhỏ:'", async () => {
+    smallCanvas();
+    const data: PhraseSentimentResponse = {
+      sentimentAnalyzed: 10,
+      phraseAnalyzed: 8,
+      totalPhrases: 2,
+      minMentions: 2,
+      limit: 30,
+      rows: [
+        { phrase: "giá vé", positive: 1, neutral: 0, negative: 300, total: 301, negativeShare: 300 / 301 },
+        { phrase: "xếp hàng", positive: 2, neutral: 0, negative: 0, total: 2, negativeShare: 0 },
+      ],
+    };
+    render(<SentimentBubbleMap phraseData={data} mode="phrases" />);
+    await act(async () => {});
+    expect(screen.getByText("Cụm từ nhỏ:")).toBeInTheDocument();
   });
 });
