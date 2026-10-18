@@ -5,7 +5,7 @@ import { useRole } from "@/features/auth/use-role";
 import { PageHeader } from "@/features/shared/page-header";
 import { SectionTabs } from "@/features/shared/section-tabs";
 import { QueryState, SkeletonBlock } from "@/features/shared/query-state";
-import { ApiError } from "@/lib/api/client";
+import { toQueryStateError } from "@/lib/semantics/api-errors";
 import { useLiveQueriesForStatus, useSystemStatus } from "./api";
 import { AnalysisFailuresTab } from "./analysis-failures-tab";
 import { AuditLogTab } from "./audit-log-tab";
@@ -40,7 +40,6 @@ export function SystemStatusView() {
   const queries = useLiveQueriesForStatus(project?.id);
   const queriesWithError = queries.data ? countQueriesWithError(queries.data.items) : null;
   const tz = project?.timezone ?? DEFAULT_TZ;
-  const err = status.error instanceof ApiError ? status.error : null;
 
   return (
     <PageFrame>
@@ -59,15 +58,7 @@ export function SystemStatusView() {
       {tab === "overview" ? (
         <QueryState
           isLoading={!project || status.isLoading}
-          error={
-            status.data
-              ? null
-              : status.error
-                ? err
-                  ? { code: err.code, message: err.message, requestId: err.requestId }
-                  : {}
-                : null
-          }
+          error={status.data ? null : toQueryStateError(status.error)}
           onRetry={() => void status.refetch()}
           skeleton={<SkeletonBlock lines={8} className="operate-board p-4" />}
         >

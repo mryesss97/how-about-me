@@ -11,7 +11,7 @@ import { useCurrentProject } from "@/features/auth/use-current-project";
 import { useRole } from "@/features/auth/use-role";
 import { PageHeader } from "@/features/shared/page-header";
 import { ErrorState, QueryState, SkeletonBlock } from "@/features/shared/query-state";
-import { ApiError } from "@/lib/api/client";
+import { toQueryStateError } from "@/lib/semantics/api-errors";
 import { flattenUnique } from "@/lib/query/infinite-list";
 import { useListeningQueries, useListeningQuery } from "./api";
 import { BackfillDialog } from "./backfill-dialog";
@@ -22,13 +22,6 @@ import { QueryFormDrawer } from "./query-form-drawer";
 import { useQueryActions } from "./use-query-actions";
 
 const DEFAULT_TZ = "Asia/Ho_Chi_Minh";
-
-const toStateError = (err: unknown) =>
-  err
-    ? err instanceof ApiError
-      ? { code: err.code, message: err.message, requestId: err.requestId }
-      : { message: "Phản hồi không hợp lệ từ máy chủ." }
-    : null;
 
 type DrawerState = { mode: "create" } | { mode: "edit"; query: ListeningQuery };
 
@@ -126,15 +119,26 @@ export function ListeningQueriesView() {
       <PageHeader title="Truy vấn theo dõi" actions={createButton} />
       {/* Toolbar panel (#340 ops-1): count of loaded queries; the API list has no total, so "đã tải" while more pages remain. */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-[var(--ink)] bg-[var(--enamel-white)] px-4 py-3">
-        <p className="text-sm text-secondary" data-testid="queries-count">
-          {list.hasNextPage ? "Đã tải " : ""}
-          {items.length} truy vấn · {enabledCount} đang bật
-        </p>
+        {/* #392: count only once data exists — never "0 truy vấn" while loading or after a first-load error. */}
+        {pagesLoaded ? (
+          <p className="text-sm text-secondary" data-testid="queries-count">
+            {list.hasNextPage ? "Đã tải " : ""}
+            {items.length} truy vấn · {enabledCount} đang bật
+          </p>
+        ) : !list.error ? (
+          <div
+            aria-hidden
+            data-testid="queries-count-skeleton"
+            className="h-4 w-40 animate-pulse rounded-md bg-secondary"
+          />
+        ) : (
+          <span />
+        )}
         <Toggle size="sm" label="Hiện truy vấn đã xoá" isSelected={includeDeleted} onChange={setIncludeDeleted} />
       </div>
       <QueryState
         isLoading={!project || list.isLoading}
-        error={pagesLoaded ? null : toStateError(list.error)}
+        error={pagesLoaded ? null : toQueryStateError(list.error)}
         onRetry={() => void list.refetch()}
         isEmpty={items.length === 0}
         skeleton={<SkeletonBlock lines={6} className="operate-board p-4" />}
@@ -163,7 +167,7 @@ export function ListeningQueriesView() {
             {...handlers}
           />
           {pagesLoaded && list.isFetchNextPageError ? (
-            <ErrorState error={toStateError(list.error) ?? {}} onRetry={() => void list.fetchNextPage()} />
+            <ErrorState error={toQueryStateError(list.error) ?? {}} onRetry={() => void list.fetchNextPage()} />
           ) : null}
           {list.hasNextPage ? (
             <div className="flex justify-center">

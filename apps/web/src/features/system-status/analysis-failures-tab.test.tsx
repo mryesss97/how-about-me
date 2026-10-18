@@ -91,7 +91,7 @@ describe("AnalysisFailuresTab (FR-175, TC-SYS-012)", () => {
   it("shows the error state", async () => {
     apiFetch.mockRejectedValue(new ApiError(500, "INTERNAL", "boom", "req-9"));
     setup(false);
-    expect(await screen.findByText(/boom/)).toBeInTheDocument();
+    expect(await screen.findByText("Máy chủ gặp sự cố. Thử lại sau ít phút.")).toBeInTheDocument(); // #392
   });
 
   it("FR-015 UX: analyst sees no retry actions", async () => {
