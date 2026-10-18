@@ -52,3 +52,8 @@ export function formatDuration(seconds: number): string {
 
 /** "Xem lượt đồng bộ" target (#43). The sync-jobs detail view lands with #55/#56; the params are reserved for it. */
 export const jobHref = (jobId: string) => `/system-status?tab=sync-jobs&job=${jobId}`;
+
+/** The last error is history when a successful sync happened after it (#342 flows-5): shown grey, not red. */
+export function isStaleError(q: Pick<ListeningQuery, "lastError" | "lastSuccessfulSyncAt">): boolean {
+  return !!q.lastError && !!q.lastSuccessfulSyncAt && Date.parse(q.lastSuccessfulSyncAt) > Date.parse(q.lastError.at);
+}

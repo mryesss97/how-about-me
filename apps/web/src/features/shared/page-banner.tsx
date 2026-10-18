@@ -72,15 +72,16 @@ export function PageBanner({
   );
 }
 
-/** Shown whenever the latest sync for any enabled query failed — totals in range may be short (FR-081). */
-export function SyncFailedBanner({ href = "/system-status" }: { href?: string }) {
+/** Shown whenever the latest sync for any enabled query failed — totals in range may be short (FR-081). Links straight
+ * to the failed sync jobs (#342). */
+export function SyncFailedBanner({ href = "/system-status?tab=sync-jobs&status=failed" }: { href?: string }) {
   return (
     <PageBanner
       tone="warning"
       title="Lần đồng bộ Threads gần nhất bị lỗi. Dữ liệu có thể chưa đầy đủ."
       action={
         <a href={href} className="text-sm font-semibold text-secondary underline underline-offset-2">
-          Xem trạng thái hệ thống
+          Xem lượt đồng bộ lỗi
         </a>
       }
     />

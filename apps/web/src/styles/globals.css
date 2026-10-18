@@ -695,6 +695,41 @@ input[type="search"]::-webkit-search-cancel-button {
   text-transform: uppercase;
 }
 
+/* System status plate (#342): success = green enamel, error = red enamel, the rest ink on white with a 2px keyline.
+   Shared by overview cards, sync-jobs table and drawer. The text label always carries the meaning (BR-017). */
+.status-plate {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  border: 2px solid var(--ink);
+  border-radius: 2px;
+  background: var(--enamel-white);
+  color: var(--ink);
+  padding: 1px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.status-plate[data-tone="success"] {
+  border-color: var(--green-enamel);
+  background: var(--green-enamel);
+  color: #fff;
+}
+
+.status-plate[data-tone="error"] {
+  border-color: var(--red-enamel);
+  background: var(--red-enamel);
+  color: #fff;
+}
+
+/* On enamel the dot turns white so it stays visible. */
+.status-plate[data-tone="success"] .status-plate-dot,
+.status-plate[data-tone="error"] .status-plate-dot {
+  background: #fff;
+}
+
 /* ── Phrase detail hero (#276): the phrase as a large enamel board (same tones as the landing boards) ────────── */
 .term-hero {
   position: relative;

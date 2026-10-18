@@ -33,10 +33,13 @@ describe("OverviewBanners (FR-134)", () => {
     expect(screen.getByRole("link", { name: "Xem lượt nhắc đang chờ" })).toHaveAttribute("href", "/mentions?x=1");
   });
 
-  it("TC-DASH-010: failed or partial sync shows sync banner linking to System Status", () => {
+  it("TC-DASH-010: failed or partial sync shows sync banner linking to the failed sync jobs (#342)", () => {
     render(<OverviewBanners data={dq({ lastSyncStatus: "failed" })} canManage={false} />);
     expect(screen.getByText("Lần đồng bộ Threads gần nhất bị lỗi. Dữ liệu có thể chưa đầy đủ.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Xem trạng thái hệ thống" })).toHaveAttribute("href", "/system-status");
+    expect(screen.getByRole("link", { name: "Xem lượt đồng bộ lỗi" })).toHaveAttribute(
+      "href",
+      "/system-status?tab=sync-jobs&status=failed",
+    );
     expect(bannersFor(dq({ lastSyncStatus: "partial" }))).toEqual(["sync"]);
   });
 
