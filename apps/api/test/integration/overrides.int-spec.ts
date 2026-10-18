@@ -120,7 +120,8 @@ describe("Analysis overrides (T-142)", () => {
     expect(row.overrideValue).toEqual({ value: "neutral" });
     const [a] = await audits("override.created");
     expect(a).toMatchObject({ entityType: "analysis_override", entityId: o.id });
-    expect(a?.metadata).toMatchObject({ field: "sentiment", before: "negative", after: "neutral" });
+    // #393: postIds must survive the audit metadata allow-list (FR-200).
+    expect(a?.metadata).toMatchObject({ field: "sentiment", before: "negative", after: "neutral", postIds: [mid] });
   });
 
   it("TC-REV-002 / A9 / BR-025: overview negative numerator drops by 1, denominator unchanged", async () => {
@@ -164,7 +165,9 @@ describe("Analysis overrides (T-142)", () => {
     await api(app, analyst.token)
       .delete(`${ov(mid)}/${o.id}`)
       .expect(204);
-    expect(await audits("override.revoked")).toHaveLength(1);
+    const revoked = await audits("override.revoked");
+    expect(revoked).toHaveLength(1);
+    expect(revoked[0]?.metadata).toMatchObject({ field: "sentiment", postIds: [mid] }); // #393
   });
 
   it("TC-REV-005 / BR-025 / BR-003: intents override replaces AI labels in list, filters, overview and distributions", async () => {

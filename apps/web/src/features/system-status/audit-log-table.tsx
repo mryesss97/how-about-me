@@ -6,7 +6,7 @@ import { Fragment, useState } from "react";
 import { PlaqueButton } from "@/features/shared/plaque-button";
 import { DASH } from "@/lib/format/number";
 import { formatDateTime } from "@/lib/time/format";
-import { auditEntityHref, auditEntityText } from "./audit-format";
+import { auditEntityCompact, auditEntityHref, auditEntityText, type NameMaps } from "./audit-format";
 import { AuditLogDetail } from "./audit-log-detail";
 import { auditActionText } from "./format";
 
@@ -20,6 +20,7 @@ export type AuditListProps = {
   tz: string;
   queryNames: Map<string, string>;
   memberNames: Map<string, string>;
+  project?: NameMaps["project"];
 };
 
 /** Open/closed detail rows (each view keeps its own; only one view is visible at a time). */
@@ -37,18 +38,25 @@ export function useToggleSet() {
 
 export const hasDetail = (l: AuditLog) => l.metadata != null || l.requestId != null;
 
-/** #343 (ops-12): the audited object links to where it lives; unknown types stay text. */
+/**
+ * #343 (ops-12): the audited object links to where it lives; unknown types stay text (BR-017: link text, not colour
+ * alone). #393: named in words, full id only in `title`; `compact` drops what the action line already says (mobile).
+ */
 export function AuditEntity({
   log,
   names,
   className,
+  compact,
 }: {
   log: AuditLog;
-  names: Omit<AuditListProps, "items" | "tz">;
+  names: NameMaps;
   className?: string;
+  compact?: { actionText: string };
 }) {
-  const text = auditEntityText(log, names);
-  if (!text) return <>{DASH}</>;
+  const text = compact
+    ? (auditEntityCompact(log, compact.actionText, names)?.text ?? null)
+    : auditEntityText(log, names);
+  if (!text) return compact ? null : <>{DASH}</>;
   const href = auditEntityHref(log);
   return href ? (
     <Link
@@ -64,7 +72,7 @@ export function AuditEntity({
 }
 
 /** Audit log list (FR-201, UX §3.6), `md`+ only (#343 cards below). "Chi tiết" expands metadata + request id. */
-export function AuditLogTable({ items, tz, queryNames, memberNames }: AuditListProps) {
+export function AuditLogTable({ items, tz, queryNames, memberNames, project }: AuditListProps) {
   const { open, toggle } = useToggleSet();
   return (
     <div className="operate-board hidden min-w-0 md:block">
@@ -95,7 +103,7 @@ export function AuditLogTable({ items, tz, queryNames, memberNames }: AuditListP
                       {auditActionText(l.action)}
                     </td>
                     <td className={TD}>
-                      <AuditEntity log={l} names={{ queryNames, memberNames }} />
+                      <AuditEntity log={l} names={{ queryNames, memberNames, project }} />
                     </td>
                     <td className={`${TD} text-right`}>
                       {hasDetail(l) ? (
