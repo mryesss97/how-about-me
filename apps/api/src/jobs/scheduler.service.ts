@@ -5,6 +5,7 @@ import { hostname } from "node:os";
 import { PinoLogger } from "nestjs-pino";
 import { AppError } from "../common/errors/app.error";
 import { APP_CONFIG, type AppConfig } from "../config/config.module";
+import { CircuitBreakerService } from "../modules/collector/circuit-breaker.service";
 import { COLLECTOR_RUNNER, type ClaimedQuery, type CollectorRunner, type RunOutcome } from "./collector-runner";
 import { computeNextRunAt } from "./next-run";
 import { QueryClaimRepository } from "./query-claim.repository";
@@ -27,6 +28,7 @@ export class SchedulerService implements OnModuleInit, BeforeApplicationShutdown
     private readonly repo: QueryClaimRepository,
     private readonly registry: SchedulerRegistry,
     private readonly logger: PinoLogger,
+    @Optional() @Inject(CircuitBreakerService) private readonly breaker: CircuitBreakerService | null = null,
   ) {
     this.logger.setContext(SchedulerService.name);
   }
@@ -81,6 +83,11 @@ export class SchedulerService implements OnModuleInit, BeforeApplicationShutdown
   /** Never throws: one query's failure must not abort the tick. */
   private async runOne(runner: CollectorRunner, q: ClaimedQuery): Promise<void> {
     try {
+      // FR-084: in half-open only one query of the project runs as the probe; the rest keep their schedule.
+      if (this.breaker && !(await this.breaker.tryAcquireProbe(q.projectId))) {
+        await this.repo.releaseLock(q.id, this.workerId);
+        return;
+      }
       let outcome: RunOutcome;
       try {
         outcome = await runner.run(q, this.abort.signal);
@@ -112,9 +119,20 @@ export class SchedulerService implements OnModuleInit, BeforeApplicationShutdown
               }
             : undefined,
       });
+      await this.recordCircuit(q.projectId, outcome);
       if (affected === 0) this.logger.warn({ queryId: q.id, workerId: this.workerId }, "lock lost before completeRun");
     } catch (err: unknown) {
       this.logger.error({ err, queryId: q.id }, "collector run bookkeeping failed");
+    }
+  }
+
+  /** Breaker bookkeeping failures are logged and never break the tick (FR-084). */
+  private async recordCircuit(projectId: string, outcome: RunOutcome): Promise<void> {
+    if (!this.breaker) return;
+    try {
+      await this.breaker.recordOutcome(projectId, outcome);
+    } catch (err: unknown) {
+      this.logger.error({ err, projectId }, "collector circuit bookkeeping failed");
     }
   }
 
