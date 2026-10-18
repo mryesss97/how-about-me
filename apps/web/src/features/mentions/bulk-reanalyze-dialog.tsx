@@ -140,7 +140,7 @@ export function BulkReanalyzeButton({ pid, params }: { pid: string; params: Reco
       <button
         type="button"
         onClick={() => setSnapshot(params)}
-        className="plaque-button inline-flex items-center gap-2 px-3 py-1.5 outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2"
+        className="plaque-button inline-flex min-h-11 md:min-h-0 items-center gap-2 px-3 py-1.5 outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2"
       >
         <RefreshCw01 className="size-4" aria-hidden />
         Phân tích lại

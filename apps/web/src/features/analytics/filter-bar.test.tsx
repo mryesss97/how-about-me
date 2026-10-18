@@ -5,6 +5,7 @@ import { FilterBar } from "./filter-bar";
 import type * as QueryOptionsModule from "./use-query-options";
 import { toQueryFilterOptions } from "./use-query-options";
 
+const mockState = vi.hoisted(() => ({ noQueries: false }));
 const Q_KW = "00000000-0000-4000-8000-000000000001";
 const Q_TAG = "00000000-0000-4000-8000-000000000002";
 const Q_DEL = "00000000-0000-4000-8000-000000000003";
@@ -15,7 +16,7 @@ const queries = [
 ];
 vi.mock("./use-query-options", async (orig) => {
   const mod: typeof QueryOptionsModule = await orig();
-  return { ...mod, useQueryFilterOptions: () => mod.toQueryFilterOptions(queries) };
+  return { ...mod, useQueryFilterOptions: () => mod.toQueryFilterOptions(mockState.noQueries ? [] : queries) };
 });
 
 function setup(search = "", props: { showCompare?: boolean } = {}) {
@@ -45,13 +46,23 @@ describe("FilterBar (UX §2.1)", () => {
     expect(lastQuery()).not.toContain("sentiment");
   });
 
-  it("BR-016: deselecting the last relevance keeps relevant", async () => {
-    const { onUrlUpdate } = setup();
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Liên quan" })));
+  it("BR-016: Mức liên quan is a multi-select; deselecting the last value keeps relevant", async () => {
+    const { onUrlUpdate } = setup("?relevance=uncertain");
+    expect(screen.getByText("Mức liên quan")).toBeInTheDocument();
+    // The trigger shows the single selected value (#329).
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Chưa chắc" })));
+    await act(async () => fireEvent.click(await screen.findByRole("option", { name: /Chưa chắc/ })));
+    await waitFor(() => expect(onUrlUpdate).toHaveBeenCalled());
     // Default [relevant] is cleared from the URL, i.e. relevance stays relevant.
+    expect(onUrlUpdate.mock.calls.at(-1)?.[0].searchParams.get("relevance")).toBeNull();
+  });
+
+  it("BR-016: Bỏ chọn on Mức liên quan resets to relevant, never empty", async () => {
+    const { onUrlUpdate } = setup("?relevance=uncertain,irrelevant");
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "2 đã chọn" })));
+    await act(async () => fireEvent.click(await screen.findByRole("button", { name: "Bỏ chọn" })));
     await waitFor(() => expect(onUrlUpdate).toHaveBeenCalled());
     expect(onUrlUpdate.mock.calls.at(-1)?.[0].searchParams.get("relevance")).toBeNull();
-    expect(screen.getByRole("button", { name: "Liên quan" })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("reset clears every filter", async () => {
@@ -62,12 +73,40 @@ describe("FilterBar (UX §2.1)", () => {
     expect(lastQuery()).toBe("");
   });
 
+  it("#332: Truy vấn is hidden when the project has no queries", () => {
+    mockState.noQueries = true;
+    try {
+      setup();
+      expect(screen.queryByText("Truy vấn")).not.toBeInTheDocument();
+    } finally {
+      mockState.noQueries = false;
+    }
+  });
+
+  it("#332: no Đặt lại with default filters", () => {
+    setup();
+    expect(screen.queryByRole("button", { name: "Đặt lại" })).not.toBeInTheDocument();
+  });
+
+  it("#332: secondary filters count in Bộ lọc khác (n) and as chips", () => {
+    setup("?sentiment=negative&topic=ticket");
+    expect(screen.getByRole("button", { name: "Bộ lọc khác (2)" })).toBeInTheDocument();
+    expect(screen.getByText("Cảm xúc: Tiêu cực")).toBeInTheDocument();
+  });
+
+  it("#332: the date range control shows the effective dates for a preset", () => {
+    setup();
+    expect(screen.getByRole("group", { name: /^Khoảng ngày: \d{2}\/\d{2} – \d{2}\/\d{2}$/ })).toBeInTheDocument();
+  });
+
   it("#240: switching tz on a custom range keeps the calendar dates in the URL", async () => {
     // 1–7 Oct in Asia/Ho_Chi_Minh (GMT+7).
     const { lastQuery, onUrlUpdate } = setup(
       "?preset=custom&from=2026-09-30T17:00:00.000Z&to=2026-10-07T17:00:00.000Z&tz=Asia/Ho_Chi_Minh",
     );
-    const tz = screen.getByRole("combobox", { name: "Múi giờ" });
+    // Múi giờ lives in "Bộ lọc khác" since #332.
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /^Bộ lọc khác/ })));
+    const tz = await screen.findByRole("combobox", { name: /Múi giờ/ });
     await act(async () => {
       tz.focus();
       fireEvent.change(tz, { target: { value: "UTC" } });
@@ -83,8 +122,9 @@ describe("FilterBar (UX §2.1)", () => {
 
   it("#329 / FR-051: Truy vấn lists project queries, active first, deleted marked, tags with #", async () => {
     setup();
-    // "Truy vấn" is the first multi-select in the bar.
-    await act(async () => fireEvent.click(screen.getAllByRole("button", { name: /Tất cả/ })[0]));
+    expect(screen.getByText("Truy vấn")).toBeInTheDocument();
+    // Truy vấn is the only multi-select in the row showing "Tất cả" (secondary ones sit in "Bộ lọc khác").
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Tất cả" })));
     const options = await screen.findAllByRole("option");
     expect(options.map((o) => o.textContent)).toEqual(["1zone", "#1zone", "eventista refundĐã xoá"]);
   });

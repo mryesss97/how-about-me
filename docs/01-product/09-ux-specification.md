@@ -41,6 +41,10 @@ Concept: an ear + a speech bubble — "Lắng nghe. Thấu hiểu." Palette: Sky
 - Changing the timezone keeps a custom range's **calendar dates** (#240): the selected days are re-read as `[from 00:00, to+1 00:00)` in the new timezone (e.g. 1–7 Oct stays 1–7 Oct). Only ranges whose ends are both 00:00 in the old timezone are re-zoned; exact-instant ranges (e.g. hour-bucket drill-down, FR-142) keep their instants. Relative presets (1h/24h/7d/30d) only change `tz`. `tz`/`from`/`to` update in one URL change.
 - All filters sync to the URL query string (`nuqs`). Changing a filter refetches all widgets.
 - Applied filters show as removable chips under the bar.
+- **Compact layout (#332).** From `lg` (1024 px) the bar is **one row** (wraps only when it does not fit, e.g. 1024–1279 px), order unchanged: presets · date-range button · Truy vấn · Mức liên quan · **"Bộ lọc khác (n)"** · compare (Overview) · "Đặt lại". The date-range button always shows the effective dates (`12/10 – 19/10`, hours for 1h/24h, `· GMT±x` only when tz ≠ default); picking days switches to custom. **Mức liên quan** is a multi-select; an empty selection or "Bỏ chọn" falls back to `relevant` (BR-016). **Truy vấn** is hidden when the project has no queries. **"Đặt lại"** appears only when a filter differs from the defaults (incl. compare; `q`/sort belong to the Mentions toolbar).
+- **"Bộ lọc khác (n)"** is a popover (2-column grid, applied live) with Cảm xúc · An toàn · Ý định · Chủ đề · Ngôn ngữ · Trạng thái phân tích · Múi giờ (BR-017: sentiment and safety stay separate). `n` = number of selected values in those six filters + 1 when tz ≠ default, so it matches the chips.
+- **Below `lg`** the bar is one 48 px sticky summary strip (`top-14`, under the mobile header): `{preset} · {dates} · {n} bộ lọc` (preset dropped for custom, count dropped at 0; `n` counts every non-default filter except time) and a 44 px "Bộ lọc" plaque that opens a bottom sheet (max 85 dvh) with every filter stacked, the chips, and a footer "Đặt lại" / "Xong". Filters apply live; closing returns focus to the plaque. Chips show only inside the sheet.
+- The bar is layered at `z-30`: above card content (KPI stretched links), below the mobile header (`z-40`) and modals (`z-50`).
 - **Queries** options are the project's listening queries (FR-051), loaded by the filter bar itself (#329): active first, then soft-deleted ones marked "Đã xoá" so old drill-down links still show a name. Tags render as `#name` (no double `#`) in the select, the chips and the "Tỷ trọng từ khoá" chart.
 - Multi-select copy is Vietnamese (#329): search "Tìm…", empty "Không có kết quả" / "Thử từ khoá khác.", footer "Bỏ chọn" / "Chọn tất cả"; trigger shows "Tất cả" (none), the value label (one) or "N đã chọn" (several). The keyword-share overlap note (FR-147) is Vietnamese too.
 
@@ -117,7 +121,7 @@ A Saigon street facade of hand-painted shop signboards (direction chosen by the 
 Opened from a landing board (last 30 days) or any `/terms/<term>` URL; inside the app shell; Vietnamese; signboard world.
 
 - **Hero board** — the phrase in quotes as a large enamel board, toned like its landing board (solid red/green at ≥ 60 % dominant share, white with coloured lettering when mixed, white/navy neutral, blank when 0). Line "54,9% TIÊU CỰC · 82 LƯỢT NHẮC CÓ CẢM XÚC": the count is the sentiment denominator with `term`, i.e. exactly the landing board's total (BR-042). A white plate shows the split bar and Tích cực / Trung tính / Tiêu cực with % and counts (BR-017). Links "← Về bức tường cụm từ" (`/`) and "Xem tất cả trong Bài nhắc →" (`/mentions` with the page range pinned as `custom` + the current filters + `term`, FR-142, like a chart drill-down, #331). Note on matching (text or key phrases, BR-042). 0 mentions → "Chưa ai nhắc tới cụm từ này trong khoảng thời gian đã chọn."
-- **Filter bar** (same as Overview, no compare); every request carries `term` (#273).
+- **Filter bar** (same as Overview, no compare); every request carries `term` (#273). The hero line ends with the period (#332): "· 30 NGÀY QUA" for presets, "· 12/10–19/10" for a custom range.
 - **Charts** — mentions over time, sentiment donut, sentiment over time, top topics; drill-downs keep `term`.
 - **Mentions** — "Bài nhắc tới \"…\"" board with the mentions list (`term`, infinite scroll); a row opens the mention detail page with `back=<this page + its query>`, whose back link reads "← Về cụm từ \"…\"" (#331).
 - Invalid term (empty, no letter/digit, > 60 chars) → not found.
@@ -178,7 +182,7 @@ Chart details (#222, decided 2026-10-13):
 ### 3.3 Mentions Explorer (`/mentions`) — P0
 
 - Filter bar (2.1) + search input (`q`, debounced 400 ms) + sort select (Newest, Oldest, Highest safety severity, Lowest confidence, Highest relevance).
-- Header: "2,481 mentions" (total from `count=true`), export button (P1, role-gated).
+- Header: "2,481 mentions" (total from `count=true`), export button (P1, role-gated). Toolbar plaques ("Phân tích lại", "Xuất CSV") are ≥ 44 px tall below `md` (#332).
 - **List** (card rows, 25 per page, "Load more" + infinite scroll):
   - Row left: platform icon, `@username`, published time (relative + absolute on hover, tz), matched query chips.
   - Row middle: 2-line text preview (plain text, highlights `q`), summary in muted text if present.
@@ -271,6 +275,7 @@ Built in #219 (`apps/web/src/features/reviews`):
 - 768–1279 px: collapsed slim sidebar, charts 2-per-row → 1-per-row, tables horizontally scrollable.
   - **Current state (#95):** the slim icon-only sidebar is not built yet (follow-up issue). Shipped behaviour: full sidebar from Tailwind `lg` (1024 px); below that a sticky 56 px header with a 44 px hamburger; the drawer closes on any route change, on tapping any link (including the current page) and on sign-out; one close button, flat ink scrim at 60% (no blur), drawer targets ≥ 44 px (#325). Overview grid is 1-per-row < 1024 px and 2–3-per-row ≥ 1024 px; no horizontal page scroll at 900 px (checked in `e2e/a11y.auth.spec.ts`).
 - < 768 px: read-only Overview/Mentions acceptable; admin forms not optimised.
+- Below `lg` the filter bar is a 48 px sticky summary strip at `top-14` (under the 56 px header) with a bottom sheet (#332, §2.1).
 
 ## 5. Copy guidelines
 
