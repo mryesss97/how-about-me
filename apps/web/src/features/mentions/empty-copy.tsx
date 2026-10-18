@@ -28,7 +28,7 @@ export function mentionsEmptyCopy(opts: {
     case "integration":
       return {
         title: "Kết nối Threads cần được kiểm tra.",
-        description: "Lượt nhắc mới sẽ không được thu thập cho tới khi kết nối hoạt động lại.",
+        description: "Bài nhắc mới sẽ không được thu thập cho tới khi kết nối hoạt động lại.",
         // Link visibility is UX only; the API enforces access (BR-033).
         action: opts.canManage ? (
           <Link href="/settings/integrations" className={linkClass}>
@@ -39,7 +39,7 @@ export function mentionsEmptyCopy(opts: {
     case "sync":
       return {
         title: "Lần đồng bộ Threads gần nhất bị lỗi, dữ liệu có thể chưa đầy đủ.",
-        description: "Danh sách rỗng có thể do dữ liệu chưa được đồng bộ, không hẳn là không có lượt nhắc.",
+        description: "Danh sách rỗng có thể do dữ liệu chưa được đồng bộ, không hẳn là không có bài nhắc.",
         action: (
           <Link href="/system-status" className={linkClass}>
             Xem trạng thái hệ thống
@@ -48,17 +48,17 @@ export function mentionsEmptyCopy(opts: {
       };
     case "pending":
       return {
-        title: `${formatCount(opts.pendingCount)} lượt nhắc đang chờ phân tích.`,
-        description: "Lượt nhắc chưa phân tích có thể bị bộ lọc cảm xúc/chủ đề loại ra cho tới khi phân tích xong.",
+        title: `${formatCount(opts.pendingCount)} bài nhắc đang chờ phân tích.`,
+        description: "Bài nhắc chưa phân tích có thể bị bộ lọc cảm xúc/chủ đề loại ra cho tới khi phân tích xong.",
         action: (
           <Link href={opts.pendingHref ?? "/mentions?analysisStatus=pending,processing"} className={linkClass}>
-            Xem lượt nhắc đang chờ
+            Xem bài nhắc đang chờ
           </Link>
         ),
       };
     default:
       return {
-        title: "Không có lượt nhắc liên quan trong khoảng thời gian này.",
+        title: "Không có bài nhắc liên quan trong khoảng thời gian này.",
         description: "Hãy mở rộng khoảng thời gian hoặc bỏ bớt bộ lọc.",
         action: widen,
       };

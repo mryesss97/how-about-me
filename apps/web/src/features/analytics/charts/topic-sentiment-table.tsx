@@ -82,7 +82,7 @@ function HeatmapCell({
   const share = shareOf(count, row.total);
 
   const to = count > 0 ? (href?.(row.topic, sentiment) ?? null) : null;
-  const label = `${displayLabel("topic", row.topic)} · ${displayLabel("sentiment", sentiment)}: ${formatCount(count)} lượt nhắc, ${formatRate(share)} trên ${formatCount(row.total)} có cảm xúc`;
+  const label = `${displayLabel("topic", row.topic)} · ${displayLabel("sentiment", sentiment)}: ${formatCount(count)} bài nhắc, ${formatRate(share)} trên ${formatCount(row.total)} có cảm xúc`;
   return (
     <td className="relative h-11 min-w-16 rounded-md sm:h-9 sm:min-w-24 p-0 text-center tabular-nums">
       {/* Background layer: sentiment hue (never safety colours, BR-017) at an opacity set by the row share. */}

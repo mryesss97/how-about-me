@@ -8,7 +8,7 @@ import { cx } from "@/utils/cx";
 import { KpiInfoButton } from "./kpi-info-button";
 import { type KpiId, kpiDefinition } from "./kpi-definitions";
 
-export const EMPTY_VALUE_TOOLTIP = "Chưa có lượt nhắc đã phân tích trong khoảng này";
+export const EMPTY_VALUE_TOOLTIP = "Chưa có bài nhắc đã phân tích trong khoảng này";
 export const KPI_DRILL_HINT = "Xem bài nhắc";
 
 export type Delta = { text: string; direction: Direction | "new" };
@@ -75,7 +75,7 @@ export function KpiCard({
       {href ? (
         <Link
           href={href}
-          aria-label={`Xem lượt nhắc: ${label}`}
+          aria-label={`Xem bài nhắc: ${label}`}
           className="absolute inset-0 rounded-[3px] outline-none"
         />
       ) : null}

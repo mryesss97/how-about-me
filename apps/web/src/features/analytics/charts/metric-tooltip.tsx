@@ -14,7 +14,7 @@ export function MetricTooltip({
   title,
   lines,
   denominator,
-  denominatorLabel = "lượt nhắc",
+  denominatorLabel = "bài nhắc",
   previous,
   drillable,
 }: {

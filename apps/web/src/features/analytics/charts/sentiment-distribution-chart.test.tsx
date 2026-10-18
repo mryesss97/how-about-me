@@ -31,6 +31,6 @@ describe("SentimentDistributionChart", () => {
         })}
       />,
     );
-    expect(screen.getByText("Chưa có lượt nhắc đã phân tích trong khoảng này")).toBeInTheDocument();
+    expect(screen.getByText("Chưa có bài nhắc đã phân tích trong khoảng này")).toBeInTheDocument();
   });
 });

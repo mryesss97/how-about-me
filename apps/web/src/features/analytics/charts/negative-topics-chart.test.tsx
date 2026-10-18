@@ -35,7 +35,7 @@ describe("NegativeTopicsChart (T-149)", () => {
 
   it("BR-032: no negative mentions → empty state", () => {
     render(<NegativeTopicsChart data={emptyTopicSentiment()} />);
-    expect(screen.getByText("Không có lượt nhắc tiêu cực trong khoảng này")).toBeInTheDocument();
+    expect(screen.getByText("Không có bài nhắc tiêu cực trong khoảng này")).toBeInTheDocument();
   });
 
   it("loading hides the table toggle; error shows request ID and Retry", () => {

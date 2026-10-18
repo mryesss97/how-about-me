@@ -23,8 +23,8 @@ describe("QueryShareChart (T-150)", () => {
     render(<QueryShareChart data={fixture()} />);
     const [header, ...rows] = await openTable();
     expect(header).toEqual(["Truy vấn", "Số lượng", "Tỷ lệ"]);
-    expect(rows.map((r) => r[0])).toEqual(["beta", "alpha", "gamma", "Lượt nhắc (không trùng)"]);
-    expect(rows.at(-1)).toEqual(["Lượt nhắc (không trùng)", "10", "—"]);
+    expect(rows.map((r) => r[0])).toEqual(["beta", "alpha", "gamma", "Bài nhắc (không trùng)"]);
+    expect(rows.at(-1)).toEqual(["Bài nhắc (không trùng)", "10", "—"]);
     expect(rows.map((r) => r[0])).not.toContain("Tổng");
   });
 
@@ -37,12 +37,12 @@ describe("QueryShareChart (T-150)", () => {
     render(<QueryShareChart data={fixture()} queryNames={{ [Q2]: "#beta" }} />);
     expect(OVERLAP_NOTE).toMatch(/^Một bài nhắc/);
     const [, ...rows] = await openTable();
-    expect(rows.map((r) => r[0])).toEqual(["#beta", "alpha", "gamma", "Lượt nhắc (không trùng)"]);
+    expect(rows.map((r) => r[0])).toEqual(["#beta", "alpha", "gamma", "Bài nhắc (không trùng)"]);
   });
 
   it("BR-032: denominator 0 → empty state", () => {
     render(<QueryShareChart data={{ denominator: 0, distribution: [], note: "overlapping" }} />);
-    expect(screen.getByText("Không có lượt nhắc trong khoảng này")).toBeInTheDocument();
+    expect(screen.getByText("Không có bài nhắc trong khoảng này")).toBeInTheDocument();
   });
 
   it("loading state hides the table toggle", () => {
@@ -64,6 +64,6 @@ describe("QueryShareChart (T-150)", () => {
     await openTable();
     expect(screen.getByRole("link", { name: "beta" })).toHaveAttribute("href", `/mentions?queryIds=${Q2}`);
     expect(screen.queryByRole("link", { name: "gamma" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "Lượt nhắc (không trùng)" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Bài nhắc (không trùng)" })).toBeNull();
   });
 });

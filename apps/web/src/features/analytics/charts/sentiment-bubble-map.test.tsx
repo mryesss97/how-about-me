@@ -7,7 +7,7 @@ import { SentimentBubbleMap } from "./sentiment-bubble-map";
 import { emptyTopicSentiment, topicSentimentFixture } from "./topic-sentiment-fixture.test-utils";
 
 const getHref = (t: string, s: string | null) => `/mentions?topic=${t}${s ? `&sentiment=${s}` : ""}`;
-const TICKET = "Vé, 50,0% tiêu cực, 4 lượt nhắc";
+const TICKET = "Vé, 50,0% tiêu cực, 4 bài nhắc";
 
 function mockReducedMotion(matches: boolean) {
   vi.stubGlobal(
@@ -27,7 +27,7 @@ describe("SentimentBubbleMap (#222)", () => {
   it("NFR-030: each bubble is a named button; chips carry text and icon", () => {
     render(<SentimentBubbleMap data={topicSentimentFixture()} getHref={getHref} />);
     expect(screen.getByRole("button", { name: TICKET })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Giá, 75,0% tích cực, 4 lượt nhắc" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Giá, 75,0% tích cực, 4 bài nhắc" })).toBeInTheDocument();
     const chip = screen.getByRole("radio", { name: /Tiêu cực \(3\)/ });
     expect(chip.querySelector("[data-icon=negative]")).not.toBeNull();
   });
@@ -36,8 +36,8 @@ describe("SentimentBubbleMap (#222)", () => {
     render(<SentimentBubbleMap data={topicSentimentFixture()} getHref={getHref} />);
     expect(screen.getByText("4 chủ đề")).toBeInTheDocument();
     await click(screen.getByRole("radio", { name: /Tích cực \(1\)/ }));
-    expect(screen.getAllByRole("button", { name: /lượt nhắc$/ }).map((b) => b.getAttribute("aria-label"))).toEqual([
-      "Giá, 75,0% tích cực, 4 lượt nhắc",
+    expect(screen.getAllByRole("button", { name: /bài nhắc$/ }).map((b) => b.getAttribute("aria-label"))).toEqual([
+      "Giá, 75,0% tích cực, 4 bài nhắc",
     ]);
     expect(screen.getByText("1 chủ đề")).toBeInTheDocument();
     await click(screen.getByRole("radio", { name: /Trung tính \(0\)/ }));
@@ -58,7 +58,7 @@ describe("SentimentBubbleMap (#222)", () => {
       "href",
       "/mentions?topic=ticket&sentiment=negative",
     );
-    expect(within(panel).getByRole("link", { name: "Xem tất cả 4 lượt nhắc" })).toHaveAttribute(
+    expect(within(panel).getByRole("link", { name: "Xem tất cả 4 bài nhắc" })).toHaveAttribute(
       "href",
       "/mentions?topic=ticket",
     );
@@ -91,7 +91,7 @@ describe("SentimentBubbleMap (#222)", () => {
     // Chip "Tiêu cực" keeps only negative-dominant topics (price is positive-dominant).
     expect(headers).toEqual(["Vé", "Địa điểm", "Khác"]);
     // BR-017: count is always printed; FR-142: non-zero cells drill topic & sentiment.
-    expect(within(table).getByRole("link", { name: /^Vé · Tiêu cực: 2 lượt nhắc, 50,0%/ })).toHaveAttribute(
+    expect(within(table).getByRole("link", { name: /^Vé · Tiêu cực: 2 bài nhắc, 50,0%/ })).toHaveAttribute(
       "href",
       "/mentions?topic=ticket&sentiment=negative",
     );
@@ -111,7 +111,7 @@ describe("SentimentBubbleMap (#222)", () => {
 
   it("BR-032: no sentiment → explicit empty state without chips or toggle; error shows retry", () => {
     const { unmount } = render(<SentimentBubbleMap data={emptyTopicSentiment()} />);
-    expect(screen.getByText("Chưa có lượt nhắc đã phân tích trong khoảng này")).toBeInTheDocument();
+    expect(screen.getByText("Chưa có bài nhắc đã phân tích trong khoảng này")).toBeInTheDocument();
     expect(screen.queryByRole("radio")).toBeNull();
     unmount();
     render(<SentimentBubbleMap error={{ message: "boom", requestId: "req-9" }} onRetry={() => {}} />);
@@ -157,9 +157,9 @@ describe("SentimentBubbleMap (#222)", () => {
       render(
         <SentimentBubbleMap phraseData={phraseData()} mode="phrases" onModeChange={() => {}} getHref={phraseHref} />,
       );
-      const bubble = screen.getByRole("button", { name: "giá vé, 75,0% tiêu cực, 4 lượt nhắc" });
+      const bubble = screen.getByRole("button", { name: "giá vé, 75,0% tiêu cực, 4 bài nhắc" });
       expect(screen.getByText("Top 2 trên 40 cụm từ")).toBeInTheDocument();
-      expect(screen.getByText("Cụm từ chính trong các lượt nhắc đã phân tích")).toBeInTheDocument();
+      expect(screen.getByText("Cụm từ chính trong các bài nhắc đã phân tích")).toBeInTheDocument();
       await click(bubble);
       const panel = screen.getByRole("complementary");
       expect(within(panel).getByRole("link", { name: "Tiêu cực" })).toHaveAttribute(
@@ -186,7 +186,7 @@ describe("SentimentBubbleMap (#222)", () => {
       expect(screen.getByText(/chưa có cụm từ cho tới khi được phân tích lại/)).toBeInTheDocument();
       r1.unmount();
       const r2 = render(<SentimentBubbleMap mode="phrases" phraseData={phraseData({ totalPhrases: 0, rows: [] })} />);
-      expect(screen.getByText("Không có cụm từ nào đạt 2 lượt nhắc")).toBeInTheDocument();
+      expect(screen.getByText("Không có cụm từ nào đạt 2 bài nhắc")).toBeInTheDocument();
       r2.unmount();
       render(
         <SentimentBubbleMap
@@ -194,7 +194,7 @@ describe("SentimentBubbleMap (#222)", () => {
           phraseData={phraseData({ sentimentAnalyzed: 0, phraseAnalyzed: 0, totalPhrases: 0, rows: [] })}
         />,
       );
-      expect(screen.getByText("Chưa có lượt nhắc đã phân tích trong khoảng này")).toBeInTheDocument();
+      expect(screen.getByText("Chưa có bài nhắc đã phân tích trong khoảng này")).toBeInTheDocument();
     });
 
     it("QA #243: toggle stays reachable in phrase empty and error states", async () => {
@@ -256,7 +256,7 @@ describe("#389 sentiment always has a word or icon (BR-017)", () => {
   it("BR-017 #389: full label keeps the share line and mentions", () => {
     const { container } = render(<BubbleLabel d={datum as BubbleDatum} r={60} tipBelow={false} />);
     expect(container.textContent).toContain("75,0% tích cực");
-    expect(container.textContent).toContain("4 lượt nhắc");
+    expect(container.textContent).toContain("4 bài nhắc");
   });
 
   it("#389: tiny bubbles are listed in the 'Chủ đề nhỏ:' row; clicking selects the bubble", async () => {
@@ -267,7 +267,7 @@ describe("#389 sentiment always has a word or icon (BR-017)", () => {
     const plate = screen.getByRole("button", { name: "Giá · 33,3% tiêu cực (3)" });
     await click(plate);
     expect(plate).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "Giá, 33,3% tiêu cực, 3 lượt nhắc" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Giá, 33,3% tiêu cực, 3 bài nhắc" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );

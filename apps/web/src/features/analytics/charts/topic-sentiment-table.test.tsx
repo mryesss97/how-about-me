@@ -14,7 +14,7 @@ describe("TopicSentimentTable (#336)", () => {
     expect(headers).toHaveLength(12);
     // #327: row header also carries the mobile-only total line.
     expect(headers[0]).toBe("Vé4 có cảm xúc");
-    expect(screen.getByRole("link", { name: /^Vé · Tiêu cực: 2 lượt nhắc, 50,0% trên 4/ })).toHaveTextContent(
+    expect(screen.getByRole("link", { name: /^Vé · Tiêu cực: 2 bài nhắc, 50,0% trên 4/ })).toHaveTextContent(
       "2 · 50,0%",
     );
   });

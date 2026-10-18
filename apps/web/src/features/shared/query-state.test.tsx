@@ -19,7 +19,7 @@ describe("QueryState (UX §2.3, BR-032)", () => {
 
   it("distinguishes 'no data' from an error: empty shows the widen-the-range hint", () => {
     render(<QueryState isEmpty>{CONTENT}</QueryState>);
-    expect(screen.getByText("Không có lượt nhắc liên quan trong khoảng thời gian này.")).toBeInTheDocument();
+    expect(screen.getByText("Không có bài nhắc liên quan trong khoảng thời gian này.")).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 

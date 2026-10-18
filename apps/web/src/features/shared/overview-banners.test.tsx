@@ -22,7 +22,7 @@ describe("OverviewBanners (FR-134)", () => {
   it("TC-DASH-009: pending 124 shows the analysis-pending banner; 0 shows none", () => {
     const f = overviewFixture();
     render(<OverviewBanners data={{ ...f, coverage: { ...f.coverage, pendingMentions: 124 } }} canManage={false} />);
-    expect(screen.getByText("124 lượt nhắc đang chờ phân tích.")).toBeInTheDocument();
+    expect(screen.getByText("124 bài nhắc đang chờ phân tích.")).toBeInTheDocument();
     expect(bannersFor(f)).toEqual([]);
   });
 
@@ -35,7 +35,7 @@ describe("OverviewBanners (FR-134)", () => {
         pendingHref="/mentions?x=1"
       />,
     );
-    expect(screen.getByRole("link", { name: "Xem lượt nhắc đang chờ" })).toHaveAttribute("href", "/mentions?x=1");
+    expect(screen.getByRole("link", { name: "Xem bài nhắc đang chờ" })).toHaveAttribute("href", "/mentions?x=1");
   });
 
   it("TC-DASH-010: failed or partial sync shows sync banner linking to the failed sync jobs (#342)", () => {

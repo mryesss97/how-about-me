@@ -49,13 +49,13 @@ export function SentimentDistributionChart({
   return (
     <ChartCard
       title="Phân bố cảm xúc"
-      description="Tỷ lệ trên lượt nhắc đã phân tích"
+      description="Tỷ lệ trên bài nhắc đã phân tích"
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}
       // Denominator 0 → empty state, no division by zero (BR-032).
       isEmpty={!!data && denominator === 0}
-      emptyTitle="Chưa có lượt nhắc đã phân tích trong khoảng này"
+      emptyTitle="Chưa có bài nhắc đã phân tích trong khoảng này"
       table={table}
       className={className}
     >
@@ -71,7 +71,7 @@ export function SentimentDistributionChart({
                     title={s.name}
                     lines={[{ name: s.name, count: s.count, share: s.share, color: SENTIMENT_COLORS[s.key] }]}
                     denominator={denominator}
-                    denominatorLabel="lượt nhắc đã phân tích"
+                    denominatorLabel="bài nhắc đã phân tích"
                     drillable={!!select?.canSelect(s)}
                   />
                 );

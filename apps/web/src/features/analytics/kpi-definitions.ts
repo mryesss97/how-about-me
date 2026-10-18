@@ -16,44 +16,44 @@ export type KpiDefinition = {
 export const KPI_DEFINITIONS: readonly KpiDefinition[] = [
   {
     id: "mentions",
-    label: "Tổng lượt nhắc liên quan",
+    label: "Tổng bài nhắc liên quan",
     definition: "Số bài nhắc (không trùng) trong khoảng thời gian, khớp bộ lọc hiện tại.",
     denominator: "bài nhắc (không trùng) đăng trong khoảng thời gian có mức liên quan = liên quan",
   },
   {
     id: "growth",
-    label: "Tăng trưởng lượt nhắc",
+    label: "Tăng trưởng bài nhắc",
     definition:
-      "(kỳ này − kỳ trước) / kỳ trước, so với kỳ liền trước cùng độ dài. Hiện “Mới” khi kỳ trước có 0 lượt nhắc.",
-    denominator: "lượt nhắc trong kỳ liền trước cùng độ dài",
+      "(kỳ này − kỳ trước) / kỳ trước, so với kỳ liền trước cùng độ dài. Hiện “Mới” khi kỳ trước có 0 bài nhắc.",
+    denominator: "bài nhắc trong kỳ liền trước cùng độ dài",
   },
   {
     id: "positive",
     denominatorNoun: "đã phân tích",
     label: "Tỷ lệ tích cực",
-    definition: "Tỷ lệ lượt nhắc đã phân tích có cảm xúc = tích cực.",
-    denominator: "lượt nhắc liên quan đã có nhãn cảm xúc",
+    definition: "Tỷ lệ bài nhắc đã phân tích có cảm xúc = tích cực.",
+    denominator: "bài nhắc liên quan đã có nhãn cảm xúc",
   },
   {
     id: "negative",
     denominatorNoun: "đã phân tích",
     label: "Tỷ lệ tiêu cực",
-    definition: "Tỷ lệ lượt nhắc đã phân tích có cảm xúc = tiêu cực.",
-    denominator: "lượt nhắc liên quan đã có nhãn cảm xúc",
+    definition: "Tỷ lệ bài nhắc đã phân tích có cảm xúc = tiêu cực.",
+    denominator: "bài nhắc liên quan đã có nhãn cảm xúc",
   },
   {
     id: "safety",
     denominatorNoun: "có mức an toàn",
     label: "Tỷ lệ nhạy cảm + nghiêm trọng",
-    definition: "Tỷ lệ lượt nhắc có mức an toàn là nhạy cảm hoặc nghiêm trọng. Số nghiêm trọng hiện riêng khi > 0.",
-    denominator: "lượt nhắc liên quan đã có mức an toàn",
+    definition: "Tỷ lệ bài nhắc có mức an toàn là nhạy cảm hoặc nghiêm trọng. Số nghiêm trọng hiện riêng khi > 0.",
+    denominator: "bài nhắc liên quan đã có mức an toàn",
   },
   {
     id: "complaint",
     denominatorNoun: "có ý định",
     label: "Tỷ lệ phàn nàn",
-    definition: "Tỷ lệ lượt nhắc có ý định gồm phàn nàn.",
-    denominator: "lượt nhắc liên quan có ít nhất một nhãn ý định",
+    definition: "Tỷ lệ bài nhắc có ý định gồm phàn nàn.",
+    denominator: "bài nhắc liên quan có ít nhất một nhãn ý định",
   },
 ];
 

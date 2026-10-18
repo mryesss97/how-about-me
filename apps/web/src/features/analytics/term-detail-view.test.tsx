@@ -154,7 +154,9 @@ describe("TermDetailView", () => {
     setup();
     expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent('"giá vé"');
     expect(await screen.findByText(/54,9% Tiêu cực · 82 bài nhắc · 30 NGÀY QUA/)).toBeInTheDocument();
-    expect(screen.queryByText(/lượt nhắc/)).not.toBeInTheDocument();
+    // #388: one word for counted posts; zone id never rendered outside the select
+    expect(screen.queryByText(/lượt nhắc/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Asia\//)).not.toBeInTheDocument();
     expect(screen.queryByText(/BR-042/)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Trang chủ/ })).toHaveAttribute("href", "/");
     expect(screen.queryByRole("link", { name: /Bài nhắc$/ })).not.toBeInTheDocument();

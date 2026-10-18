@@ -6,6 +6,7 @@ import { Area, AreaChart, CartesianGrid, Legend, Line, ResponsiveContainer, Tool
 import { ChartLegendContent, selectEvenlySpacedItems } from "@/components/application/charts/charts-base";
 import type { QueryStateError } from "@/features/shared/query-state";
 import { formatCount } from "@/lib/format/number";
+import { tzOffsetLabel } from "@/lib/time/format";
 import { ChartCard } from "./chart-card";
 import { type MentionsRow, hasPrevious, shareOf, toMentionsRows } from "./chart-data";
 import { MetricTooltip } from "./metric-tooltip";
@@ -44,7 +45,7 @@ export function MentionsOverTimeChart({
   const drillable = !!getBucketHref && !!onNavigate;
   const table = {
     rowHrefs: rows.map((_, i) => bucketHref(i)),
-    columns: withPrevious ? ["Thời gian", "Lượt nhắc", "Kỳ trước"] : ["Thời gian", "Lượt nhắc"],
+    columns: withPrevious ? ["Thời gian", "Bài nhắc", "Kỳ trước"] : ["Thời gian", "Bài nhắc"],
     rows: rows.map((r) => {
       const cells = [r.label, formatCount(r.mentions)];
       return withPrevious ? [...cells, r.previous === undefined ? "—" : formatCount(r.previous)] : cells;
@@ -53,8 +54,10 @@ export function MentionsOverTimeChart({
 
   return (
     <ChartCard
-      title="Lượt nhắc theo thời gian"
-      description={data ? `Gom theo ${data.interval === "hour" ? "giờ" : "ngày"} · ${data.timezone}` : undefined}
+      title="Bài nhắc theo thời gian"
+      description={
+        data ? `Gom theo ${data.interval === "hour" ? "giờ" : "ngày"} · ${tzOffsetLabel(data.timezone)}` : undefined
+      }
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}
@@ -84,7 +87,7 @@ export function MentionsOverTimeChart({
                 return (
                   <MetricTooltip
                     title={row.label}
-                    lines={[{ name: "Lượt nhắc", count: row.mentions, share: shareOf(row.mentions, total) }]}
+                    lines={[{ name: "Bài nhắc", count: row.mentions, share: shareOf(row.mentions, total) }]}
                     denominator={total}
                     previous={row.previous}
                     drillable={drillable && bucketHref(rows.indexOf(row)) !== null}
@@ -94,7 +97,7 @@ export function MentionsOverTimeChart({
             />
             <Legend verticalAlign="top" align="right" content={<ChartLegendContent className="-translate-y-2" />} />
             <Area
-              name="Lượt nhắc"
+              name="Bài nhắc"
               dataKey="mentions"
               type="monotone"
               stroke="var(--color-utility-brand-600)"

@@ -13,7 +13,7 @@ describe("TopTopicsChart", () => {
     expect(labels.length).toBeLessThanOrEqual(13);
     expect(labels.at(-1)).toBe("Khác");
     expect(labels).toContain("CSKH");
-    expect(rows.at(-1)).toEqual(["Lượt nhắc có chủ đề", "100", "—"]);
+    expect(rows.at(-1)).toEqual(["Bài nhắc có chủ đề", "100", "—"]);
     expect(rows.map((r) => r[0])).not.toContain("Tổng");
   });
 
@@ -24,7 +24,7 @@ describe("TopTopicsChart", () => {
 
   it("BR-032: denominator 0 → empty state", () => {
     render(<TopTopicsChart data={{ denominator: 0, distribution: [] }} />);
-    expect(screen.getByText("Chưa có lượt nhắc đã phân tích trong khoảng này")).toBeInTheDocument();
+    expect(screen.getByText("Chưa có bài nhắc đã phân tích trong khoảng này")).toBeInTheDocument();
   });
 
   it("loading state hides the table toggle", () => {
@@ -38,7 +38,7 @@ describe("TopTopicsChart", () => {
     await openTable();
     expect(screen.getByRole("link", { name: "Vé" })).toHaveAttribute("href", "/mentions?topic=ticket");
     expect(screen.queryByRole("link", { name: "Khác" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "Lượt nhắc có chủ đề" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Bài nhắc có chủ đề" })).toBeNull();
   });
 });
 

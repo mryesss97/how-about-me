@@ -45,19 +45,19 @@ export function QueryShareChart({
     columns: ["Truy vấn", "Số lượng", "Tỷ lệ"],
     rows: [
       ...rows.map((r) => [r.name, formatCount(r.count), formatRate(r.share)]),
-      ["Lượt nhắc (không trùng)", formatCount(denominator), "—"],
+      ["Bài nhắc (không trùng)", formatCount(denominator), "—"],
     ],
   };
 
   return (
     <ChartCard
       title="Tỷ trọng từ khoá"
-      description="Lượt nhắc theo từng truy vấn"
+      description="Bài nhắc theo từng truy vấn"
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}
       isEmpty={!!data && denominator === 0}
-      emptyTitle="Không có lượt nhắc trong khoảng này"
+      emptyTitle="Không có bài nhắc trong khoảng này"
       table={table}
       className={className}
     >
@@ -66,7 +66,7 @@ export function QueryShareChart({
         getFill={() => "var(--color-utility-brand-500)"}
         denominator={denominator}
         getRowHref={(r) => segmentHref(getHref, r)}
-        denominatorLabel="lượt nhắc"
+        denominatorLabel="bài nhắc"
       />
       <p className="text-xs text-tertiary">{OVERLAP_NOTE}</p>
     </ChartCard>

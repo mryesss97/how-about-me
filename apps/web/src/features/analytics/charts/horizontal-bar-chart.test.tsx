@@ -18,7 +18,7 @@ describe("HorizontalBarChart (#335, FR-142)", () => {
         rows={rows}
         getFill={() => "red"}
         denominator={100}
-        denominatorLabel="lượt nhắc"
+        denominatorLabel="bài nhắc"
         getRowHref={getRowHref}
       />,
     );
@@ -29,10 +29,10 @@ describe("HorizontalBarChart (#335, FR-142)", () => {
   });
 
   it("TC-DASH-016 / NFR-030: every row (incl. zero) prints count · share; FR-140 denominator line", () => {
-    render(<HorizontalBarChart rows={rows} getFill={() => "red"} denominator={100} denominatorLabel="lượt nhắc" />);
+    render(<HorizontalBarChart rows={rows} getFill={() => "red"} denominator={100} denominatorLabel="bài nhắc" />);
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
     expect(screen.getByText("0 · 0,0%")).toBeInTheDocument();
-    expect(screen.getByText("trên 100 lượt nhắc")).toBeInTheDocument();
+    expect(screen.getByText("trên 100 bài nhắc")).toBeInTheDocument();
     expect(screen.queryByRole("link")).toBeNull();
   });
 
@@ -57,7 +57,7 @@ describe("HorizontalBarChart (#335, FR-142)", () => {
         rows={rows}
         getFill={() => "red"}
         denominator={100}
-        denominatorLabel="lượt nhắc"
+        denominatorLabel="bài nhắc"
         renderLabelPrefix={(r) => <i data-testid={`prefix-${r.key}`} />}
       />,
     );

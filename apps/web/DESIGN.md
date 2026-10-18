@@ -239,7 +239,7 @@ Squared enamel plates with barely eased corners, in a three-step hierarchy: plat
 
 ### Sign Board
 
-Flat enamel phrase board, absolutely positioned by the treemap (rows on phones), a link to `/terms/<term>?preset=30d` (#276), named with the full text (`"giá vé" · 62,0% tích cực · 100 lượt nhắc`).
+Flat enamel phrase board, absolutely positioned by the treemap (rows on phones), a link to `/terms/<term>?preset=30d` (#276), named with the full text (`"giá vé" · 62,0% tích cực · 100 bài nhắc`).
 
 - **Tones:** neutral (navy on white), negative/positive solid (white on red/green), negative/positive mixed (red/green lettering on white), blank (grey lettering, dashed keyline, no sub-sign).
 - **Contents:** keyline, rank plate, phrase (quoted Bungee, condensed caps, stacked vertical, or blade sign), share line (never under 13px; when one line would be smaller it wraps between the share and the label, #334).
@@ -252,7 +252,7 @@ Small sky house-number plate (số nhà) in the top-left of every board: white t
 
 ### Sub-sign
 
-Navy strip with the full split in Inter small print ("100 lượt nhắc · 62,0% tích cực · 38,0% trung tính · 0,0% tiêu cực"), hidden below the board's foot and sliding up on hover or focus (260ms, same ease). Tight variant (3px 8px, 11px) on boards under 64px tall. No transition under reduced motion.
+Navy strip with the full split in Inter small print ("100 bài nhắc · 62,0% tích cực · 38,0% trung tính · 0,0% tiêu cực"), hidden below the board's foot and sliding up on hover or focus (260ms, same ease). Tight variant (3px 8px, 11px) on boards under 64px tall. No transition under reduced motion.
 
 ### Main Sign
 
