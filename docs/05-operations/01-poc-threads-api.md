@@ -51,12 +51,12 @@ Measurements per test: result count; pages; latency p50/p95; lag post time → d
 
 ### 5.1 Access & permissions
 
-| Item                                 | Finding |
-| ------------------------------------ | ------- |
-| Permission path for keyword search   |         |
-| App Review needed before production? |         |
-| Token type & lifetime                |         |
-| Refresh endpoint & behaviour         |         |
+| Item                                 | Finding                                                                                    |
+| ------------------------------------ | ------------------------------------------------------------------------------------------ |
+| Permission path for keyword search   |                                                                                            |
+| App Review needed before production? |                                                                                            |
+| Token type & lifetime                |                                                                                            |
+| Refresh endpoint & behaviour         | Not confirmed yet — refresh job ships off by default (T-040, `THREADS_TOKEN_REFRESH_MODE`) |
 
 ### 5.2 Search behaviour
 

@@ -4,6 +4,7 @@ import type { AppConfig } from "../../config/config.module";
 import type { PrismaService } from "../../database/prisma.service";
 import type { ClaimedQuery } from "../../jobs/collector-runner";
 import type { SearchPage, SocialDiscoveryProvider } from "../integrations/threads/social-discovery.provider";
+import type { IntegrationHealthService } from "../integrations/integration-health.service";
 import type { SyncJobRecorder } from "../sync-jobs/sync-job.recorder";
 import { CollectorService } from "./collector.service";
 import type { IngestionService } from "./ingestion.service";
@@ -84,7 +85,8 @@ function setup(
     recordFailedAttempts: jest.fn().mockResolvedValue(undefined),
     finish: jest.fn().mockResolvedValue(undefined),
   };
-  const logger = { setContext: jest.fn(), info: jest.fn() };
+  const logger = { setContext: jest.fn(), info: jest.fn(), error: jest.fn() };
+  const health = { recordProviderAuthFailure: jest.fn().mockResolvedValue(true) };
   const svc = new CollectorService(
     prisma as unknown as PrismaService,
     cfg,
@@ -92,10 +94,11 @@ function setup(
     tokens,
     ingestion as unknown as IngestionService,
     recorder as unknown as SyncJobRecorder,
+    health as unknown as IntegrationHealthService,
     logger as unknown as PinoLogger,
     { sleep: async () => undefined, random: () => 0 },
   );
-  return { svc, prisma, search, recorder, deltas };
+  return { svc, prisma, search, recorder, deltas, health };
 }
 
 describe("CollectorService (T-052, doc 06 §5)", () => {
@@ -155,6 +158,33 @@ describe("CollectorService (T-052, doc 06 §5)", () => {
     const out = await svc.run(claimed);
     expect(out).toMatchObject({ status: "failed", errorCode: "THREADS_UNAUTHORIZED" });
     expect(recorder.recordFailedAttempts).toHaveBeenCalledWith("job1", 1, 0);
+  });
+
+  it("FR-045 / TC-INT-008: 401 → health service records the auth failure once for the project", async () => {
+    const { svc, health } = setup([new ProviderError("THREADS_UNAUTHORIZED", "expired")]);
+    await svc.run(claimed);
+    expect(health.recordProviderAuthFailure).toHaveBeenCalledTimes(1);
+    expect(health.recordProviderAuthFailure).toHaveBeenCalledWith("p1", "THREADS_UNAUTHORIZED", "expired");
+  });
+
+  it("FR-085 / TC-INT-009: 403 → health service called with THREADS_FORBIDDEN", async () => {
+    const { svc, health } = setup([new ProviderError("THREADS_FORBIDDEN", "scopes")]);
+    expect(await svc.run(claimed)).toMatchObject({ status: "failed", errorCode: "THREADS_FORBIDDEN" });
+    expect(health.recordProviderAuthFailure).toHaveBeenCalledWith("p1", "THREADS_FORBIDDEN", "scopes");
+  });
+
+  it("FR-045: a failing health update never breaks recorder.finish; success never calls health", async () => {
+    const { svc, health, recorder } = setup([new ProviderError("THREADS_UNAUTHORIZED", "expired")]);
+    health.recordProviderAuthFailure.mockRejectedValueOnce(new Error("db down"));
+    expect((await svc.run(claimed)).status).toBe("failed");
+    expect(recorder.finish).toHaveBeenCalledWith(
+      "job1",
+      expect.objectContaining({ errorCode: "THREADS_UNAUTHORIZED" }),
+    );
+
+    const ok = setup([page([item("a", 1)])]);
+    await ok.svc.run(claimed);
+    expect(ok.health.recordProviderAuthFailure).not.toHaveBeenCalled();
   });
 
   it("FR-089: 429 retry counts rate_limit_events and every attempt in provider_requests", async () => {

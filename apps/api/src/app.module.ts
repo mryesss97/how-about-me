@@ -22,6 +22,7 @@ import { HealthModule } from "./modules/health/health.module";
 import { ProjectsModule } from "./modules/projects/projects.module";
 import { ProvidersModule } from "./modules/providers/providers.module";
 import { RetentionJobModule } from "./jobs/retention-job.module";
+import { TokenRefreshJobModule } from "./jobs/token-refresh-job.module";
 import { SchedulerModule } from "./jobs/scheduler.module";
 import { SyncJobsModule } from "./modules/sync-jobs/sync-jobs.module";
 import { SystemStatusModule } from "./modules/system-status/system-status.module";
@@ -43,6 +44,7 @@ import { SystemStatusModule } from "./modules/system-status/system-status.module
     AnalysisModule,
     SchedulerModule,
     RetentionJobModule,
+    TokenRefreshJobModule,
     AuditModule,
     ListeningQueriesModule,
     MentionsModule,

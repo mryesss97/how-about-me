@@ -5,7 +5,11 @@ export interface SocialDiscoveryProvider {
   readonly platform: Platform;
   search(input: SearchInput, ctx: ProviderContext): Promise<SearchPage>;
   verifyConnection(ctx: ProviderContext): Promise<ConnectionInfo>;
+  /** FR-046 (P0*, conditional): only adapters whose platform supports token refresh implement this. */
+  refreshToken?(ctx: ProviderContext): Promise<RefreshedToken>;
 }
+
+export type RefreshedToken = { accessToken: string; tokenExpiresAt: Date | null };
 
 export type SearchInput = {
   query: string;

@@ -18,6 +18,7 @@ System Status `/system-status` · Health `GET /health/ready` · Logs (host) · S
 3. Scheduler resumes automatically on `connected`. Check next sync within 2 min in Sync jobs.
 4. Gap recovery: if outage > overlap, run **Backfill** (P1 UI) or `POST …/listening-queries/:id/backfill` for the outage window.
 5. If `permission_error` persists: check Meta app status/App Review; escalate to owner.
+6. Token refresh (T-040): once the POC confirms Threads refresh and the real adapter implements it, set `THREADS_TOKEN_REFRESH_MODE=on` on the worker (cron `THREADS_TOKEN_REFRESH_CRON`, window `THREADS_TOKEN_REFRESH_WINDOW_DAYS`). Failed refreshes show in Audit log as `integration.refresh_failed` (filter by action); a 401/403 there also moves the integration to `expired`/`permission_error`.
 
 ## 2. Sync failing / collector paused
 

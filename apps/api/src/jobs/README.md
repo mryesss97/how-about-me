@@ -19,3 +19,8 @@ Role bootstrap: scheduler (collector) and analysis worker are registered only wh
 - `retention-job.module.ts` / `retention-job.service.ts` — `retention-job` cron (`RETENTION_JOB_CRON`, `RETENTION_JOB_TIMEZONE`), registered only when `RETENTION_JOB_MODE ≠ off`, `APP_ROLE ∈ {worker, all}` and `NODE_ENV ≠ test`. Reuses `modules/retention/purge.ts`; logs dry-run counts per scope, deletes only in `apply`. Tests call `run(now)` directly.
 - `retention-plan.ts` — pure UTC-midnight cutoffs and scope list (per project `project` + `runs`, then global `sync-jobs`).
 - See docs/05-operations/04-data-retention-purge.md.
+
+## Token refresh job (T-040)
+
+- `token-refresh-job.module.ts` / `token-refresh-job.service.ts` — `threads-token-refresh-job` cron (`THREADS_TOKEN_REFRESH_CRON`, `THREADS_TOKEN_REFRESH_TIMEZONE`), registered only when `THREADS_TOKEN_REFRESH_MODE=on`, `APP_ROLE ∈ {worker, all}`, `NODE_ENV ≠ test` and the provider has `refreshToken` (FR-046). Failures → audit `integration.refresh_failed`. Tests call `run(now)` directly.
+- `query-claim.repository.ts` skips projects whose Threads integration is not `connected` (FR-045).
