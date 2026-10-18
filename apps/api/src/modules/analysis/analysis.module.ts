@@ -6,6 +6,7 @@ import { AnalysisPauseService } from "./analysis-pause.service";
 import { AnalysisPipelineService } from "./analysis-pipeline.service";
 import { AnalysisWorkerService } from "./analysis-worker.service";
 import { AnalysisRunsController } from "./analysis-runs.controller";
+import { AnalysisRunsRepository } from "./analysis-runs.repository";
 import { AnalysisRunsService } from "./analysis-runs.service";
 import { AnalysisService } from "./analysis.service";
 import { BulkReanalyzeThrottle } from "./bulk-reanalyze-throttle";
@@ -34,6 +35,7 @@ import { AnalysisSettingsService } from "./settings/analysis-settings.service";
     AnalysisPauseService,
     AnalysisWorkerService,
     BulkReanalyzeThrottle,
+    AnalysisRunsRepository,
     AnalysisRunsService,
   ],
   exports: [

@@ -67,7 +67,9 @@ Computation notes (T-057):
 - `collectionLagSeconds` is `null` when no enabled query exists or none has synced yet (ignored by the `degraded` rule); disabled queries never count. Integer seconds (floor).
 - No integration row → `threads.status = disconnected` → collector `paused`.
 - `database.approxPosts/approxAnalyses` come from `pg_class.reltuples` (clamped ≥ 0); `lastMigration` is the latest finished `_prisma_migrations` row, `null` if unreadable.
-- The `analysis` section is a zero/`null` stub until T-077.
+- Analysis (T-077): `pending`/`processing` are current counts; `failed24h`/`completed24h`, `tokens24h` and `estimatedCost24hUsd` use `completed_at ≥ now − 24h` (UTC rolling, BR-028; `completed_at` is set on completed and failed runs), all scoped to the project. Failure rate = `failed24h / (failed24h + completed24h)`, empty sample → ignored. `analysisLagSeconds` = 0 when no run is open (floor seconds).
+- `analysis.status`: `budget_paused` when the **system-wide** daily budget (UTC day, doc 07 §9) is exceeded; else `degraded` when the provider-auth pause is still active, failure rate > 10 % or lag > 1800 s; else `healthy`.
+- `analysis.versions`: classifier provider/model, prompt version and safety provider/model from config (empty → `null`), `TAXONOMY_VERSION`, and the project's active `safetyPolicyVersion`.
 
 ## 5. Dashboards & alerts (staging/prod, host-provided or Grafana Cloud free)
 

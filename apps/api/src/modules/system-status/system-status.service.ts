@@ -1,8 +1,19 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import type { SystemStatusResponse } from "@how-about-me/contracts";
+import { TAXONOMY_VERSION } from "@how-about-me/taxonomy";
+import { APP_CONFIG, type AppConfig } from "../../config/config.module";
+import { AnalysisPauseService } from "../analysis/analysis-pause.service";
+import { AnalysisPolicyService } from "../analysis/settings/analysis-policy.service";
 import { CircuitBreakerService } from "../collector/circuit-breaker.service";
 import { SystemStatusRepository } from "./system-status.repository";
-import { computeCollectionLagSeconds, computeSuccessRate, deriveCollectorStatus } from "./system-status.rules";
+import {
+  computeAnalysisFailureRate,
+  computeAnalysisLagSeconds,
+  computeCollectionLagSeconds,
+  computeSuccessRate,
+  deriveAnalysisStatus,
+  deriveCollectorStatus,
+} from "./system-status.rules";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
@@ -13,22 +24,36 @@ export class SystemStatusService {
   constructor(
     private readonly repo: SystemStatusRepository,
     private readonly circuit: CircuitBreakerService,
+    private readonly pause: AnalysisPauseService,
+    private readonly policy: AnalysisPolicyService,
+    @Inject(APP_CONFIG) private readonly cfg: AppConfig,
   ) {}
 
   async get(projectId: string, now: Date = new Date()): Promise<SystemStatusResponse> {
     const since = new Date(now.getTime() - DAY_MS);
-    const [conn, queries, counts, inProgress, circuit, db] = await Promise.all([
+    const [conn, queries, counts, inProgress, circuit, db, an, pause, policy] = await Promise.all([
       this.repo.findThreadsConnection(projectId),
       this.repo.enabledQueriesStats(projectId),
       this.repo.jobCountsSince(projectId, since),
       this.repo.jobsInProgress(projectId),
       this.circuit.getState(projectId, now),
       this.repo.databaseStats(),
+      this.repo.analysisStats(projectId, since),
+      this.pause.getState(),
+      this.policy.active(projectId),
     ]);
 
     const integrationStatus = conn?.status ?? "disconnected";
     const successRate24h = computeSuccessRate(counts);
     const collectionLagSeconds = computeCollectionLagSeconds([queries.lastSyncAt], now);
+    const analysisLagSeconds = computeAnalysisLagSeconds(an.oldestOpenCreatedAt, now);
+    // Budget is system-wide per UTC day (doc 07 §9); counts/tokens/cost are per project, rolling 24h.
+    const analysisStatus = deriveAnalysisStatus({
+      budgetExceeded: pause.budget.exceeded,
+      authPaused: pause.auth.pausedUntil !== null && pause.auth.pausedUntil.getTime() > now.getTime(),
+      failureRate24h: computeAnalysisFailureRate({ failed: an.failed24h, completed: an.completed24h }),
+      lagSeconds: analysisLagSeconds,
+    });
 
     return {
       generatedAt: now.toISOString(),
@@ -63,25 +88,24 @@ export class SystemStatusService {
         collectionLagSeconds,
         circuit: { open: circuit.open, until: iso(circuit.until), reason: circuit.reason },
       },
-      // T-077: real analysis metrics; stub until then.
       analysis: {
-        status: "healthy",
-        pending: 0,
-        processing: 0,
-        failed24h: 0,
-        completed24h: 0,
-        analysisLagSeconds: 0,
+        status: analysisStatus,
+        pending: an.pending,
+        processing: an.processing,
+        failed24h: an.failed24h,
+        completed24h: an.completed24h,
+        analysisLagSeconds,
         versions: {
-          classifierProvider: null,
-          classifierModel: null,
-          promptVersion: null,
-          taxonomyVersion: null,
-          safetyProvider: null,
-          safetyModel: null,
-          safetyPolicyVersion: null,
+          classifierProvider: this.cfg.ANALYSIS_CLASSIFIER_PROVIDER || null,
+          classifierModel: this.cfg.ANALYSIS_CLASSIFIER_MODEL || null,
+          promptVersion: this.cfg.ANALYSIS_PROMPT_VERSION,
+          taxonomyVersion: TAXONOMY_VERSION,
+          safetyProvider: this.cfg.SAFETY_PROVIDER || null,
+          safetyModel: this.cfg.SAFETY_MODEL || null,
+          safetyPolicyVersion: policy.policyVersion,
         },
-        tokens24h: { input: 0, output: 0 },
-        estimatedCost24hUsd: 0,
+        tokens24h: { input: an.inputTokens24h, output: an.outputTokens24h },
+        estimatedCost24hUsd: an.estimatedCost24hUsd,
       },
       database: db,
     };
