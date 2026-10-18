@@ -283,6 +283,8 @@ input[type="search"]::-webkit-search-cancel-button {
 
 .sign-keyline {
   position: absolute;
+  /* Above a board's scrolling content (wide tables on phones), so the keyline is never painted over. */
+  z-index: 1;
   inset: 5px;
   border: 2px solid var(--line);
   border-radius: 2px;

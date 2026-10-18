@@ -1,0 +1,48 @@
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { queryFixture } from "./fixtures.test-utils";
+import { QueryActionsMenu, mentionsHrefFor } from "./query-actions-menu";
+
+const handlers = { onEdit: vi.fn(), onRun: vi.fn(), onToggle: vi.fn(), onDelete: vi.fn(), onRestore: vi.fn() };
+
+function open(isAdmin: boolean, q = queryFixture()) {
+  render(<QueryActionsMenu query={q} isAdmin={isAdmin} {...handlers} />);
+  fireEvent.click(screen.getByRole("button", { name: `Thao tác cho ${q.displayName}` }));
+  return q;
+}
+
+describe("QueryActionsMenu", () => {
+  it("FR-062 / TC-LQ-020: 'Xem bài nhắc' links to /mentions?queryIds=<id>", () => {
+    const q = open(false);
+    expect(mentionsHrefFor(q.id)).toBe(`/mentions?queryIds=${q.id}`);
+    expect(screen.getByRole("menuitem", { name: "Xem bài nhắc" })).toHaveAttribute("href", mentionsHrefFor(q.id));
+  });
+
+  it("TC-LQ-021 / FR-018 / BR-033: viewer sees only 'Xem bài nhắc'", () => {
+    open(false);
+    expect(screen.getAllByRole("menuitem")).toHaveLength(1);
+    expect(screen.queryByRole("menuitem", { name: "Sửa" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Chạy ngay" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Xoá" })).not.toBeInTheDocument();
+  });
+
+  it("TC-LQ-021: admin sees Sửa / Chạy ngay / Tắt / Xoá and actions call handlers", () => {
+    const q = open(true);
+    for (const name of ["Sửa", "Chạy ngay", "Tắt", "Xoá"])
+      expect(screen.getByRole("menuitem", { name })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Chạy ngay" }));
+    expect(handlers.onRun).toHaveBeenCalledWith(q);
+  });
+
+  it("admin on a deleted query sees only Khôi phục besides 'Xem bài nhắc'", () => {
+    open(true, queryFixture({ deletedAt: "2026-10-13T00:00:00.000Z" }));
+    expect(screen.getAllByRole("menuitem").map((e) => e.textContent)).toEqual(["Xem bài nhắc", "Khôi phục"]);
+  });
+
+  it("admin items without a handler are not rendered (#43 wires them)", () => {
+    const q = queryFixture();
+    render(<QueryActionsMenu query={q} isAdmin />);
+    fireEvent.click(screen.getByRole("button", { name: `Thao tác cho ${q.displayName}` }));
+    expect(screen.getAllByRole("menuitem")).toHaveLength(1);
+  });
+});
