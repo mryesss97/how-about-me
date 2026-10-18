@@ -24,6 +24,7 @@ import { ProvidersModule } from "./modules/providers/providers.module";
 import { RetentionJobModule } from "./jobs/retention-job.module";
 import { SchedulerModule } from "./jobs/scheduler.module";
 import { SyncJobsModule } from "./modules/sync-jobs/sync-jobs.module";
+import { SystemStatusModule } from "./modules/system-status/system-status.module";
 
 @Module({
   imports: [
@@ -49,7 +50,7 @@ import { SyncJobsModule } from "./modules/sync-jobs/sync-jobs.module";
     AnalyticsModule,
     IntegrationsModule,
     SyncJobsModule,
-    // M2+: SystemStatusModule
+    SystemStatusModule,
     // M6: T-147 export lives in MentionsModule (route must precede `:mentionId`)
   ],
   providers: [
