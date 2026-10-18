@@ -107,7 +107,13 @@ export function AnalysisCurrent({
           {a.safety ? <SafetyBadge value={a.safety.level} size="lg" className={verdictCls} /> : <Dash />}
           {src("safety_level", !!a.safety)}
           {a.safetyCategoryScores ? (
-            <Button color="link-color" size="sm" onClick={() => setShowScores((s) => !s)} aria-expanded={showScores}>
+            <Button
+              color="link-color"
+              size="sm"
+              className="max-md:min-h-11"
+              onClick={() => setShowScores((s) => !s)}
+              aria-expanded={showScores}
+            >
               {showScores ? "Ẩn điểm theo hạng mục" : "Hiện điểm theo hạng mục"}
             </Button>
           ) : null}

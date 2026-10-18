@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { canAccess } from "@/features/auth/route-roles";
 import { useRole } from "@/features/auth/use-role";
+import { SectionTabs } from "@/features/shared/section-tabs";
 import { useUnsavedChanges } from "./unsaved-changes";
 
 const tabs = [
@@ -18,29 +18,23 @@ export function SettingsTabs() {
   const { role } = useRole();
   const pathname = usePathname();
   const { anyDirty, confirmLeave } = useUnsavedChanges();
+  const items = tabs
+    .filter((t) => canAccess(t.href, role))
+    .map((t) => ({
+      href: t.href,
+      label: t.label,
+      current: pathname === t.href || pathname.startsWith(`${t.href}/`),
+    }));
   return (
-    <nav aria-label="Các mục cài đặt" className="flex flex-wrap gap-2">
-      {tabs
-        .filter((t) => canAccess(t.href, role))
-        .map((t) => {
-          const active = pathname === t.href || pathname.startsWith(`${t.href}/`);
-          return (
-            <Link
-              key={t.href}
-              href={t.href}
-              aria-current={active ? "page" : undefined}
-              className="plaque-button px-3 py-1.5"
-              onClick={(e) => {
-                // #347: unsaved edits → confirm before switching tab (the dialog navigates on "Bỏ thay đổi").
-                if (!anyDirty || t.href === pathname) return;
-                e.preventDefault();
-                confirmLeave(t.href);
-              }}
-            >
-              {t.label}
-            </Link>
-          );
-        })}
-    </nav>
+    <SectionTabs
+      ariaLabel="Các mục cài đặt"
+      items={items}
+      onNavigate={(href, e) => {
+        // #347: unsaved edits → confirm before switching tab (the dialog navigates on "Bỏ thay đổi").
+        if (!anyDirty || href === pathname) return;
+        e.preventDefault();
+        confirmLeave(href);
+      }}
+    />
   );
 }

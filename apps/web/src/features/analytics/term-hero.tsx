@@ -153,7 +153,11 @@ export function TermSiblings({
     <nav aria-label={copy.otherTerms} className="flex flex-wrap items-center gap-2">
       <span className="text-sm text-secondary">{copy.otherTerms}</span>
       {others.map((r) => (
-        <Link key={r.term} href={`/terms/${encodeURIComponent(r.term)}${qs}`} className="task-plate !text-xs">
+        <Link
+          key={r.term}
+          href={`/terms/${encodeURIComponent(r.term)}${qs}`}
+          className="task-plate inline-flex items-center !text-xs max-md:min-h-11"
+        >
           {r.term}
         </Link>
       ))}

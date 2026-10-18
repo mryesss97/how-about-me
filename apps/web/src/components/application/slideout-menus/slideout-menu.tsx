@@ -96,7 +96,8 @@ const Header = ({ className, children, onClose, ...props }: SlideoutHeaderProps)
     return (
         <header {...props} className={cx("relative z-1 w-full px-4 pt-6 md:px-6", className)}>
             {children}
-            <CloseButton size="sm" className="absolute top-3 right-3 shrink-0" onClick={onClose} />
+            {/* #386: 44 px close target on mobile. */}
+            <CloseButton size="sm" className="absolute top-3 right-3 shrink-0 max-md:size-11" onClick={onClose} />
         </header>
     );
 };

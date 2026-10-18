@@ -1,4 +1,4 @@
-/** #330: the one secondary card action. DESIGN.md Operate Surfaces "Plaque button". */
+/** #330: the one secondary card action. DESIGN.md Operate Surfaces "Plaque button". ≥ 44 px under md (#386). */
 import { forwardRef, type ButtonHTMLAttributes, type FC, type ReactNode } from "react";
 import Link from "next/link";
 
@@ -11,7 +11,7 @@ const SIZE: Record<PlaqueSize, string> = {
 };
 
 const BASE =
-  "plaque-button inline-flex items-center outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+  "plaque-button inline-flex items-center max-md:min-h-11 outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 
 /**
  * Plaque classes for a React Aria trigger (DialogTrigger / Slideout trigger need an `AriaButton`, not a native

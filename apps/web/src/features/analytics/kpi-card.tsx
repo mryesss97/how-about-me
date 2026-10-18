@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDown, ArrowRight, ArrowUp, InfoCircle, Minus } from "@untitledui/icons";
+import { ArrowDown, ArrowRight, ArrowUp, Minus } from "@untitledui/icons";
 import { Tooltip, TooltipTrigger } from "@/components/base/tooltip/tooltip";
 import { DASH, type Direction } from "@/lib/format/number";
 import { cx } from "@/utils/cx";
+import { KpiInfoButton } from "./kpi-info-button";
 import { type KpiId, kpiDefinition } from "./kpi-definitions";
 
 export const EMPTY_VALUE_TOOLTIP = "Chưa có lượt nhắc đã phân tích trong khoảng này";
@@ -82,11 +83,7 @@ export function KpiCard({
       <div className="flex min-h-[2lh] items-start gap-1">
         <h3 className="kpi-label">{label}</h3>
         {/* FR-140: definition + denominator from doc 07. */}
-        <Tooltip title={definition} description={`Mẫu số: ${denominator}`}>
-          <TooltipTrigger aria-label={`Giải thích ${label}`} className="relative z-10 text-quaternary">
-            <InfoCircle aria-hidden="true" className="size-4" />
-          </TooltipTrigger>
-        </Tooltip>
+        <KpiInfoButton label={label} definition={definition} denominator={denominator} />
       </div>
       <div className="flex flex-wrap items-baseline gap-2">
         {value === DASH ? (
@@ -109,7 +106,7 @@ export function KpiCard({
       {extra && extraHref ? (
         <Link
           href={extraHref}
-          className="relative z-10 self-start text-xs font-medium text-secondary underline-offset-2 hover:underline"
+          className="relative z-10 inline-flex items-center self-start text-xs max-md:min-h-11 font-medium text-secondary underline-offset-2 hover:underline"
         >
           {extra}
         </Link>

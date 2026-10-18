@@ -28,10 +28,13 @@ describe("KpiCards (FR-132)", () => {
     ]) {
       expect(screen.getByRole("button", { name: `Giải thích ${label}` })).toBeInTheDocument();
     }
-    await focusTrigger(screen.getByRole("button", { name: "Giải thích Tỷ lệ tích cực" }));
-    const tip = await screen.findByRole("tooltip");
+    // #386: ⓘ opens a popover on press (touch/click), not a hover-only tooltip.
+    fireEvent.click(screen.getByRole("button", { name: "Giải thích Tỷ lệ tích cực" }));
+    const tip = await screen.findByRole("dialog");
     expect(within(tip).getByText(/cảm xúc = tích cực/)).toBeInTheDocument();
     expect(within(tip).getByText(/Mẫu số: lượt nhắc liên quan đã có nhãn cảm xúc/)).toBeInTheDocument();
+    fireEvent.keyDown(tip, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.getAllByText("trên 2.410 đã phân tích").length).toBeGreaterThan(0);
   });
 

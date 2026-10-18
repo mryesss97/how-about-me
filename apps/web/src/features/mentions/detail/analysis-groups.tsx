@@ -48,7 +48,14 @@ export function Row({
 /** Per-field "Sửa" — opens the override dialog with the field preselected (FR-191, #338). */
 export function EditButton({ field, onEdit }: { field: OverrideField; onEdit: (f: OverrideField) => void }) {
   return (
-    <Button color="link-color" size="sm" aria-label={`Sửa ${FIELD_LABELS[field]}`} onClick={() => onEdit(field)}>
+    // #386: 44 px hit area on mobile; negative margin keeps the row height.
+    <Button
+      color="link-color"
+      size="sm"
+      className="max-md:-my-3 max-md:min-h-11 max-md:min-w-11"
+      aria-label={`Sửa ${FIELD_LABELS[field]}`}
+      onClick={() => onEdit(field)}
+    >
       Sửa
     </Button>
   );
