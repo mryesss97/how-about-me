@@ -48,6 +48,15 @@ const ReviewQueueRowSchema = z.object({
 });
 export type ReviewQueueRow = z.infer<typeof ReviewQueueRowSchema>;
 
+const ReviewStateRowSchema = z.object({
+  is_uncertain: z.boolean(),
+  is_low: z.boolean(),
+  is_failed: z.boolean(),
+  is_reviewed: z.boolean(),
+  reviewed_at: z.date().nullable(),
+});
+export type ReviewStateRow = z.infer<typeof ReviewStateRowSchema>;
+
 const CountsRowSchema = z.object({ all: num, uncertain: num, low_confidence: num, failed: num });
 const IdRowSchema = z.object({ id: z.string() });
 
@@ -78,7 +87,9 @@ const REASON_COLUMN: Record<ReviewReason, Prisma.Sql> = {
  * - is_reviewed per BR-040: reviewed_at ≥ latest run created_at (or no run).
  * One row per post: matches via EXISTS, latest run via LATERAL … LIMIT 1, settings unique on (project, policy_version).
  */
-function queueCte(projectId: string): Prisma.Sql {
+function queueCte(projectId: string, postId?: string): Prisma.Sql {
+  // #339: optional single-post filter for mention detail (bound value).
+  const onePost = postId ? Prisma.sql`AND p.id = ${postId}::uuid` : Prisma.empty;
   return Prisma.sql`q AS (
     SELECT p.id AS post_id, p.platform::text AS platform, p.platform_post_id, p.username, p.permalink,
            p.published_at, p.text, p.latest_run_status::text AS latest_run_status,
@@ -100,6 +111,7 @@ function queueCte(projectId: string): Prisma.Sql {
      WHERE p.project_id = ${projectId}::uuid
        AND EXISTS (SELECT 1 FROM post_query_matches m WHERE m.post_id = p.id AND m.excluded_by_terms = false)
        AND e.relevance_label IS DISTINCT FROM 'irrelevant'
+       ${onePost}
   ), f AS (
     SELECT q.*,
            COALESCE(q.relevance_label = 'uncertain', false) AS is_uncertain,
@@ -150,6 +162,17 @@ export class ReviewQueueRepository {
        ORDER BY f.published_at DESC, f.post_id DESC
        LIMIT ${limit + 1}`);
     return rows.map((r) => ReviewQueueRowSchema.parse(r));
+  }
+
+  /**
+   * #339: queue flags of one post (same CTE as the list, FR-195/BR-040/BR-016/BR-007); null when the post is
+   * outside the queue scope (no row). The mapper turns a row without any reason into null too.
+   */
+  async findState(projectId: string, postId: string): Promise<ReviewStateRow | null> {
+    const rows = await this.prisma.$queryRaw<unknown[]>(Prisma.sql`
+      WITH ${queueCte(projectId, postId)}
+      SELECT f.is_uncertain, f.is_low, f.is_failed, f.is_reviewed, f.reviewed_at FROM f LIMIT 1`);
+    return rows[0] ? ReviewStateRowSchema.parse(rows[0]) : null;
   }
 
   /** Tab badge counts for `status` in one query, bounded by a transaction-local statement_timeout; null on timeout. */

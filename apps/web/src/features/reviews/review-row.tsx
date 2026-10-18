@@ -1,18 +1,14 @@
 "use client";
 
 import type { ReviewQueueItem } from "@how-about-me/contracts";
-import type { ConfidenceBand } from "@how-about-me/taxonomy";
 import { Edit05 } from "@untitledui/icons";
-import { Badge } from "@/components/base/badges/badges";
+import type { KeyboardEvent, Ref } from "react";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { AnalysisStatusBadge, RelevanceBadge, SentimentBadge } from "@/features/shared/semantic-badge";
-import { formatRate } from "@/lib/format/number";
 import { analysisErrorLabel } from "@/lib/semantics/analysis-errors";
-import { reviewReasonLabelVi } from "@/lib/semantics/labels";
 import { formatDateTime, formatRelativeOrAbsolute, tzLabel } from "@/lib/time/format";
 import { cx } from "@/utils/cx";
-
-const BAND_LABEL: Record<ConfidenceBand, string> = { low: "Thấp", medium: "Trung bình", high: "Cao" };
+import { ConfidenceCell, ReasonBadges } from "./review-cells";
 
 type Props = {
   item: ReviewQueueItem;
@@ -23,20 +19,33 @@ type Props = {
   showReviewed: boolean;
   onToggle: (id: string, on: boolean) => void;
   onOpen: (id: string) => void;
+  /** Roving focus / Enter / Space handler from `useRovingRows` (#339). */
+  onKeyDown: (e: KeyboardEvent<HTMLElement>) => void;
+  ref?: Ref<HTMLTableRowElement>;
 };
 
-/** One row of the review queue (UX §3.8). Click/Enter opens the slide-out; the checkbox only selects. */
-export function ReviewRow({ item, tz, selectable, selected, disabled, showReviewed, onToggle, onOpen }: Props) {
+/** One row of the review queue (UX §3.8). Click/Enter opens, Space selects, ↑/↓ move (#339). */
+export function ReviewRow({
+  item,
+  tz,
+  selectable,
+  selected,
+  disabled,
+  showReviewed,
+  onToggle,
+  onOpen,
+  onKeyDown,
+  ref,
+}: Props) {
   const a = item.analysis;
   return (
     <tr
+      ref={ref}
       tabIndex={0}
       data-testid="review-row"
       aria-label={`Mục cần xem lại của @${item.username ?? "không rõ"}`}
       onClick={() => onOpen(item.id)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" && e.target === e.currentTarget) onOpen(item.id);
-      }}
+      onKeyDown={onKeyDown}
       className={cx(
         "cursor-pointer border-b border-secondary align-top outline-none hover:bg-primary_hover focus-visible:ring-2 focus-visible:ring-brand",
         selected && "bg-secondary",
@@ -74,11 +83,7 @@ export function ReviewRow({ item, tz, selectable, selected, disabled, showReview
       </td>
       <td className="px-3 py-3">
         <div className="flex flex-wrap gap-1">
-          {item.reasons.map((r) => (
-            <Badge key={r} type="pill-color" color={r === "failed" ? "error" : "warning"} size="sm">
-              {reviewReasonLabelVi[r]}
-            </Badge>
-          ))}
+          <ReasonBadges reasons={item.reasons} />
         </div>
       </td>
       {/* #338: values on a failed item come from the previous completed run. */}
@@ -104,14 +109,7 @@ export function ReviewRow({ item, tz, selectable, selected, disabled, showReview
       </td>
       <td className="px-3 py-3 text-sm whitespace-nowrap">
         {/* BR-020: the score is a band for prioritisation, not a probability. */}
-        <span title="Độ tin cậy ước tính — là mức để ưu tiên, không phải xác suất">
-          {formatRate(a.overallConfidence)}
-        </span>
-        {a.confidenceBand ? (
-          <Badge type="modern" color="gray" size="sm" className="ml-1">
-            {BAND_LABEL[a.confidenceBand]}
-          </Badge>
-        ) : null}
+        <ConfidenceCell analysis={a} />
       </td>
       <td className="px-3 py-3">
         <AnalysisStatusBadge value={a.status} />

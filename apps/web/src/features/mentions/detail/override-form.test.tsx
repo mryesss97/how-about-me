@@ -24,7 +24,10 @@ describe("OverrideDialog (FR-191)", () => {
     expect(save()).toBeDisabled(); // reason required in the UI
     fireEvent.change(reason(), { target: { value: "  Sarcasm  " } });
     fireEvent.click(save());
-    expect(onSubmit).toHaveBeenCalledWith({ field: "sentiment", value: "neutral", reason: "Sarcasm" });
+    expect(onSubmit).toHaveBeenCalledWith(
+      { field: "sentiment", value: "neutral", reason: "Sarcasm" },
+      { followUp: false },
+    );
   });
 
   it("Save is disabled while the value equals the current effective value", () => {
@@ -47,7 +50,10 @@ describe("OverrideDialog (FR-191)", () => {
     fireEvent.click(within(dialog).getByRole("checkbox", { name: "Câu hỏi" }));
     fireEvent.change(reason(), { target: { value: "both" } });
     fireEvent.click(save());
-    expect(onSubmit).toHaveBeenCalledWith({ field: "intents", value: ["complaint", "question"], reason: "both" });
+    expect(onSubmit).toHaveBeenCalledWith(
+      { field: "intents", value: ["complaint", "question"], reason: "both" },
+      { followUp: false },
+    );
   });
 
   it("caps the reason at 500 characters", () => {
@@ -98,5 +104,42 @@ describe("OverrideDialog (FR-191)", () => {
       .getAllByRole("checkbox")
       .filter((c) => (c as HTMLInputElement).checked);
     expect(checked).toHaveLength(1);
+  });
+});
+
+// #339: Reviews slide-out offers "mark reviewed after saving" (checked by default).
+describe("OverrideDialog followUp (#339)", () => {
+  const renderWith = (followUp?: { label: string }) => {
+    const onSubmit = vi.fn();
+    render(
+      <OverrideDialog
+        mention={detailFixture()}
+        isOpen
+        onClose={vi.fn()}
+        onSubmit={onSubmit}
+        isPending={false}
+        followUp={followUp}
+      />,
+    );
+    const dialog = screen.getByRole("dialog");
+    fireEvent.change(within(dialog).getAllByRole("combobox")[1] as HTMLSelectElement, { target: { value: "neutral" } });
+    fireEvent.change(within(dialog).getByRole("textbox"), { target: { value: "ok" } });
+    return { dialog, onSubmit };
+  };
+
+  it("checked by default → followUp true; unchecked → false", () => {
+    const { dialog, onSubmit } = renderWith({ label: "Đánh dấu đã xem lại sau khi lưu" });
+    const box = within(dialog).getByRole("checkbox", { name: "Đánh dấu đã xem lại sau khi lưu" });
+    expect(box).toBeChecked();
+    fireEvent.click(within(dialog).getByRole("button", { name: /Lưu ghi đè/ }));
+    expect(onSubmit).toHaveBeenLastCalledWith(expect.objectContaining({ field: "sentiment" }), { followUp: true });
+    fireEvent.click(box);
+    fireEvent.click(within(dialog).getByRole("button", { name: /Lưu ghi đè/ }));
+    expect(onSubmit).toHaveBeenLastCalledWith(expect.objectContaining({ field: "sentiment" }), { followUp: false });
+  });
+
+  it("without followUp (Mentions) → no checkbox", () => {
+    const { dialog } = renderWith();
+    expect(within(dialog).queryByRole("checkbox", { name: /sau khi lưu/ })).toBeNull();
   });
 });

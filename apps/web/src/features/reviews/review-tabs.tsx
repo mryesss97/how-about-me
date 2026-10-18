@@ -42,7 +42,7 @@ export function ReviewTabs({
         <AriaToggleButton
           key={t.id}
           id={t.id}
-          className="plaque-button cursor-pointer px-3 py-1.5 outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="plaque-button min-h-11 cursor-pointer px-3 py-1.5 md:min-h-0 outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           {t.label}
           {counts ? <span className="tabular-nums"> · {formatCount(counts[t.count])}</span> : null}

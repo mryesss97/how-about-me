@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   MarkReviewedBodySchema,
+  MentionReviewStateSchema,
   MentionsListQuerySchema,
   ReviewQueuePageSchema,
   ReviewQueueQuerySchema,
@@ -60,5 +61,20 @@ describe("review queue contracts (FR-195)", () => {
       "unreviewed",
     ]);
     expect(MentionsListQuerySchema.safeParse({ reviewStatus: "maybe" }).success).toBe(false);
+  });
+});
+
+// #339, FR-195, BR-040: review state on mention detail.
+describe("mention review state (#339)", () => {
+  it("accepts reasons + status; rejects empty reasons", () => {
+    expect(
+      MentionReviewStateSchema.safeParse({ reasons: ["uncertain"], status: "unreviewed", reviewedAt: null }).success,
+    ).toBe(true);
+    expect(MentionReviewStateSchema.safeParse({ reasons: [], status: "unreviewed", reviewedAt: null }).success).toBe(
+      false,
+    );
+    expect(MentionReviewStateSchema.safeParse({ reasons: ["failed"], status: "done", reviewedAt: null }).success).toBe(
+      false,
+    );
   });
 });

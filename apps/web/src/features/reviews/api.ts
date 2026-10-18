@@ -96,7 +96,8 @@ const isUnreviewedKey = (key: QueryKey) => {
 
 /**
  * POST /projects/:pid/reviews/mark-reviewed (FR-195, BR-040). Optimistically removes the rows from every cached
- * unreviewed queue; rolls back on error; always re-syncs reviews and mentions (`reviewStatus` filter).
+ * unreviewed queue; rolls back on error; always re-syncs reviews, mentions (`reviewStatus` filter)
+ * and mention detail (`review`, #339).
  */
 export function useMarkReviewed(pid: string | null | undefined) {
   const qc = useQueryClient();
@@ -136,6 +137,8 @@ export function useMarkReviewed(pid: string | null | undefined) {
       Promise.all([
         qc.invalidateQueries({ queryKey: ["project", p, "reviews"] }),
         qc.invalidateQueries({ queryKey: ["project", p, "mentions"] }),
+        // #339: mention detail carries `review.status` (BR-040).
+        qc.invalidateQueries({ queryKey: ["project", p, "mention"] }),
       ]),
   });
 }

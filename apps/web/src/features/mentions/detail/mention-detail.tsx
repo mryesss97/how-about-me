@@ -15,10 +15,16 @@ import { OperationsToolbar } from "./operations-toolbar";
 import { OriginalActions } from "./original-actions";
 import { OriginalPanel } from "./original-panel";
 import { OverrideDialog } from "./override-form";
+import { ReviewNote } from "./review-note";
 import { defaultOverrideField } from "./overrides";
 import { StatusBanner } from "./status-banner";
 
-type Props = { mentionId: string; variant: "page" | "slideout" };
+type Props = {
+  mentionId: string;
+  variant: "page" | "slideout";
+  /** #339: set inside the Reviews slide-out — hides the review note and offers "mark after saving". */
+  reviewContext?: { onOverrideSaved?: (markReviewed: boolean) => void };
+};
 
 /** One column of the detail as an Operate board (#277): navy keyline + condensed caps title, Inter inside. */
 function DetailBoard({
@@ -48,7 +54,7 @@ function DetailBoard({
 }
 
 /** Mention detail body shared by the full page and the slide-out — UX §3.4, FR-154..158. */
-export function MentionDetail({ mentionId, variant }: Props) {
+export function MentionDetail({ mentionId, variant, reviewContext }: Props) {
   const { project } = useCurrentProject();
   const { role, settings } = useRole();
   const pid = project?.id;
@@ -98,6 +104,7 @@ export function MentionDetail({ mentionId, variant }: Props) {
             onRetry={() => reanalyze.mutate()}
             isRetrying={reanalyze.isPending}
           />
+          {reviewContext ? null : <ReviewNote mentionId={m.id} review={m.review} />}
           <OperationsToolbar
             mention={m}
             canReanalyze={mayReanalyze}
@@ -112,9 +119,13 @@ export function MentionDetail({ mentionId, variant }: Props) {
             initialField={overrideField ?? "sentiment"}
             onClose={() => setOverrideField(null)}
             isPending={createOverride.isPending}
-            onSubmit={(body) =>
+            followUp={reviewContext?.onOverrideSaved ? { label: "Đánh dấu đã xem lại sau khi lưu" } : undefined}
+            onSubmit={(body, { followUp }) =>
               void createOverride.mutateAsync(body).then(
-                () => setOverrideField(null),
+                () => {
+                  setOverrideField(null);
+                  reviewContext?.onOverrideSaved?.(followUp);
+                },
                 () => undefined,
               )
             }

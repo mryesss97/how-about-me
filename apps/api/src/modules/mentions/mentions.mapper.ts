@@ -1,5 +1,6 @@
 import {
   type MentionDetail,
+  type MentionReviewState,
   type Override,
   type MentionListItem,
   classifierSchemaVersionOf,
@@ -94,6 +95,7 @@ export function toMentionDetail(
   runs: MentionRunRow[],
   overrides: Override[] = [],
   phrases: string[] = [],
+  review: MentionReviewState | null = null,
 ): MentionDetail {
   const item = toMentionListItem(row, h);
   const hasAnalysis = row.analysis_id != null;
@@ -151,5 +153,6 @@ export function toMentionDetail(
       estimatedCostUsd: r.estimatedCostUsd,
     })),
     overrides,
+    review,
   };
 }

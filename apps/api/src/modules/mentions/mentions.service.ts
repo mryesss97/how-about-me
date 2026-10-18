@@ -17,6 +17,8 @@ import { BULK_REANALYZE_AUDIT_ACTION, BulkReanalyzeThrottle } from "../analysis/
 import { AuditService } from "../audit/audit.service";
 import { toOverrideDto } from "../reviews/overrides.mapper";
 import { OverridesRepository } from "../reviews/overrides.repository";
+import { toMentionReviewState } from "../reviews/review-queue.mapper";
+import { ReviewQueueRepository } from "../reviews/review-queue.repository";
 import { decodeMentionCursor, resolveFilterScope, resolveMentionsScope } from "./mentions-query";
 import { toMentionDetail, toMentionListItem } from "./mentions.mapper";
 import { MentionsRepository } from "./mentions.repository";
@@ -35,6 +37,7 @@ export class MentionsService {
     private readonly throttle: BulkReanalyzeThrottle,
     @Inject(APP_CONFIG) private readonly cfg: AppConfig,
     private readonly overrides: OverridesRepository,
+    private readonly reviewQueue: ReviewQueueRepository,
   ) {}
 
   /**
@@ -68,14 +71,16 @@ export class MentionsService {
   async detail(projectId: string, mentionId: string): Promise<MentionDetail> {
     const row = await this.repo.findDetail(projectId, mentionId);
     if (!row) throw AppError.notFound("Mention");
-    const [hydrated, runs, overrides, phrases] = await Promise.all([
+    const [hydrated, runs, overrides, phrases, review] = await Promise.all([
       this.repo.hydrate([row.post_id]),
       this.repo.listRuns(row.post_id),
       this.overrides.listForPost(row.post_id),
       // #250: phrases of the current analysis only (BR-026).
       row.analysis_id ? this.repo.listPhrases(row.analysis_id) : Promise.resolve([]),
+      // #339: review queue state (FR-195, BR-040).
+      this.reviewQueue.findState(projectId, row.post_id),
     ]);
-    return toMentionDetail(row, hydrated, runs, overrides.map(toOverrideDto), phrases);
+    return toMentionDetail(row, hydrated, runs, overrides.map(toOverrideDto), phrases, toMentionReviewState(review));
   }
 
   /**

@@ -16,7 +16,8 @@ export function parseReviewParams(search: URLSearchParams | null): ReviewParams 
   };
 }
 
-/** URL state for /reviews (UX §3.8). Tabs/toggle replace history; opening an item pushes so Back closes it. */
+/** URL state for /reviews (UX §3.8). Tabs/toggle replace history; opening an item pushes so Back closes it;
+ * moving between items replaces (#339). */
 export function useReviewParams() {
   const router = useRouter();
   const search = useSearchParams();
@@ -41,6 +42,8 @@ export function useReviewParams() {
     setReason: useCallback((r: ReviewReason | null) => go({ reason: r, item: null }, "replace"), [go]),
     setShowReviewed: useCallback((on: boolean) => go({ status: on ? "reviewed" : null, item: null }, "replace"), [go]),
     openItem: useCallback((id: string) => go({ item: id }, "push"), [go]),
+    /** #339: next/prev in the slide-out replaces history, so Back still closes it. */
+    moveToItem: useCallback((id: string) => go({ item: id }, "replace"), [go]),
     closeItem: useCallback(() => go({ item: null }, "replace"), [go]),
   };
 }
