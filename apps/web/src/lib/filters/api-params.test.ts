@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { AnalyticsQuerySchema, MentionsListQuerySchema } from "@how-about-me/contracts";
-import { appliedChips, phraseMentionsHref, removeFilterValue, toApiParams, toMentionsHref } from "./api-params";
+import {
+  appliedChips,
+  phraseMentionsHref,
+  removeFilterValue,
+  toApiParams,
+  toMentionsHref,
+  toShareUrl,
+} from "./api-params";
 import { coverageDrillDown } from "./drill-down";
 import { filterParsers } from "./parsers";
 import { defaultFilters, type Filters } from "./schema";
@@ -64,6 +71,34 @@ describe("toMentionsHref (FR-142)", () => {
     expect(url.searchParams.get("from")).toBe(new Date(now.getTime() - 24 * 3_600_000).toISOString());
     expect(url.searchParams.get("sentiment")).toBe("negative");
     expect(url.searchParams.has("compare")).toBe(false);
+  });
+});
+
+describe("toShareUrl (#349, FR-142)", () => {
+  const origin = "https://app.example.com";
+  it("absolute URL, relative preset pinned as custom, keeps compare/q/sort/term", () => {
+    const f = base({ preset: "7d", compare: true, q: "lỗi", sort: "oldest", term: "giá" });
+    const url = new URL(toShareUrl("/overview", f, { origin, now }));
+    expect(url.origin).toBe(origin);
+    expect(url.pathname).toBe("/overview");
+    expect(url.searchParams.get("preset")).toBe("custom");
+    expect(url.searchParams.get("to")).toBe(now.toISOString());
+    expect(url.searchParams.get("from")).toBeTruthy();
+    expect(url.searchParams.get("compare")).toBe("true");
+    expect(url.searchParams.get("q")).toBe("lỗi");
+    expect(url.searchParams.get("sort")).toBe("oldest");
+    expect(url.searchParams.get("term")).toBe("giá");
+  });
+  it("uses the injected (already pinned) range instead of re-resolving", () => {
+    const range = { from: "2026-10-01T00:00:00.000Z", to: "2026-10-08T00:00:00.000Z" };
+    const url = new URL(toShareUrl("/mentions", base(), { origin, now, range }));
+    expect(url.searchParams.get("from")).toBe(range.from);
+    expect(url.searchParams.get("to")).toBe(range.to);
+  });
+  it("keeps a non-default tz", () => {
+    const url = new URL(toShareUrl("/terms/gi%C3%A1", base({ tz: "UTC" }), { origin, now }));
+    expect(url.pathname).toBe("/terms/gi%C3%A1");
+    expect(url.searchParams.get("tz")).toBe("UTC");
   });
 });
 

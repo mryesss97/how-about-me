@@ -16,11 +16,17 @@ vi.mock("@/lib/supabase/browser", () => ({
 function submit() {
   fireEvent.change(screen.getByLabelText(/^e-mail/i, { selector: "input" }), { target: { value: "a@b.co" } });
   fireEvent.change(screen.getByLabelText(/^mật khẩu/i, { selector: "input" }), { target: { value: "secret123" } });
-  fireEvent.click(screen.getByRole("button", { name: "Tiếp tục" }));
+  fireEvent.click(screen.getByRole("button", { name: "Đăng nhập" }));
 }
 
 describe("LoginForm (FR-010)", () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it("#350: password input has no placeholder and submit reads 'Đăng nhập'", () => {
+    render(<LoginForm googleEnabled={false} />);
+    expect(screen.getByLabelText(/^mật khẩu/i, { selector: "input" })).not.toHaveAttribute("placeholder");
+    expect(screen.getByRole("button", { name: "Đăng nhập" })).toHaveAttribute("type", "submit");
+  });
 
   it("TC-AUTH-002: wrong password shows a generic error and does not redirect", async () => {
     signInWithPassword.mockResolvedValue({ error: { message: "Invalid login credentials" } });
