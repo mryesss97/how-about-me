@@ -145,6 +145,8 @@ Boundaries computed in the selected timezone, then converted to UTC for SQL. DST
 
 Rule (`apps/api/src/common/time/range.ts` `previousPeriodInTz`): when both `from` and `to` fall exactly on local midnight in the selected timezone, step back by the same number of **calendar days** (DST-safe, so `prevFrom` is also a local midnight); otherwise step back by `len` in milliseconds. For `Asia/Ho_Chi_Minh` and `UTC` both give the same result.
 
+Phrase page (#333): the change line compares `sentimentAnalyzed` with `term` (the hero count) over `[from − (to − from), from)` vs `[from, to)`, computed in the web app from two sentiment requests; same rules (previous 0 → "Mới", |growth| < 0,005 → flat).
+
 ## 6. Drill-down equivalence
 
 Each metric maps to a mentions filter that returns exactly the counted posts:
