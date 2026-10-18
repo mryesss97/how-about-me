@@ -39,7 +39,7 @@ describe("page banners (UX §2.3, BR-032)", () => {
 
   it("BR-033: only an admin gets the link to fix the Threads connection", () => {
     const { rerender } = render(<IntegrationExpiredBanner canManage />);
-    expect(screen.getByRole("link", { name: /tích hợp/i })).toHaveAttribute("href", "/settings/integrations");
+    expect(screen.getByRole("link", { name: /kết nối/i })).toHaveAttribute("href", "/settings/integrations");
 
     rerender(<IntegrationExpiredBanner />);
     expect(screen.queryByRole("link")).not.toBeInTheDocument();

@@ -4,7 +4,7 @@ import { useSyncExternalStore } from "react";
 import { useCurrentProject } from "@/features/auth/use-current-project";
 import { DEFAULT_TZ } from "@/lib/filters/parsers";
 import { useFilters } from "@/lib/filters/use-filters";
-import { NEVER_SYNCED, viUpdated } from "@/lib/format/relative-time";
+import { syncFreshness } from "@/lib/format/sync-freshness";
 import { useOverview } from "./api";
 
 /**
@@ -30,10 +30,9 @@ export function OverviewFreshness() {
   const now = clock === null ? null : new Date(clock);
 
   if (!data || !now) return <span aria-hidden className="block h-5" />;
-  const lastSyncAt = data.dataQuality.lastSyncAt;
+  // #345: same rule as the landing "cập nhật" — a time only for a successful last sync.
+  const fresh = syncFreshness(data.dataQuality, now, apiParams.timezone ?? DEFAULT_TZ);
   return (
-    <p className="text-sm text-tertiary tabular-nums">
-      {lastSyncAt ? `Đồng bộ lần cuối ${viUpdated(lastSyncAt, now, apiParams.timezone ?? DEFAULT_TZ)}` : NEVER_SYNCED}
-    </p>
+    <p className="text-sm text-tertiary tabular-nums">{fresh.status ? fresh.text : `Đồng bộ lần cuối ${fresh.text}`}</p>
   );
 }

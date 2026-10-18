@@ -1,5 +1,5 @@
-/** Shown instead of a time when nothing has synced yet (landing #271, overview fascia #336). */
-export const NEVER_SYNCED = "Chưa đồng bộ";
+/** Shown instead of a time when no sync finished in the recent window (landing #271, overview fascia #336, #345). */
+export const NO_RECENT_SYNC = "Chưa có lượt đồng bộ gần đây";
 
 /** "5 phút trước" / "3 giờ trước", else "14/10 09:30" in the given timezone (#271, shared with #336). */
 export function viUpdated(iso: string, now: Date, timeZone: string): string {

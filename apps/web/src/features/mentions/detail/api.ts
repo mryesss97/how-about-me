@@ -53,6 +53,7 @@ export function useReanalyze(pid: string | null | undefined, id: string) {
       qc.invalidateQueries({ queryKey: ["project", pid ?? "", "mentions"] }),
       // BR-040: a new run reopens a reviewed item.
       qc.invalidateQueries({ queryKey: ["project", pid ?? "", "reviews"] }),
+      qc.invalidateQueries({ queryKey: qk.reviewCount(pid ?? "") }),
     ]);
   return useMutation({
     mutationFn: async () =>
@@ -94,6 +95,8 @@ function useOverrideRefresh(pid: string | null | undefined, id: string) {
       qc.invalidateQueries({ queryKey: ["project", p, "analytics"] }),
       // FR-195: an override can move the item out of (or between) review tabs.
       qc.invalidateQueries({ queryKey: ["project", p, "reviews"] }),
+      // #345: sidebar "Cần xem lại" plate.
+      qc.invalidateQueries({ queryKey: qk.reviewCount(p) }),
     ]);
 }
 

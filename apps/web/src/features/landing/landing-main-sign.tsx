@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowRight, ArrowUp } from "@untitledui/icons";
+import { AlertTriangle, ArrowDown, ArrowRight, ArrowUp } from "@untitledui/icons";
 import Link from "next/link";
 import { forwardRef } from "react";
 import { BrandLogo } from "@/features/shared/brand-logo";
@@ -40,7 +40,11 @@ export const MainSign = forwardRef<HTMLElement, Props>(function MainSign({ stats
                 <dt className="order-2 text-xs font-medium text-white sm:text-sm">{s.label}</dt>
                 <dd className="order-1 flex flex-wrap items-baseline gap-x-2">
                   {s.status ? (
-                    <span className="main-sign-status">{s.value}</span>
+                    <span className="main-sign-status inline-flex items-center gap-1.5">
+                      {/* #345: the words carry the meaning; the icon is not colour-only (BR-017). */}
+                      {s.alert ? <AlertTriangle aria-hidden className="size-4 shrink-0" /> : null}
+                      {s.value}
+                    </span>
                   ) : (
                     <span className={cx("main-sign-figure", loading && "opacity-40")}>{loading ? "—" : s.value}</span>
                   )}

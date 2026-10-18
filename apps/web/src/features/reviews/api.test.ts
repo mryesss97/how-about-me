@@ -88,4 +88,23 @@ describe("useMarkReviewed cache", () => {
       ]),
     );
   });
+
+  // #345 / BR-032: the sidebar plate drops optimistically and is re-synced; queue updater never touches it.
+  it("decrements and invalidates the sidebar review count (#345)", async () => {
+    const qc = new QueryClient();
+    const spy = vi.spyOn(qc, "invalidateQueries");
+    const countKey = ["project", "p1", "review-count"];
+    qc.setQueryData(countKey, {
+      items: [],
+      nextCursor: null,
+      counts: { all: 5, uncertain: 2, lowConfidence: 1, failed: 2 },
+    });
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client: qc }, children);
+    const { result } = renderHook(() => useMarkReviewed("p1"), { wrapper });
+    act(() => result.current.mutate([a.id, b.id]));
+    await waitFor(() => expect(qc.getQueryData<ReviewQueuePage>(countKey)?.counts?.all).toBe(3));
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(spy.mock.calls.map(([f]) => f?.queryKey)).toEqual(expect.arrayContaining([countKey]));
+  });
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import type { OverviewResponse } from "@how-about-me/contracts";
+import { useCollectionHealth } from "@/features/shared/health-strip";
 import { AnalysisPendingBanner, IntegrationExpiredBanner, SyncFailedBanner } from "@/features/shared/page-banner";
 
 type BannerInput = Pick<OverviewResponse, "coverage" | "dataQuality">;
@@ -38,7 +39,10 @@ export function OverviewBanners({
   /** #328: keeps the current range/queries; defaults to the banner's plain link. */
   pendingHref?: string;
 }) {
-  const kinds = bannersFor(data);
+  // #345: the shell strip already says the integration is broken — drop the duplicate red banner only while
+  // the strip shows something (if system-status failed, the page banner stays).
+  const stripShown = useCollectionHealth()?.notice != null;
+  const kinds = bannersFor(data).filter((k) => !(k === "integration" && stripShown));
   if (kinds.length === 0) return null;
   return (
     <div className="flex flex-col gap-3">

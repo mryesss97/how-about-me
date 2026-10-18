@@ -1,7 +1,12 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { bannersFor, emptyReasonFor, OverviewBanners } from "./overview-banners";
 import { overviewFixture } from "./overview-fixture.test-utils";
+
+const strip = vi.hoisted(() => ({ notice: null as null | { kind: string } }));
+vi.mock("@/features/shared/health-strip", () => ({
+  useCollectionHealth: () => (strip.notice ? { notice: strip.notice, nav: null } : null),
+}));
 
 const dq = (patch: Partial<ReturnType<typeof overviewFixture>["dataQuality"]>) => {
   const f = overviewFixture();
@@ -46,9 +51,9 @@ describe("OverviewBanners (FR-134)", () => {
   it("TC-DASH-011 / BR-033: integration banner links to Integrations for admins only", () => {
     const { rerender } = render(<OverviewBanners data={dq({ integrationStatus: "expired" })} canManage />);
     expect(screen.getByRole("alert")).toHaveTextContent("Kết nối Threads cần được xử lý.");
-    expect(screen.getByRole("link", { name: "Đến trang Tích hợp" })).toHaveAttribute("href", "/settings/integrations");
+    expect(screen.getByRole("link", { name: "Đến trang Kết nối" })).toHaveAttribute("href", "/settings/integrations");
     rerender(<OverviewBanners data={dq({ integrationStatus: "expired" })} canManage={false} />);
-    expect(screen.queryByRole("link", { name: "Đến trang Tích hợp" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Đến trang Kết nối" })).toBeNull();
   });
 
   it("orders banners red → yellow → blue", () => {
@@ -75,5 +80,17 @@ describe("emptyReasonFor (FR-159, BR-032)", () => {
     expect(emptyReasonFor(sync)).toBe("sync");
     const integ = { ...sync, dataQuality: { ...sync.dataQuality, integrationStatus: "expired" as const } };
     expect(emptyReasonFor(integ)).toBe("integration");
+  });
+});
+
+// #345: the shell strip already tells the integration is broken → no duplicate red banner while it shows.
+describe("OverviewBanners with the shell strip (#345)", () => {
+  it("drops the integration banner only while the strip shows a notice", () => {
+    strip.notice = { kind: "threads" };
+    const { rerender } = render(<OverviewBanners data={dq({ integrationStatus: "expired" })} canManage />);
+    expect(screen.queryByText("Kết nối Threads cần được xử lý.")).toBeNull();
+    strip.notice = null;
+    rerender(<OverviewBanners data={dq({ integrationStatus: "expired", lastSyncStatus: "partial" })} canManage />);
+    expect(screen.getByText("Kết nối Threads cần được xử lý.")).toBeInTheDocument();
   });
 });

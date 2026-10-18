@@ -22,6 +22,11 @@ import { ProjectSwitcher } from "./project-switcher";
 import { carryFilterQuery } from "@/lib/filters/carry";
 import { roleLabelVi } from "@/lib/semantics/labels";
 import { useHydrated } from "@/hooks/use-hydrated";
+import { useCurrentProject } from "@/features/auth/use-current-project";
+import { formatCount } from "@/lib/format/number";
+import type { NavHealth } from "./collection-health";
+import { useCollectionHealth } from "./health-strip";
+import { useReviewCount } from "./use-review-count";
 
 /** Product navigation — docs/01-product/09-ux-specification.md §1. Filtered by role (FR-018); UX only, server enforces. */
 type ShellNavItem = NavItemType & { match?: string };
@@ -66,6 +71,36 @@ export function withCarriedFilters(list: ShellNavItem[], pathname: string, searc
   return list.map((i) => (i.href && CARRY_TO.has(i.href) ? { ...i, href: `${i.href}${qs}` } : i));
 }
 
+/**
+ * #345: count plate on "Cần xem lại" (hidden when unknown or 0 — BR-032, never a fake "0") and dot + word on
+ * "Trạng thái hệ thống" (BR-017: never colour alone).
+ */
+export function withNavPlates(list: ShellNavItem[], count: number | null | undefined, health: NavHealth | null) {
+  return list.map((i) => {
+    if (i.href === "/reviews" && count != null && count > 0) return { ...i, badge: <NavCountPlate n={count} /> };
+    if (i.href === "/system-status" && health) return { ...i, badge: <NavStatePlate health={health} /> };
+    return i;
+  });
+}
+
+function NavCountPlate({ n }: { n: number }) {
+  return (
+    <span className="shell-nav-plate tabular-nums">
+      {formatCount(n)}
+      <span className="sr-only"> mục chờ xem lại</span>
+    </span>
+  );
+}
+
+function NavStatePlate({ health }: { health: NavHealth }) {
+  return (
+    <span className="shell-nav-plate" data-level={health.level}>
+      <span aria-hidden className="shell-nav-dot" />
+      {health.word}
+    </span>
+  );
+}
+
 /** useSearchParams needs a Suspense boundary in the layout; the fallback uses static hrefs. */
 export function AppSidebar() {
   return (
@@ -91,7 +126,11 @@ function SidebarShell({ search }: { search: URLSearchParams | null }) {
   const signOut = useSignOut();
   // Until the role loads only open routes are shown, so restricted items never flash.
   const visible = (list: ShellNavItem[]) => list.filter((i) => !i.href || canAccess(i.href, role));
-  const navItems = withCarriedFilters(visible(items), pathname, search);
+  // #345 (flows-10): unreviewed count for admin/analyst only; viewers never fetch it (FR-018).
+  const { project } = useCurrentProject();
+  const reviewCount = useReviewCount(project?.id, role === "admin" || role === "analyst").data;
+  const health = useCollectionHealth()?.nav ?? null;
+  const navItems = withNavPlates(withCarriedFilters(visible(items), pathname, search), reviewCount, health);
   const navFooter = visible(footerItems);
   const active = resolveActiveHref(pathname, [...navItems, ...navFooter]);
   // FR-011: sign out clears the session and the query cache.

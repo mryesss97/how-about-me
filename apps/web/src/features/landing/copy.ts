@@ -1,5 +1,4 @@
-/** Landing page copy (#262, #271). Vietnamese by owner decision 2026-10-14; the rest of the app stays English. */
-import { NEVER_SYNCED } from "@/lib/format/relative-time";
+/** Landing page copy (#262, #271). Vietnamese by owner decision 2026-10-14, like the rest of the app (#274). */
 
 export const landingCopy = {
   shopName: "How About Me",
@@ -16,7 +15,6 @@ export const landingCopy = {
     lastUpdated: "cập nhật",
   },
   previous: (n: string) => `kỳ trước: ${n}`,
-  neverSynced: NEVER_SYNCED,
   emptyAdmin: "Thêm cụm từ cho landing trong Cài đặt",
   emptyOther: "Chưa có cụm từ nào được cấu hình.",
   sentiment: { positive: "tích cực", neutral: "trung tính", negative: "tiêu cực" },

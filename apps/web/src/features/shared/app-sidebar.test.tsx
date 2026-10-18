@@ -1,7 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { meFixture, P1, P2, projectFixture, Providers } from "@/features/auth/test-utils";
+import type { ReactNode } from "react";
 import { AppSidebar, resolveActiveHref } from "./app-sidebar";
+import { healthFixture } from "./health-fixture.test-utils";
+import { CollectionHealthProvider } from "./health-strip";
 
 const apiFetch = vi.fn();
 vi.mock("@/lib/api/client", () => ({ apiFetch: (...a: unknown[]) => apiFetch(...a) }));
@@ -143,5 +146,93 @@ describe("resolveActiveHref (#325)", () => {
     const hrefs = screen.getAllByRole("link", { hidden: true }).map((a) => a.getAttribute("href"));
     expect(hrefs).toContain("/overview");
     expect(hrefs).not.toContain("/overview?preset=30d");
+  });
+});
+
+// #345 (flows-10, flows-4): nav plates.
+const Shell = ({ children }: { children: ReactNode }) => (
+  <Providers>
+    <CollectionHealthProvider>{children}</CollectionHealthProvider>
+  </Providers>
+);
+
+function mockApi(
+  role: "admin" | "analyst" | "viewer",
+  {
+    counts,
+    status = healthFixture(),
+  }: { counts?: { all: number } | null; status?: ReturnType<typeof healthFixture> } = {},
+) {
+  apiFetch.mockImplementation((path: string) => {
+    if (path.endsWith("/system-status")) return Promise.resolve(status);
+    if (path.endsWith("/reviews"))
+      return Promise.resolve({
+        items: [],
+        nextCursor: null,
+        ...(counts ? { counts: { uncertain: 0, lowConfidence: 0, failed: 0, ...counts } } : {}),
+      });
+    return Promise.resolve(meFixture([projectFixture(P1, role)]));
+  });
+}
+
+const reviewCalls = () => apiFetch.mock.calls.filter(([p]) => String(p).endsWith("/reviews"));
+
+describe("AppSidebar plates (#345)", () => {
+  beforeEach(() => {
+    pathname = "/overview";
+    search = "";
+    apiFetch.mockReset();
+  });
+
+  it.each(["admin", "analyst"] as const)("%s: Cần xem lại shows the unreviewed count (FR-195)", async (role) => {
+    mockApi(role, { counts: { all: 90 } });
+    render(<AppSidebar />, { wrapper: Shell });
+    const links = await screen.findAllByRole("link", { name: /Cần xem lại\s*90 mục chờ xem lại/, hidden: true });
+    expect(links.length).toBeGreaterThan(0);
+    expect(reviewCalls()[0]?.[1]).toEqual({ params: { status: "unreviewed", limit: "1", count: "true" } });
+  });
+
+  it("viewer: no plate and no /reviews request (FR-018)", async () => {
+    mockApi("viewer", { counts: { all: 90 } });
+    render(<AppSidebar />, { wrapper: Shell });
+    await screen.findAllByText("Chỉ xem");
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.queryByText(/mục chờ xem lại/)).toBeNull();
+    expect(reviewCalls()).toHaveLength(0);
+  });
+
+  it("BR-032: counts timed out → no plate, never 0; 0 → hidden", async () => {
+    mockApi("admin", { counts: null });
+    const { unmount } = render(<AppSidebar />, { wrapper: Shell });
+    await screen.findAllByText("Quản trị");
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.queryByText(/mục chờ xem lại/)).toBeNull();
+    unmount();
+    mockApi("admin", { counts: { all: 0 } });
+    render(<AppSidebar />, { wrapper: Shell });
+    await screen.findAllByText("Quản trị");
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.queryByText(/mục chờ xem lại/)).toBeNull();
+  });
+
+  it("BR-017: Trạng thái hệ thống carries a word — Lỗi / Chậm; healthy → none", async () => {
+    mockApi("viewer", { status: healthFixture({ threads: { status: "expired" } }) });
+    const { unmount } = render(<AppSidebar />, { wrapper: Shell });
+    expect(
+      (await screen.findAllByRole("link", { name: /Trạng thái hệ thống\s*Lỗi/, hidden: true })).length,
+    ).toBeGreaterThan(0);
+    unmount();
+    mockApi("viewer", { status: healthFixture({ collector: { status: "degraded" } }) });
+    const r2 = render(<AppSidebar />, { wrapper: Shell });
+    expect(
+      (await screen.findAllByRole("link", { name: /Trạng thái hệ thống\s*Chậm/, hidden: true })).length,
+    ).toBeGreaterThan(0);
+    r2.unmount();
+    mockApi("viewer");
+    render(<AppSidebar />, { wrapper: Shell });
+    await screen.findAllByText("Chỉ xem");
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.queryByText("Lỗi")).toBeNull();
+    expect(screen.queryByText("Chậm")).toBeNull();
   });
 });

@@ -9,6 +9,8 @@ export const qk = {
   distribution: (pid: string, kind: string, filters: unknown) => ["project", pid, "analytics", kind, filters] as const,
   mentions: (pid: string, filters: unknown) => ["project", pid, "mentions", filters] as const,
   reviews: (pid: string, filters: unknown) => ["project", pid, "reviews", filters] as const,
+  /** #345: sidebar plate. Deliberately outside the `reviews` prefix — `removeFromQueue` expects infinite pages. */
+  reviewCount: (pid: string) => ["project", pid, "review-count"] as const,
   mention: (pid: string, id: string) => ["project", pid, "mention", id] as const,
   queries: (pid: string, filters?: unknown) => ["project", pid, "listening-queries", filters ?? {}] as const,
   syncJobs: (pid: string, filters?: unknown) => ["project", pid, "sync-jobs", filters ?? {}] as const,
@@ -24,6 +26,9 @@ export const qk = {
 export const staleTimes = {
   overview: 30_000,
   systemStatus: 10_000,
+  /** #345: shell health strip / sidebar dot (no polling outside System Status). */
+  shellHealth: 60_000,
+  reviewCount: 60_000,
   mentions: 15_000,
   queries: 15_000,
   reviews: 15_000,
