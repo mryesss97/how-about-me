@@ -55,6 +55,12 @@ describe("semantic badges (UX §2.2, NFR-035)", () => {
       expect(screen.getByText(label)).toBeInTheDocument();
   });
 
+  it("UX §2.2 / BR-021 (#337): compact medium renders a gray ≈ with the full label as accessible name", () => {
+    render(<ConfidenceMarker band="medium" variant="compact" />);
+    const m = screen.getByRole("img", { name: /^Độ tin cậy trung bình/ });
+    expect(m.textContent).toBe("≈");
+  });
+
   it("BR-021: only medium and low confidence are marked — high stays silent", () => {
     const { container: high } = render(<ConfidenceMarker band="high" />);
     expect(high).toBeEmptyDOMElement();
