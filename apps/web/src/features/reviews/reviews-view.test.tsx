@@ -3,7 +3,8 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api/client";
 import type * as ClientModule from "@/lib/api/client";
-import { reviewFixture } from "./fixtures.test-utils";
+import { reviewDetailFixture, reviewFixture } from "./fixtures.test-utils";
+import type { RenderReviewDetail, ReviewDetailContext } from "./review-detail-slideout";
 import { ReviewsView } from "./reviews-view";
 
 const PID = "11111111-1111-4111-8111-111111111111";
@@ -47,11 +48,11 @@ function serve(items = [reviewFixture(), reviewFixture()], extra: Record<string,
 /** Table and cards render side by side (CSS picks, #339) — scope checkbox lookups to the table. */
 const tableCheck = (name: string) => within(screen.getByRole("table")).getByLabelText(name);
 
-function setup() {
+function setup(renderDetail: RenderReviewDetail = () => <p>detail body</p>) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={qc}>
-      <ReviewsView renderDetail={() => <p>detail body</p>} />
+      <ReviewsView renderDetail={renderDetail} />
     </QueryClientProvider>,
   );
 }
@@ -362,6 +363,88 @@ describe("ReviewsView (UX §3.8, FR-195, TC-REV-007)", () => {
         "href",
         `/mentions/${item.id}?back=${encodeURIComponent("/reviews?reason=uncertain")}`,
       );
+    });
+  });
+
+  describe("#390 deep link outside the first page", () => {
+    /** Every queue page has a next cursor; `pageWith` (1-based) contains `target`. */
+    function servePaged(target: string, pageWith: number | null, review: "unreviewed" | "reviewed" = "unreviewed") {
+      apiFetch.mockImplementation((path: string, opts?: { params?: Record<string, string> }) => {
+        if (path.endsWith("/reviews")) {
+          const page = opts?.params?.cursor ? Number(opts.params.cursor) : 1;
+          const items = page === pageWith ? [reviewFixture({ id: target, reasons: ["failed"] })] : [reviewFixture()];
+          return Promise.resolve({ items, nextCursor: String(page + 1), counts: page === 1 ? counts : undefined });
+        }
+        if (path.endsWith("/mark-reviewed")) return Promise.resolve({ marked: 1 });
+        if (path.includes("/mentions/"))
+          return Promise.resolve(
+            reviewDetailFixture(target, { reasons: ["low_confidence"], status: review, reviewedAt: null }),
+          );
+        return Promise.resolve({});
+      });
+    }
+    const TARGET = "00000000-0000-4000-8000-999999999999";
+
+    it("item on page 2 → loads it, reasons + n / N nav + mark button", async () => {
+      search = `item=${TARGET}`;
+      servePaged(TARGET, 2);
+      setup();
+      const dialog = await screen.findByRole("dialog");
+      await waitFor(() => expect(within(dialog).getByText("2 / 2+")).toBeInTheDocument());
+      expect(within(dialog).getByText("Phân tích lỗi")).toBeInTheDocument();
+      expect(within(dialog).getByRole("button", { name: /Đánh dấu đã xem lại/ })).toBeInTheDocument();
+      expect(listCalls()).toHaveLength(2);
+    });
+
+    it("BR-040: not in 4 pages → exactly 4 queue requests, fallback mark on 1 id then close, nav disabled + hint", async () => {
+      search = `item=${TARGET}`;
+      servePaged(TARGET, null);
+      let ctxSeen: ReviewDetailContext = {};
+      setup((_id, ctx) => {
+        ctxSeen = ctx;
+        return <p>detail body</p>;
+      });
+      const dialog = await screen.findByRole("dialog");
+      const btn = await within(dialog).findByRole("button", { name: "Đánh dấu đã xem lại" });
+      expect(listCalls()).toHaveLength(4);
+      expect(within(dialog).getByText("Mục này nằm ngoài danh sách đang tải")).toBeInTheDocument();
+      expect(within(dialog).getByText("– / 4+")).toBeInTheDocument();
+      expect(within(dialog).getByRole("button", { name: "Mục sau" })).toBeDisabled();
+      expect(within(dialog).getByText("Độ tin cậy thấp")).toBeInTheDocument();
+      // Override dialog's "mark after save" checkbox is driven by ctx.onOverrideSaved.
+      expect(typeof ctxSeen.onOverrideSaved).toBe("function");
+      fireEvent.click(btn);
+      await waitFor(() => expect(replace).toHaveBeenCalledWith("/reviews"));
+      expect(JSON.parse(markCalls()[0]?.[1].body ?? "{}")).toEqual({ postIds: [TARGET] });
+    });
+
+    it("fallback: post already reviewed → no mark button, hint stays", async () => {
+      search = `item=${TARGET}`;
+      servePaged(TARGET, null, "reviewed");
+      setup();
+      const dialog = await screen.findByRole("dialog");
+      expect(await within(dialog).findByText("Mục này nằm ngoài danh sách đang tải")).toBeInTheDocument();
+      await waitFor(() => expect(calls().some(([p]) => p.includes("/mentions/"))).toBe(true));
+      expect(within(dialog).queryByRole("button", { name: /Đánh dấu đã xem lại/ })).toBeNull();
+    });
+
+    it("FR-015: viewer fallback → no mark button", async () => {
+      role = "viewer";
+      search = `item=${TARGET}`;
+      servePaged(TARGET, null);
+      setup();
+      const dialog = await screen.findByRole("dialog");
+      expect(await within(dialog).findByText("Mục này nằm ngoài danh sách đang tải")).toBeInTheDocument();
+      expect(within(dialog).queryByRole("button", { name: /Đánh dấu đã xem lại/ })).toBeNull();
+    });
+
+    it("status=reviewed tab → no fallback mark", async () => {
+      search = `status=reviewed&item=${TARGET}`;
+      servePaged(TARGET, null);
+      setup();
+      const dialog = await screen.findByRole("dialog");
+      expect(await within(dialog).findByText("Mục này nằm ngoài danh sách đang tải")).toBeInTheDocument();
+      expect(within(dialog).queryByRole("button", { name: /Đánh dấu đã xem lại/ })).toBeNull();
     });
   });
 });

@@ -303,7 +303,10 @@ describe("MentionDetail review link (#339)", () => {
     apiFetch.mockResolvedValue(queued);
     setup();
     expect(await screen.findByText("Đang chờ xem lại · Chưa chắc")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Mở trong Cần xem lại" })).toHaveAttribute("href", `/reviews?item=${m.id}`);
+    expect(screen.getByRole("link", { name: "Mở trong Cần xem lại" })).toHaveAttribute(
+      "href",
+      `/reviews?reason=uncertain&item=${m.id}`,
+    );
   });
 
   it("inside the Reviews slide-out the note is hidden; saving an override reports followUp", async () => {
