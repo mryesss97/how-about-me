@@ -930,8 +930,9 @@ html[data-landing-hung] .sign-wall .sign-board {
 
 /* #348 Shell project: name under the logo; plate trigger when ≥ 2 projects. */
 .shell-project-label {
-  color: rgb(255 255 255 / 0.75);
-  font-size: 11px;
+  /* Full white: 75 % white on sky enamel failed WCAG AA contrast at 11 px (axe, #348). */
+  color: var(--enamel-white);
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
