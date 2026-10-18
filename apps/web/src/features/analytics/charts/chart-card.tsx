@@ -14,6 +14,8 @@ export type ChartTable = {
   rows: ReadonlyArray<readonly string[]>;
   /** FR-142: drill-down href per row (same index as `rows`); null/missing = plain text. Keyboard path to drill-down. */
   rowHrefs?: ReadonlyArray<string | null | undefined>;
+  /** FR-142 (#335): drill-down href per cell `[row][col]`; wins over `rowHrefs` for that cell. */
+  cellHrefs?: ReadonlyArray<ReadonlyArray<string | null | undefined>>;
 };
 
 /** FR-142 drill-down wiring passed by /overview: href per segment key (null = not drillable) + navigation. */
@@ -158,20 +160,23 @@ function ChartDataTable({ caption, table }: { caption: string; table: ChartTable
       <Table.Body>
         {table.rows.map((row, r) => (
           <Table.Row key={r} id={r}>
-            {row.map((cell, c) => (
-              <Table.Cell key={c}>
-                {c === 0 && table.rowHrefs?.[r] ? (
-                  <Link
-                    href={table.rowHrefs[r]}
-                    className="font-medium text-brand-secondary underline-offset-2 outline-focus-ring hover:underline focus-visible:outline-2"
-                  >
-                    {cell}
-                  </Link>
-                ) : (
-                  cell
-                )}
-              </Table.Cell>
-            ))}
+            {row.map((cell, c) => {
+              const cellHref = table.cellHrefs?.[r]?.[c] ?? (c === 0 ? table.rowHrefs?.[r] : null);
+              return (
+                <Table.Cell key={c}>
+                  {cellHref ? (
+                    <Link
+                      href={cellHref}
+                      className="font-medium text-brand-secondary underline-offset-2 outline-focus-ring hover:underline focus-visible:outline-2"
+                    >
+                      {cell}
+                    </Link>
+                  ) : (
+                    cell
+                  )}
+                </Table.Cell>
+              );
+            })}
           </Table.Row>
         ))}
       </Table.Body>

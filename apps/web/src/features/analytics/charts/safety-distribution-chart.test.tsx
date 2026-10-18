@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { safetyFixture } from "@/features/shared/overview-fixture.test-utils";
 import { safetyFill, SafetyDistributionChart } from "./safety-distribution-chart";
@@ -16,10 +16,14 @@ describe("SafetyDistributionChart", () => {
   });
 
   it("TC-DASH-023 / NFR-030: legend has label, icon and share text per level", () => {
-    const { container } = render(<SafetyDistributionChart data={safetyFixture()} />);
-    const items = screen.getAllByRole("listitem").map((li) => li.textContent);
+    render(<SafetyDistributionChart data={safetyFixture()} />);
+    // Legend is the last list; the first is the bar rows (#335).
+    const legend = screen.getAllByRole("list").at(-1) as HTMLElement;
+    const items = within(legend)
+      .getAllByRole("listitem")
+      .map((li) => li.textContent);
     expect(items).toEqual(["An toàn · 85,0%", "Nhạy cảm · 12,0%", "Nghiêm trọng · 3,0%"]);
-    const icons = Array.from(container.querySelectorAll("li svg[data-icon]")).map((s) => s.getAttribute("data-icon"));
+    const icons = Array.from(legend.querySelectorAll("li svg[data-icon]")).map((s) => s.getAttribute("data-icon"));
     expect(icons).toEqual(["ShieldTick", "AlertTriangle", "AlertOctagon"]);
   });
 

@@ -1,12 +1,13 @@
 "use client";
 
 import type { SentimentResponse } from "@how-about-me/contracts";
+import type { SentimentLabel } from "@how-about-me/taxonomy";
 import { ArrowLeft, ArrowRight } from "@untitledui/icons";
 import Link from "next/link";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useCurrentProject } from "@/features/auth/use-current-project";
 import { toMentionsHref } from "@/lib/filters/api-params";
-import { segmentDrillDown } from "@/lib/filters/drill-down";
+import { bucketDrillDown, bucketSentimentDrillDown, segmentDrillDown } from "@/lib/filters/drill-down";
 import { DEFAULT_TZ } from "@/lib/filters/parsers";
 import { useFilters } from "@/lib/filters/use-filters";
 import { formatCount, formatRate } from "@/lib/format/number";
@@ -59,6 +60,19 @@ export function TermDetailView({ term }: { term: string }) {
   const timeseries = useMentionsTimeseries(pid, apiParams);
   const topics = useTopicsDistribution(pid, apiParams);
   const split = termSplit(sentiment.data);
+  // FR-142 (#335): both time charts drill by bucket (+ sentiment); `href` keeps `term` via termFilters.
+  const { from, to } = live;
+  const mentionTimes = useMemo(() => timeseries.data?.data.map((p) => p.time) ?? [], [timeseries.data]);
+  const sentimentTimes = useMemo(() => sentiment.data?.timeseries?.data.map((p) => p.time) ?? [], [sentiment.data]);
+  const bucketHref = useCallback(
+    (i: number) => (from && to ? href(bucketDrillDown(mentionTimes, i, { from, to })) : null),
+    [href, mentionTimes, from, to],
+  );
+  const sentimentHref = useCallback(
+    (i: number, k: SentimentLabel | null) =>
+      from && to ? href(bucketSentimentDrillDown(sentimentTimes, i, { from, to }, k)) : null,
+    [href, sentimentTimes, from, to],
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -126,6 +140,7 @@ export function TermDetailView({ term }: { term: string }) {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <MentionsOverTimeChart
+          getBucketHref={bucketHref}
           onNavigate={navigate}
           className="lg:col-span-8"
           data={timeseries.data}
@@ -143,6 +158,8 @@ export function TermDetailView({ term }: { term: string }) {
           onRetry={() => void sentiment.refetch()}
         />
         <SentimentOverTimeChart
+          getSegmentHref={sentimentHref}
+          onNavigate={navigate}
           className="lg:col-span-6"
           data={sentiment.data}
           timezone={live.timezone ?? DEFAULT_TZ}

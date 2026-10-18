@@ -11,12 +11,16 @@ import { TermDetailView, termSplit } from "./term-detail-view";
 const apiFetch = vi.fn();
 vi.mock("@/lib/api/client", () => ({ apiFetch: (...a: unknown[]) => apiFetch(...a) }));
 // Charts are lazy (next/dynamic); the hero is what this page adds.
+const captured = vi.hoisted(() => ({ sentimentOverTime: null as null | Record<string, unknown> }));
 vi.mock("./charts", () => {
   const Stub = () => null;
   return {
     MentionsOverTimeChart: Stub,
     SentimentDistributionChart: Stub,
-    SentimentOverTimeChart: Stub,
+    SentimentOverTimeChart: (p: Record<string, unknown>) => {
+      captured.sentimentOverTime = p;
+      return null;
+    },
     TopTopicsChart: Stub,
   };
 });
@@ -120,5 +124,30 @@ describe("TermDetailView", () => {
   it("0 mentions → empty line instead of a split", async () => {
     setup(sentiment(0, 0, 0));
     expect(await screen.findByText(/Chưa ai nhắc tới cụm từ này/)).toBeInTheDocument();
+  });
+});
+
+describe("TermDetailView sentiment-over-time drill-down (#335, FR-142)", () => {
+  it("segment href keeps the term and adds bucket range + sentiment", async () => {
+    setup({
+      ...sentiment(7, 30, 45),
+      timeseries: {
+        interval: "day",
+        data: [{ time: new Date(Date.now() - 86_400_000).toISOString(), positive: 7, neutral: 30, negative: 45 }],
+      },
+    } as never);
+    await screen.findByText(/giá vé/);
+    await vi.waitFor(() => {
+      const props = captured.sentimentOverTime as {
+        data?: unknown;
+        getSegmentHref?: (i: number, k: string | null) => string | null;
+      };
+      expect(props?.data).toBeDefined();
+      const href = props.getSegmentHref?.(0, "negative") ?? "";
+      expect(href).toMatch(/^\/mentions\?/);
+      expect(href).toContain("term=");
+      expect(href).toContain("sentiment=negative");
+      expect(href).toContain("preset=custom");
+    });
   });
 });

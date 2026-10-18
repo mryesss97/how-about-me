@@ -7,7 +7,7 @@ import { useId } from "react";
 import type { QueryStateError } from "@/features/shared/query-state";
 import { formatCount, formatRate } from "@/lib/format/number";
 import { safetyBadge } from "@/lib/semantics/badges";
-import { ChartCard, type DrillDownProps, drillSelect, segmentHref } from "./chart-card";
+import { ChartCard, type DrillDownProps, segmentHref } from "./chart-card";
 import { type BarRow, SAFETY_COLORS } from "./chart-data";
 import { HorizontalBarChart } from "./horizontal-bar-chart";
 
@@ -55,7 +55,6 @@ export function SafetyDistributionChart({
   onRetry,
   className,
   getHref,
-  onNavigate,
 }: SafetyDistributionChartProps) {
   // useId returns ":r0:" — colons break url(#…) references.
   const idPrefix = `safety-${useId().replace(/:/g, "")}`;
@@ -91,7 +90,7 @@ export function SafetyDistributionChart({
         rows={rows}
         getFill={(r) => safetyFill(r.key, idPrefix)}
         denominator={denominator}
-        onSelect={drillSelect({ getHref, onNavigate })}
+        getRowHref={(r) => segmentHref(getHref, r)}
         denominatorLabel="lượt nhắc đã phân tích"
         defs={<SafetyPatterns idPrefix={idPrefix} />}
       />

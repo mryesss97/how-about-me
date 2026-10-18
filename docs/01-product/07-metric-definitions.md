@@ -167,6 +167,7 @@ Each metric maps to a mentions filter that returns exactly the counted posts:
 | phrase bubble p               | `+ phrase=p`                                                                        |
 | phrase detail (p, s)          | `+ phrase=p&sentiment=s`                                                            |
 | timeseries bucket             | `from=bucketStart,to=bucketEnd`                                                     |
+| sentiment-over-time (b, s)    | `from=bucketStart,to=bucketEnd&sentiment=s` (#335)                                  |
 | previous period               | `from=prevFrom,to=prevTo`                                                           |
 | coverage pending              | `analysisStatus=pending,processing`, label filters cleared (BR-016 exception, #328) |
 

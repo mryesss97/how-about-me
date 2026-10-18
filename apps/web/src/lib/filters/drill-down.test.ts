@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { toApiParams, toMentionsHref } from "./api-params";
 import {
   bucketDrillDown,
+  bucketSentimentDrillDown,
   coverageDrillDown,
   kpiDrillDown,
   phraseSentimentDrillDown,
@@ -191,5 +192,31 @@ describe("phraseSentimentDrillDown (#243, FR-148, FR-142)", () => {
         language: [],
       });
     });
+  });
+});
+
+describe("bucketSentimentDrillDown (FR-136 / FR-142, #335)", () => {
+  const times = ["2026-10-10T17:00:00.000Z", "2026-10-11T17:00:00.000Z"];
+  const range = { from: "2026-10-10T17:00:00.000Z", to: "2026-10-12T05:00:00.000Z" };
+
+  it("bucket + sentiment → [start_i, start_i+1) and sentiment=[k]", () => {
+    expect(bucketSentimentDrillDown(times, 0, range, "negative")).toEqual({
+      preset: "custom",
+      from: new Date(times[0] as string),
+      to: new Date(times[1] as string),
+      sentiment: ["negative"],
+    });
+  });
+
+  it("last bucket is clamped to range.to; no sentiment drills the whole bucket", () => {
+    expect(bucketSentimentDrillDown(times, 1, range, null)).toEqual({
+      preset: "custom",
+      from: new Date(times[1] as string),
+      to: new Date(range.to),
+    });
+  });
+
+  it("index out of range → null", () => {
+    expect(bucketSentimentDrillDown(times, 5, range, "positive")).toBeNull();
   });
 });
