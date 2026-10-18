@@ -46,11 +46,11 @@ describe("OverviewFreshness (#336)", () => {
     expect(screen.getByText("Đồng bộ lần cuối 12/10 09:30")).toBeInTheDocument();
   });
 
-  it("never synced → 'Chưa đồng bộ'; no data yet → nothing printed", () => {
+  it("no recent sync → 'Chưa có lượt đồng bộ gần đây'; no data yet → nothing printed (#345)", () => {
     state.loaded = true;
     state.lastSyncAt = null;
     const { unmount } = render(<OverviewFreshness />);
-    expect(screen.getByText("Chưa đồng bộ")).toBeInTheDocument();
+    expect(screen.getByText("Chưa có lượt đồng bộ gần đây")).toBeInTheDocument();
     unmount();
     state.loaded = false;
     const { container } = render(<OverviewFreshness />);

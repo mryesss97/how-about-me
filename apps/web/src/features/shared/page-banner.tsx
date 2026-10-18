@@ -51,25 +51,32 @@ export function PageBanner({
   description,
   action,
   className,
+  compact = false,
+  live = true,
 }: {
   tone: BannerTone;
   title: string;
   description?: string;
   action?: ReactNode;
   className?: string;
+  /** #345: shell strip — tighter padding, title + description on one line from sm. */
+  compact?: boolean;
+  /** #345: false → no live-region role (the shell strip must not be re-announced on every navigation). */
+  live?: boolean;
 }) {
   const { container, icon, Icon, role } = TONES[tone];
   return (
     <div
-      role={role}
+      role={live ? role : undefined}
       className={cx(
-        "flex flex-wrap items-start gap-3 rounded-[3px] border border-l-2 border-secondary bg-primary px-4 py-3",
+        "flex flex-wrap items-start gap-3 rounded-[3px] border border-l-2 border-secondary bg-primary px-4",
+        compact ? "py-2" : "py-3",
         container,
         className,
       )}
     >
       <Icon aria-hidden="true" className={cx("mt-0.5 size-5 shrink-0", icon)} />
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+      <div className={cx("flex min-w-0 flex-1 flex-col gap-0.5", compact && "sm:flex-row sm:flex-wrap sm:gap-x-2")}>
         <p className="text-sm font-semibold text-primary">{title}</p>
         {description ? <p className="text-sm text-tertiary">{description}</p> : null}
       </div>
@@ -80,7 +87,7 @@ export function PageBanner({
 }
 
 /** #336: banner actions are plaque links (next/link), 44px tall under sm. */
-function BannerLink({ href, children }: { href: string; children: ReactNode }) {
+export function BannerLink({ href, children }: { href: string; children: ReactNode }) {
   return (
     <Link href={href} className={plaqueClassName("sm", "min-h-11 sm:min-h-0")}>
       {children}
@@ -130,7 +137,7 @@ export function IntegrationExpiredBanner({ canManage = false }: { canManage?: bo
           ? "Việc thu thập tạm dừng cho đến khi access token được cập nhật."
           : "Việc thu thập đang tạm dừng. Hãy nhờ quản trị dự án cập nhật access token Threads."
       }
-      action={canManage ? <BannerLink href="/settings/integrations">Đến trang Tích hợp</BannerLink> : null}
+      action={canManage ? <BannerLink href="/settings/integrations">Đến trang Kết nối</BannerLink> : null}
     />
   );
 }

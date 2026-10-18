@@ -10,6 +10,7 @@ import type {
 import { parseDate } from "@internationalized/date";
 import { DASH, formatCount } from "@/lib/format/number";
 
+import { FAILED_JOBS_HREF } from "@/features/shared/collection-health";
 import type { Tone } from "@/features/shared/status-plate";
 import { TOKEN_WARN_DAYS, tokenDaysLeft } from "@/lib/semantics/token-expiry";
 
@@ -193,7 +194,7 @@ export function countQueriesWithError(
 export type SummaryClause = { text: string; href: string | null };
 export type Summary = { ok: true } | { ok: false; clauses: SummaryClause[] };
 
-export const FAILED_JOBS_HREF = "/system-status?tab=sync-jobs&status=failed";
+export { FAILED_JOBS_HREF };
 
 /** Sync-jobs link for the collector: failed first; only partial → `status=partial` (one status per URL). */
 export function failedJobsHref(failed: number, partial: number): string | null {

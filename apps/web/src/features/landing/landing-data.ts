@@ -1,5 +1,6 @@
 import type { LandingTermsResponse, OverviewResponse } from "@how-about-me/contracts";
 import { viUpdated } from "@/lib/format/relative-time";
+import { syncFreshness } from "@/lib/format/sync-freshness";
 import { landingCopy as copy } from "./copy";
 
 export { viUpdated };
@@ -106,8 +107,10 @@ export type LandingStat = {
   growth: LandingGrowth | null;
   /** Small print under the figure, e.g. the previous period's count behind a growth figure. */
   note?: string;
-  /** A state rather than a number ("Chưa đồng bộ"): set as small print, not as a painted figure. */
+  /** A state rather than a number ("Thu thập tạm dừng"): set as small print, not as a painted figure. */
   status?: boolean;
+  /** #345: the state is a problem (sync failed / collection paused) → warning icon next to the text. */
+  alert?: boolean;
 };
 
 /**
@@ -116,7 +119,8 @@ export type LandingStat = {
  */
 export function formatLandingStats(o: OverviewResponse, now: Date = new Date()): LandingStat[] {
   const m = o.kpis.mentionCount;
-  const lastSyncAt = o.dataQuality.lastSyncAt;
+  // #345: never a fresh-looking time when the last sync failed or collection is paused.
+  const fresh = syncFreshness(o.dataQuality, now, o.range.timezone);
   return [
     {
       key: "mentions",
@@ -135,10 +139,11 @@ export function formatLandingStats(o: OverviewResponse, now: Date = new Date()):
     { key: "negative", value: viRate(o.kpis.negativeRate.value), label: copy.stats.negative, growth: null },
     {
       key: "lastUpdated",
-      value: lastSyncAt ? viUpdated(lastSyncAt, now, o.range.timezone) : copy.neverSynced,
+      value: fresh.text,
       label: copy.stats.lastUpdated,
       growth: null,
-      status: !lastSyncAt,
+      status: fresh.status,
+      alert: fresh.alert,
     },
   ];
 }

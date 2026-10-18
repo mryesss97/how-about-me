@@ -578,6 +578,41 @@ html[data-landing-hung] .sign-wall .sign-board {
   text-transform: uppercase;
 }
 
+/* #345: nav plates on the sky sign — review count and system-status dot + word (BR-017). Inverted on the
+   current (white) item. */
+.shell-nav-plate {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 2px;
+  background: var(--enamel-white);
+  color: var(--ink);
+  font-family: var(--font-figure), sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+/* #345: state on the nav item is a dot on a small white plate, so the item label never truncates. */
+.shell-nav-plate--dot {
+  padding: 4px;
+}
+[aria-current="page"] .shell-nav-plate {
+  background: var(--ink);
+  color: var(--enamel-white);
+}
+.shell-nav-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--red-enamel);
+}
+.shell-nav-plate[data-level="warning"] .shell-nav-dot {
+  background: var(--color-utility-yellow-500, #eaaa08);
+}
+
 .shell-signout {
   display: inline-flex;
   align-items: center;

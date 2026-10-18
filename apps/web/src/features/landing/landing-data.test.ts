@@ -65,11 +65,25 @@ describe("landing figures", () => {
     expect(landingGrowth(null, "up")).toBeNull();
   });
 
-  it("never synced → Chưa đồng bộ as a status (small print), not a figure", () => {
+  it("no recent sync → status (small print), not a figure (#345)", () => {
     expect(formatLandingStats(overviewFixture({ lastSyncAt: null }))[3]).toMatchObject({
-      value: "Chưa đồng bộ",
+      value: "Chưa có lượt đồng bộ gần đây",
       status: true,
     });
+  });
+
+  // #345 (flows-4): never a fresh-looking "cập nhật" when collection is broken (BR-032).
+  it.each([
+    [{ lastSyncStatus: "failed" as const }, "Đồng bộ lỗi · 30 phút trước"],
+    [{ integrationStatus: "expired" as const }, "Kết nối Threads tạm dừng"],
+    [{ collectorStatus: "paused" as const }, "Thu thập tạm dừng"],
+  ])("%o → %s as an alert status (#345)", (dq, text) => {
+    const o = overviewFixture();
+    const stat = formatLandingStats(
+      { ...o, dataQuality: { ...o.dataQuality, ...dq } },
+      new Date("2026-10-14T05:00:00Z"),
+    )[3];
+    expect(stat).toMatchObject({ value: text, status: true, alert: true });
   });
 
   it("#271: growth carries its base (previous period count) as small print", () => {

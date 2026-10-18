@@ -118,7 +118,16 @@ export function useMarkReviewed(pid: string | null | undefined) {
       const snapshot = qc.getQueriesData<InfiniteData<ReviewQueuePage>>({ queryKey: ["project", p, "reviews"] });
       const ids = new Set(postIds);
       for (const [key, data] of snapshot) if (isUnreviewedKey(key)) qc.setQueryData(key, removeFromQueue(data, ids));
-      return { snapshot };
+      // #345: the sidebar plate drops at once, like the "Tất cả · N" tab.
+      const countKey = qk.reviewCount(p);
+      await qc.cancelQueries({ queryKey: countKey });
+      const countSnapshot = qc.getQueryData<ReviewQueuePage>(countKey);
+      if (countSnapshot?.counts)
+        qc.setQueryData<ReviewQueuePage>(countKey, {
+          ...countSnapshot,
+          counts: { ...countSnapshot.counts, all: Math.max(0, countSnapshot.counts.all - postIds.length) },
+        });
+      return { snapshot, countSnapshot };
     },
     onSuccess: (r, postIds) => {
       const skipped = postIds.length - r.marked;
@@ -128,6 +137,7 @@ export function useMarkReviewed(pid: string | null | undefined) {
     },
     onError: (err: unknown, _ids, ctx) => {
       for (const [key, data] of ctx?.snapshot ?? []) qc.setQueryData(key, data);
+      if (ctx?.countSnapshot) qc.setQueryData(qk.reviewCount(p), ctx.countSnapshot);
       const msg = err instanceof ApiError ? err.message : "Không thể đánh dấu đã xem lại";
       toast.error(msg, {
         description: err instanceof ApiError && err.requestId ? `Mã yêu cầu: ${err.requestId}` : undefined,
@@ -136,6 +146,7 @@ export function useMarkReviewed(pid: string | null | undefined) {
     onSettled: () =>
       Promise.all([
         qc.invalidateQueries({ queryKey: ["project", p, "reviews"] }),
+        qc.invalidateQueries({ queryKey: qk.reviewCount(p) }),
         qc.invalidateQueries({ queryKey: ["project", p, "mentions"] }),
         // #339: mention detail carries `review.status` (BR-040).
         qc.invalidateQueries({ queryKey: ["project", p, "mention"] }),

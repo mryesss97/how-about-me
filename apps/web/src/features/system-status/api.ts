@@ -11,7 +11,6 @@ import {
   RetrySyncJobResponseSchema,
   SyncJobDetailSchema,
   SyncJobsPageSchema,
-  SystemStatusResponseSchema,
   type JobStatus,
 } from "@how-about-me/contracts";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -19,8 +18,12 @@ import { useMemo } from "react";
 import { ApiError, apiFetch } from "@/lib/api/client";
 import { qk, staleTimes } from "@/lib/query/keys";
 
-/** FR-170: the overview auto-refreshes every 30 s while the browser tab is visible (TC-SYS-001). */
-export const SYSTEM_STATUS_REFETCH_MS = 30_000;
+import {
+  SYSTEM_STATUS_REFETCH_MS,
+  useSystemStatus as useSharedSystemStatus,
+} from "@/features/shared/use-system-status";
+
+export { SYSTEM_STATUS_REFETCH_MS };
 export const SYNC_JOBS_PAGE_SIZE = 50;
 export const ANALYSIS_FAILURES_PAGE_SIZE = 50;
 export const AUDIT_LOGS_PAGE_SIZE = 50;
@@ -29,15 +32,9 @@ export const RETRY_ALL_LIMIT = 500;
 
 export type SyncJobFilters = { queryId?: string; status?: JobStatus; from?: string; to?: string };
 
+/** FR-170: System Status polls every 30 s; same cache key as the shell health strip (#345). */
 export function useSystemStatus(pid: string | null | undefined) {
-  return useQuery({
-    queryKey: qk.systemStatus(pid ?? ""),
-    queryFn: async () => SystemStatusResponseSchema.parse(await apiFetch<unknown>(`/projects/${pid}/system-status`)),
-    refetchInterval: SYSTEM_STATUS_REFETCH_MS,
-    refetchIntervalInBackground: false,
-    staleTime: staleTimes.systemStatus,
-    enabled: !!pid,
-  });
+  return useSharedSystemStatus(pid, { poll: true });
 }
 
 /** FR-081: cursor-paginated sync job list; `from`/`to` are already UTC ISO strings. */
