@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { UuidSchema } from "@how-about-me/contracts";
 import { MentionDetail } from "@/features/mentions/detail/mention-detail";
 import { PageHeader } from "@/features/shared/page-header";
+import { BACK_PARAM, resolveBack } from "@/lib/navigation/back-link";
 
 export const metadata = { title: "Chi tiết bài nhắc" };
 
@@ -24,16 +25,19 @@ export default async function MentionDetailPage({
   }
   // `item` belongs to the list slide-out (#326), not to the list filters.
   sp.delete("item");
+  // #331: `back` names the source page (phrase page, System Status…); falls back to the list.
+  const back = resolveBack(sp.get(BACK_PARAM));
+  sp.delete(BACK_PARAM);
   const qs = sp.toString();
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 lg:px-8">
       <nav aria-label="Điều hướng">
         <Link
-          href={`/mentions${qs ? `?${qs}` : ""}`}
+          href={back?.href ?? `/mentions${qs ? `?${qs}` : ""}`}
           className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-tertiary hover:text-primary"
         >
           <ArrowLeft className="size-4" aria-hidden />
-          Quay lại danh sách
+          {back?.label ?? "Quay lại danh sách"}
         </Link>
       </nav>
       <PageHeader title="Chi tiết bài nhắc" />

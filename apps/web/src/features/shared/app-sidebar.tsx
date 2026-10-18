@@ -1,6 +1,7 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import {
   Activity,
   BarChartSquare02,
@@ -18,14 +19,15 @@ import { useMobileNav } from "@/components/application/app-navigation/base-compo
 import { SidebarNavigationSimple } from "@/components/application/app-navigation/sidebar-navigation/sidebar-simple";
 import type { NavItemType } from "@/components/application/app-navigation/config";
 import { ProjectSwitcher } from "./project-switcher";
+import { carryFilterQuery } from "@/lib/filters/carry";
 import { roleLabelVi } from "@/lib/semantics/labels";
 
 /** Product navigation — docs/01-product/09-ux-specification.md §1. Filtered by role (FR-018); UX only, server enforces. */
 type ShellNavItem = NavItemType & { match?: string };
 
 const items: ShellNavItem[] = [
-  { label: "Tổng quan", href: "/overview", icon: BarChartSquare02 },
-  { label: "Bài nhắc", href: "/mentions", icon: MessageChatSquare },
+  { label: "Tổng quan", href: "/overview", icon: BarChartSquare02, match: "/overview" },
+  { label: "Bài nhắc", href: "/mentions", icon: MessageChatSquare, match: "/mentions" },
   { label: "Truy vấn theo dõi", href: "/listening-queries", icon: SearchLg },
   { label: "Cần xem lại", href: "/reviews", icon: CheckDone01 },
   { label: "Trạng thái hệ thống", href: "/system-status", icon: Activity },
@@ -51,14 +53,39 @@ export function resolveActiveHref(pathname: string, list: ShellNavItem[]): strin
   return best?.href;
 }
 
+/** #331: screens whose shared filters the Overview / Mentions items carry. */
+const CARRY_FROM = ["/overview", "/mentions", "/terms"];
+const CARRY_TO = new Set(["/overview", "/mentions"]);
+
+/** #331: Overview / Mentions hrefs keep the shared filter keys while moving between those screens. */
+export function withCarriedFilters(list: ShellNavItem[], pathname: string, search: URLSearchParams | null) {
+  const onCarryScreen = CARRY_FROM.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  const qs = onCarryScreen ? carryFilterQuery(search) : "";
+  if (!qs) return list;
+  return list.map((i) => (i.href && CARRY_TO.has(i.href) ? { ...i, href: `${i.href}${qs}` } : i));
+}
+
+/** useSearchParams needs a Suspense boundary in the layout; the fallback uses static hrefs. */
 export function AppSidebar() {
+  return (
+    <Suspense fallback={<SidebarShell search={null} />}>
+      <SidebarWithSearch />
+    </Suspense>
+  );
+}
+
+function SidebarWithSearch() {
+  return <SidebarShell search={useSearchParams()} />;
+}
+
+function SidebarShell({ search }: { search: URLSearchParams | null }) {
   const pathname = usePathname();
   const me = useMe();
   const { role } = useRole();
   const signOut = useSignOut();
   // Until the role loads only open routes are shown, so restricted items never flash.
   const visible = (list: ShellNavItem[]) => list.filter((i) => !i.href || canAccess(i.href, role));
-  const navItems = visible(items);
+  const navItems = withCarriedFilters(visible(items), pathname, search);
   const navFooter = visible(footerItems);
   const active = resolveActiveHref(pathname, [...navItems, ...navFooter]);
   // FR-011: sign out clears the session and the query cache.

@@ -5,8 +5,8 @@ import { ArrowLeft, ArrowRight } from "@untitledui/icons";
 import Link from "next/link";
 import { useMemo } from "react";
 import { useCurrentProject } from "@/features/auth/use-current-project";
+import { toMentionsHref } from "@/lib/filters/api-params";
 import { segmentDrillDown } from "@/lib/filters/drill-down";
-import { termMentionsHref } from "@/lib/filters/api-params";
 import { DEFAULT_TZ } from "@/lib/filters/parsers";
 import { useFilters } from "@/lib/filters/use-filters";
 import { formatCount, formatRate } from "@/lib/format/number";
@@ -70,7 +70,8 @@ export function TermDetailView({ term }: { term: string }) {
               <ArrowLeft aria-hidden className="size-4" />
               {copy.back}
             </Link>
-            <Link href={termMentionsHref(term)} className="term-hero-link">
+            {/* #331 / FR-142: pin the page range + filters so Mentions shows the same post set. */}
+            <Link href={toMentionsHref(termFilters)} className="term-hero-link">
               {copy.allMentions}
               <ArrowRight aria-hidden className="size-4" />
             </Link>

@@ -87,9 +87,9 @@ describe("LandingView", () => {
     });
   });
 
-  it("FR-020: the door plaque links to /overview", async () => {
+  it("FR-020 / #331: the door plaque links to /overview with the 30-day preset", async () => {
     setup();
-    expect(await screen.findByRole("link", { name: "Vào dashboard" })).toHaveAttribute("href", "/overview");
+    expect(await screen.findByRole("link", { name: "Vào dashboard" })).toHaveAttribute("href", "/overview?preset=30d");
   });
 
   it("figures loading → busy list with placeholders", async () => {

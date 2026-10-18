@@ -56,7 +56,10 @@ describe("AnalysisFailuresTab (FR-175, TC-SYS-012)", () => {
     // Vietnamese label in the cell; the raw message stays in the tooltip (title).
     expect(screen.getByText("Bộ phân tích phản hồi quá lâu")).toBeInTheDocument();
     expect(screen.getByTitle("LLM_TIMEOUT: Provider timed out")).toBeInTheDocument();
-    expect(screen.getByRole("link")).toHaveAttribute("href", `/mentions/${run.postId}`);
+    expect(screen.getByRole("link")).toHaveAttribute(
+      "href",
+      `/mentions/${run.postId}?back=%2Fsystem-status`, // #331: back link returns to System Status
+    );
     expect(calls()[0]?.[1].params).toMatchObject({ status: "failed", limit: "50" });
   });
 

@@ -1,13 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AnalyticsQuerySchema, MentionsListQuerySchema } from "@how-about-me/contracts";
-import {
-  appliedChips,
-  phraseMentionsHref,
-  removeFilterValue,
-  termMentionsHref,
-  toApiParams,
-  toMentionsHref,
-} from "./api-params";
+import { appliedChips, phraseMentionsHref, removeFilterValue, toApiParams, toMentionsHref } from "./api-params";
 import { coverageDrillDown } from "./drill-down";
 import { filterParsers } from "./parsers";
 import { defaultFilters, type Filters } from "./schema";
@@ -133,11 +126,6 @@ describe("term filter (#273, BR-042)", () => {
   it("renders a 'Cụm từ' chip and removes to null", () => {
     expect(appliedChips(f)).toContainEqual({ key: "term", value: "giá vé", label: "Cụm từ: giá vé" });
     expect(removeFilterValue(f, "term", "giá vé")).toEqual({ term: null });
-  });
-  it("termMentionsHref round-trips through the parser", () => {
-    const url = new URL(termMentionsHref("giá vé"), "http://x");
-    expect(url.pathname).toBe("/mentions");
-    expect(filterParsers.term.parse(url.searchParams.get("term") ?? "")).toBe("giá vé");
   });
 
   describe("BR-016 exception (#328)", () => {

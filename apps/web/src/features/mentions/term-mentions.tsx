@@ -1,10 +1,12 @@
 "use client";
 
+import { usePathname, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import { useCurrentProject } from "@/features/auth/use-current-project";
 import { ApiError } from "@/lib/api/client";
 import { useFilters } from "@/lib/filters/use-filters";
 import { formatCount } from "@/lib/format/number";
+import { withBack } from "@/lib/navigation/back-link";
 import { flattenUnique, useMentionsList } from "./api";
 import { MentionsList } from "./mentions-list";
 import { usePinnedParams } from "./mentions-view";
@@ -24,6 +26,10 @@ export function TermMentions({ term }: { term: string }) {
   const list = useMentionsList(project?.id, params);
   const items = useMemo(() => flattenUnique(list.data?.pages ?? []), [list.data]);
   const total = list.data?.pages[0]?.totalCount ?? null;
+  // #331: the detail page's back link returns to this phrase page with its range.
+  const pathname = usePathname();
+  const search = useSearchParams()?.toString() ?? "";
+  const backPath = `${pathname}${search ? `?${search}` : ""}`;
   const pagesLoaded = (list.data?.pages.length ?? 0) > 0;
 
   return (
@@ -46,7 +52,7 @@ export function TermMentions({ term }: { term: string }) {
           isFetchingNextPage={list.isFetchingNextPage}
           nextPageError={pagesLoaded && list.isFetchNextPageError ? toStateError(list.error) : null}
           fetchNextPage={() => void list.fetchNextPage()}
-          hrefFor={(id) => `/mentions/${id}`}
+          hrefFor={(id) => withBack(`/mentions/${id}`, backPath)}
           onWidenRange={() => setFilters({ preset: "30d", from: null, to: null })}
         />
       </div>
