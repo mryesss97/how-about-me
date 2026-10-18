@@ -69,12 +69,12 @@ describe("ReviewsView (UX §3.8, FR-195, TC-REV-007)", () => {
     setup();
     await waitFor(() => expect(screen.getAllByTestId("review-row")).toHaveLength(2));
     expect(screen.getByText(/1\.234/)).toBeInTheDocument();
-    // #278 plaque tabs: the selected plaque carries aria-selected / data-selected.
-    const all = screen.getByRole("tab", { name: /Tất cả/ });
-    expect(all).toHaveAttribute("aria-selected", "true");
+    // #278 plaques, #352 a single-select toggle group (radio): the selected plaque is checked + data-selected.
+    const all = screen.getByRole("radio", { name: /Tất cả/ });
+    expect(all).toHaveAttribute("aria-checked", "true");
     expect(all).toHaveAttribute("data-selected");
     expect(listCalls()[0]?.[1].params).toMatchObject({ status: "unreviewed", count: "true" });
-    fireEvent.click(screen.getByRole("tab", { name: /Phân tích lỗi/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /Phân tích lỗi/ }));
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/reviews?reason=failed"));
   });
 
