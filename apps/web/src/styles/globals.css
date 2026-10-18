@@ -595,6 +595,10 @@ html[data-landing-hung] .sign-wall .sign-board {
   font-weight: 700;
   text-transform: uppercase;
 }
+/* #345: state on the nav item is a dot on a small white plate, so the item label never truncates. */
+.shell-nav-plate--dot {
+  padding: 4px;
+}
 [aria-current="page"] .shell-nav-plate {
   background: var(--ink);
   color: var(--enamel-white);

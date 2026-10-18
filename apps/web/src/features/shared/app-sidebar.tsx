@@ -94,9 +94,11 @@ function NavCountPlate({ n }: { n: number }) {
 
 function NavStatePlate({ health }: { health: NavHealth }) {
   return (
-    <span className="shell-nav-plate" data-level={health.level}>
+    // A dot, not a word plate: the label "Trạng thái hệ thống" must not truncate. The word is kept for screen
+    // readers and as a tooltip; the full sentence is in the shell health strip (BR-017).
+    <span className="shell-nav-plate shell-nav-plate--dot" data-level={health.level} title={health.word}>
       <span aria-hidden className="shell-nav-dot" />
-      {health.word}
+      <span className="sr-only">{health.word}</span>
     </span>
   );
 }
