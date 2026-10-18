@@ -1,9 +1,13 @@
 "use client";
 
+import { ArrowRight } from "@untitledui/icons";
 import { usePathname, useSearchParams } from "next/navigation";
+import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useMemo } from "react";
 import { useCurrentProject } from "@/features/auth/use-current-project";
+import { PlaqueButton } from "@/features/shared/plaque-button";
 import { ApiError } from "@/lib/api/client";
+import { toMentionsHref } from "@/lib/filters/api-params";
 import { useFilters } from "@/lib/filters/use-filters";
 import { formatCount } from "@/lib/format/number";
 import { withBack } from "@/lib/navigation/back-link";
@@ -18,14 +22,41 @@ const toStateError = (err: unknown) =>
       : { message: "Phản hồi không hợp lệ từ máy chủ." }
     : null;
 
-/** Mentions of one phrase on its detail page (#276): the mentions list with `term` (BR-042), same filters as the page. */
-export function TermMentions({ term }: { term: string }) {
+/** #333 list copy. */
+const copy = {
+  tabs: { all: "Tất cả", negative: "Tiêu cực", positive: "Tích cực", neutral: "Trung tính" },
+  tabsLabel: "Lọc bài nhắc theo cảm xúc",
+  listTitle: (term: string) => `Bài nhắc tới "${term}"`,
+  openInMentions: "Mở trong Bài nhắc",
+} as const;
+
+const TABS = ["negative", "positive", "neutral"] as const;
+type Tab = (typeof TABS)[number];
+/** #333: list-only sentiment tab; never part of the global filters, never sent to the hero. */
+export const listParser = parseAsStringLiteral(TABS).withOptions({ history: "replace", scroll: false });
+
+interface TermMentionsProps {
+  term: string;
+  /** Tab counts from the hero split (posts with a sentiment); null while loading. */
+  counts: Record<Tab, number> | null;
+  total: number | null;
+}
+
+/**
+ * Mentions of one phrase right under the hero (#276, #333 entry-3): `term` (BR-042), page filters, plus a sentiment
+ * tab that replaces the `sentiment` filter for this list only.
+ */
+export function TermMentions({ term, counts, total }: TermMentionsProps) {
   const { project } = useCurrentProject();
   const { filters, setFilters, apiParams: live } = useFilters("mentions");
-  const params = usePinnedParams(`${JSON.stringify(filters)}|${term}`, { ...live, term });
+  const [tab, setTab] = useQueryState("list", listParser);
+  const params = usePinnedParams(`${JSON.stringify(filters)}|${term}|${tab ?? ""}`, {
+    ...live,
+    term,
+    ...(tab ? { sentiment: tab } : {}),
+  });
   const list = useMentionsList(project?.id, params);
   const items = useMemo(() => flattenUnique(list.data?.pages ?? []), [list.data]);
-  const total = list.data?.pages[0]?.totalCount ?? null;
   // #331: the detail page's back link returns to this phrase page with its range.
   const pathname = usePathname();
   const search = useSearchParams()?.toString() ?? "";
@@ -33,14 +64,38 @@ export function TermMentions({ term }: { term: string }) {
   const pagesLoaded = (list.data?.pages.length ?? 0) > 0;
 
   return (
-    <section aria-labelledby="term-mentions" className="operate-board">
+    <section id="bai-nhac" aria-labelledby="term-mentions" className="operate-board">
       <span aria-hidden className="sign-keyline" />
       <div className="relative flex flex-col gap-4 p-5 sm:p-6">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 id="term-mentions" className="operate-board-title">
-            Bài nhắc tới &quot;{term}&quot;
+            {copy.listTitle(term)}
           </h2>
-          {total != null ? <p className="text-sm text-secondary">{formatCount(total)} bài nhắc</p> : null}
+          {/* FR-142: the one link to /mentions, range pinned, tab carried as `sentiment`. */}
+          <PlaqueButton
+            href={toMentionsHref({ ...filters, term }, tab ? { sentiment: [tab] } : {})}
+            iconTrailing={ArrowRight}
+          >
+            {copy.openInMentions}
+          </PlaqueButton>
+        </div>
+        <div role="group" aria-label={copy.tabsLabel} className="flex flex-wrap gap-2">
+          {([null, ...TABS] as const).map((k) => {
+            const n = k ? counts?.[k] : total;
+            const selected = tab === k;
+            return (
+              <PlaqueButton
+                key={k ?? "all"}
+                size="xs"
+                aria-pressed={selected}
+                data-selected={selected || undefined}
+                onClick={() => void setTab(k)}
+              >
+                {copy.tabs[k ?? "all"]}
+                {n != null ? ` · ${formatCount(n)}` : ""}
+              </PlaqueButton>
+            );
+          })}
         </div>
         <MentionsList
           items={items}

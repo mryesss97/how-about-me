@@ -59,13 +59,13 @@ export const viRate = (v: number | null | undefined) => (v == null ? "—" : `${
 /** "1.284" — Vietnamese thousands dot (#271). */
 export const viCount = (n: number) => int.format(n);
 
-/** Accessible name of a board: `"giá vé" · 62,0% tích cực · 100 lượt nhắc`. */
+/** Accessible name of a board: `"giá vé" · 62,0% tích cực · 100 bài nhắc`. */
 export function boardLabel(b: LandingBoard): string {
   if (b.empty) return `"${b.name}" · ${copy.noMentions}`;
   return `"${b.name}" · ${viRate(b.dominantShare)} ${copy.sentiment[b.dominant]} · ${copy.mentions(viCount(b.total))}`;
 }
 
-/** Full split for the hover sub-sign: "100 lượt nhắc · 62,0% tích cực · 38,0% trung tính · 0,0% tiêu cực". */
+/** Full split for the hover sub-sign: "100 bài nhắc · 62,0% tích cực · 38,0% trung tính · 0,0% tiêu cực". */
 export function boardSplit(b: LandingBoard): string {
   if (b.empty) return copy.noMentions;
   const share = (n: number) => viRate(b.total > 0 ? n / b.total : 0);
