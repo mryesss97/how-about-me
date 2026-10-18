@@ -1,7 +1,8 @@
 "use client";
 
+import type { SentimentLabel } from "@how-about-me/taxonomy";
 import { useCallback, useMemo } from "react";
-import { bucketDrillDown, segmentDrillDown } from "@/lib/filters/drill-down";
+import { bucketDrillDown, bucketSentimentDrillDown, segmentDrillDown } from "@/lib/filters/drill-down";
 import { DEFAULT_TZ } from "@/lib/filters/parsers";
 import { useMentionsTimeseries, useSafetyDistribution, useSentiment } from "./api";
 import {
@@ -27,6 +28,15 @@ export function OverviewTrendRow({ projectId, apiParams, isProjectLoading, href,
         : null,
     [href, bucketTimes, apiParams.from, apiParams.to],
   );
+  // Index into the sentiment series' own buckets, not the mentions series (lengths can differ, #335).
+  const sentimentTimes = useMemo(() => sentiment.data?.timeseries?.data.map((p) => p.time) ?? [], [sentiment.data]);
+  const sentimentHref = useCallback(
+    (i: number, k: SentimentLabel | null) =>
+      apiParams.from && apiParams.to
+        ? href(bucketSentimentDrillDown(sentimentTimes, i, { from: apiParams.from, to: apiParams.to }, k))
+        : null,
+    [href, sentimentTimes, apiParams.from, apiParams.to],
+  );
 
   return (
     <>
@@ -49,6 +59,8 @@ export function OverviewTrendRow({ projectId, apiParams, isProjectLoading, href,
         onRetry={() => void sentiment.refetch()}
       />
       <SentimentOverTimeChart
+        getSegmentHref={sentimentHref}
+        onNavigate={navigate}
         className="lg:col-span-6"
         data={sentiment.data}
         timezone={apiParams.timezone ?? DEFAULT_TZ}

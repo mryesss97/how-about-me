@@ -87,6 +87,7 @@ export function MentionsOverTimeChart({
                     lines={[{ name: "Lượt nhắc", count: row.mentions, share: shareOf(row.mentions, total) }]}
                     denominator={total}
                     previous={row.previous}
+                    drillable={drillable && bucketHref(rows.indexOf(row)) !== null}
                   />
                 );
               }}

@@ -72,6 +72,7 @@ export function SentimentDistributionChart({
                     lines={[{ name: s.name, count: s.count, share: s.share, color: SENTIMENT_COLORS[s.key] }]}
                     denominator={denominator}
                     denominatorLabel="lượt nhắc đã phân tích"
+                    drillable={!!select?.canSelect(s)}
                   />
                 );
               }}

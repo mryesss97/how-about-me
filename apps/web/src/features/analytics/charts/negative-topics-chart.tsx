@@ -4,7 +4,7 @@ import type { TopicSentimentResponse } from "@how-about-me/contracts";
 import type { TopicLabel } from "@how-about-me/taxonomy";
 import type { QueryStateError } from "@/features/shared/query-state";
 import { formatCount, formatRate } from "@/lib/format/number";
-import { ChartCard, type DrillDownProps, drillSelect, segmentHref } from "./chart-card";
+import { ChartCard, type DrillDownProps, segmentHref } from "./chart-card";
 import { SENTIMENT_COLORS, toContributorRows } from "./chart-data";
 import { HorizontalBarChart } from "./horizontal-bar-chart";
 
@@ -23,15 +23,7 @@ export const NEGATIVE_SHARE_NOTE = "Tỷ lệ = tiêu cực ÷ lượt nhắc c�
  * "count · negativeShare" where the denominator is the topic row (posts with that topic and a sentiment).
  * Drill-down → `topic=X&sentiment=negative` (FR-142).
  */
-export function NegativeTopicsChart({
-  data,
-  isLoading,
-  error,
-  onRetry,
-  className,
-  getHref,
-  onNavigate,
-}: NegativeTopicsChartProps) {
+export function NegativeTopicsChart({ data, isLoading, error, onRetry, className, getHref }: NegativeTopicsChartProps) {
   const rows = toContributorRows(data?.rows ?? []);
   const table = {
     rowHrefs: rows.map((r) => segmentHref(getHref, r)),
@@ -57,7 +49,7 @@ export function NegativeTopicsChart({
         denominator={0}
         rowDenominator={(r) => r.total}
         denominatorLabel="lượt nhắc có cảm xúc trong chủ đề này"
-        onSelect={drillSelect({ getHref, onNavigate })}
+        getRowHref={(r) => segmentHref(getHref, r)}
       />
       <p className="text-xs text-tertiary">{NEGATIVE_SHARE_NOTE}</p>
     </ChartCard>
