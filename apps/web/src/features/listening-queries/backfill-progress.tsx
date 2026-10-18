@@ -6,7 +6,7 @@ import { Button } from "@/components/base/buttons/button";
 import { formatDateTime } from "@/lib/time/format";
 import { useBackfillJobProgress, useInvalidateQueryList } from "./api";
 import { isTerminal, jobStatusLabel, progressSummary } from "./backfill-form";
-import { jobHref } from "./format";
+import { jobHref, mentionsHref, mentionsWindowHref } from "./format";
 
 type Props = { pid: string; jobId: string; alreadyRunning: boolean; onClose: () => void };
 
@@ -60,9 +60,23 @@ export function BackfillProgress({ pid, jobId, alreadyRunning, onClose }: Props)
         </div>
       ) : null}
       <div className="flex items-center justify-between gap-3">
-        <Link href={jobHref(jobId)} className="text-sm font-semibold text-brand-secondary hover:underline">
-          Xem lượt đồng bộ
-        </Link>
+        <div className="flex flex-col gap-1">
+          <Link href={jobHref(jobId)} className="text-sm font-semibold text-brand-secondary hover:underline">
+            Xem lượt đồng bộ
+          </Link>
+          {job?.queryId ? (
+            <Link
+              href={
+                job.windowSince && job.windowUntil
+                  ? mentionsWindowHref(job.queryId, job.windowSince, job.windowUntil)
+                  : mentionsHref(job.queryId, "30d")
+              }
+              className="text-sm font-semibold text-brand-secondary hover:underline"
+            >
+              Xem bài nhắc của truy vấn →
+            </Link>
+          ) : null}
+        </div>
         <Button color="secondary" onClick={onClose}>
           Đóng
         </Button>

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type * as ClientModule from "@/lib/api/client";
 import { ApiError } from "@/lib/api/client";
@@ -55,12 +55,16 @@ beforeEach(() => {
   role = "viewer";
 });
 
+// Table (md+) and cards (<md) both render in jsdom; CSS picks one. Desktop assertions scope to the table.
+const table = async () => within(await screen.findByRole("table"));
+
 describe("ListeningQueriesView", () => {
   it("FR-051: loads the list with includeDeleted=false and limit=200 by default", async () => {
     const q = queryFixture();
     apiFetch.mockResolvedValue({ items: [q], nextCursor: null });
     setup();
-    expect(await screen.findByText(q.displayName)).toBeInTheDocument();
+    expect((await table()).getByText(q.displayName)).toBeInTheDocument();
+    expect(screen.getByTestId(`query-card-${q.id}`)).toBeInTheDocument();
     const [path, init] = apiFetch.mock.calls[0] as Call;
     expect(path).toBe(`/projects/${PID}/listening-queries`);
     expect(init.params).toMatchObject({ includeDeleted: "false", limit: "200" });
@@ -120,7 +124,7 @@ describe("ListeningQueriesView", () => {
         init?.method ? mutate(path, init) : Promise.resolve(list(q)),
       );
     const openMenu = async (q: ReturnType<typeof queryFixture>) => {
-      fireEvent.click(await screen.findByRole("button", { name: `Thao tác cho ${q.displayName}` }));
+      fireEvent.click((await table()).getByRole("button", { name: `Thao tác cho ${q.displayName}` }));
     };
     const mutationCalls = () => (apiFetch.mock.calls as [string, Init][]).filter(([, i]) => i?.method);
 
@@ -166,7 +170,7 @@ describe("ListeningQueriesView", () => {
       const q = queryFixture({ enabled: true });
       route(q, () => Promise.resolve({ ...q, enabled: false }));
       setup();
-      fireEvent.click(await screen.findByRole("switch", { name: `Bật ${q.displayName}` }));
+      fireEvent.click((await table()).getByRole("switch", { name: `Bật ${q.displayName}` }));
       await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Đã tắt truy vấn"));
       const [path, init] = mutationCalls()[0] ?? [];
       expect(path).toBe(`/projects/${PID}/listening-queries/${q.id}`);
@@ -212,9 +216,40 @@ describe("ListeningQueriesView", () => {
     const q = queryFixture();
     apiFetch.mockResolvedValue({ items: [q], nextCursor: null });
     setup();
-    expect(await screen.findByText(q.displayName)).toBeInTheDocument();
+    const t = await table();
     expect(screen.queryByRole("switch", { name: `Bật ${q.displayName}` })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: `Thao tác cho ${q.displayName}` }));
+    fireEvent.click(t.getByRole("button", { name: `Thao tác cho ${q.displayName}` }));
     expect(screen.getAllByRole("menuitem")).toHaveLength(1);
+  });
+
+  it("#340 ops-1: toolbar counts loaded and enabled queries", async () => {
+    apiFetch.mockResolvedValue({ items: [queryFixture(), queryFixture({ enabled: false })], nextCursor: null });
+    setup();
+    await table();
+    expect(screen.getByTestId("queries-count")).toHaveTextContent("2 truy vấn · 1 đang bật");
+  });
+
+  it("#340 flows-6 / BR-010: polls every 5 s while a job is queued and stops once it ends", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const q = queryFixture();
+      if (!q.lastJob) throw new Error("fixture has a last job");
+      const queued = { ...q, lastJob: { ...q.lastJob, status: "queued" as const } };
+      apiFetch.mockResolvedValueOnce({ items: [queued], nextCursor: null });
+      apiFetch.mockResolvedValue({ items: [q], nextCursor: null });
+      setup();
+      await table();
+      expect(apiFetch).toHaveBeenCalledTimes(1);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000);
+      });
+      await waitFor(() => expect(apiFetch).toHaveBeenCalledTimes(2));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(15000);
+      });
+      expect(apiFetch).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

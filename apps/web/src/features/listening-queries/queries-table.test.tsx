@@ -8,39 +8,66 @@ const renderTable = (items = [queryFixture()], isAdmin = false) =>
   render(<QueriesTable items={items} tz="Asia/Ho_Chi_Minh" isAdmin={isAdmin} now={NOW} />);
 
 describe("QueriesTable", () => {
-  it("TC-LQ-019 / FR-061: renders every column with lastJob and matchedPosts figures", () => {
+  it("TC-LQ-019 / FR-061 / #340: six columns fit 1366; name, subline, sync, schedule and matched counts", () => {
     const q = queryFixture({ queryType: "topic_tag", queryValue: "concert" });
     renderTable([q]);
-    for (const h of [
+    const headers = screen.getAllByRole("columnheader").map((h) => h.textContent);
+    expect(headers).toEqual([
       "Truy vấn",
-      "Loại",
       "Bật",
-      "Chu kỳ quét",
-      "Chồng lấn",
-      "Lần đồng bộ cuối",
-      "Kết quả gần nhất",
-      "Lỗi gần nhất",
-      "Người tạo",
-    ])
-      expect(screen.getByRole("columnheader", { name: h })).toBeInTheDocument();
+      "Đồng bộ gần nhất",
+      "Lịch quét",
+      "Bài khớp (24 giờ / tất cả)",
+      "Thao tác",
+    ]);
+    expect(screen.queryByRole("columnheader", { name: "Người tạo" })).not.toBeInTheDocument();
     const row = within(screen.getByTestId(`query-row-${q.id}`));
-    expect(row.getByText("#concert")).toBeInTheDocument(); // BR-004
-    expect(row.getByText("Chủ đề")).toBeInTheDocument();
+    expect(row.getByText("#concert · Chủ đề")).toBeInTheDocument(); // BR-004
     expect(row.getByText("10 phút")).toBeInTheDocument();
-    expect(row.getByText("20 phút")).toBeInTheDocument();
+    expect(row.getByText("chồng lấn 20 phút")).toBeInTheDocument();
     expect(row.getByText("Thành công")).toBeInTheDocument(); // BR-017
-    expect(row.getByText("5 phút trước")).toBeInTheDocument();
-    expect(row.getByText("1.234 lấy / 56 mới")).toBeInTheDocument();
-    expect(row.getByText("12 / 4.321")).toBeInTheDocument();
-    expect(row.getByText("An Admin")).toBeInTheDocument();
+    expect(row.getByText("· 5 phút trước")).toBeInTheDocument();
+    expect(row.getByText("1.234 lấy · 56 mới")).toBeInTheDocument();
+    expect(row.queryByText("An Admin")).not.toBeInTheDocument();
   });
 
-  it("never-synced query shows 'Chưa đồng bộ' and dashes", () => {
+  it("#340 flows-6: 'Bài khớp' counts link to Mentions filtered to the query (24h / 30d)", () => {
+    const q = queryFixture();
+    renderTable([q]);
+    const row = within(screen.getByTestId(`query-row-${q.id}`));
+    expect(row.getByRole("link", { name: `Xem 12 bài khớp 24 giờ qua của ${q.displayName}` })).toHaveAttribute(
+      "href",
+      `/mentions?queryIds=${q.id}&preset=24h`,
+    );
+    expect(row.getByRole("link", { name: /bài khớp 30 ngày qua.*4\.321/ })).toHaveAttribute(
+      "href",
+      `/mentions?queryIds=${q.id}&preset=30d`,
+    );
+  });
+
+  it("#340: subline drops the value when it repeats the name", () => {
+    const q = queryFixture({ displayName: "Concert", queryValue: "concert" });
+    renderTable([q]);
+    expect(within(screen.getByTestId(`query-row-${q.id}`)).getByText("Từ khoá")).toBeInTheDocument();
+  });
+
+  it("never-synced query shows 'Chưa đồng bộ' and no job counts", () => {
     const q = queryFixture({ lastJob: null, lastSuccessfulSyncAt: null, lastRunAt: null, createdBy: null });
     renderTable([q]);
     const row = within(screen.getByTestId(`query-row-${q.id}`));
     expect(row.getByText("Chưa đồng bộ")).toBeInTheDocument();
-    expect(row.getAllByText("—").length).toBeGreaterThanOrEqual(3);
+    expect(row.queryByText(/lấy ·/)).not.toBeInTheDocument();
+  });
+
+  it("BR-017 / #340: an error replaces the job counts and keeps the code: message tooltip", () => {
+    const q = queryFixture({
+      lastSuccessfulSyncAt: null,
+      lastError: { code: "X", message: "m", at: "2026-10-13T02:00:00.000Z" },
+    });
+    renderTable([q]);
+    const row = within(screen.getByTestId(`query-row-${q.id}`));
+    expect(row.getByRole("button", { name: "X: m" })).toBeInTheDocument();
+    expect(row.queryByText(/lấy ·/)).not.toBeInTheDocument();
   });
 
   it("known error codes read in Vietnamese; the tooltip keeps the full code: message", () => {

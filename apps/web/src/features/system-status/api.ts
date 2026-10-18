@@ -197,7 +197,10 @@ export function useQueryNames(pid: string | null | undefined) {
     staleTime: staleTimes.queries,
     enabled: !!pid,
   });
-  return useMemo(() => (q.data?.items ?? []).map((x) => ({ id: x.id, name: x.displayName })), [q.data]);
+  return useMemo(
+    () => (q.data?.items ?? []).map((x) => ({ id: x.id, name: x.displayName, type: x.queryType })),
+    [q.data],
+  );
 }
 
 /**

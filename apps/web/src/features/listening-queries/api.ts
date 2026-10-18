@@ -19,8 +19,11 @@ import { useCallback, useMemo } from "react";
 import { ApiError, apiFetch } from "@/lib/api/client";
 import { isRejectedCursor } from "@/lib/query/infinite-list";
 import { qk, staleTimes } from "@/lib/query/keys";
+import { isJobActive } from "./format";
 
 export const QUERIES_PAGE_SIZE = 200;
+/** #340 flows-6: list refetch interval while any loaded query has a queued/running last job. */
+export const QUERIES_ACTIVE_POLL_MS = 5000;
 
 /** GET /projects/:pid/listening-queries (FR-051). Soft-deleted queries are hidden unless `includeDeleted`. */
 export function useListeningQueries(pid: string | null | undefined, opts: { includeDeleted: boolean }) {
@@ -43,6 +46,10 @@ export function useListeningQueries(pid: string | null | undefined, opts: { incl
     getNextPageParam: (last) => last.nextCursor ?? undefined,
     staleTime: staleTimes.queries,
     enabled: !!pid,
+    // Poll until the run ends so the row moves "Đang chờ" → "Thành công" by itself; off when the tab is hidden.
+    refetchInterval: (q) =>
+      q.state.data?.pages.some((p) => p.items.some(isJobActive)) ? QUERIES_ACTIVE_POLL_MS : false,
+    refetchIntervalInBackground: false,
   });
   const { fetchNextPage: fetchNext } = query;
   // A stale/tampered cursor (400 on `cursor`, #195) restarts from the first page, same as Mentions.

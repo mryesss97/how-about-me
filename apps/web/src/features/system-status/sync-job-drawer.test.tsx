@@ -18,9 +18,40 @@ vi.mock("sonner", () => ({
   toast: { success: (...a: unknown[]) => toastSuccess(...a), error: (...a: unknown[]) => toastError(...a) },
 }));
 
+/** Minimal ListeningQuery for `useQueryNames` (no cross-feature fixture import). */
+const namedQuery = (id: string) => ({
+  id,
+  displayName: "1zone",
+  queryValue: "1zone",
+  queryType: "keyword",
+  searchMode: "KEYWORD",
+  scheduledSearchType: "RECENT",
+  enabled: true,
+  excludeTerms: [],
+  includeTerms: [],
+  pollIntervalSeconds: 600,
+  overlapSeconds: 1200,
+  initialBackfillDays: 1,
+  nextRunAt: null,
+  lastRunAt: null,
+  lastSuccessfulSyncAt: null,
+  lastError: null,
+  lastJob: null,
+  matchedPosts: { total: 0, last24h: 0 },
+  createdBy: null,
+  createdAt: "2026-10-01T00:00:00.000Z",
+  updatedAt: "2026-10-01T00:00:00.000Z",
+  deletedAt: null,
+});
+
 function setup(job: ReturnType<typeof jobDetailFixture>, isAdmin: boolean, retry?: () => Promise<unknown>) {
   apiFetch.mockImplementation((path: string, init?: { method?: string }) => {
     if (init?.method === "POST") return retry ? retry() : Promise.resolve({ jobId: job.id, status: "queued" });
+    if (path.endsWith("/listening-queries"))
+      return Promise.resolve({
+        items: [namedQuery(job.queryId ?? "")],
+        nextCursor: null,
+      });
     return Promise.resolve(job);
   });
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -81,5 +112,22 @@ describe("SyncJobDrawer", () => {
     setup(failed(), true, () => Promise.reject(new ApiError(409, "SYNC_JOB_NOT_RETRYABLE", "no")));
     fireEvent.click(await screen.findByRole("button", { name: "Thử lại" }));
     await waitFor(() => expect(toastError).toHaveBeenCalledWith("Lượt đồng bộ này không thể thử lại."));
+  });
+
+  it("#340 flows-6: header names the query; footer links back and to its mentions in the job window", async () => {
+    const job = jobDetailFixture();
+    setup(job, false);
+    expect(await screen.findByText("Truy vấn: 1zone (Từ khoá)")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "← Về truy vấn" })).toHaveAttribute("href", "/listening-queries");
+    expect(screen.getByRole("link", { name: "Xem bài nhắc của truy vấn →" })).toHaveAttribute(
+      "href",
+      `/mentions?queryIds=${job.queryId}&preset=custom&from=2026-10-13T02%3A00%3A00.000Z&to=2026-10-13T03%3A00%3A00.000Z`,
+    );
+  });
+
+  it("#340: a job without a query hides the links", async () => {
+    setup(jobDetailFixture({ queryId: null }), false);
+    expect(await screen.findByText("Không gắn truy vấn")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Xem bài nhắc của truy vấn →" })).not.toBeInTheDocument();
   });
 });

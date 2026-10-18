@@ -1,7 +1,17 @@
 import { JOB_STATUSES } from "@how-about-me/contracts";
 import { describe, expect, it } from "vitest";
 import { queryFixture } from "./fixtures.test-utils";
-import { formatDuration, formatQueryValue, isStaleError, syncErrorLabel, syncStatus, truncateError } from "./format";
+import {
+  formatDuration,
+  formatQueryValue,
+  isJobActive,
+  isStaleError,
+  mentionsWindowHref,
+  querySubline,
+  syncErrorLabel,
+  syncStatus,
+  truncateError,
+} from "./format";
 
 const JOB = {
   id: "00000000-0000-4000-8000-000000000999",
@@ -75,5 +85,30 @@ describe("isStaleError (#342 flows-5)", () => {
       false,
     );
     expect(isStaleError(queryFixture({ lastError: err, lastSuccessfulSyncAt: null }))).toBe(false);
+  });
+});
+
+describe("#340 helpers", () => {
+  it("querySubline shows value · type, dropping a value that repeats the name", () => {
+    expect(querySubline({ displayName: "Eventista show", queryType: "topic_tag", queryValue: "eventista" })).toBe(
+      "#eventista · Chủ đề",
+    );
+    expect(querySubline({ displayName: "#Eventista", queryType: "topic_tag", queryValue: "eventista" })).toBe("Chủ đề");
+  });
+
+  it("mentionsWindowHref encodes the ISO window as a custom range", () => {
+    expect(mentionsWindowHref("q1", "2026-10-01T00:00:00.000Z", "2026-10-02T00:00:00.000Z")).toBe(
+      "/mentions?queryIds=q1&preset=custom&from=2026-10-01T00%3A00%3A00.000Z&to=2026-10-02T00%3A00%3A00.000Z",
+    );
+  });
+
+  it("isJobActive is true for queued/running on live queries only", () => {
+    const q = queryFixture();
+    if (!q.lastJob) throw new Error("fixture has a last job");
+    expect(isJobActive(q)).toBe(false);
+    expect(isJobActive({ ...q, lastJob: { ...q.lastJob, status: "running" } })).toBe(true);
+    expect(
+      isJobActive({ ...q, deletedAt: "2026-10-13T00:00:00.000Z", lastJob: { ...q.lastJob, status: "queued" } }),
+    ).toBe(false);
   });
 });
