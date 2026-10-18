@@ -142,6 +142,17 @@ describe("FakeThreadsProvider (FR-112, FR-047)", () => {
     expect(info.grantedScopes).toContain("threads_keyword_search");
   });
 
+  it("T-038: verifyConnection honours the fake-invalid / fake-forbidden token sentinels", async () => {
+    await expect(provider.verifyConnection({ ...CTX, accessToken: "fake-invalid-0000000000" })).rejects.toMatchObject({
+      code: "THREADS_UNAUTHORIZED",
+      providerStatus: 401,
+    });
+    await expect(provider.verifyConnection({ ...CTX, accessToken: "fake-forbidden-00000000" })).rejects.toMatchObject({
+      code: "THREADS_FORBIDDEN",
+      providerStatus: 403,
+    });
+  });
+
   it("lists its scenarios so a developer can discover them", () => {
     const keys = provider.listScenarios().map((s) => s.key);
     expect(keys).toEqual(expect.arrayContaining(["1zone", "eventista", "fake-429", "fake-malformed"]));

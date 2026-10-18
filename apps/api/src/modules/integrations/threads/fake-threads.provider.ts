@@ -83,7 +83,17 @@ export class FakeThreadsProvider implements SocialDiscoveryProvider {
     };
   }
 
-  async verifyConnection(_ctx: ProviderContext): Promise<ConnectionInfo> {
+  /**
+   * Token sentinels (T-038, TC-INT-005): a token starting with `fake-invalid` behaves like an expired
+   * token (401), `fake-forbidden` like one missing scopes (403). Any other token verifies.
+   */
+  async verifyConnection(ctx: ProviderContext): Promise<ConnectionInfo> {
+    if (ctx.accessToken.startsWith("fake-invalid"))
+      throw new ProviderError("THREADS_UNAUTHORIZED", "Threads token is invalid or expired", { providerStatus: 401 });
+    if (ctx.accessToken.startsWith("fake-forbidden"))
+      throw new ProviderError("THREADS_FORBIDDEN", "Threads token lacks required permissions", {
+        providerStatus: 403,
+      });
     return {
       accountIdentifier: "fake_brand_account",
       grantedScopes: ["threads_basic", "threads_keyword_search"],

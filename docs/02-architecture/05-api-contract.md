@@ -78,6 +78,14 @@ Members (FR-033…FR-035, T-035): email is trimmed and lower-cased. An email wit
 | `POST /projects/:projectId/integrations/threads/verify` | admin  | —                                                      | status object after live check                                                                                                     |
 | `DELETE /projects/:projectId/integrations/threads`      | admin  | —                                                      | 204 (status → disconnected, secret purged)                                                                                         |
 
+Behaviour (T-038, FR-040..FR-044):
+
+- `GET` before any token is stored returns the default object with `status: "disconnected"` (all other fields `null` / `[]`). Never returns the token or any secret field.
+- `PUT` encrypts the token (AES-256-GCM, AAD = connection id) and **does not verify it**: the connection is set to `disconnected` (scopes cleared, `lastVerifiedAt`/`lastError` reset) until a successful `verify`, so the scheduler never runs on an unchecked token. A second `PUT` rotates the secret (`rotated_at`). Audit `integration.updated` without the token (BR-034).
+- `verify` → `409 INTEGRATION_NOT_CONFIGURED` when no token is stored. Success → `connected`, `lastVerifiedAt`, account/scopes/expiry from the provider. Failure → the new status and `lastError` are **committed first**, then the provider error envelope is returned (502/503 `THREADS_*`): `THREADS_UNAUTHORIZED` → `expired`, `THREADS_FORBIDDEN` → `permission_error`, `THREADS_TIMEOUT`/`THREADS_RATE_LIMITED` keep the current status, anything else → `error`. Audit `integration.verified` with `{ ok, code? }`.
+- `DELETE` is idempotent (204 even if never configured); clears account, scopes, expiry, `lastVerifiedAt`, `lastError` and keeps `lastSuccessAt`. Audit `integration.disconnected`.
+- Fake provider (`PROVIDERS_MODE=fake`): a token starting with `fake-invalid` fails verify with `THREADS_UNAUTHORIZED`, `fake-forbidden` with `THREADS_FORBIDDEN`.
+
 ## 5. Listening queries
 
 ### `GET /projects/:projectId/listening-queries`

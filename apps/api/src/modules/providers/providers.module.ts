@@ -1,5 +1,8 @@
 import { Global, Module } from "@nestjs/common";
+import { AppError } from "../../common/errors/app.error";
+import { CryptoService } from "../../common/crypto/crypto.service";
 import { APP_CONFIG, type AppConfig } from "../../config/config.module";
+import { PrismaService } from "../../database/prisma.service";
 import { FakeContentClassifier } from "../analysis/providers/fake-classifier.provider";
 import { FakeSafetyProvider } from "../analysis/providers/fake-safety.provider";
 import {
@@ -11,6 +14,7 @@ import {
 import { OpenAiModerationProvider } from "../analysis/providers/openai-moderation.provider";
 import { OpenAiStructuredClassifier } from "../analysis/providers/openai-structured.classifier";
 import { FakeThreadsProvider } from "../integrations/threads/fake-threads.provider";
+import { ThreadsTokenStore, type TokenStore } from "../integrations/threads/threads-token.store";
 import { SOCIAL_DISCOVERY_PROVIDER } from "../integrations/threads/social-discovery.provider";
 import {
   FakeThreadsTokenSource,
@@ -38,11 +42,11 @@ import {
     },
     {
       provide: THREADS_TOKEN_SOURCE,
-      inject: [APP_CONFIG],
-      useFactory: (cfg: AppConfig): ThreadsTokenSource =>
+      inject: [APP_CONFIG, PrismaService, CryptoService],
+      useFactory: (cfg: AppConfig, prisma: PrismaService, crypto: CryptoService): ThreadsTokenSource =>
         cfg.PROVIDERS_MODE === "fake"
           ? new FakeThreadsTokenSource()
-          : { getAccessToken: async () => notImplemented("ThreadsTokenStore", "T-038/T-039") },
+          : storeTokenSource(new ThreadsTokenStore(prisma, crypto)),
     },
     {
       provide: SAFETY_PROVIDER,
@@ -99,4 +103,18 @@ export function createContentClassifier(cfg: AppConfig): ContentClassifier {
 
 function notImplemented(name: string, task: string): never {
   throw new Error(`PROVIDERS_MODE=real requires ${name}, which is implemented in ${task}. Use PROVIDERS_MODE=fake.`);
+}
+
+/**
+ * Real-mode token source (#34): the collector reads the project's token from the encrypted store (FR-040,
+ * BR-036). No stored token → INTEGRATION_NOT_CONFIGURED, so the run fails visibly instead of calling Threads.
+ */
+export function storeTokenSource(store: Pick<TokenStore, "read">): ThreadsTokenSource {
+  return {
+    async getAccessToken(projectId: string) {
+      const token = await store.read(projectId);
+      if (!token) throw new AppError("INTEGRATION_NOT_CONFIGURED", "No Threads token is stored for this project.");
+      return token;
+    },
+  };
 }

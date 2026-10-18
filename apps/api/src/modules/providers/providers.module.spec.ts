@@ -1,4 +1,7 @@
+import { Global, Module } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
+import { CryptoService } from "../../common/crypto/crypto.service";
+import { PrismaService } from "../../database/prisma.service";
 import { AppConfigModule } from "../../config/config.module";
 import { FakeContentClassifier } from "../analysis/providers/fake-classifier.provider";
 import { FakeSafetyProvider } from "../analysis/providers/fake-safety.provider";
@@ -8,7 +11,18 @@ import { SOCIAL_DISCOVERY_PROVIDER } from "../integrations/threads/social-discov
 import { loadEnv } from "../../config/env.schema";
 import { OpenAiModerationProvider } from "../analysis/providers/openai-moderation.provider";
 import { OpenAiStructuredClassifier } from "../analysis/providers/openai-structured.classifier";
-import { createContentClassifier, createSafetyProvider, ProvidersModule } from "./providers.module";
+import { createContentClassifier, createSafetyProvider, ProvidersModule, storeTokenSource } from "./providers.module";
+
+/** Stands in for the global Prisma/Crypto modules; the token-source factory only needs them in real mode. */
+@Global()
+@Module({
+  providers: [
+    { provide: PrismaService, useValue: {} },
+    { provide: CryptoService, useValue: {} },
+  ],
+  exports: [PrismaService, CryptoService],
+})
+class FakeInfraModule {}
 
 /** Minimum env `loadEnv()` needs; no DB connection is opened by this module. */
 const BASE_ENV = { DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/unused?schema=public" };
@@ -17,7 +31,7 @@ async function compile(env: Record<string, string>) {
   const previous = { ...process.env };
   Object.assign(process.env, BASE_ENV, env);
   try {
-    return await Test.createTestingModule({ imports: [AppConfigModule, ProvidersModule] }).compile();
+    return await Test.createTestingModule({ imports: [AppConfigModule, FakeInfraModule, ProvidersModule] }).compile();
   } finally {
     process.env = previous;
   }
@@ -134,5 +148,17 @@ describe("ProvidersModule (PROVIDERS_MODE wiring, FR-112, FR-047)", () => {
     it("keeps the fake in fake mode", () => {
       expect(createContentClassifier(fakeCfg)).toBeInstanceOf(FakeContentClassifier);
     });
+  });
+});
+
+describe("storeTokenSource (#34, FR-040)", () => {
+  it("returns the stored token", async () => {
+    const source = storeTokenSource({ read: async () => "tok" });
+    await expect(source.getAccessToken("p1")).resolves.toBe("tok");
+  });
+
+  it("fails with INTEGRATION_NOT_CONFIGURED when no token is stored", async () => {
+    const source = storeTokenSource({ read: async () => null });
+    await expect(source.getAccessToken("p1")).rejects.toMatchObject({ code: "INTEGRATION_NOT_CONFIGURED" });
   });
 });
