@@ -53,6 +53,7 @@ export class QueryClaimRepository {
              AND NOT EXISTS (
                SELECT 1 FROM collector_state cs
                 WHERE cs.project_id = lq.project_id AND cs.circuit_open_until > now())
+             -- FR-045 (T-040): expired / permission_error projects are skipped until a successful verify.
              AND EXISTS (
                SELECT 1 FROM integration_connections ic
                 WHERE ic.project_id = lq.project_id AND ic.platform = 'threads' AND ic.status = 'connected')

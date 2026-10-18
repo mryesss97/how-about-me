@@ -109,6 +109,21 @@ export const EnvSchema = z
         }
       }, "invalid cron expression"),
     RETENTION_JOB_TIMEZONE: z.string().default("Asia/Ho_Chi_Minh"),
+    // Threads token refresh job (T-040, FR-046 P0*): off until the POC confirms Threads supports refresh.
+    THREADS_TOKEN_REFRESH_MODE: z.enum(["off", "on"]).default("off"),
+    THREADS_TOKEN_REFRESH_CRON: z
+      .string()
+      .default("0 3 * * *")
+      .refine((v) => {
+        try {
+          new CronTime(v);
+          return true;
+        } catch {
+          return false;
+        }
+      }, "invalid cron expression"),
+    THREADS_TOKEN_REFRESH_TIMEZONE: z.string().default("Asia/Ho_Chi_Minh"),
+    THREADS_TOKEN_REFRESH_WINDOW_DAYS: z.coerce.number().int().min(1).default(7),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === "production" && env.PROVIDERS_MODE === "real") {

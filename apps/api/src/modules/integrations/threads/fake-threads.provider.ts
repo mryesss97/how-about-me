@@ -12,6 +12,7 @@ import type {
   ConnectionInfo,
   ProviderContext,
   ProviderItem,
+  RefreshedToken,
   SearchInput,
   SearchPage,
   SocialDiscoveryProvider,
@@ -97,6 +98,18 @@ export class FakeThreadsProvider implements SocialDiscoveryProvider {
     return {
       accountIdentifier: "fake_brand_account",
       grantedScopes: ["threads_basic", "threads_keyword_search"],
+      tokenExpiresAt: new Date(this.clock().getTime() + 60 * 86_400_000),
+    };
+  }
+
+  /**
+   * FR-046 test double (T-040): token `fake-invalid*` → 401, `fake-forbidden*` → 403, otherwise a new
+   * token valid for 60 days. The real Threads refresh endpoint is not confirmed by the POC yet.
+   */
+  async refreshToken(ctx: ProviderContext): Promise<RefreshedToken> {
+    await this.verifyConnection(ctx);
+    return {
+      accessToken: `fake-refreshed-${this.clock().getTime()}`,
       tokenExpiresAt: new Date(this.clock().getTime() + 60 * 86_400_000),
     };
   }

@@ -9,3 +9,8 @@ Design: see docs/02-architecture/02-backend-design.md §3 and the related pipeli
 - `integrations.service.ts` — status flow and verify error → status mapping (`statusForVerifyError`).
 - `threads/threads-token.store.ts` — `ThreadsTokenStore` (DI token `THREADS_TOKEN_STORE`, interface `TokenStore`): the only reader of `integration_secrets`; encrypts via `CryptoService` with the connection id as AAD. Exported for the collector (T-052).
 - Fake provider token sentinels: `fake-invalid…` → `THREADS_UNAUTHORIZED`, `fake-forbidden…` → `THREADS_FORBIDDEN`.
+
+## Provider auth failures & refresh (T-040)
+
+- `integration-health.service.ts` — `recordProviderAuthFailure`: 401 → `expired`, 403 → `permission_error` (only from `connected`, via `IntegrationsRepository.markAuthFailure`). Used by the collector and the token refresh job.
+- `SocialDiscoveryProvider.refreshToken?` — optional; the fake implements it (token sentinels as above), the real adapter only once the POC confirms refresh.

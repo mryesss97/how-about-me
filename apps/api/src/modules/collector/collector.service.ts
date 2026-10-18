@@ -12,6 +12,7 @@ import {
   type SearchPage,
   type SocialDiscoveryProvider,
 } from "../integrations/threads/social-discovery.provider";
+import { IntegrationHealthService } from "../integrations/integration-health.service";
 import { THREADS_TOKEN_SOURCE, type ThreadsTokenSource } from "../integrations/threads/threads-token.source";
 import { SyncJobRecorder, type ProviderUsage } from "../sync-jobs/sync-job.recorder";
 import { IngestionService } from "./ingestion.service";
@@ -46,6 +47,7 @@ export class CollectorService implements CollectorRunner {
     @Inject(THREADS_TOKEN_SOURCE) private readonly tokens: ThreadsTokenSource,
     private readonly ingestion: IngestionService,
     private readonly recorder: SyncJobRecorder,
+    private readonly health: IntegrationHealthService,
     private readonly logger: PinoLogger,
     @Optional() @Inject(COLLECTOR_RETRY_OVERRIDES) private readonly retryOverrides: Partial<RetryPolicy> | null = null,
   ) {
@@ -177,6 +179,14 @@ export class CollectorService implements CollectorRunner {
         where: { id: query.id, lockedBy: claimed.workerId },
         data: { lastSuccessfulSyncAt: until },
       });
+    // FR-045/FR-085: 401 → `expired`, 403 → `permission_error`; the scheduler claim then skips the project.
+    if (error !== null) {
+      try {
+        await this.health.recordProviderAuthFailure(query.projectId, errorCode, errorMessage ?? "");
+      } catch (err: unknown) {
+        this.logger.error({ err, jobId: job.id, projectId: query.projectId }, "integration status update failed");
+      }
+    }
     await this.recorder.finish(job.id, { status, errorCode, errorMessage });
 
     this.logger.info(

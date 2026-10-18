@@ -42,6 +42,33 @@ export class IntegrationsRepository {
     return (tx ?? this.prisma).integrationConnection.update({ where: { id }, data: patch });
   }
 
+  /**
+   * FR-045/FR-085: provider auth failure moves a `connected` connection to `expired`/`permission_error`.
+   * Conditional on `status = connected` so a stale job never overwrites a newer PUT/verify. Returns rows changed.
+   */
+  async markAuthFailure(
+    projectId: string,
+    status: "expired" | "permission_error",
+    code: string,
+    message: string,
+    at: Date,
+  ): Promise<number> {
+    const res = await this.prisma.integrationConnection.updateMany({
+      where: { projectId, platform: "threads", status: "connected" },
+      data: { status, lastErrorCode: code, lastErrorMessage: message, lastErrorAt: at },
+    });
+    return res.count;
+  }
+
+  /** FR-046: connected Threads connections whose token expires before `before`. */
+  findExpiringThreads(before: Date): Promise<Pick<ConnectionRow, "id" | "projectId" | "tokenExpiresAt">[]> {
+    return this.prisma.integrationConnection.findMany({
+      where: { platform: "threads", status: "connected", tokenExpiresAt: { not: null, lte: before } },
+      select: { id: true, projectId: true, tokenExpiresAt: true },
+      orderBy: { id: "asc" },
+    });
+  }
+
   transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
     return this.prisma.$transaction(fn);
   }
