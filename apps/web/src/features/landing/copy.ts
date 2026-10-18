@@ -5,7 +5,7 @@ export const landingCopy = {
   tagline: "Lắng nghe. Thấu hiểu.",
   explore: "Vào dashboard",
   wallLabel: "Các cụm từ được nhắc trên Threads, 30 ngày qua",
-  legend: "Biển càng to, càng nhiều người nhắc. Màu biển là cảm xúc chủ đạo.",
+  legend: "Biển càng to, càng nhiều người nhắc. Màu biển là cảm xúc chủ đạo. Bấm vào biển để xem bài nhắc.",
   statsLabel: "30 ngày qua",
   stats: {
     mentions: "bài nhắc · 30 ngày",
@@ -13,7 +13,6 @@ export const landingCopy = {
     negative: "tiêu cực",
     lastUpdated: "cập nhật",
   },
-  growthNew: "Mới",
   previous: (n: string) => `kỳ trước: ${n}`,
   neverSynced: "Chưa đồng bộ",
   emptyAdmin: "Thêm cụm từ cho landing trong Cài đặt",

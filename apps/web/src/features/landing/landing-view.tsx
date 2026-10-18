@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useCurrentProject } from "@/features/auth/use-current-project";
 import { useRole } from "@/features/auth/use-role";
 import { useLandingTerms } from "@/features/shared/use-landing-terms";
@@ -12,8 +12,9 @@ import { env } from "@/lib/env";
 import { landingCopy as copy } from "./copy";
 import { BlankBoard, SignBoard } from "./landing-board";
 import { boardRanks, fallbackRange, formatLandingStats, toLandingBoards } from "./landing-data";
+import { HUNG_ATTR, HUNG_KEY } from "./landing-hung";
 import { MainSign } from "./landing-main-sign";
-import { type Rect, WALL_GAP, layoutSignWall, phoneWallHeight } from "./sign-wall-layout";
+import { type Rect, WALL_GAP, layoutSignWall, phoneWallLayout, PHONE_LEAD_H } from "./sign-wall-layout";
 
 const NO_PARAMS: Record<string, string> = {};
 /** Blank boards hung while phrases load, fail, or none is configured (#271). */
@@ -29,6 +30,7 @@ export function LandingView() {
   const projectId = project?.id ?? null;
   const { hasRole } = useRole();
   const reducedMotion = usePrefersReducedMotion();
+  const hung = useLandingHung();
   const wide = useBreakpoint("sm");
 
   const landing = useLandingTerms(projectId);
@@ -52,7 +54,7 @@ export function LandingView() {
   const ranks = useMemo(() => boardRanks(boards), [boards]);
   const empty = landing.isSuccess && boards.length === 0;
   const items = useMemo(
-    () => (boards.length > 0 ? boards.map((b) => ({ key: b.key, total: b.total })) : PLACEHOLDERS),
+    () => (boards.length > 0 ? boards.map((b) => ({ key: b.key, total: b.total, name: b.name })) : PLACEHOLDERS),
     [boards],
   );
 
@@ -76,15 +78,28 @@ export function LandingView() {
   useResizeObserver({ ref: wallRef, onResize: measure });
   useEffect(measure, [measure, stats, statsLoading, empty, items.length]);
 
+  const layout = useMemo(
+    () =>
+      wide
+        ? { rects: layoutSignWall(items, { width: wall.width, height: wall.height, hole, gap: WALL_GAP }), height: 0 }
+        : phoneWallLayout(items, { width: wall.width, gap: WALL_GAP }),
+    [wide, items, wall.width, wall.height, hole],
+  );
+  // #334: DOM, tab and hang order follow the rank (mentions desc, ties keep setting order) at every width.
+  const placeRank = useMemo(() => {
+    const order = items.map((it, i) => ({ key: it.key, total: it.total, i }));
+    order.sort((a, b) => b.total - a.total || a.i - b.i);
+    return new Map(order.map((o, i) => [o.key, i]));
+  }, [items]);
   const rects = useMemo(
-    () => layoutSignWall(items, { width: wall.width, height: wall.height, hole, gap: WALL_GAP }),
-    [items, wall.width, wall.height, hole],
+    () => [...layout.rects].sort((a, b) => (placeRank.get(a.key) ?? 0) - (placeRank.get(b.key) ?? 0)),
+    [layout.rects, placeRank],
   );
   const byKey = useMemo(() => new Map(boards.map((b) => [b.key, b])), [boards]);
 
   return (
     <main
-      data-motion={reducedMotion ? "reduced" : "full"}
+      data-motion={reducedMotion ? "reduced" : hung ? "still" : "full"}
       className="sign-wall relative min-h-dvh overflow-x-hidden sm:h-dvh sm:overflow-hidden"
     >
       {/* Same DOM at every width (SSR-safe); CSS moves the main sign into the wall from `sm` up. */}
@@ -102,7 +117,7 @@ export function LandingView() {
         role="group"
         aria-label={copy.wallLabel}
         className="relative mx-[3px] mb-[3px] h-[var(--phone-wall-h)] sm:absolute sm:inset-[3px] sm:m-0 sm:h-auto"
-        style={{ ["--phone-wall-h" as string]: `${phoneWallHeight(items.length)}px` }}
+        style={{ ["--phone-wall-h" as string]: `${Math.max(layout.height, PHONE_LEAD_H)}px` }}
       >
         {rects.map((rect, i) => {
           const board = byKey.get(rect.key);
@@ -115,4 +130,28 @@ export function LandingView() {
       </div>
     </main>
   );
+}
+
+const noSubscribe = () => () => {};
+const readHung = () => document.documentElement.hasAttribute(HUNG_ATTR);
+
+/**
+ * #334: hang-in runs once per session. True when `<html>` carries the flag (server snapshot false, so hydration
+ * matches; CSS already hides the animation). Leaving the landing marks `<html>`, so a client navigation back to `/`
+ * shows the wall still.
+ */
+function useLandingHung(): boolean {
+  const hung = useSyncExternalStore(noSubscribe, readHung, () => false);
+  useEffect(
+    () => () => {
+      document.documentElement.setAttribute(HUNG_ATTR, "");
+      try {
+        sessionStorage.setItem(HUNG_KEY, "1");
+      } catch {
+        // Private mode / storage disabled: the html flag still covers client navigation.
+      }
+    },
+    [],
+  );
+  return hung;
 }
