@@ -57,8 +57,10 @@ export function ListeningQueriesView() {
   const editInList = editId ? items.find((q) => q.id === editId) : undefined;
   const editFetched = useListeningQuery(pid, editId && pagesLoaded && !editInList ? editId : null);
   const editTarget = editInList ?? editFetched.data;
+  const wantsNew = isAdmin && search?.get("new") === "1";
   const activeDrawer: DrawerState | null =
-    drawer ?? (editTarget && !editTarget.deletedAt ? { mode: "edit", query: editTarget } : null);
+    drawer ??
+    (editTarget && !editTarget.deletedAt ? { mode: "edit", query: editTarget } : wantsNew ? { mode: "create" } : null);
 
   const setIncludeDeleted = useCallback(
     (on: boolean) => {
@@ -82,9 +84,18 @@ export function ListeningQueriesView() {
     [router, pathname, search],
   );
 
+  // #346 flows-9: `?new=1` (from the Threads verify toast) opens the create drawer; closing drops the param.
+  const dropNew = () => {
+    const next = new URLSearchParams(search?.toString());
+    next.delete("new");
+    const qs = next.toString();
+    router.replace(`${pathname ?? "/listening-queries"}${qs ? `?${qs}` : ""}`);
+  };
+
   const closeDrawer = () => {
     setDrawer(null);
     if (editId) writeEdit(null);
+    if (wantsNew) dropNew();
   };
   const openExisting = (id: string) => {
     const found = items.find((q) => q.id === id);

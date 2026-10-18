@@ -203,6 +203,13 @@ describe("ListeningQueriesView", () => {
       expect(mutationCalls()[0]?.[0]).toBe(`/projects/${PID}/listening-queries/${q.id}/restore`);
     });
 
+    it("#346 flows-9: ?new=1 opens the create drawer for an admin", async () => {
+      search = "new=1";
+      apiFetch.mockResolvedValue(list(queryFixture()));
+      setup();
+      expect(await screen.findByRole("heading", { name: "THÊM TRUY VẤN" })).toBeInTheDocument();
+    });
+
     it("?edit=<id> opens the edit drawer for a loaded query (FR-053 link)", async () => {
       const q = queryFixture();
       search = `edit=${q.id}`;
@@ -210,6 +217,14 @@ describe("ListeningQueriesView", () => {
       setup();
       expect(await screen.findByRole("heading", { name: "SỬA TRUY VẤN" })).toBeInTheDocument();
     });
+  });
+
+  it("#346 flows-9: ?new=1 is ignored for a viewer", async () => {
+    search = "new=1";
+    apiFetch.mockResolvedValue({ items: [queryFixture()], nextCursor: null });
+    setup();
+    await screen.findByRole("table");
+    expect(screen.queryByRole("heading", { name: "THÊM TRUY VẤN" })).toBeNull();
   });
 
   it("TC-LQ-021 / BR-033: viewer gets no admin controls", async () => {
