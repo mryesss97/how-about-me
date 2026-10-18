@@ -8,6 +8,7 @@ import { DateRangePicker } from "@/components/application/date-picker/date-range
 import { Button } from "@/components/base/buttons/button";
 import { RadioButton, RadioGroup } from "@/components/base/radio-buttons/radio-buttons";
 import { SettingsDialog } from "@/features/shared/settings-dialog";
+import { searchTypeLabelVi } from "@/lib/semantics/labels";
 import { queryErrorMessage, runningJobId, useBackfillListeningQuery } from "./api";
 import { BackfillProgress } from "./backfill-progress";
 import {
@@ -74,7 +75,8 @@ function BackfillBody({
   return (
     <>
       <p className="text-sm text-tertiary">
-        Thu thập lại bài viết cho <strong className="text-secondary">{query.displayName}</strong>.
+        Lấy lại bài nhắc cũ của <strong className="text-secondary">{query.displayName}</strong> trong khoảng ngày đã
+        chọn.
       </p>
       <div className="flex flex-col gap-1.5">
         <span className="text-sm font-medium text-secondary">Khoảng ngày</span>
@@ -90,17 +92,24 @@ function BackfillBody({
         />
         <span className="text-sm text-tertiary">Tối đa {BACKFILL_MAX_DAYS} ngày.</span>
       </div>
-      <RadioGroup
-        aria-label="Loại tìm kiếm"
-        value={searchType}
-        onChange={(v) => {
-          setError(null);
-          setSearchType(v === "TOP" ? "TOP" : "RECENT");
-        }}
-      >
-        <RadioButton value="RECENT" label="Gần đây (RECENT)" />
-        <RadioButton value="TOP" label="Nổi bật (TOP)" />
-      </RadioGroup>
+      {/* #344: visible label = accessible name; API still receives RECENT/TOP (BR-008). */}
+      <div className="flex flex-col gap-1.5">
+        <span id="backfill-search-type" className="text-sm font-medium text-secondary">
+          Thứ tự lấy
+        </span>
+        <RadioGroup
+          aria-labelledby="backfill-search-type"
+          value={searchType}
+          onChange={(v) => {
+            setError(null);
+            setSearchType(v === "TOP" ? "TOP" : "RECENT");
+          }}
+        >
+          <RadioButton value="RECENT" label={searchTypeLabelVi.RECENT} />
+          <RadioButton value="TOP" label={searchTypeLabelVi.TOP} />
+        </RadioGroup>
+        <span className="text-sm text-tertiary">Nổi bật lấy các bài có nhiều tương tác trước.</span>
+      </div>
       {rangeError || error ? (
         <p role="alert" className="text-sm text-error-primary">
           {rangeError ?? error}

@@ -107,7 +107,7 @@ export function OverviewCards({ data, tz, isAdmin, queriesWithError = null }: Pr
               }
             />
           ) : null}
-          <Row label="Đồng bộ toàn cục cuối" value={dt(collector.lastGlobalSyncAt, tz)} />
+          <Row label="Đồng bộ thành công gần nhất" value={dt(collector.lastGlobalSyncAt, tz)} />
           <Row label="Đang chạy" value={formatCount(collector.jobsInProgress)} />
           <Row label="Một phần 24 giờ" value={formatCount(collector.partialJobs24h)} />
           <Row label="Tỉ lệ thành công 24 giờ" value={formatRate(collector.successRate24h)} />
@@ -148,8 +148,8 @@ export function OverviewCards({ data, tz, isAdmin, queriesWithError = null }: Pr
           <Kpi label="Bài nhắc (ước tính)" value={formatCount(database.approxPosts)} />
           <Row label="Kết quả phân tích (ước tính)" value={formatCount(database.approxAnalyses)} />
           {isAdmin ? (
-            <div className="flex justify-between gap-3 text-xs text-tertiary">
-              <dt>Migration cuối</dt>
+            <div className="flex justify-between gap-3 text-xs text-tertiary" title="Tên migration Prisma gần nhất">
+              <dt>Cập nhật CSDL cuối (kỹ thuật)</dt>
               <dd className="text-right break-words">{database.lastMigration ?? DASH}</dd>
             </div>
           ) : null}

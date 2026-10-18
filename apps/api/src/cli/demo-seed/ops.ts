@@ -63,9 +63,9 @@ type QuerySpec = {
 const QUERY_SPECS: readonly QuerySpec[] = [
   { displayName: "fan meeting", value: "fan meeting", type: "keyword", poll: 300, exclude: ["pass vé"], failing: true },
   { displayName: "#lightstick", value: "#lightstick", type: "topic_tag", poll: 1800 },
-  { displayName: "hoàn vé (tạm tắt)", value: "hoàn vé", type: "keyword", poll: 3600, enabled: false },
+  { displayName: "hoàn vé", value: "hoàn vé", type: "keyword", poll: 3600, enabled: false },
   {
-    displayName: "eventista refund (đã xoá)",
+    displayName: "eventista refund",
     value: "eventista refund",
     type: "keyword",
     poll: 600,

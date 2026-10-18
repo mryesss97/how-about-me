@@ -193,6 +193,9 @@ describe("ReviewsView (UX §3.8, FR-195, TC-REV-007)", () => {
     serve([item]);
     setup();
     expect(await screen.findByText("detail body")).toBeInTheDocument();
+    // #344: one word for a mention — "Bài nhắc", never "Bài viết".
+    expect(screen.getByRole("heading", { name: "Chi tiết bài nhắc" })).toBeInTheDocument();
+    expect(screen.queryByText(/Bài viết/)).not.toBeInTheDocument();
     apiFetch.mockImplementation((path: string) =>
       path.endsWith("/mark-reviewed")
         ? Promise.resolve({ marked: 1 })

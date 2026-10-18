@@ -9,6 +9,7 @@ import type {
 } from "@how-about-me/contracts";
 import { parseDate } from "@internationalized/date";
 import { DASH, formatCount } from "@/lib/format/number";
+import { jobStatusLabelVi, jobTriggerLabelVi } from "@/lib/semantics/labels";
 
 import { FAILED_JOBS_HREF } from "@/features/shared/collection-health";
 import type { Tone } from "@/features/shared/status-plate";
@@ -53,21 +54,24 @@ export const analysisStatusLabel: Record<SystemStatusResponse["analysis"]["statu
   budget_paused: { label: "Tạm dừng (ngân sách)", tone: "error" },
 };
 
-export const jobStatusLabel: Record<JobStatus, StatusLabel> = {
-  queued: { label: "Đang chờ", tone: "progress" },
-  running: { label: "Đang chạy", tone: "progress" },
-  success: { label: "Thành công", tone: "success" },
-  partial: { label: "Một phần", tone: "warning" },
-  failed: { label: "Thất bại", tone: "error" },
-  cancelled: { label: "Đã huỷ", tone: "neutral" },
+const JOB_STATUS_TONE: Record<JobStatus, Tone> = {
+  queued: "progress",
+  running: "progress",
+  success: "success",
+  partial: "warning",
+  failed: "error",
+  cancelled: "neutral",
 };
 
-export const jobTriggerLabel: Record<JobTrigger, string> = {
-  scheduled: "Theo lịch",
-  manual: "Thủ công",
-  backfill: "Quét bù",
-  retry: "Thử lại",
-};
+// #344: labels come from the shared map so System Status and Listening Queries use the same word.
+export const jobStatusLabel = Object.fromEntries(
+  (Object.keys(JOB_STATUS_TONE) as JobStatus[]).map((s) => [
+    s,
+    { label: jobStatusLabelVi[s], tone: JOB_STATUS_TONE[s] },
+  ]),
+) as Record<JobStatus, StatusLabel>;
+
+export const jobTriggerLabel: Record<JobTrigger, string> = jobTriggerLabelVi;
 
 export const analysisTriggerLabel: Record<AnalysisTrigger, string> = {
   ingest: "Thu thập",
@@ -103,7 +107,7 @@ export const auditActionLabel: Record<AuditAction, string> = {
   "integration.updated": "Cập nhật kết nối Threads",
   "integration.verified": "Kiểm tra kết nối Threads",
   "integration.disconnected": "Ngắt kết nối Threads",
-  "integration.refresh_failed": "Làm mới token thất bại",
+  "integration.refresh_failed": "Không làm mới được token",
   "query.created": "Tạo truy vấn",
   "query.updated": "Sửa truy vấn",
   "query.enabled": "Bật truy vấn",
@@ -111,14 +115,14 @@ export const auditActionLabel: Record<AuditAction, string> = {
   "query.deleted": "Xoá truy vấn",
   "query.restored": "Khôi phục truy vấn",
   "query.run_requested": "Yêu cầu chạy truy vấn",
-  "query.backfill_requested": "Yêu cầu quét bù",
+  "query.backfill_requested": "Yêu cầu lấy dữ liệu cũ",
   "analysis.reanalyze_requested": "Yêu cầu phân tích lại",
   "analysis.bulk_reanalyze_requested": "Yêu cầu phân tích lại hàng loạt",
   "analysis.retry_requested": "Thử lại phân tích",
-  "override.created": "Tạo chỉnh sửa nhãn",
-  "override.revoked": "Thu hồi chỉnh sửa nhãn",
+  "override.created": "Ghi đè",
+  "override.revoked": "Thu hồi ghi đè",
   "review.marked": "Đánh dấu đã xem xét",
-  "mentions.exported": "Xuất dữ liệu đề cập",
+  "mentions.exported": "Xuất CSV bài nhắc",
   "analysis_settings.updated": "Cập nhật cài đặt phân tích",
   "sync_job.retry_requested": "Thử lại lượt đồng bộ",
   "data.purged": "Xoá dữ liệu",

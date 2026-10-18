@@ -53,7 +53,7 @@ function detailNumber(err: ApiError, key: string): number | null {
 
 function showError(err: unknown) {
   if (!(err instanceof ApiError)) {
-    toast.error("Xuất thất bại. Vui lòng thử lại.");
+    toast.error("Không xuất được CSV. Vui lòng thử lại.");
     return;
   }
   if (err.code === "EXPORT_TOO_LARGE") {
@@ -67,7 +67,7 @@ function showError(err: unknown) {
   } else if (err.code === "FORBIDDEN_ROLE") {
     toast.error("Bạn không có quyền xuất dữ liệu.");
   } else {
-    toast.error("Xuất thất bại. Vui lòng thử lại.", {
+    toast.error("Không xuất được CSV. Vui lòng thử lại.", {
       description: err.requestId ? `Mã yêu cầu: ${err.requestId}` : undefined,
     });
   }

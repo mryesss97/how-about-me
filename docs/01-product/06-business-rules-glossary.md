@@ -77,13 +77,13 @@ Rules are normative and referenced by code comments (`// BR-007`) and tests.
 | Term                      | Definition                                                                                                                               |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | **Key phrase**            | Short normalised phrase (1–4 words, BR-041) taken from a post by the classifier (classifier-v2+); not a taxonomy label (FR-120, FR-148). |
-| **Mention**               | A stored `social_posts` row (a public Threads post discovered by a listening query).                                                     |
+| **Mention**               | A stored `social_posts` row (a public Threads post discovered by a listening query). UI: "Bài nhắc".                                     |
 | **Relevant mention**      | Mention whose effective relevance is `relevant`.                                                                                         |
 | **Listening query**       | A configured keyword or topic tag that the collector searches on a schedule.                                                             |
 | **Query match**           | Link between a post and a query that returned it (`post_query_matches`).                                                                 |
 | **Monitoring project**    | Logical listening scope (brand/artist/event); MVP has one.                                                                               |
 | **Sync job**              | One execution of a query search window with counters (`sync_jobs`).                                                                      |
-| **Backfill**              | A manual sync over a historical window.                                                                                                  |
+| **Backfill**              | A manual sync over a historical window. UI: "Lấy dữ liệu cũ".                                                                            |
 | **Overlap**               | Extra time re-fetched before `last_successful_sync_at` to catch late-indexed posts.                                                      |
 | **Collection lag**        | `now − max(last_successful_sync_at)` across enabled queries.                                                                             |
 | **Analysis run**          | One versioned execution of the analysis pipeline for a post revision (`analysis_runs`).                                                  |
@@ -100,8 +100,10 @@ Rules are normative and referenced by code comments (`// BR-007`) and tests.
 | **Coverage**              | Share of relevant mentions in a range that have completed analysis.                                                                      |
 | **Drill-down**            | Navigating from an aggregate (KPI/chart segment) to the underlying mentions with equivalent filters.                                     |
 | **Circuit breaker**       | Temporary pause of provider calls after repeated failures.                                                                               |
-| **RECENT / TOP**          | Threads search types: chronological recent results vs ranked top results.                                                                |
-| **KEYWORD / TAG**         | Threads search modes: free-text keyword vs topic tag.                                                                                    |
+| **RECENT / TOP**          | Threads search types: chronological recent results vs ranked top results. UI: "Mới nhất trước / Nổi bật trước".                          |
+| **KEYWORD / TAG**         | Threads search modes: free-text keyword vs topic tag. UI: "Từ khoá / Chủ đề".                                                            |
 | **Soft delete**           | Marking `deleted_at` instead of removing the row.                                                                                        |
 | **Audit log**             | Immutable record of who did what to which entity and when.                                                                               |
 | **Review queue**          | Mentions that are `uncertain`, low-confidence (< medium band of the run's policy) or failed, until marked reviewed (FR-195, BR-040).     |
+
+Vietnamese UI names for these terms: vocabulary table in `09-ux-specification.md` §5 (#344).

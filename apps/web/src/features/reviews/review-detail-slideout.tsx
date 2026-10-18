@@ -88,8 +88,8 @@ export function ReviewDetailSlideout({
 
   return (
     <DetailSlideout
-      title="Chi tiết bài viết"
-      regionLabel="Chi tiết bài viết"
+      title="Chi tiết bài nhắc"
+      regionLabel="Chi tiết bài nhắc"
       onClose={onClose}
       fullPageHref={(qs) => withBack(`/mentions/${postId}`, backToQueue(qs))}
       fallbackHref="/reviews"

@@ -1,7 +1,7 @@
 "use client";
 
 import { RefreshCcw01 } from "@untitledui/icons";
-import type { SyncJobDetail } from "@how-about-me/contracts";
+import type { QueryType, SyncJobDetail } from "@how-about-me/contracts";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { SlideoutMenu } from "@/components/application/slideout-menus/slideout-menu";
@@ -11,6 +11,7 @@ import { ErrorState, SkeletonBlock } from "@/features/shared/query-state";
 import { ApiError } from "@/lib/api/client";
 import { DASH, formatCount } from "@/lib/format/number";
 import { mentionsHref, mentionsWindowHref } from "@/lib/links/mentions";
+import { queryTypeLabelVi, searchModeLabelVi, searchTypeLabelVi } from "@/lib/semantics/labels";
 import { formatDateTime } from "@/lib/time/format";
 import { retryErrorMessage, useQueryNames, useRetrySyncJob, useSyncJob } from "./api";
 import { jobStatusLabel, jobTriggerLabel, truncateMiddle } from "./format";
@@ -102,9 +103,7 @@ export function SyncJobDrawer({ pid, jobId, tz, isAdmin, onClose }: Props) {
   );
 }
 
-const TYPE_VI = { keyword: "Từ khoá", topic_tag: "Chủ đề" } as const;
-
-type QueryName = { id: string; name: string; type: keyof typeof TYPE_VI; deletedAt: string | null };
+type QueryName = { id: string; name: string; type: QueryType; deletedAt: string | null };
 
 /**
  * #343: admins open the query's edit drawer; a deleted query goes to the deleted list; others get the list
@@ -124,7 +123,7 @@ function QueryLine({ queryId, names }: { queryId: string | null; names: QueryNam
       <p className="text-md font-semibold text-primary">{found ? found.name : `Truy vấn ${queryId.slice(0, 8)}`}</p>
       {found ? (
         <p className="text-sm text-tertiary">
-          {TYPE_VI[found.type]}
+          {queryTypeLabelVi[found.type]}
           {found.deletedAt ? " · Đã xoá" : ""}
         </p>
       ) : null}
@@ -146,7 +145,9 @@ function JobDetail({ job, tz }: { job: SyncJobDetail; tz: string }) {
       </Section>
       <Section title="Cấu hình">
         <Row label="Kích hoạt" value={jobTriggerLabel[job.trigger]} />
-        <Row label="Kiểu tìm" value={`${job.searchType} · ${job.searchMode}`} />
+        {/* #344: same words as the backfill dialog and the audit log; raw RECENT/TAG never shown. */}
+        <Row label="Thứ tự lấy" value={searchTypeLabelVi[job.searchType]} />
+        <Row label="Loại" value={searchModeLabelVi[job.searchMode]} />
       </Section>
       <Section title="Số liệu">
         <Row label="Trang" value={formatCount(job.pagesFetched)} />
@@ -175,7 +176,7 @@ function JobDetail({ job, tz }: { job: SyncJobDetail; tz: string }) {
         </Section>
       ) : null}
       {job.lastCursor ? (
-        <Section title="Cursor cuối">
+        <Section title="Vị trí trang cuối (kỹ thuật)">
           <div className="flex items-center gap-2">
             <code className="font-mono text-xs text-secondary">{truncateMiddle(job.lastCursor)}</code>
             <Button
@@ -184,7 +185,7 @@ function JobDetail({ job, tz }: { job: SyncJobDetail; tz: string }) {
               onClick={() =>
                 void navigator.clipboard
                   ?.writeText(job.lastCursor ?? "")
-                  .then(() => toast.success("Đã sao chép cursor"))
+                  .then(() => toast.success("Đã sao chép vị trí trang"))
                   .catch(() => toast.error("Không sao chép được"))
               }
             >

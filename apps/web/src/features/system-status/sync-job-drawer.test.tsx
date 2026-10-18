@@ -124,7 +124,7 @@ describe("SyncJobDrawer", () => {
     setup(job, false);
     expect(screen.getByRole("heading", { name: "Lượt đồng bộ" })).toHaveClass("operate-board-title");
     expect(await screen.findByText("1zone")).toBeInTheDocument();
-    expect(screen.getByText("Từ khoá")).toBeInTheDocument();
+    expect(screen.getByText("Từ khoá", { selector: "p" })).toBeInTheDocument();
     const mentions = screen.getByRole("link", { name: "Xem bài nhắc" });
     expect(mentions).toHaveClass("plaque-button");
     expect(mentions).toHaveAttribute(
@@ -156,5 +156,13 @@ describe("SyncJobDrawer", () => {
     expect(await screen.findByText("Không gắn truy vấn")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Xem bài nhắc" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Xem truy vấn" })).not.toBeInTheDocument();
+  });
+
+  it("#344: shows search type/mode in Vietnamese, never raw codes", async () => {
+    setup(jobDetailFixture({ searchType: "RECENT", searchMode: "TAG", lastCursor: "abc123" }), false);
+    expect(await screen.findByText("Mới nhất trước")).toBeInTheDocument();
+    expect(screen.getByText("Chủ đề", { selector: "dd" })).toBeInTheDocument();
+    expect(screen.getByText("Vị trí trang cuối (kỹ thuật)")).toBeInTheDocument();
+    expect(screen.queryByText(/RECENT|TAG/)).not.toBeInTheDocument();
   });
 });

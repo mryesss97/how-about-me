@@ -1,5 +1,5 @@
 import type { Override } from "@how-about-me/contracts";
-import { formatDateTime } from "@/lib/time/format";
+import { formatDateTime, formatShortDateTime } from "@/lib/time/format";
 import { FIELD_LABELS, formatValue, userName } from "./overrides";
 
 /** Every analyst override, active and revoked (FR-193: revoking keeps history). Newest first as returned. */
@@ -24,9 +24,15 @@ export function OverrideHistory({ overrides, tz }: { overrides: readonly Overrid
               <td className="py-1.5 pr-3">{FIELD_LABELS[o.field]}</td>
               <td className="py-1.5 pr-3">{`${formatValue(o.previousValue, o.field)} → ${formatValue(o.value, o.field)}`}</td>
               <td className="py-1.5 pr-3">{o.reason ?? "—"}</td>
-              <td className="py-1.5 pr-3">{`${userName(o.reviewedBy)} · ${formatDateTime(o.createdAt, tz)}`}</td>
-              <td className="py-1.5">
-                {o.revokedAt ? `${userName(o.revokedBy)} · ${formatDateTime(o.revokedAt, tz)}` : "Đang hiệu lực"}
+              <td className="py-1.5 pr-3 whitespace-nowrap" title={formatDateTime(o.createdAt, tz)}>
+                {`${userName(o.reviewedBy)} · ${formatShortDateTime(o.createdAt, tz)}`}
+              </td>
+              {/* #344: same short date as the runs table; full date in title. */}
+              <td
+                className="py-1.5 whitespace-nowrap"
+                title={o.revokedAt ? formatDateTime(o.revokedAt, tz) : undefined}
+              >
+                {o.revokedAt ? `${userName(o.revokedBy)} · ${formatShortDateTime(o.revokedAt, tz)}` : "Đang hiệu lực"}
               </td>
             </tr>
           ))}

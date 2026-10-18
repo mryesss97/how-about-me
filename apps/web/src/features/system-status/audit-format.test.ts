@@ -54,7 +54,7 @@ describe("#343 auditMetadataRows (FR-200 sanitized metadata as fields)", () => {
   it("scalars, booleans, arrays and labels", () => {
     const rows = auditMetadataRows({ role: "analyst", enabled: false, postIds: ["a", "b"], weird: 3 }, tz);
     expect(rows).toEqual([
-      { key: "role", label: "Vai trò", value: "analyst" },
+      { key: "role", label: "Vai trò", value: "Phân tích" },
       { key: "enabled", label: "Bật", value: "Không" },
       { key: "postIds", label: "Bài nhắc", value: "a, b" },
       { key: "weird", label: "weird", value: "3" },
@@ -79,5 +79,18 @@ describe("#343 auditMetadataRows (FR-200 sanitized metadata as fields)", () => {
     expect(auditMetadataRows({ truncated: true }, tz)).toEqual([
       { key: "truncated", label: "Ghi chú", value: "Dữ liệu bị rút gọn" },
     ]);
+  });
+});
+
+describe("auditMetadataRows enum values (#344)", () => {
+  const tz = "Asia/Ho_Chi_Minh";
+  it("translates searchType and nested queryType; unknown values stay as stored", () => {
+    expect(auditMetadataRows({ searchType: "TOP" }, tz)).toEqual([
+      { key: "searchType", label: "Thứ tự lấy", value: "Nổi bật trước" },
+    ]);
+    expect(auditMetadataRows({ after: { queryType: "topic_tag" } }, tz)).toEqual([
+      { key: "after.queryType", label: "Sau › Loại", value: "Chủ đề" },
+    ]);
+    expect(auditMetadataRows({ searchType: "WEIRD" }, tz)[0]?.value).toBe("WEIRD");
   });
 });

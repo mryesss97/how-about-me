@@ -1,5 +1,6 @@
 import { INTEGRATION_STATUSES, JOB_STATUSES } from "@how-about-me/contracts";
 import { describe, expect, it } from "vitest";
+import { jobStatusLabelVi } from "@/lib/semantics/labels";
 import {
   activeFilterCount,
   analysisStatusLabel,
@@ -8,7 +9,9 @@ import {
   dayStartUtc,
   formatLag,
   integrationStatusLabel,
+  auditActionLabel,
   jobStatusLabel,
+  jobTriggerLabel,
 } from "./format";
 
 describe("system-status format", () => {
@@ -35,5 +38,19 @@ describe("system-status format", () => {
   it("#343: activeFilterCount counts non-empty fields", () => {
     expect(activeFilterCount({ queryId: "q", status: "", from: "2026-10-01", to: "" })).toBe(2);
     expect(activeFilterCount({})).toBe(0);
+  });
+});
+
+describe("#344 one vocabulary", () => {
+  it("BR-017: job status labels come from the shared map (same word as Listening Queries)", () => {
+    for (const s of JOB_STATUSES) expect(jobStatusLabel[s].label).toBe(jobStatusLabelVi[s]);
+    expect(jobStatusLabel.failed.label).toBe("Lỗi");
+  });
+  it("backfill and override wording matches the action screens", () => {
+    expect(jobTriggerLabel.backfill).toBe("Lấy dữ liệu cũ");
+    expect(auditActionLabel["query.backfill_requested"]).toBe("Yêu cầu lấy dữ liệu cũ");
+    expect(auditActionLabel["override.created"]).toBe("Ghi đè");
+    expect(auditActionLabel["override.revoked"]).toBe("Thu hồi ghi đè");
+    expect(auditActionLabel["mentions.exported"]).toBe("Xuất CSV bài nhắc");
   });
 });

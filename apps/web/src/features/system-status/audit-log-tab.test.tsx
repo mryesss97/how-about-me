@@ -112,7 +112,7 @@ describe("AuditLogTab (FR-201)", () => {
     expect(btn).toHaveAttribute("aria-expanded", "true");
     const meta = within(t.getByTestId("audit-meta"));
     expect(meta.getByText("Vai trò cũ")).toBeInTheDocument();
-    expect(meta.getByText("viewer")).toBeInTheDocument();
+    expect(meta.getByText("Chỉ xem")).toBeInTheDocument(); // #344: role value translated
     expect(t.getByText("Mã yêu cầu: req-audit-1")).toBeInTheDocument();
     expect(t.queryByText(/"previousRole": "viewer"/)).not.toBeInTheDocument();
     fireEvent.click(t.getByRole("button", { name: "Xem JSON" }));

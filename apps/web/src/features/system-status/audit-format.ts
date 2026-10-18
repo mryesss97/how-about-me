@@ -1,6 +1,7 @@
 import type { AuditLog } from "@how-about-me/contracts";
 import { formatCount } from "@/lib/format/number";
 import { withBack } from "@/lib/navigation/back-link";
+import { queryTypeLabelVi, roleLabelVi, searchModeLabelVi, searchTypeLabelVi } from "@/lib/semantics/labels";
 import { formatDateTime } from "@/lib/time/format";
 import { auditEntityLabel } from "./format";
 
@@ -106,13 +107,26 @@ const META_LABEL: Record<string, string> = {
   platformPostId: "Mã bài Threads",
   sourceJobId: "Lượt gốc",
   queryId: "Truy vấn",
-  searchType: "Kiểu tìm",
+  searchType: "Thứ tự lấy",
+  searchMode: "Loại",
   displayName: "Tên hiển thị",
   enqueued: "Đã xếp lịch",
   limit: "Giới hạn",
   from: "Từ",
   to: "Đến",
 };
+
+/** #344: enum values under these leaf keys are shown in Vietnamese; unknown values stay as stored. */
+const META_VALUE: Record<string, Record<string, string>> = {
+  searchType: searchTypeLabelVi,
+  searchMode: searchModeLabelVi,
+  queryType: queryTypeLabelVi,
+  role: roleLabelVi,
+  previousRole: roleLabelVi,
+};
+
+const valueText = (k: string, v: unknown, tz: string): string =>
+  (typeof v === "string" ? META_VALUE[k]?.[v] : undefined) ?? scalarText(v, tz);
 
 const ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})$/;
 
@@ -155,7 +169,12 @@ export function auditMetadataRows(metadata: AuditLog["metadata"], tz: string): A
         continue;
       }
       const href = depth === 0 ? rowHref(k, v) : undefined;
-      rows.push({ key: keys.join("."), label: labs.join(" › "), value: scalarText(v, tz), ...(href ? { href } : {}) });
+      rows.push({
+        key: keys.join("."),
+        label: labs.join(" › "),
+        value: valueText(k, v, tz),
+        ...(href ? { href } : {}),
+      });
     }
   };
   walk(metadata, [], [], 0);

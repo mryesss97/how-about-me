@@ -19,9 +19,9 @@ export function StatusBanner({ analysis: a, canRetry, onRetry, isRetrying }: Pro
     return (
       <PageBanner
         tone="error"
-        title="Phân tích thất bại"
+        title="Phân tích lỗi"
         description={
-          a.errorCode ? `${analysisErrorLabel(a.errorCode)} · Mã: ${a.errorCode}` : "Lượt phân tích gần nhất thất bại."
+          a.errorCode ? `${analysisErrorLabel(a.errorCode)} · Mã: ${a.errorCode}` : "Lượt phân tích gần nhất bị lỗi."
         }
         action={
           canRetry ? (

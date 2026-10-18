@@ -1,4 +1,13 @@
-import type { AnalysisTrigger, ReviewReason, UserRole } from "@how-about-me/contracts";
+import type {
+  AnalysisTrigger,
+  JobStatus,
+  JobTrigger,
+  QueryType,
+  ReviewReason,
+  SearchMode,
+  SearchType,
+  UserRole,
+} from "@how-about-me/contracts";
 import type { IntentLabel, LanguageCode, TopicLabel } from "@how-about-me/taxonomy";
 import { analysisStatusBadge, relevanceBadge, safetyBadge, sentimentBadge } from "./badges";
 
@@ -110,3 +119,30 @@ export const mediaTypeLabelVi: Record<string, string> = {
 export function mediaTypeLabel(v: string): string {
   return mediaTypeLabelVi[v] ?? "Khác";
 }
+
+// #344: one term per concept across every screen (UX §5 vocabulary). Raw codes never reach the UI.
+
+/** Sync job status. BR-017: each status is text, never colour alone. `failed` is always "Lỗi". */
+export const jobStatusLabelVi: Record<JobStatus, string> = {
+  queued: "Đang chờ",
+  running: "Đang chạy",
+  success: "Thành công",
+  partial: "Một phần",
+  failed: "Lỗi",
+  cancelled: "Đã huỷ",
+};
+
+/** Sync job trigger; backfill is "Lấy dữ liệu cũ" everywhere (FR-063). */
+export const jobTriggerLabelVi: Record<JobTrigger, string> = {
+  scheduled: "Theo lịch",
+  manual: "Thủ công",
+  backfill: "Lấy dữ liệu cũ",
+  retry: "Thử lại",
+};
+
+/** BR-008 RECENT/TOP, shown as "Thứ tự lấy". API values stay as-is. */
+export const searchTypeLabelVi: Record<SearchType, string> = { RECENT: "Mới nhất trước", TOP: "Nổi bật trước" };
+
+export const searchModeLabelVi: Record<SearchMode, string> = { KEYWORD: "Từ khoá", TAG: "Chủ đề" };
+
+export const queryTypeLabelVi: Record<QueryType, string> = { keyword: "Từ khoá", topic_tag: "Chủ đề" };

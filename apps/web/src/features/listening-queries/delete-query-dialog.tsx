@@ -17,7 +17,7 @@ export function DeleteQueryDialog({
   return (
     <SettingsDialog isOpen={!!query} onClose={onClose} title="Xoá truy vấn?">
       <p className="text-sm text-tertiary">
-        {query ? <strong className="text-secondary">{query.displayName}</strong> : null} sẽ ngừng thu thập. Bài viết và
+        {query ? <strong className="text-secondary">{query.displayName}</strong> : null} sẽ ngừng thu thập. Bài nhắc và
         lịch sử vẫn được giữ; có thể khôi phục từ “Hiện truy vấn đã xoá”.
       </p>
       <div className="flex justify-end gap-3">
