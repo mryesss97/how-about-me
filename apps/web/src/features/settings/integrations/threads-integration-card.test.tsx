@@ -16,8 +16,10 @@ vi.mock("@/lib/api/client", async (orig) => ({
   ...(await orig<typeof ClientModule>()),
   apiFetch: (...a: unknown[]) => apiFetch(...a),
 }));
-const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn(), loading: vi.fn(() => "t1") }));
 vi.mock("sonner", () => ({ toast }));
+const push = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 const TZ = "Asia/Ho_Chi_Minh";
 const renderCard = (status: ThreadsIntegrationStatus, canEdit: boolean) =>
@@ -45,6 +47,118 @@ beforeEach(() => {
   apiFetch.mockReset();
   toast.success.mockReset();
   toast.error.mockReset();
+  push.mockReset();
+  vi.useRealTimers();
+});
+
+const NOW = Date.parse("2026-10-19T00:00:00.000Z");
+const inDays = (d: number) => new Date(NOW + d * 86_400_000).toISOString();
+const isPrimary = (name: string) => screen.getByRole("button", { name }).className.includes("bg-brand-solid");
+const listPage = (items: unknown[], nextCursor: string | null = null) => ({ items, nextCursor });
+
+describe("ThreadsIntegrationCard #346", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+  });
+
+  it("FR-046 / BR-017: token expiring in 5 days shows 'còn 5 ngày' and the 'Sắp hết hạn' plate", () => {
+    renderCard(threadsStatusFixture({ tokenExpiresAt: inDays(5) }), true);
+    expect(screen.getByText(/còn 5 ngày/)).toBeInTheDocument();
+    expect(screen.getByText("Sắp hết hạn")).toBeInTheDocument();
+    expect(screen.getByText("Đã kết nối")).toBeInTheDocument();
+  });
+
+  it("FR-046: 30 days left shows the count but no plate", () => {
+    renderCard(threadsStatusFixture({ tokenExpiresAt: inDays(30) }), true);
+    expect(screen.getByText(/còn 30 ngày/)).toBeInTheDocument();
+    expect(screen.queryByText("Sắp hết hạn")).toBeNull();
+  });
+
+  it("FR-046: null expiry shows neither count nor plate", () => {
+    renderCard(threadsStatusFixture({ tokenExpiresAt: null }), true);
+    expect(screen.queryByText(/còn \d+ ngày/)).toBeNull();
+    expect(screen.queryByText("Sắp hết hạn")).toBeNull();
+  });
+
+  it("labels scopes as 'Quyền truy cập'", () => {
+    renderCard(threadsStatusFixture(), false);
+    expect(screen.getByText("Quyền truy cập")).toBeInTheDocument();
+  });
+
+  it("healthy connection: 'Kiểm tra kết nối' is the only primary", () => {
+    renderCard(threadsStatusFixture({ tokenExpiresAt: inDays(30) }), true);
+    expect(isPrimary("Kiểm tra kết nối")).toBe(true);
+    expect(isPrimary("Cập nhật token")).toBe(false);
+    expect(isPrimary("Ngắt kết nối")).toBe(false);
+  });
+
+  it.each([
+    ["soon", { tokenExpiresAt: inDays(3) }],
+    ["expired", { status: "expired" as const }],
+    ["permission_error", { status: "permission_error" as const }],
+    ["disconnected", { status: "disconnected" as const }],
+  ])("%s: 'Cập nhật token' is the only primary", (_n, over) => {
+    renderCard(threadsStatusFixture(over), true);
+    expect(isPrimary("Cập nhật token")).toBe(true);
+    expect(isPrimary("Kiểm tra kết nối")).toBe(false);
+  });
+
+  it("flows-9: verify OK with no enabled query → toast links to creating one", async () => {
+    apiFetch.mockImplementation((p: string, init?: RequestInit) =>
+      init?.method === "POST"
+        ? Promise.resolve(threadsStatusFixture())
+        : p.endsWith("/listening-queries")
+          ? Promise.resolve(listPage([]))
+          : Promise.resolve(threadsStatusFixture()),
+    );
+    renderLive(threadsStatusFixture());
+    fireEvent.click(screen.getByRole("button", { name: "Kiểm tra kết nối" }));
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    const [msg, opts] = toast.success.mock.calls[0] as [string, { action?: { label: string; onClick: () => void } }];
+    expect(msg).toBe("Kết nối Threads hoạt động");
+    expect(opts.action?.label).toBe("Thêm truy vấn theo dõi →");
+    opts.action?.onClick();
+    expect(push).toHaveBeenCalledWith("/listening-queries?new=1");
+  });
+
+  it("flows-9: verify OK with an enabled query → plain toast", async () => {
+    apiFetch.mockImplementation((p: string, init?: RequestInit) =>
+      init?.method === "POST"
+        ? Promise.resolve(threadsStatusFixture())
+        : p.endsWith("/listening-queries")
+          ? Promise.resolve(listPage([{ enabled: true, deletedAt: null }]))
+          : Promise.resolve(threadsStatusFixture()),
+    );
+    renderLive(threadsStatusFixture());
+    fireEvent.click(screen.getByRole("button", { name: "Kiểm tra kết nối" }));
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    expect((toast.success.mock.calls[0] as [string, { action?: unknown }])[1].action).toBeUndefined();
+  });
+
+  it("flows-9 / FR-043: saving a token runs a separate verify (PUT then POST)", async () => {
+    apiFetch.mockImplementation((p: string, init?: RequestInit) =>
+      p.endsWith("/listening-queries")
+        ? Promise.reject(new Error("down"))
+        : Promise.resolve(threadsStatusFixture({ status: init?.method === "PUT" ? "disconnected" : "connected" })),
+    );
+    renderLive(threadsStatusFixture({ status: "disconnected" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cập nhật token" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText(/Access token/), {
+      target: { value: "fake-token-for-tests-0123456789" },
+    });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Lưu token" }));
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    const methods = (apiFetch.mock.calls as [string, RequestInit | undefined][])
+      .map(([, i]) => i?.method)
+      .filter(Boolean);
+    expect(methods).toEqual(["PUT", "POST"]);
+    expect(toast.loading).toHaveBeenCalledWith("Đã lưu token. Đang kiểm tra kết nối…");
+    // List fetch failed → success toast without action, replacing the loading toast.
+    expect(toast.success).toHaveBeenCalledWith("Kết nối Threads hoạt động", { id: "t1", action: undefined });
+    expect(screen.queryByDisplayValue("fake-token-for-tests-0123456789")).toBeNull();
+  });
 });
 
 describe("ThreadsIntegrationCard", () => {
@@ -88,7 +202,7 @@ describe("ThreadsIntegrationCard", () => {
     renderLive(threadsStatusFixture());
     fireEvent.click(screen.getByRole("button", { name: "Kiểm tra kết nối" }));
     expect(await screen.findByText("Hết hạn")).toBeInTheDocument();
-    expect(toast.error).toHaveBeenCalledWith("Token không hợp lệ hoặc đã hết hạn.");
+    expect(toast.error).toHaveBeenCalledWith("Token không hợp lệ hoặc đã hết hạn.", { id: undefined });
   });
 
   it("INTEGRATION_NOT_CONFIGURED maps to the update-first copy", async () => {
@@ -99,7 +213,9 @@ describe("ThreadsIntegrationCard", () => {
     );
     renderLive(threadsStatusFixture({ status: "disconnected" }));
     fireEvent.click(screen.getByRole("button", { name: "Kiểm tra kết nối" }));
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Chưa có token. Cập nhật token trước."));
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith("Chưa có token. Cập nhật token trước.", { id: undefined }),
+    );
   });
 
   it("FR-043: disconnect is optimistic and rolls back on error", async () => {
