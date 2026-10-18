@@ -23,3 +23,10 @@ Refs: FR-010…FR-019 · [../../01-product/02-personas-rbac.md](../../01-product
 | TC-AUTH-017 | Seed admin                                   | fresh env                     | Run seed; login as `SEED_ADMIN_EMAIL`          | Admin role on seed project                                                            | FR-019         | P0  | A+M  |
 | TC-AUTH-018 | Analyst re-analyze gate                      | `allowAnalystReanalyze=false` | Analyst `POST …/reanalyze`                     | `403`; set true → `202`                                                               | FR-015, FR-032 | P0  | A    |
 | TC-AUTH-019 | Google sign-in (if enabled)                  | Google enabled                | OAuth flow                                     | Profile created; role from membership                                                 | FR-012         | P1  | M    |
+
+## Automated evidence (T-121 security checklist)
+
+- `@Roles` on every mutating route: `apps/api/src/common/auth/roles-coverage.spec.ts` (FR-015).
+- RBAC matrix: `apps/api/test/integration/rbac.int-spec.ts`.
+- CORS allow-list + helmet headers: `apps/api/test/integration/security-headers.int-spec.ts` (NFR-016).
+- Verify throttle (5/min/project → 429 `RATE_LIMITED`): `apps/api/test/integration/integrations.int-spec.ts`.

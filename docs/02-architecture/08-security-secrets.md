@@ -65,7 +65,7 @@ Implementation (`apps/api/src/modules/audit/`, T-059):
 - HTTPS everywhere (host-terminated). HSTS at host.
 - `helmet()` defaults; `CORS_ORIGINS` allow-list (exact origins); credentials not needed.
 - Body limit 1 MB; query array limits (≤ 50 values).
-- Throttling (`@nestjs/throttler`): global 300 req/min/user; `run` 10/min/project; bulk re-analysis 1/5 min/project (T-145: DB-backed, not `@nestjs/throttler` — locks the project row and checks the last `analysis.bulk_reanalyze_requested` audit row, so it holds across instances and `dryRun` is not counted; shared by bulk re-analyze and mark-stale; `429` + `Retry-After`); export 5/min/user (T-147: DB-backed like T-145 — per-user advisory lock + count of `mentions.exported` audit rows in the last 60 s across all projects; 413/429 not counted); verify 5/min/project.
+- Throttling (`@nestjs/throttler`): global 300 req/min/user; `run` 10/min/project; bulk re-analysis 1/5 min/project (T-145: DB-backed, not `@nestjs/throttler` — locks the project row and checks the last `analysis.bulk_reanalyze_requested` audit row, so it holds across instances and `dryRun` is not counted; shared by bulk re-analyze and mark-stale; `429` + `Retry-After`); export 5/min/user (T-147: DB-backed like T-145 — per-user advisory lock + count of `mentions.exported` audit rows in the last 60 s across all projects; 413/429 not counted); verify 5/min/project (T-121: `@Throttle` on `POST …/integrations/threads/verify`, tracker = `projectId`, in-memory per instance; `429 RATE_LIMITED`).
 - Zod validation on all inputs; enums strict; `q` max 200 chars; UUID params validated.
 - Output: post text delivered as JSON string; FE renders text nodes only; links rendered with `rel="noopener noreferrer"`.
 - Swagger disabled in production by default.
@@ -90,15 +90,17 @@ Implementation (`apps/api/src/modules/audit/`, T-059):
 
 ## 10. Security checklist (release gate, mirrors source §8)
 
-- [ ] Service-role key absent from web build & env
-- [ ] Threads token & OpenAI key absent from web
-- [ ] Redaction verified in logs (test emits a fake token → not present)
-- [ ] RBAC matrix tests green
-- [ ] Admin mutations audited (spot check)
-- [ ] Input validation on all filters/bodies
-- [ ] Throttling on run/bulk/export/verify
-- [ ] Content rendered as text; external links safe
-- [ ] Production CORS restricted
-- [ ] Separate staging/prod secrets
-- [ ] Backups verified (restore drill on staging)
-- [ ] Purge workflow tested on staging
+Evidence per item: [release checklist §3](../03-delivery/06-release-plan-checklist.md#3-security-checklist) (T-121, 2026-10-18).
+
+- [x] Service-role key absent from web build & env
+- [x] Threads token & OpenAI key absent from web
+- [x] Redaction verified in logs (test emits a fake token → not present)
+- [x] RBAC matrix tests green
+- [x] Admin mutations audited (spot check)
+- [x] Input validation on all filters/bodies
+- [x] Throttling on run/bulk/export/verify
+- [x] Content rendered as text; external links safe
+- [x] Production CORS restricted
+- [ ] Separate staging/prod secrets — pending owner confirmation of GitHub Environments
+- [ ] Backups verified (restore drill on staging) — pending staging
+- [ ] Purge workflow tested on staging — code + integration test done; staging run pending

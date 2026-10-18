@@ -123,4 +123,15 @@ describe("Integrations / Threads (T-038)", () => {
     expect(res.status).toBe(403);
     expect(res.body.error.code).toBe("FORBIDDEN_PROJECT");
   });
+
+  it("T-121 / NFR-017: verify is throttled to 5/min per project → 6th call 429 RATE_LIMITED", async () => {
+    await http().put(url()).set(auth("admin")).send({ accessToken: TOKEN });
+    for (let i = 0; i < 5; i++) {
+      const ok = await http().post(`${url()}/verify`).set(auth("admin"));
+      expect(ok.status).toBe(200);
+    }
+    const res = await http().post(`${url()}/verify`).set(auth("admin"));
+    expect(res.status).toBe(429);
+    expect(res.body.error.code).toBe("RATE_LIMITED");
+  });
 });
