@@ -13,7 +13,11 @@ vi.mock("@/lib/api/client", async (orig) => ({
   ...(await orig<typeof ClientModule>()),
   apiFetch: (...a: unknown[]) => apiFetch(...a),
 }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push }),
+  usePathname: () => "/terms/gi%C3%A1%20v%C3%A9",
+  useSearchParams: () => new URLSearchParams("preset=30d"),
+}));
 vi.mock("@/features/auth/use-current-project", () => ({ useCurrentProject: () => ({ project: { id: PID } }) }));
 
 beforeEach(() => {
@@ -40,7 +44,10 @@ describe("TermMentions", () => {
     expect(screen.getByRole("heading", { name: 'Bài nhắc tới "giá vé"' })).toBeInTheDocument();
     // #326: the row is a real link to the full page (no slide-out on /terms).
     const link = await screen.findByRole("link", { name: /Bài nhắc của/ });
-    expect(link).toHaveAttribute("href", `/mentions/${m.id}`);
+    // #331: the detail page's back link returns to this phrase page with its range.
+    const url = new URL(link.getAttribute("href") ?? "", "http://x");
+    expect(url.pathname).toBe(`/mentions/${m.id}`);
+    expect(url.searchParams.get("back")).toBe("/terms/gi%C3%A1%20v%C3%A9?preset=30d");
     expect(fireEvent.click(link)).toBe(true);
     expect(push).not.toHaveBeenCalled();
   });

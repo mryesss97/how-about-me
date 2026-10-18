@@ -76,10 +76,17 @@ describe("TermDetailView", () => {
     expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent('"giá vé"');
     expect(await screen.findByText(/54,9% Tiêu cực · 82 lượt nhắc có cảm xúc/)).toBeInTheDocument();
     expect(screen.getByText("Tích cực")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Xem tất cả trong Bài nhắc/ })).toHaveAttribute(
-      "href",
-      "/mentions?term=giá+vé",
+    // #331 / FR-142: the link pins the page range (30 days) as custom and keeps the term.
+    const all = new URL(
+      screen.getByRole("link", { name: /Xem tất cả trong Bài nhắc/ }).getAttribute("href") ?? "",
+      "http://x",
     );
+    expect(all.pathname).toBe("/mentions");
+    expect(all.searchParams.get("preset")).toBe("custom");
+    expect(all.searchParams.get("term")).toBe("giá vé");
+    const days =
+      (Date.parse(all.searchParams.get("to") ?? "") - Date.parse(all.searchParams.get("from") ?? "")) / 864e5;
+    expect(Math.round(days)).toBe(30);
     expect(screen.getByRole("link", { name: /Về bức tường cụm từ/ })).toHaveAttribute("href", "/");
   });
 

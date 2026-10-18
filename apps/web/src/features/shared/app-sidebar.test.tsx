@@ -6,13 +6,19 @@ import { AppSidebar, resolveActiveHref } from "./app-sidebar";
 const apiFetch = vi.fn();
 vi.mock("@/lib/api/client", () => ({ apiFetch: (...a: unknown[]) => apiFetch(...a) }));
 let pathname = "/overview";
-vi.mock("next/navigation", () => ({ usePathname: () => pathname, useRouter: () => ({ push: vi.fn() }) }));
+let search = "";
+vi.mock("next/navigation", () => ({
+  usePathname: () => pathname,
+  useSearchParams: () => new URLSearchParams(search),
+  useRouter: () => ({ push: vi.fn() }),
+}));
 vi.mock("@/features/auth/use-sign-out", () => ({ useSignOut: () => vi.fn() }));
 
 // FR-018, FR-036
 describe("AppSidebar", () => {
   beforeEach(() => {
     pathname = "/overview";
+    search = "";
   });
 
   it("shows the shared nav to a viewer with role badge and no switcher for 1 project (TC-AUTH-014, TC-PROJ-012)", async () => {
@@ -112,5 +118,30 @@ describe("resolveActiveHref (#325)", () => {
   });
   it("does not match a partial segment", () => {
     expect(resolveActiveHref("/mentionsx", list)).toBeUndefined();
+  });
+
+  // #331: Overview / Mentions keep the shared filter keys
+  it("carries shared filters between Overview and Mentions, keeping the current plate", async () => {
+    apiFetch.mockResolvedValue(meFixture([projectFixture(P1, "viewer")]));
+    pathname = "/mentions";
+    search = "preset=30d&sentiment=negative";
+    render(<AppSidebar />, { wrapper: Providers });
+    await screen.findAllByText("Chỉ xem");
+    const hrefs = screen.getAllByRole("link", { hidden: true }).map((a) => a.getAttribute("href"));
+    expect(hrefs).toContain("/overview?preset=30d");
+    expect(hrefs).toContain("/mentions?preset=30d");
+    expect(hrefs).toContain("/reviews");
+    expect(new Set(currentLabels())).toEqual(new Set(["Bài nhắc"]));
+  });
+
+  it("does not carry filters from other screens", async () => {
+    apiFetch.mockResolvedValue(meFixture([projectFixture(P1, "viewer")]));
+    pathname = "/listening-queries";
+    search = "preset=30d";
+    render(<AppSidebar />, { wrapper: Providers });
+    await screen.findAllByText("Chỉ xem");
+    const hrefs = screen.getAllByRole("link", { hidden: true }).map((a) => a.getAttribute("href"));
+    expect(hrefs).toContain("/overview");
+    expect(hrefs).not.toContain("/overview?preset=30d");
   });
 });

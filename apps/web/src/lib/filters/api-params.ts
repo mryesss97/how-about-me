@@ -63,11 +63,6 @@ export function phraseMentionsHref(phrase: string): string {
   return `/mentions${serializeFilters({ phrase: [phrase] })}`;
 }
 
-/** #273: `/mentions?term=<t>` link (page defaults for range/relevance); parser re-normalises (BR-041). */
-export function termMentionsHref(term: string): string {
-  return `/mentions${serializeFilters({ term })}`;
-}
-
 export type ChipKey = ArrayFilterKey | "term";
 
 export interface AppliedChip {

@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/base/buttons/button";
 import { DASH, formatCount } from "@/lib/format/number";
 import { formatDateTime } from "@/lib/time/format";
+import { withBack } from "@/lib/navigation/back-link";
 import { retryErrorMessage, useRetryAnalysisRun } from "./api";
 import { analysisTriggerLabel, truncateMiddle } from "./format";
 
@@ -76,7 +77,7 @@ export function AnalysisFailuresTable({ pid, items, tz, isAdmin }: Props) {
                   </td>
                   <td className={TD}>
                     <Link
-                      href={`/mentions/${r.postId}`}
+                      href={withBack(`/mentions/${r.postId}`, "/system-status")}
                       className="font-mono text-xs text-brand-secondary hover:underline"
                     >
                       {truncateMiddle(r.postId, 14)}

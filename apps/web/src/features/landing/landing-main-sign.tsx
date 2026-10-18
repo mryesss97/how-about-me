@@ -59,7 +59,8 @@ export const MainSign = forwardRef<HTMLElement, Props>(function MainSign({ stats
         ) : null}
 
         <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Link href="/overview" className="door-plaque">
+          {/* #331: same 30-day period as the wall, so the first number matches. */}
+          <Link href="/overview?preset=30d" className="door-plaque">
             <span>{copy.explore}</span>
             <ArrowRight aria-hidden className="size-5" />
           </Link>
