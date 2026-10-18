@@ -77,25 +77,24 @@ describe("SentimentBubbleMap (#222)", () => {
     );
   });
 
-  it("NFR-032: Bubbles | Table toggle; table respects the chip and links the topic", async () => {
+  it("#336 / NFR-032 / FR-144: Topics 'Bảng' shows coloured count · share cells, respects the chip, links each cell", async () => {
     render(<SentimentBubbleMap data={topicSentimentFixture()} getHref={getHref} />);
     await click(screen.getByRole("radio", { name: /Tiêu cực \(3\)/ }));
-    await click(screen.getByRole("radio", { name: "Bảng dữ liệu" }));
-    const rows = Array.from(screen.getByRole("grid").querySelectorAll("tr")).map((r) =>
-      Array.from(r.querySelectorAll("th, td")).map((c) => (c.textContent ?? "").trim()),
+    await click(screen.getByRole("button", { name: "Bảng" }));
+    expect(screen.getByRole("button", { name: "Bảng" })).toHaveAttribute("aria-pressed", "true");
+    const table = screen.getByRole("table", { name: "Bản đồ cảm xúc (bảng)" });
+    const headers = within(table)
+      .getAllByRole("rowheader")
+      .map((h) => h.firstChild?.textContent);
+    // Chip "Tiêu cực" keeps only negative-dominant topics (price is positive-dominant).
+    expect(headers).toEqual(["Vé", "Địa điểm", "Khác"]);
+    // BR-017: count is always printed; FR-142: non-zero cells drill topic & sentiment.
+    expect(within(table).getByRole("link", { name: /^Vé · Tiêu cực: 2 lượt nhắc, 50,0%/ })).toHaveAttribute(
+      "href",
+      "/mentions?topic=ticket&sentiment=negative",
     );
-    expect(rows[0]).toEqual([
-      "Chủ đề",
-      "Cảm xúc chủ đạo",
-      "Tỷ lệ chủ đạo",
-      "Tích cực",
-      "Trung tính",
-      "Tiêu cực",
-      "Có cảm xúc",
-    ]);
-    expect(rows[1]).toEqual(["Vé", "Tiêu cực", "50,0%", "1", "1", "2", "4"]);
-    expect(rows).toHaveLength(4);
-    expect(screen.getByRole("link", { name: "Vé" })).toHaveAttribute("href", "/mentions?topic=ticket");
+    expect(within(table).queryByRole("link", { name: /^Địa điểm · Tích cực/ })).toBeNull();
+    expect(screen.queryByText("Chủ đề × cảm xúc")).toBeNull();
   });
 
   it("NFR-031: data-motion follows prefers-reduced-motion", () => {
@@ -165,7 +164,7 @@ describe("SentimentBubbleMap (#222)", () => {
         "href",
         `/mentions?phrase=${encodeURIComponent("giá vé")}&sentiment=negative`,
       );
-      await click(screen.getByRole("radio", { name: "Bảng dữ liệu" }));
+      await click(screen.getByRole("button", { name: "Bảng" }));
       const head = screen.getByRole("grid").querySelector("tr")?.querySelector("th")?.textContent;
       expect(head).toBe("Cụm từ");
       expect(screen.getByRole("link", { name: "giá vé" })).toHaveAttribute(

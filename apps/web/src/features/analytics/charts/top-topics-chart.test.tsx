@@ -29,7 +29,7 @@ describe("TopTopicsChart", () => {
 
   it("loading state hides the table toggle", () => {
     render(<TopTopicsChart isLoading />);
-    expect(screen.queryByRole("button", { name: "Xem dạng bảng" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Bảng" })).toBeNull();
   });
 
   it("FR-142: table rows link to their drill-down; aggregated Other is plain text", async () => {

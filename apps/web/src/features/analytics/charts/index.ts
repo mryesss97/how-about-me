@@ -46,10 +46,6 @@ export const NegativeTopicsChart = dynamic(() => import("./negative-topics-chart
   ssr: false,
   loading,
 });
-export const TopicSentimentHeatmap = dynamic(
-  () => import("./topic-sentiment-heatmap").then((m) => m.TopicSentimentHeatmap),
-  { ssr: false, loading },
-);
 export const SentimentBubbleMap = dynamic(() => import("./sentiment-bubble-map").then((m) => m.SentimentBubbleMap), {
   ssr: false,
   loading,

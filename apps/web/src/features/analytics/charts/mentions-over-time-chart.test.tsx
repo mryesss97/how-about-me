@@ -31,6 +31,6 @@ describe("MentionsOverTimeChart", () => {
     const data = timeseriesFixture(true);
     render(<MentionsOverTimeChart data={{ ...data, data: data.data.map((d) => ({ ...d, mentions: 0 })) }} />);
     expect(screen.queryByText("Không có lượt nhắc trong khoảng này")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Xem dạng bảng" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Bảng" })).toBeInTheDocument();
   });
 });

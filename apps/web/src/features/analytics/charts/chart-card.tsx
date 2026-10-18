@@ -4,7 +4,7 @@ import Link from "next/link";
 import { type ReactNode, useState } from "react";
 import { ToggleButton as AriaToggleButton } from "react-aria-components";
 import { Table } from "@/components/application/table/table";
-import { ButtonGroup, ButtonGroupItem } from "@/components/base/button-group/button-group";
+import { plaqueClassName } from "@/features/shared/plaque-button";
 import { QueryState, type QueryStateError } from "@/features/shared/query-state";
 import { cx } from "@/utils/cx";
 
@@ -54,8 +54,8 @@ export type ChartCardProps = {
   emptyDescription?: string;
   table: ChartTable;
   className?: string;
-  /** #222: segmented "chart | table" toggle labels instead of the "Xem dạng bảng" plaque. */
-  viewToggle?: { chart: string; table: string };
+  /** #336: custom content for "Bảng" mode (e.g. the coloured topic × sentiment cells); `table` stays the text twin. */
+  tableView?: ReactNode;
   /** #222: controls shown above the content in both chart and table mode (only when ready). */
   toolbar?: ReactNode;
   /** #243: header control shown in every state (loading/empty/error too), e.g. a mode switch the user must reach to leave an empty state. */
@@ -69,7 +69,7 @@ export function ChartSkeleton({ className }: { className?: string }) {
   return <div aria-hidden className={cx("h-72 w-full animate-pulse rounded-lg bg-secondary", className)} />;
 }
 
-/** Card shell shared by overview charts (T-100, reused by T-101): title, "Xem dạng bảng" toggle, states.
+/** Card shell shared by overview charts (T-100, reused by T-101): title, "Biểu đồ | Bảng" control (#336), states.
  * Restyled as a white enamel board with a navy keyline (#275, DESIGN.md Operate Surfaces). */
 export function ChartCard({
   title,
@@ -82,7 +82,7 @@ export function ChartCard({
   emptyDescription,
   table,
   className,
-  viewToggle,
+  tableView,
   toolbar,
   headerAction,
   footer,
@@ -102,27 +102,7 @@ export function ChartCard({
         </div>
         <div className="flex max-w-full min-w-0 flex-wrap items-center gap-2 self-start sm:shrink-0 sm:justify-end">
           {headerAction}
-          {ready && viewToggle ? (
-            <ButtonGroup
-              size="sm"
-              aria-label="Chế độ xem"
-              disallowEmptySelection
-              selectedKeys={[asTable ? "table" : "chart"]}
-              onSelectionChange={(keys) => setAsTable(keys.has("table"))}
-              className="shrink-0"
-            >
-              <ButtonGroupItem id="chart">{viewToggle.chart}</ButtonGroupItem>
-              <ButtonGroupItem id="table">{viewToggle.table}</ButtonGroupItem>
-            </ButtonGroup>
-          ) : ready ? (
-            <AriaToggleButton
-              isSelected={asTable}
-              onChange={setAsTable}
-              className="plaque-button shrink-0 px-3 py-1.5 outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2"
-            >
-              Xem dạng bảng
-            </AriaToggleButton>
-          ) : null}
+          {ready ? <ViewToggle asTable={asTable} onChange={setAsTable} /> : null}
         </div>
       </header>
       {ready && toolbar ? toolbar : null}
@@ -135,17 +115,38 @@ export function ChartCard({
         {...(emptyDescription ? { emptyDescription } : {})}
         skeleton={<ChartSkeleton />}
       >
-        {asTable ? (
-          // Long ranges (up to 744 hourly buckets) scroll inside the card instead of stretching the page.
-          <div className="max-h-80 overflow-y-auto">
-            <ChartDataTable caption={title} table={table} />
-          </div>
-        ) : (
-          children
-        )}
+        {asTable
+          ? (tableView ?? (
+              // Long ranges (up to 744 hourly buckets) scroll inside the card; ~9 compact rows stay visible.
+              <div className="max-h-[26rem] overflow-y-auto">
+                <ChartDataTable caption={title} table={table} />
+              </div>
+            ))
+          : children}
       </QueryState>
       {ready && footer ? footer : null}
     </section>
+  );
+}
+
+/** Copy of the two-state view control shared by every chart (#336). */
+export const chartViewCopy = { group: "Chế độ xem", chart: "Biểu đồ", table: "Bảng" } as const;
+
+/**
+ * #336: one two-plaque segment "Biểu đồ | Bảng" for every chart (DESIGN.md Plaque tabs: selected plaque inverts to
+ * navy via `aria-pressed`). 44px tall under sm so it is a comfortable touch target at 390px.
+ */
+function ViewToggle({ asTable, onChange }: { asTable: boolean; onChange: (asTable: boolean) => void }) {
+  const cls = plaqueClassName("sm", "min-h-11 shrink-0 sm:min-h-0");
+  return (
+    <div role="group" aria-label={chartViewCopy.group} className="flex shrink-0 gap-1">
+      <AriaToggleButton isSelected={!asTable} onChange={() => onChange(false)} className={cls}>
+        {chartViewCopy.chart}
+      </AriaToggleButton>
+      <AriaToggleButton isSelected={asTable} onChange={() => onChange(true)} className={cls}>
+        {chartViewCopy.table}
+      </AriaToggleButton>
+    </div>
   );
 }
 
@@ -154,16 +155,17 @@ function ChartDataTable({ caption, table }: { caption: string; table: ChartTable
     <Table aria-label={`${caption} (bảng)`} size="sm">
       <Table.Header>
         {table.columns.map((c, i) => (
-          <Table.Head key={c} id={c} label={c} isRowHeader={i === 0} />
+          <Table.Head key={c} id={c} label={c} isRowHeader={i === 0} className="h-10 px-3 py-2" />
         ))}
       </Table.Header>
       <Table.Body>
         {table.rows.map((row, r) => (
-          <Table.Row key={r} id={r}>
+          // #336: compact ~40px rows (the vendored Table ignores size="sm" outside a TableCard).
+          <Table.Row key={r} id={r} className="h-10">
             {row.map((cell, c) => {
               const cellHref = table.cellHrefs?.[r]?.[c] ?? (c === 0 ? table.rowHrefs?.[r] : null);
               return (
-                <Table.Cell key={c}>
+                <Table.Cell key={c} className="px-3 py-2">
                   {cellHref ? (
                     <Link
                       href={cellHref}

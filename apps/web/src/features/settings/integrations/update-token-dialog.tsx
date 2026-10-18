@@ -12,7 +12,18 @@ import { integrationErrorMessage, useUpdateThreadsToken } from "./api";
  * FR-043 / TC-INT-012: the token field is write-only — always starts empty, is cleared on close,
  * and never leaves this component except in the PUT body (CLAUDE.md secrets rule).
  */
-export function UpdateTokenDialog({ pid, isOpen, onClose }: { pid: string; isOpen: boolean; onClose: () => void }) {
+export function UpdateTokenDialog({
+  pid,
+  isOpen,
+  onClose,
+  onSaved,
+}: {
+  pid: string;
+  isOpen: boolean;
+  onClose: () => void;
+  /** #346: called after a successful save (dialog already closed) — the card runs verify from here. */
+  onSaved?: () => void;
+}) {
   const [token, setToken] = useState("");
   const [account, setAccount] = useState("");
   const [expiry, setExpiry] = useState("");
@@ -58,8 +69,9 @@ export function UpdateTokenDialog({ pid, isOpen, onClose }: { pid: string; isOpe
     setFormError(undefined);
     update.mutate(parsed.data, {
       onSuccess: () => {
-        toast.success("Đã lưu token. Hãy kiểm tra kết nối.");
         close();
+        if (onSaved) onSaved();
+        else toast.success("Đã lưu token. Hãy kiểm tra kết nối.");
       },
       onError: (err) => setFormError(integrationErrorMessage(err)),
     });

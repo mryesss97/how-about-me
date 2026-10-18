@@ -27,17 +27,20 @@ describe("ChartCard", () => {
         <div>chart</div>
       </ChartCard>,
     );
-    const toggle = screen.getByRole("button", { name: "Xem dạng bảng" });
+    expect(screen.queryByText("Xem dạng bảng")).toBeNull();
+    expect(screen.getByRole("button", { name: "Biểu đồ" })).toHaveAttribute("aria-pressed", "true");
+    const toggle = screen.getByRole("button", { name: "Bảng" });
     expect(toggle).toHaveAttribute("aria-pressed", "false");
     fireEvent.keyDown(document.body, { key: "Tab" });
     await act(async () => toggle.focus());
     expect(toggle).toHaveFocus();
     await press(toggle, "Enter");
     expect(toggle).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Biểu đồ" })).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByRole("grid", { name: "Lượt nhắc theo thời gian (bảng)" })).toBeInTheDocument();
     expect(screen.getByText("07/10")).toBeInTheDocument();
     expect(screen.queryByText("chart")).not.toBeInTheDocument();
-    await press(screen.getByRole("button", { name: "Xem dạng bảng" }), " ");
+    await press(screen.getByRole("button", { name: "Biểu đồ" }), " ");
     expect(screen.getByText("chart")).toBeInTheDocument();
   });
 
@@ -48,7 +51,7 @@ describe("ChartCard", () => {
       </ChartCard>,
     );
     expect(screen.getByText("Không có lượt nhắc trong khoảng này")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Xem dạng bảng" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Bảng" })).not.toBeInTheDocument();
   });
 
   it("shows error with retry", async () => {
@@ -68,23 +71,24 @@ describe("ChartCard", () => {
   });
 });
 
-describe("ChartCard viewToggle / toolbar / footer (#222)", () => {
-  it("NFR-032: segmented toggle switches to table; toolbar in both modes; footer only when ready", async () => {
+describe("ChartCard tableView / toolbar / footer / headerAction (#222, #336)", () => {
+  it("NFR-032: 'Bảng' renders tableView when given; toolbar in both modes; footer only when ready", async () => {
     const { rerender } = render(
       <ChartCard
         title="Map"
         table={table}
-        viewToggle={{ chart: "Bong bóng", table: "Bảng dữ liệu" }}
+        tableView={<p>cells</p>}
         toolbar={<p>chips</p>}
         footer={<p>legend</p>}
+        headerAction={<p>mode</p>}
       >
         <div>chart</div>
       </ChartCard>,
     );
-    expect(screen.queryByRole("button", { name: "Xem dạng bảng" })).toBeNull();
-    expect(screen.getByRole("radio", { name: "Bong bóng" })).toHaveAttribute("aria-checked", "true");
-    await act(async () => fireEvent.click(screen.getByRole("radio", { name: "Bảng dữ liệu" })));
-    expect(screen.getByRole("grid", { name: "Map (bảng)" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Chế độ xem" })).toBeInTheDocument();
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Bảng" })));
+    expect(screen.getByText("cells")).toBeInTheDocument();
+    expect(screen.queryByRole("grid")).toBeNull();
     expect(screen.getByText("chips")).toBeInTheDocument();
     expect(screen.getByText("legend")).toBeInTheDocument();
     rerender(
@@ -92,16 +96,31 @@ describe("ChartCard viewToggle / toolbar / footer (#222)", () => {
         title="Map"
         table={table}
         isLoading
-        viewToggle={{ chart: "Bong bóng", table: "Bảng dữ liệu" }}
+        tableView={<p>cells</p>}
         toolbar={<p>chips</p>}
         footer={<p>legend</p>}
+        headerAction={<p>mode</p>}
       >
         <div>chart</div>
       </ChartCard>,
     );
     expect(screen.queryByText("chips")).toBeNull();
     expect(screen.queryByText("legend")).toBeNull();
-    expect(screen.queryByRole("radio")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Bảng" })).toBeNull();
+    // headerAction stays reachable in every state (#243).
+    expect(screen.getByText("mode")).toBeInTheDocument();
+  });
+
+  it("#336: compact rows (~40px) in the text table", async () => {
+    render(
+      <ChartCard title="T" table={table}>
+        <div />
+      </ChartCard>,
+    );
+    await openTable();
+    const row = screen.getByRole("grid").querySelector("tbody tr");
+    expect(row?.className).toContain("h-10");
+    expect(row?.className).not.toContain("h-18");
   });
 });
 
@@ -115,7 +134,7 @@ describe("ChartCard — axe (#95, TC-DASH-022, NFR-032)", () => {
       </main>,
     );
     expect(await seriousViolations(container)).toEqual([]);
-    await press(screen.getByRole("button", { name: "Xem dạng bảng" }), "Enter");
+    await press(screen.getByRole("button", { name: "Bảng" }), "Enter");
     expect(screen.getByRole("grid")).toBeInTheDocument();
     expect(await seriousViolations(container)).toEqual([]);
   });

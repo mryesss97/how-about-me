@@ -1,7 +1,8 @@
 System Status (`/system-status`, T-060 #55, UX §3.6) — see docs/02-architecture/03-frontend-design.md §1.
 
 - `api.ts` — `useSystemStatus` (30 s poll), `useLiveQueriesForStatus` (#342 "Truy vấn đang lỗi"), `useSyncJobs`, `useSyncJob`, `useRetrySyncJob`, `useFailedAnalysisRuns`, `useRetryAnalysisRun`, `useRetryAllFailedAnalysis`, `useAuditLogs`, `retryErrorMessage`.
-- `format.ts` — status → label/tone maps (BR-017), lag, project-tz day bounds → UTC; overview helpers (#342): `tokenDaysLeft`, `threadsPlate`, `formatVersions`, `countQueriesWithError`, `failedJobsHref`, `buildSummary`.
+- `status-plate.tsx` re-exports `features/shared/status-plate.tsx` (#346, shared with Settings).
+- `format.ts` — status → label/tone maps (BR-017), lag, project-tz day bounds → UTC; overview helpers (#342): `tokenDaysLeft` (re-exported from `lib/semantics/token-expiry.ts`, #346), `threadsPlate`, `formatVersions`, `countQueriesWithError`, `failedJobsHref`, `buildSummary`.
 - `use-status-params.ts` — URL state (`tab`, `queryId`, `status`, `from`, `to`, `job`, `action`).
 - `system-status-view.tsx` — page body + tabs; `overview-cards.tsx` (+ `overview-board.tsx`, `overview-summary.tsx`), `status-plate.tsx` (enamel `.status-plate`), `updated-ago.tsx`.
 - `sync-jobs-tab.tsx`, `sync-jobs-filters.tsx`, `sync-jobs-table.tsx`, `sync-job-drawer.tsx` (admin retry, FR-175).
