@@ -4,7 +4,7 @@ System Status (`/system-status`, T-060 #55, UX §3.6) — see docs/02-architectu
 - `status-plate.tsx` re-exports `features/shared/status-plate.tsx` (#346, shared with Settings).
 - `format.ts` — status → label/tone maps (BR-017), lag, project-tz day bounds → UTC; overview helpers (#342): `tokenDaysLeft` (re-exported from `lib/semantics/token-expiry.ts`, #346), `threadsPlate`, `formatVersions`, `countQueriesWithError`, `failedJobsHref`, `buildSummary`. overview helpers (#342): `tokenDaysLeft`, `threadsPlate`, `formatVersions`, `countQueriesWithError`, `failedJobsHref`, `buildSummary`; `activeFilterCount` (#343).
 - `use-status-params.ts` — URL state (`tab`, `queryId`, `status`, `from`, `to`, `job`, `action`). - `use-status-params.ts` — URL state (`tab`, `queryId`, `status`, `from`, `to`, `job`, `action`, `actor` — UUID only).
-- `audit-format.ts` — #343: `auditEntityHref`, `auditEntityName`/`auditEntityText`, `auditMetadataRows` (metadata → label/value rows).
+- `audit-format.ts` — #343/#393: `auditEntityParts` (label + name in words, no id fragments) → `auditEntityName`/`auditEntityText`/`auditEntityCompact` (mobile, no repeated action word), `auditEntityHref` (overrides link via `postIds`), `auditMetadataRows` (metadata → label/value rows, ids as "Mở …" links with the id in `title`).
 - `filter-panel.tsx` — #343 shared "Bộ lọc · n" panel + "Làm mới" + date range fields.
 - `system-status-view.tsx` — page body + tabs; `overview-cards.tsx` (+ `overview-board.tsx`, `overview-summary.tsx`), `status-plate.tsx` (enamel `.status-plate`), `updated-ago.tsx`.
 - `sync-jobs-tab.tsx`, `sync-jobs-filters.tsx`, `sync-jobs-table.tsx`, `sync-jobs-list-mobile.tsx` (#343 cards below `md`), `sync-job-drawer.tsx` (admin retry, FR-175; plaque links to mentions/query).

@@ -2,6 +2,7 @@ import { ANALYSIS_TRIGGERS, JOB_STATUSES, QUERY_TYPES, SEARCH_MODES, SEARCH_TYPE
 import { INTENT_LABELS, LANGUAGE_CODES, TOPIC_LABELS } from "@how-about-me/taxonomy";
 import { describe, expect, it } from "vitest";
 import {
+  overrideFieldLabelVi,
   analysisTriggerLabelVi,
   mediaTypeLabel,
   displayLabel,
@@ -71,5 +72,17 @@ describe("shared vocabulary maps (#344)", () => {
         expect(table[v]).not.toMatch(/RECENT|TOP|KEYWORD|TAG|topic_tag|keyword/);
       }
     expect(m.jobStatusLabelVi.failed).toBe("Lỗi");
+  });
+});
+
+describe("overrideFieldLabelVi (#393, FR-191)", () => {
+  it("labels all 5 overridable fields", () => {
+    expect(overrideFieldLabelVi).toEqual({
+      relevance: "Mức liên quan",
+      sentiment: "Cảm xúc",
+      safety_level: "Mức an toàn",
+      intents: "Ý định",
+      topics: "Chủ đề",
+    });
   });
 });

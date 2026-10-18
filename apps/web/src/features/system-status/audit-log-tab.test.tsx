@@ -129,14 +129,26 @@ describe("AuditLogTab (FR-201)", () => {
       metadata: { after: { displayName: "1zone" } },
     });
     const odd = auditLogFixture({ entityType: "mystery", entityId: uuid(73), action: "legacy.x" });
-    mockApi({ items: [post, job, query, odd], nextCursor: null });
+    const override = auditLogFixture({
+      entityType: "analysis_override",
+      entityId: uuid(74),
+      action: "override.created",
+      metadata: { field: "sentiment", postIds: [uuid(75)] },
+    });
+    mockApi({ items: [post, job, query, odd, override], nextCursor: null });
     setup();
     const t = await table();
-    expect(t.getByRole("link", { name: /^Bài nhắc · / })).toHaveAttribute(
+    // #393 / BR-017: objects named in words (link text, not colour alone); no id fragment before opening details.
+    expect(t.queryByText(/[0-9a-f]{8}/)).toBeNull();
+    expect(t.getByRole("link", { name: "Ghi đè · Cảm xúc" })).toHaveAttribute(
+      "href",
+      `/mentions/${uuid(75)}?back=${encodeURIComponent("/system-status?tab=audit-log")}`,
+    );
+    expect(t.getByRole("link", { name: "Bài nhắc" })).toHaveAttribute(
       "href",
       `/mentions/${uuid(70)}?back=${encodeURIComponent("/system-status?tab=audit-log")}`,
     );
-    expect(t.getByRole("link", { name: /^Lượt đồng bộ · / })).toHaveAttribute(
+    expect(t.getByRole("link", { name: "Lượt đồng bộ" })).toHaveAttribute(
       "href",
       `/system-status?tab=sync-jobs&job=${uuid(71)}`,
     );
@@ -144,7 +156,7 @@ describe("AuditLogTab (FR-201)", () => {
       "href",
       `/listening-queries?edit=${uuid(72)}`,
     );
-    expect(t.getByText(/^mystery · /).closest("a")).toBeNull();
+    expect(t.getByText("mystery").closest("a")).toBeNull();
   });
 
   it("#343 FR-201: choosing 'Người thực hiện' writes actor= and sends actorUserId", async () => {
@@ -173,11 +185,27 @@ describe("AuditLogTab (FR-201)", () => {
     mockApi({ items: [l], nextCursor: null });
     setup();
     const card = within(await screen.findByTestId(`audit-card-${l.id}`));
-    expect(card.getByRole("link", { name: /^Thành viên · / })).toHaveAttribute("href", "/settings/members");
+    expect(card.getByRole("link", { name: "Thành viên" })).toHaveAttribute("href", "/settings/members");
     const btn = card.getByRole("button", { name: "Chi tiết" });
     fireEvent.click(btn);
     expect(btn).toHaveAttribute("aria-expanded", "true");
     expect(card.getByText("Mã yêu cầu: req-audit-1")).toBeInTheDocument();
+  });
+
+  it("#393 FR-201: mobile override card says 'Ghi đè' once and links the field", async () => {
+    const l = auditLogFixture({
+      entityType: "analysis_override",
+      action: "override.created",
+      metadata: { field: "sentiment", postIds: [uuid(80)] },
+    });
+    mockApi({ items: [l], nextCursor: null });
+    setup();
+    const card = within(await screen.findByTestId(`audit-card-${l.id}`));
+    expect(card.getAllByText(/Ghi đè/)).toHaveLength(1);
+    expect(card.getByRole("link", { name: "Cảm xúc" })).toHaveAttribute(
+      "href",
+      `/mentions/${uuid(80)}?back=${encodeURIComponent("/system-status?tab=audit-log")}`,
+    );
   });
 
   it("shows the empty state", async () => {

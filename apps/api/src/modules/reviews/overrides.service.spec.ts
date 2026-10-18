@@ -78,7 +78,8 @@ describe("OverridesService.create", () => {
       expect.objectContaining({
         action: "override.created",
         entityType: "analysis_override",
-        metadata: { field: "sentiment", before: "negative", after: "neutral", reason: null },
+        // FR-200 / #393: post id (no post text) so the audit log can link the mention.
+        metadata: { field: "sentiment", before: "negative", after: "neutral", reason: null, postIds: [MID] },
         requestId: "r1",
       }),
       tx,
@@ -97,7 +98,7 @@ describe("OverridesService.create", () => {
     ]);
     expect(audit.record.mock.calls[0]?.[0]).toMatchObject({
       entityId: "old",
-      metadata: { field: "sentiment", before: "neutral" },
+      metadata: { field: "sentiment", before: "neutral", postIds: [MID] },
     });
   });
 

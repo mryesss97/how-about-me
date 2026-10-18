@@ -20,7 +20,7 @@ const toStateError = (err: unknown) =>
     : null;
 
 /** "Nhật ký thao tác" tab (FR-201, TC-SYS-015). Only mounted for admins; filters live in the URL. */
-export function AuditLogTab({ pid, tz }: { pid: string; tz: string }) {
+export function AuditLogTab({ pid, tz, projectName }: { pid: string; tz: string; projectName?: string }) {
   const { auditFilters, update } = useStatusParams();
   // Days in the project tz → UTC ISO; the audit API treats `to` as exclusive, so send the next day's start.
   const apiFilters = useMemo<ApiFilters>(
@@ -39,7 +39,9 @@ export function AuditLogTab({ pid, tz }: { pid: string; tz: string }) {
   const members = useMemberNames(pid, true);
   const queryNames = useMemo(() => new Map(queries.map((q) => [q.id, q.name])), [queries]);
   const memberNames = useMemo(() => new Map(members.map((m) => [m.id, m.name])), [members]);
-  const listProps = { items, tz, queryNames, memberNames };
+  // #393: project rows show the current project's name instead of an id.
+  const project = useMemo(() => (projectName ? { id: pid, name: projectName } : null), [pid, projectName]);
+  const listProps = { items, tz, queryNames, memberNames, project };
 
   return (
     <div className="flex flex-col gap-4">

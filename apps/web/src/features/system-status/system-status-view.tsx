@@ -87,7 +87,7 @@ export function SystemStatusView() {
       ) : !project || (tab === "audit-log" && roleLoading) ? (
         <SkeletonBlock lines={6} className="operate-board p-4" />
       ) : tab === "audit-log" ? (
-        <AuditLogTab pid={project.id} tz={tz} />
+        <AuditLogTab pid={project.id} tz={tz} projectName={project.name} />
       ) : tab === "analysis-failures" ? (
         <AnalysisFailuresTab pid={project.id} tz={tz} isAdmin={isAdmin} />
       ) : (

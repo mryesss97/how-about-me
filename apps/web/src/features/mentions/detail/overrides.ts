@@ -1,14 +1,9 @@
 import type { MentionDetail, Override, OverrideField, UserRef } from "@how-about-me/contracts";
 import { formatDateTime } from "@/lib/time/format";
-import { displayLabel, type LabelKind } from "@/lib/semantics/labels";
+import { displayLabel, overrideFieldLabelVi, type LabelKind } from "@/lib/semantics/labels";
 
-export const FIELD_LABELS: Record<OverrideField, string> = {
-  relevance: "Mức liên quan",
-  sentiment: "Cảm xúc",
-  safety_level: "Mức an toàn",
-  intents: "Ý định",
-  topics: "Chủ đề",
-};
+// #393: moved to lib/semantics so the audit log can name override fields too.
+export const FIELD_LABELS: Record<OverrideField, string> = overrideFieldLabelVi;
 
 /** Label table for each overridable field — enum values stay English, only the text is Vietnamese (#277). */
 export const FIELD_KIND: Record<OverrideField, LabelKind> = {

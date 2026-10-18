@@ -57,7 +57,7 @@ export class OverridesService {
           reason: body.reason ? body.reason : null,
           reviewedBy: actorUserId,
         });
-        // FR-200: field/values/reason only, never post text.
+        // FR-200: field/values/reason + post id (#393), never post text.
         await this.audit.record(
           {
             projectId,
@@ -65,7 +65,7 @@ export class OverridesService {
             action: "override.created",
             entityType: AUDIT_ENTITY,
             entityId: row.id,
-            metadata: { field: body.field, before: ai, after: value, reason: row.reason },
+            metadata: { field: body.field, before: ai, after: value, reason: row.reason, postIds: [post.id] },
             requestId,
           },
           tx,
@@ -116,7 +116,8 @@ export class OverridesService {
         action: "override.revoked",
         entityType: AUDIT_ENTITY,
         entityId: row.id,
-        metadata: { field: row.field, before: unwrapValue(row.overrideValue) },
+        // FR-200 / #393: post id lets the audit log link to the mention.
+        metadata: { field: row.field, before: unwrapValue(row.overrideValue), postIds: [row.postId] },
         requestId,
       },
       tx,
