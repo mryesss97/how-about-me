@@ -35,10 +35,10 @@ export const analysisStatusBadge: Record<AnalysisStatus, BadgeSpec> = {
   stale: { label: "Cũ", color: "warning", icon: "RefreshCw05" },
 };
 
-export const confidenceMarker: Record<ConfidenceBand, { label: string; show: boolean }> = {
-  high: { label: "Độ tin cậy cao", show: false },
-  medium: { label: "Độ tin cậy trung bình", show: true },
-  low: { label: "Độ tin cậy thấp", show: true },
+export const confidenceMarker: Record<ConfidenceBand, { label: string; short: string; show: boolean }> = {
+  high: { label: "Độ tin cậy cao", short: "", show: false },
+  medium: { label: "Độ tin cậy trung bình", short: "≈", show: true },
+  low: { label: "Độ tin cậy thấp", short: "Tin cậy thấp", show: true },
 };
 
 /** Formats a KPI value; `null` denominators render as "—", `growthState=new` renders "New" (BR-030). */

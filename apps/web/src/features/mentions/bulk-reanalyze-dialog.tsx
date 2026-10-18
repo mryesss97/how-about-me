@@ -119,7 +119,10 @@ export function BulkReanalyzeDialog({
                       isDisabled={m.isPending || rateLimited || preview === null}
                       onClick={() => run(false)}
                     >
-                      Xác nhận
+                      {/* #337: the confirm names the count that will be enqueued, min(matched, cap). */}
+                      {preview
+                        ? `Phân tích lại ${formatCount(Math.min(preview.matched, preview.cap))} bài`
+                        : "Phân tích lại"}
                     </Button>
                   )}
                 </>
@@ -139,7 +142,7 @@ export function BulkReanalyzeButton({ pid, params }: { pid: string; params: Reco
   return (
     <>
       <PlaqueButton iconLeading={RefreshCw01} onClick={() => setSnapshot(params)}>
-        Phân tích lại
+        Phân tích lại theo bộ lọc
       </PlaqueButton>
       {snapshot ? <BulkReanalyzeDialog pid={pid} params={snapshot} onClose={() => setSnapshot(null)} /> : null}
     </>
