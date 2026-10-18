@@ -93,8 +93,9 @@ export function MentionsView() {
           // Same pinned params as the visible list so the CSV / re-analysis preview matches the shown count (FR-180).
           hydrated && project ? (
             <div className="flex gap-2">
-              {canBulkReanalyze(role) ? <BulkReanalyzeButton pid={project.id} params={apiParams} /> : null}
               {canExport(role, settings) ? <ExportButton pid={project.id} params={apiParams} /> : null}
+              {/* #337: the heavy admin action goes last. */}
+              {canBulkReanalyze(role) ? <BulkReanalyzeButton pid={project.id} params={apiParams} /> : null}
             </div>
           ) : null
         }
