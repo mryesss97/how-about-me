@@ -25,7 +25,7 @@
    └─ /settings/analysis        Thresholds & versions (P1)
 ```
 
-Sidebar (Untitled UI `sidebar-simple`, signboard style #274 — sky enamel sign, white logo plate, condensed caps labels, current item as a white plate): logo links to `/` (landing, #262) · Tổng quan · Bài nhắc · Truy vấn theo dõi · Cần xem lại (P1) · Trạng thái hệ thống · Cài đặt. Footer: account card (e-mail, role plate Quản trị / Phân tích / Chỉ xem, Đăng xuất). Project switcher appears only with ≥ 2 projects. Every page opens with a page fascia (white enamel board, navy keyline, title in sign lettering). Copy moves to Vietnamese screen by screen (#274, #275, #277–#281).
+Sidebar (Untitled UI `sidebar-simple`, signboard style #274 — sky enamel sign, white logo plate, condensed caps labels, current item as a white plate): logo links to `/` (landing, #262) · Tổng quan · Bài nhắc · Truy vấn theo dõi · Cần xem lại (P1) · Trạng thái hệ thống · Cài đặt. Footer: account card (e-mail, role plate Quản trị / Phân tích / Chỉ xem, Đăng xuất). Project switcher appears only with ≥ 2 projects. Current item (#325, BR-017): the item whose path is the longest segment-aligned prefix of the URL — Cài đặt for every `/settings/*` tab, Bài nhắc for `/mentions/[id]`; exactly one `aria-current="page"`, none on unknown paths. The first tab stop is a skip link "Bỏ qua tới nội dung chính" to `<main id="main-content">`. Every page opens with a page fascia (white enamel board, navy keyline, title in sign lettering). Copy moves to Vietnamese screen by screen (#274, #275, #277–#281).
 
 ### Brand (v2)
 
@@ -267,7 +267,7 @@ Built in #219 (`apps/web/src/features/reviews`):
 - Landing `/` (#262, #271): one viewport from 640 px with every phrase on the wall; below 640 px the main sign sits on top and the wall scrolls (every phrase still shown).
 - ≥ 1280 px: full sidebar, 12-col grid.
 - 768–1279 px: collapsed slim sidebar, charts 2-per-row → 1-per-row, tables horizontally scrollable.
-  - **Current state (#95):** the slim icon-only sidebar is not built yet (follow-up issue). Shipped behaviour: full sidebar from Tailwind `lg` (1024 px); below that a header with a hamburger menu. Overview grid is 1-per-row < 1024 px and 2–3-per-row ≥ 1024 px; no horizontal page scroll at 900 px (checked in `e2e/a11y.auth.spec.ts`).
+  - **Current state (#95):** the slim icon-only sidebar is not built yet (follow-up issue). Shipped behaviour: full sidebar from Tailwind `lg` (1024 px); below that a sticky 56 px header with a 44 px hamburger; the drawer closes on any route change, on tapping any link (including the current page) and on sign-out; one close button, flat ink scrim at 60% (no blur), drawer targets ≥ 44 px (#325). Overview grid is 1-per-row < 1024 px and 2–3-per-row ≥ 1024 px; no horizontal page scroll at 900 px (checked in `e2e/a11y.auth.spec.ts`).
 - < 768 px: read-only Overview/Mentions acceptable; admin forms not optimised.
 
 ## 5. Copy guidelines

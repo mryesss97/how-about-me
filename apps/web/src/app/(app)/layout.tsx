@@ -14,9 +14,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <AuthBridge>
       <div className="flex min-h-dvh flex-col lg:flex-row">
+        {/* #325: skip link, first focusable element of the shell. */}
+        <a href="#main-content" className="skip-link">
+          Bỏ qua tới nội dung chính
+        </a>
         <AppSidebar />
         {/* #274: working screens stand on the signboard wall; cards are white enamel boards. */}
-        <main className="min-w-0 flex-1 bg-[var(--wall)]">
+        <main id="main-content" tabIndex={-1} className="min-w-0 outline-none flex-1 bg-[var(--wall)]">
           <RequireProject>{children}</RequireProject>
         </main>
       </div>

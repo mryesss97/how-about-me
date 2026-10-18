@@ -8,7 +8,7 @@ import { cx, sortCx } from "@/utils/cx";
 
 const styles = sortCx({
     // #274: items on the sky sign — white lettering, hover tint, the current item is a white enamel plate.
-    root: "group relative flex min-h-10 w-full cursor-pointer items-center rounded-[2px] outline-white transition duration-100 ease-linear select-none hover:bg-white/12 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2",
+    root: "group relative flex min-h-11 lg:min-h-10 w-full cursor-pointer items-center rounded-[2px] outline-white transition duration-100 ease-linear select-none hover:bg-white/12 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2",
     rootSelected: "bg-[var(--enamel-white)] hover:bg-[var(--enamel-white)]",
 });
 
