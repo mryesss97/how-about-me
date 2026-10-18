@@ -7,6 +7,7 @@ import { Badge } from "@/components/base/badges/badges";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { AnalysisStatusBadge, RelevanceBadge, SentimentBadge } from "@/features/shared/semantic-badge";
 import { formatRate } from "@/lib/format/number";
+import { analysisErrorLabel } from "@/lib/semantics/analysis-errors";
 import { reviewReasonLabelVi } from "@/lib/semantics/labels";
 import { formatDateTime, formatRelativeOrAbsolute, tzLabel } from "@/lib/time/format";
 import { cx } from "@/utils/cx";
@@ -80,8 +81,27 @@ export function ReviewRow({ item, tz, selectable, selected, disabled, showReview
           ))}
         </div>
       </td>
-      <td className="px-3 py-3">{a.relevance ? <RelevanceBadge value={a.relevance} /> : "—"}</td>
-      <td className="px-3 py-3">{a.sentiment ? <SentimentBadge value={a.sentiment} /> : "—"}</td>
+      {/* #338: values on a failed item come from the previous completed run. */}
+      <td className="px-3 py-3">
+        {a.relevance ? (
+          <>
+            {a.status === "failed" ? <span className="block text-xs text-tertiary">Lần trước:</span> : null}
+            <RelevanceBadge value={a.relevance} />
+          </>
+        ) : (
+          "—"
+        )}
+      </td>
+      <td className="px-3 py-3">
+        {a.sentiment ? (
+          <>
+            {a.status === "failed" ? <span className="block text-xs text-tertiary">Lần trước:</span> : null}
+            <SentimentBadge value={a.sentiment} />
+          </>
+        ) : (
+          "—"
+        )}
+      </td>
       <td className="px-3 py-3 text-sm whitespace-nowrap">
         {/* BR-020: the score is a band for prioritisation, not a probability. */}
         <span title="Độ tin cậy ước tính — là mức để ưu tiên, không phải xác suất">
@@ -96,7 +116,9 @@ export function ReviewRow({ item, tz, selectable, selected, disabled, showReview
       <td className="px-3 py-3">
         <AnalysisStatusBadge value={a.status} />
         {a.status === "failed" && a.errorCode ? (
-          <span className="mt-1 block font-mono text-xs text-error-primary">{a.errorCode}</span>
+          <span className="mt-1 block text-xs text-error-primary" title={a.errorCode}>
+            {analysisErrorLabel(a.errorCode)}
+          </span>
         ) : null}
       </td>
       {showReviewed ? (

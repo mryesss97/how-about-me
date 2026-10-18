@@ -95,3 +95,18 @@ const TABLES: Record<LabelKind, Record<string, string>> = {
 export function displayLabel(kind: LabelKind, value: string): string {
   return TABLES[kind][value] ?? humanizeLabel(value);
 }
+
+/** Threads `media_type` in Vietnamese (#338) — the raw enum (e.g. `TEXT_POST`) never reaches the UI. */
+export const mediaTypeLabelVi: Record<string, string> = {
+  TEXT_POST: "Văn bản",
+  IMAGE: "Ảnh",
+  VIDEO: "Video",
+  CAROUSEL_ALBUM: "Album",
+  AUDIO: "Âm thanh",
+  REPOST_FACADE: "Đăng lại",
+};
+
+/** Unknown media types read "Khác" rather than a humanized raw enum. */
+export function mediaTypeLabel(v: string): string {
+  return mediaTypeLabelVi[v] ?? "Khác";
+}

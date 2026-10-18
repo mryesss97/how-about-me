@@ -1,10 +1,11 @@
 import type { MentionDetail } from "@how-about-me/contracts";
 import { Button } from "@/components/base/buttons/button";
 import { PageBanner } from "@/features/shared/page-banner";
+import { analysisErrorLabel } from "@/lib/semantics/analysis-errors";
 
 type Props = {
   analysis: MentionDetail["analysis"];
-  /** Admin only (FR-156). Server enforces; this only hides the button (BR-033). */
+  /** `canReanalyze(role, settings)` — FR-155/FR-156, BR-033; server enforces, this only hides the button. */
   canRetry: boolean;
   onRetry: () => void;
   isRetrying: boolean;
@@ -19,7 +20,9 @@ export function StatusBanner({ analysis: a, canRetry, onRetry, isRetrying }: Pro
       <PageBanner
         tone="error"
         title="Phân tích thất bại"
-        description={a.errorCode ? `Mã lỗi: ${a.errorCode}` : "Lượt phân tích gần nhất thất bại."}
+        description={
+          a.errorCode ? `${analysisErrorLabel(a.errorCode)} · Mã: ${a.errorCode}` : "Lượt phân tích gần nhất thất bại."
+        }
         action={
           canRetry ? (
             <Button size="sm" color="secondary" onClick={onRetry} isLoading={isRetrying}>

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { detailFixture, uuid } from "./fixtures.test-utils";
 import { linkify } from "./linkify";
@@ -48,5 +48,27 @@ describe("OriginalPanel", () => {
     render(<OriginalPanel mention={detailFixture({ matchedQueries: mq })} tz={TZ} />);
     expect(screen.getByText("Concert")).toBeInTheDocument();
     expect(screen.getByText("Ticket (đã loại trừ)")).toBeInTheDocument();
+  });
+
+  it("#338: media type is Vietnamese, never the raw enum; TEXT_POST has no media line", () => {
+    const { container, unmount } = render(<OriginalPanel mention={detailFixture({ mediaType: "IMAGE" })} tz={TZ} />);
+    expect(screen.getByText("Phương tiện: Ảnh")).toBeInTheDocument();
+    expect(container).not.toHaveTextContent("IMAGE");
+    unmount();
+    const r = render(<OriginalPanel mention={detailFixture({ mediaType: "TEXT_POST" })} tz={TZ} />);
+    expect(screen.queryByText(/Phương tiện/)).toBeNull();
+    expect(r.container).not.toHaveTextContent("TEXT_POST");
+  });
+
+  it("#338: Thông tin bài is folded by default and shows post metadata when opened", () => {
+    render(<OriginalPanel mention={detailFixture({ platformPostId: "post-77", mediaType: "TEXT_POST" })} tz={TZ} />);
+    const toggle = screen.getByRole("button", { name: "Thông tin bài" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("post-77")).toBeNull();
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("post-77")).toBeInTheDocument();
+    expect(screen.getByText("Bản sửa")).toBeInTheDocument();
+    expect(screen.getByText("Văn bản")).toBeInTheDocument();
   });
 });

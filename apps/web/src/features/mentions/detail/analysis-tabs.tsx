@@ -1,6 +1,6 @@
 "use client";
 
-import type { MentionDetail } from "@how-about-me/contracts";
+import type { MentionDetail, OverrideField } from "@how-about-me/contracts";
 import { Tabs } from "@/components/application/tabs/tabs";
 import { AnalysisCurrent } from "./analysis-current";
 import { AnalysisHistory } from "./analysis-history";
@@ -11,11 +11,13 @@ type Props = {
   mention: MentionDetail;
   tz: string;
   canOverride?: boolean;
+  /** Opens the override dialog with this field preselected (#338). */
+  onEditField?: (field: OverrideField) => void;
   onRevoke?: (overrideId: string) => void;
   isRevoking?: boolean;
 };
 
-export function AnalysisTabs({ mention, tz, canOverride = false, onRevoke, isRevoking = false }: Props) {
+export function AnalysisTabs({ mention, tz, canOverride = false, onEditField, onRevoke, isRevoking = false }: Props) {
   return (
     <Tabs defaultSelectedKey="current">
       <Tabs.List
@@ -32,6 +34,7 @@ export function AnalysisTabs({ mention, tz, canOverride = false, onRevoke, isRev
           mention={mention}
           tz={tz}
           canOverride={canOverride}
+          onEditField={onEditField}
           onRevoke={onRevoke}
           isRevoking={isRevoking}
         />

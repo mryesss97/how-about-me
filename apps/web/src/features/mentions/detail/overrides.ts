@@ -1,4 +1,4 @@
-import type { Override, OverrideField, UserRef } from "@how-about-me/contracts";
+import type { MentionDetail, Override, OverrideField, UserRef } from "@how-about-me/contracts";
 import { formatDateTime } from "@/lib/time/format";
 import { displayLabel, type LabelKind } from "@/lib/semantics/labels";
 
@@ -58,4 +58,12 @@ export function overrideTooltip(o: Override, tz: string): string {
   const parts = [`Ghi đè bởi ${userName(o.reviewedBy)}`, formatDateTime(o.createdAt, tz)];
   if (o.reason) parts.push(`Lý do: ${o.reason}`);
   return parts.join(" · ");
+}
+
+/**
+ * Field the toolbar "Ghi đè" preselects (#338). FR-195: an "uncertain" mention's open question is
+ * whether it is relevant at all, so relevance comes first; otherwise sentiment.
+ */
+export function defaultOverrideField(m: Pick<MentionDetail, "analysis">): OverrideField {
+  return m.analysis.relevance?.label === "uncertain" ? "relevance" : "sentiment";
 }

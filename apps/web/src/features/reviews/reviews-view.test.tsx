@@ -162,11 +162,14 @@ describe("ReviewsView (UX §3.8, FR-195, TC-REV-007)", () => {
     expect(replace).toHaveBeenCalledWith("/reviews");
   });
 
-  it("failed rows show errorCode; confidence shows % and band (BR-020)", async () => {
+  it("#338: failed rows show the Vietnamese error label (code in title), Lần trước:; confidence % and band (BR-020)", async () => {
     serve([reviewFixture({ reasons: ["failed"], analysis: { status: "failed", errorCode: "LLM_TIMEOUT" } })]);
     setup();
-    expect(await screen.findByText("LLM_TIMEOUT")).toBeInTheDocument();
+    const label = await screen.findByText("Bộ phân tích phản hồi quá lâu");
+    expect(label).toHaveAttribute("title", "LLM_TIMEOUT");
+    expect(screen.queryByText("LLM_TIMEOUT")).toBeNull();
     const row = screen.getByTestId("review-row");
+    expect(within(row).getAllByText("Lần trước:").length).toBeGreaterThan(0);
     expect(within(row).getByText("42,0%")).toBeInTheDocument();
     expect(within(row).getByText("Thấp")).toBeInTheDocument();
   });
