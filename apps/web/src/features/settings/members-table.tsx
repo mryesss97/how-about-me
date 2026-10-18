@@ -57,7 +57,8 @@ export function MembersTable({ pid, members, timezone, currentUserId }: Props) {
           {error}
         </p>
       ) : null}
-      <div className="overflow-x-auto rounded-xl border border-secondary">
+      {/* #327: `relative` contains the absolute sr-only header so it cannot widen the page. */}
+      <div className="relative overflow-x-auto rounded-xl border border-secondary">
         <table className="w-full text-left text-sm">
           <thead className="bg-secondary text-xs font-semibold text-tertiary">
             <tr>
