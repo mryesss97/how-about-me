@@ -157,7 +157,7 @@ describe("Re-analysis prompt", () => {
   // FR-015: non-admins never get the prompt.
   it("non-admin (canEdit=false) has no Re-analyse button", async () => {
     await saveWith(42, false);
-    await screen.findByRole("spinbutton", { name: "Thù ghét – Nhạy cảm" });
+    await screen.findByText("Ngưỡng an toàn"); // #347: read-only renders text, not spinbuttons
     expect(screen.queryByRole("button", { name: "Phân tích lại" })).not.toBeInTheDocument();
   });
 });

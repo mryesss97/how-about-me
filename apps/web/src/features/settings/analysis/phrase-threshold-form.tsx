@@ -3,15 +3,16 @@
 import { PhraseMinMentionsSettingSchema, ValidationErrorDetailsSchema, type Project } from "@how-about-me/contracts";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { QueryState } from "@/features/shared/query-state";
 import { ApiError } from "@/lib/api/client";
 import { errorMessage, useProject, useUpdateProject } from "../api";
+import { SettingsSaveBar } from "../settings-save-bar";
 
 const HINT =
   "Cụm từ xuất hiện trong ít bài nhắc hơn sẽ bị ẩn khỏi bản đồ cảm xúc ở chế độ Cụm từ. Số nguyên từ 1 đến 50.";
 const INVALID = "Nhập số nguyên từ 1 đến 50.";
+const LABEL = "Số lượt nhắc tối thiểu mỗi cụm từ";
 
 /** Parses the string draft; `null` when it is not an integer 1–50 (FR-032, #251). */
 export function parsePhraseThreshold(draft: string): number | null {
@@ -31,7 +32,13 @@ export function PhraseThresholdForm({ project, canEdit }: { project: Project; ca
   const update = useUpdateProject(project.id);
   const value = parsePhraseThreshold(draft);
   const fieldError = value === null ? INVALID : serverError.field;
+  // #347: an invalid edit is still unsaved (strip shows, Save disabled).
+  const changed = draft !== String(current);
   const dirty = value !== null && value !== current;
+  const reset = () => {
+    setDraft(String(current));
+    setServerError({});
+  };
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -51,17 +58,26 @@ export function PhraseThresholdForm({ project, canEdit }: { project: Project; ca
     );
   };
 
+  // #347: read-only is plain text; the admin-only note lives under the Settings tabs.
+  if (!canEdit)
+    return (
+      <dl className="flex max-w-xl flex-col gap-0.5 text-sm">
+        <dt className="font-medium text-secondary">{LABEL}</dt>
+        <dd className="text-primary tabular-nums">{current}</dd>
+        <dd className="text-tertiary">{HINT}</dd>
+      </dl>
+    );
+
   return (
     <form onSubmit={onSubmit} noValidate className="flex max-w-xl flex-col gap-4" aria-label="Cài đặt bản đồ cảm xúc">
       <Input
-        label="Số lượt nhắc tối thiểu mỗi cụm từ"
+        label={LABEL}
         type="number"
         value={draft}
         onChange={(v) => {
           setDraft(v);
           setServerError({});
         }}
-        isDisabled={!canEdit}
         isInvalid={!!fieldError}
         hint={fieldError ?? HINT}
       />
@@ -70,15 +86,14 @@ export function PhraseThresholdForm({ project, canEdit }: { project: Project; ca
           {serverError.form}
         </p>
       ) : null}
-      {canEdit ? (
-        <div>
-          <Button type="submit" isDisabled={!dirty} isLoading={update.isPending}>
-            Lưu
-          </Button>
-        </div>
-      ) : (
-        <p className="text-sm text-tertiary">Chỉ quản trị viên dự án mới thay đổi được các cài đặt này.</p>
-      )}
+      <SettingsSaveBar
+        id="phrase-threshold"
+        dirty={changed}
+        onReset={reset}
+        submitLabel="Lưu"
+        isDisabled={!dirty}
+        isLoading={update.isPending}
+      />
     </form>
   );
 }

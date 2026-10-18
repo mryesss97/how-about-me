@@ -8,13 +8,13 @@ import {
 } from "@how-about-me/contracts";
 import { useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { ComboBox } from "@/components/base/select/combobox";
 import { SelectItem } from "@/components/base/select/select-item";
 import { Toggle } from "@/components/base/toggle/toggle";
 import { ApiError } from "@/lib/api/client";
 import { errorMessage, useUpdateProject } from "./api";
+import { SettingsSaveBar } from "./settings-save-bar";
 
 type FieldErrors = Partial<Record<"name" | "timezone" | "form", string>>;
 
@@ -61,7 +61,13 @@ export function ProjectSettingsForm({ project, canEdit }: { project: Project; ca
 
   const body = diffProject(project, name, timezone, settings);
   const dirty = Object.keys(body).length > 0;
-  const readOnly = !canEdit;
+
+  const reset = () => {
+    setName(project.name);
+    setTimezone(project.timezone);
+    setSettings(project.settings);
+    setErrors({});
+  };
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -82,22 +88,17 @@ export function ProjectSettingsForm({ project, canEdit }: { project: Project; ca
     });
   };
 
+  // #347: read-only is plain text, not disabled inputs; the admin-only note lives under the Settings tabs.
+  if (!canEdit) return <ProjectSettingsReadOnly project={project} />;
+
   return (
     <form onSubmit={onSubmit} noValidate className="flex max-w-xl flex-col gap-5" aria-label="Cài đặt dự án">
-      <Input
-        label="Tên dự án"
-        value={name}
-        onChange={setName}
-        isDisabled={readOnly}
-        isInvalid={!!errors.name}
-        hint={errors.name}
-      />
+      <Input label="Tên dự án" value={name} onChange={setName} isInvalid={!!errors.name} hint={errors.name} />
       <ComboBox
         label="Múi giờ"
         items={zones}
         selectedKey={timezone}
         onSelectionChange={(k) => k && setTimezone(String(k))}
-        isDisabled={readOnly}
         isInvalid={!!errors.timezone}
         hint={errors.timezone}
         shortcut={false}
@@ -106,33 +107,49 @@ export function ProjectSettingsForm({ project, canEdit }: { project: Project; ca
       </ComboBox>
       {/* FR-032 / T-107: each permission toggle explains its effect; /me is refetched after Save. */}
       <Toggle
-        label="Cho phép Phân tích viên chạy lại phân tích"
-        hint="Phân tích viên có thể đưa bài nhắc vào hàng đợi phân tích lại. Quản trị viên luôn làm được."
+        label={REANALYZE_LABEL}
+        hint={REANALYZE_HINT}
         isSelected={settings.allowAnalystReanalyze}
         onChange={(v) => setSettings((s) => ({ ...s, allowAnalystReanalyze: v }))}
-        isDisabled={readOnly}
       />
       <Toggle
-        label="Cho phép Người xem xuất dữ liệu"
-        hint="Người xem có thể tải tệp CSV của bài nhắc và số liệu phân tích."
+        label={EXPORT_LABEL}
+        hint={EXPORT_HINT}
         isSelected={settings.allowViewerExport}
         onChange={(v) => setSettings((s) => ({ ...s, allowViewerExport: v }))}
-        isDisabled={readOnly}
       />
       {errors.form ? (
         <p role="alert" className="text-sm text-error-primary">
           {errors.form}
         </p>
       ) : null}
-      {readOnly ? (
-        <p className="text-sm text-tertiary">Chỉ quản trị viên dự án mới thay đổi được các cài đặt này.</p>
-      ) : (
-        <div>
-          <Button type="submit" isDisabled={!dirty} isLoading={update.isPending}>
-            Lưu
-          </Button>
-        </div>
-      )}
+      <SettingsSaveBar id="project" dirty={dirty} onReset={reset} submitLabel="Lưu" isLoading={update.isPending} />
     </form>
+  );
+}
+
+const REANALYZE_LABEL = "Cho phép Phân tích viên chạy lại phân tích";
+const REANALYZE_HINT = "Phân tích viên có thể đưa bài nhắc vào hàng đợi phân tích lại. Quản trị viên luôn làm được.";
+const EXPORT_LABEL = "Cho phép Người xem xuất dữ liệu";
+const EXPORT_HINT = "Người xem có thể tải tệp CSV của bài nhắc và số liệu phân tích.";
+
+/** Non-admin view (BR-033): values as text, permissions spelled out "Bật"/"Tắt" (never colour alone, BR-017). */
+function ProjectSettingsReadOnly({ project }: { project: Project }) {
+  const rows: [string, string, string?][] = [
+    ["Tên dự án", project.name],
+    ["Múi giờ", project.timezone],
+    [REANALYZE_LABEL, project.settings.allowAnalystReanalyze ? "Bật" : "Tắt", REANALYZE_HINT],
+    [EXPORT_LABEL, project.settings.allowViewerExport ? "Bật" : "Tắt", EXPORT_HINT],
+  ];
+  return (
+    <dl aria-label="Cài đặt dự án" className="flex max-w-xl flex-col gap-4 text-sm">
+      {rows.map(([label, value, hint]) => (
+        <div key={label} className="flex flex-col gap-0.5">
+          <dt className="font-medium text-secondary">{label}</dt>
+          <dd className="break-words text-primary">{value}</dd>
+          {hint ? <dd className="text-tertiary">{hint}</dd> : null}
+        </div>
+      ))}
+    </dl>
   );
 }

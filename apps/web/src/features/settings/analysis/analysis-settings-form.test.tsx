@@ -50,11 +50,30 @@ describe("AnalysisSettingsForm", () => {
     expect(JSON.parse(String(init.body))).toEqual({ safetyThresholds: { hate: { sensitive: 0.4, severe: 0.8 } } });
   });
 
-  it("FR-015: non-admins get disabled inputs and no submit button", () => {
+  it("FR-015 / #347: non-admins read values as text — no inputs, no submit button", () => {
     renderForm(false);
-    expect(cell("Thù ghét – Nhạy cảm")).toBeDisabled();
-    expect(screen.getByRole("spinbutton", { name: /Cao/ })).toBeDisabled();
+    expect(screen.queryByRole("spinbutton")).toBeNull();
+    expect(screen.getByText("Cao (≥)")).toBeInTheDocument();
+    expect(screen.getByText("“—” = không áp dụng mức này.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Tạo phiên bản chính sách mới" })).not.toBeInTheDocument();
+  });
+
+  it("#347: '—' placeholder, 0,01–1 hint, and the save bar sits before the version details", () => {
+    renderForm();
+    expect(cell("Thù ghét – Nhạy cảm")).toHaveAttribute("placeholder", "—");
+    expect(screen.getByText("Giá trị 0,01–1. Để trống = không áp dụng mức này.")).toBeInTheDocument();
+    const details = screen.getByText("Chi tiết phiên bản (kỹ thuật)");
+    expect(submit().compareDocumentPosition(details) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("#347 / BR-021: invalid bands keep the strip with submit disabled; reset clears it", () => {
+    renderForm();
+    fireEvent.change(screen.getByRole("spinbutton", { name: /Trung bình/ }), { target: { value: "0.9" } });
+    expect(screen.getByText("Có thay đổi chưa lưu")).toBeInTheDocument();
+    expect(submit()).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Huỷ thay đổi" }));
+    expect(screen.queryByText("medium must be lower than high")).toBeNull();
+    expect(submit()).toBeDisabled();
   });
 
   it("BR-018: server VALIDATION_ERROR shows under the matching cell", async () => {

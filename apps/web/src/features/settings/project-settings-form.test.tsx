@@ -55,11 +55,27 @@ describe("ProjectSettingsForm", () => {
     expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ["project", P1, "analytics", "phrases"] });
   });
 
-  it("BR-033: non-admins get a disabled form without Save", () => {
+  it("BR-033 / #347: non-admins read values as text — no disabled inputs, no Save", () => {
     render(<ProjectSettingsForm project={projectData()} canEdit={false} />, { wrapper });
-    expect(screen.getByRole("textbox", { name: /Tên dự án/ })).toBeDisabled();
-    expect(screen.getByRole("switch", { name: /^Cho phép Người xem xuất dữ liệu/ })).toBeDisabled();
+    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(screen.queryByRole("switch")).toBeNull();
     expect(screen.queryByRole("button", { name: "Lưu" })).not.toBeInTheDocument();
+    expect(screen.getByText(projectData().name)).toBeInTheDocument();
+    expect(screen.getByText("Cho phép Người xem xuất dữ liệu").nextElementSibling).toHaveTextContent(
+      projectData().settings.allowViewerExport ? "Bật" : "Tắt",
+    );
+  });
+
+  it("#347: clean form says 'Chưa có thay đổi'; dirty shows the strip and 'Huỷ thay đổi' restores server values", () => {
+    render(<ProjectSettingsForm project={projectData()} canEdit />, { wrapper });
+    expect(screen.getByText("Chưa có thay đổi")).toBeInTheDocument();
+    const name = screen.getByRole("textbox", { name: /Tên dự án/ });
+    fireEvent.change(name, { target: { value: "Tên mới" } });
+    expect(screen.getByRole("status")).toHaveTextContent("Có thay đổi chưa lưu");
+    fireEvent.click(screen.getByRole("button", { name: "Huỷ thay đổi" }));
+    expect(screen.getByRole("textbox", { name: /Tên dự án/ })).toHaveValue(projectData().name);
+    expect(screen.queryByText("Có thay đổi chưa lưu")).toBeNull();
+    expect(screen.getByRole("button", { name: "Lưu" })).toBeDisabled();
   });
 
   it("TC-PROJ-006 / FR-032: turning re-analyze off PATCHes only that setting and refreshes /me", async () => {
@@ -104,9 +120,10 @@ describe("ProjectSettingsForm", () => {
     expect(screen.getByText("Người xem có thể tải tệp CSV của bài nhắc và số liệu phân tích.")).toBeInTheDocument();
   });
 
-  it("BR-033: the re-analyze toggle is disabled for non-admins", () => {
+  it("BR-033: the re-analyze permission is read-only text for non-admins", () => {
     render(<ProjectSettingsForm project={projectData()} canEdit={false} />, { wrapper });
-    expect(screen.getByRole("switch", { name: /^Cho phép Phân tích viên chạy lại phân tích/ })).toBeDisabled();
+    expect(screen.queryByRole("switch", { name: /^Cho phép Phân tích viên chạy lại phân tích/ })).toBeNull();
+    expect(screen.getByText("Cho phép Phân tích viên chạy lại phân tích")).toBeInTheDocument();
   });
 
   it("FR-015: a FORBIDDEN_ROLE response shows a permission error", async () => {

@@ -3,7 +3,9 @@ Feature folder — see docs/02-architecture/03-frontend-design.md §1 and the T-
 Settings (UX §3.7, T-036):
 
 - `api.ts` — query/mutation hooks for project + members, `errorMessage()` code → copy map.
-- `settings-tabs.tsx` — role-filtered tabs with active state (`aria-current`).
+- `settings-tabs.tsx` — role-filtered tabs with active state (`aria-current`); guarded by unsaved changes.
+- `unsaved-changes.tsx` — `UnsavedChangesProvider` (in the settings layout): dirty registry per board, tab-change confirm dialog, `beforeunload` (#347). Forms call `useRegisterDirty` via `SettingsSaveBar`; outside a provider the hooks are no-ops.
+- `settings-save-bar.tsx` — `SettingsSaveBar`: clean disabled Save + "Chưa có thay đổi"; dirty sticky strip with "Huỷ thay đổi" (#347). `settings-read-only-note.tsx` — one admin-only note under the tabs.
 - `project-settings.tsx` / `project-settings-form.tsx` — `/settings/project`; admins edit (diff-only PATCH), others read-only.
 - `members-settings.tsx` / `members-table.tsx` / `invite-member-dialog.tsx` — `/settings/members` (admin): role change, remove with confirm, invite by email.
 - Dialogs use `SettingsDialog` from `features/shared/settings-dialog`. `test-fixtures.ts` — test data.
