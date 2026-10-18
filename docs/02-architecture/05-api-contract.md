@@ -522,6 +522,8 @@ Any project member may read. Computation rules: [09-observability.md §4](09-obs
 
 `GET /health/live` → `{ status:"ok" }` · `GET /health/ready` → `{ status:"ok|degraded|error", checks:{ database:"up", threads:"up|unknown|down", classifier:"up|unknown|down" } }` (only `database` affects HTTP status).
 
+`GET /metrics` (no `/api/v1` prefix) → Prometheus text (`text/plain; version=0.0.4`). Auth: `Authorization: Bearer <METRICS_TOKEN>` or `x-metrics-token`; 401 `AUTH_MISSING_TOKEN` / `AUTH_INVALID_TOKEN`; 404 when `METRICS_TOKEN` is unset. Details: [09-observability.md §2](09-observability.md).
+
 ## 13. Error codes
 
 | Code                                                                                                                                                      | HTTP      | When                                              |

@@ -6,6 +6,7 @@ import { LoggerModule } from "nestjs-pino";
 import { AuthCommonModule } from "./common/auth/auth-common.module";
 import { CryptoModule } from "./common/crypto/crypto.module";
 import { HttpExceptionFilter } from "./common/errors/http-exception.filter";
+import { MetricsModule } from "./common/metrics/metrics.module";
 import { buildLoggerParams } from "./common/logging/logger.config";
 import { APP_CONFIG, AppConfigModule, type AppConfig } from "./config/config.module";
 import { PrismaModule } from "./database/prisma.module";
@@ -33,6 +34,7 @@ import { SystemStatusModule } from "./modules/system-status/system-status.module
     LoggerModule.forRootAsync({ inject: [APP_CONFIG], useFactory: (cfg: AppConfig) => buildLoggerParams(cfg) }),
     ThrottlerModule.forRoot([{ name: "global", ttl: 60_000, limit: 300 }]),
     ScheduleModule.forRoot(),
+    MetricsModule,
     PrismaModule,
     AuthCommonModule,
     CryptoModule,
