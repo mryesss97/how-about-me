@@ -2,7 +2,14 @@ import type { SyncJob as SyncJobRow } from "@prisma/client";
 import type { AuthUser } from "../../common/auth/current-user.decorator";
 import type { PrismaService } from "../../database/prisma.service";
 import type { AuditService } from "../audit/audit.service";
-import { type RetrySource, type SyncJobsRepository, toSyncJob, toSyncJobDetail } from "./sync-jobs.repository";
+import type { RunNowThrottle } from "./run-now-throttle";
+import {
+  type RetrySource,
+  type RunnableQuery,
+  type SyncJobsRepository,
+  toSyncJob,
+  toSyncJobDetail,
+} from "./sync-jobs.repository";
 import { SyncJobsService } from "./sync-jobs.service";
 
 const PID = "00000000-0000-7000-8000-000000000001";
@@ -23,13 +30,23 @@ const source = (over: Partial<RetrySource> = {}): RetrySource => ({
   ...over,
 });
 
-function setup(src: RetrySource | null, opts: { runnable?: boolean; active?: string | null } = {}) {
+function setup(
+  src: RetrySource | null,
+  opts: { runnable?: boolean; active?: string | null; query?: RunnableQuery | null } = {},
+) {
   const repo = {
     findRetrySourceTx: jest.fn().mockResolvedValue(src),
     lockQueryRunnableTx: jest.fn().mockResolvedValue(opts.runnable ?? true),
     findActiveForQueryTx: jest.fn().mockResolvedValue(opts.active ?? null),
     createRetryTx: jest.fn().mockResolvedValue("new-job"),
+    findRunnableQueryTx: jest
+      .fn()
+      .mockResolvedValue(
+        opts.query === undefined ? { id: QID, enabled: true, deleted: false, searchMode: "KEYWORD" } : opts.query,
+      ),
+    createManualTx: jest.fn().mockResolvedValue("manual-job"),
   };
+  const throttle = { assertAllowed: jest.fn().mockResolvedValue(undefined) };
   const audit = { record: jest.fn().mockResolvedValue(undefined) };
   const tx = {};
   const prisma = { $transaction: jest.fn((fn: (t: unknown) => unknown) => fn(tx)) };
@@ -37,8 +54,9 @@ function setup(src: RetrySource | null, opts: { runnable?: boolean; active?: str
     prisma as unknown as PrismaService,
     repo as unknown as SyncJobsRepository,
     audit as unknown as AuditService,
+    throttle as unknown as RunNowThrottle,
   );
-  return { svc, repo, audit, tx };
+  return { svc, repo, audit, tx, throttle };
 }
 
 /** FR-175 / TC-SYS-011: admin retry of a sync job. */
@@ -88,6 +106,58 @@ describe("SyncJobsService.retry (FR-175)", () => {
       code: "SYNC_ALREADY_RUNNING",
       details: { jobId: "busy-job" },
     });
+  });
+});
+
+/** T-043 / FR-058 / TC-LQ-013..015: run-now. */
+describe("SyncJobsService.runNow (FR-058)", () => {
+  it("TC-LQ-013: queues a manual job and audits query.run_requested (BR-034)", async () => {
+    const { svc, repo, audit, tx, throttle } = setup(null);
+    await expect(svc.runNow(ctx, QID)).resolves.toEqual({ jobId: "manual-job", status: "queued" });
+    expect(throttle.assertAllowed).toHaveBeenCalledWith(tx, PID);
+    expect(repo.createManualTx).toHaveBeenCalledWith(
+      tx,
+      { projectId: PID, queryId: QID, searchMode: "KEYWORD" },
+      "u-admin",
+    );
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "query.run_requested",
+        entityType: "listening_query",
+        entityId: QID,
+        metadata: { jobId: "manual-job" },
+      }),
+      tx,
+    );
+  });
+
+  it("TC-LQ-014: active job → SYNC_ALREADY_RUNNING with jobId, no insert/audit", async () => {
+    const { svc, repo, audit } = setup(null, { active: "busy" });
+    await expect(svc.runNow(ctx, QID)).rejects.toMatchObject({
+      code: "SYNC_ALREADY_RUNNING",
+      details: { jobId: "busy" },
+    });
+    expect(repo.createManualTx).not.toHaveBeenCalled();
+    expect(audit.record).not.toHaveBeenCalled();
+  });
+
+  it("unknown / other-project query → NOT_FOUND", async () => {
+    await expect(setup(null, { query: null }).svc.runNow(ctx, QID)).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("BR-010: soft-deleted → NOT_FOUND; disabled → VALIDATION_ERROR", async () => {
+    const del = setup(null, { query: { id: QID, enabled: true, deleted: true, searchMode: "KEYWORD" } });
+    await expect(del.svc.runNow(ctx, QID)).rejects.toMatchObject({ code: "NOT_FOUND" });
+    const dis = setup(null, { query: { id: QID, enabled: false, deleted: false, searchMode: "KEYWORD" } });
+    await expect(dis.svc.runNow(ctx, QID)).rejects.toMatchObject({ code: "VALIDATION_ERROR", status: 400 });
+    expect(dis.repo.createManualTx).not.toHaveBeenCalled();
+  });
+
+  it("NFR-017: throttle error propagates before locking the query", async () => {
+    const { svc, repo, throttle } = setup(null);
+    throttle.assertAllowed.mockRejectedValue(Object.assign(new Error("x"), { code: "RATE_LIMITED" }));
+    await expect(svc.runNow(ctx, QID)).rejects.toMatchObject({ code: "RATE_LIMITED" });
+    expect(repo.findRunnableQueryTx).not.toHaveBeenCalled();
   });
 });
 
