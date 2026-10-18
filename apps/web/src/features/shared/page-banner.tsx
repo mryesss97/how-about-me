@@ -2,7 +2,9 @@
 
 import type { ReactNode } from "react";
 import { AlertCircle, AlertTriangle, InfoCircle } from "@untitledui/icons";
+import Link from "next/link";
 import { cx } from "@/utils/cx";
+import { plaqueClassName } from "@/features/shared/plaque-button";
 import { formatCount } from "@/lib/format/number";
 
 /**
@@ -18,25 +20,25 @@ export type BannerTone = "warning" | "info" | "error";
 type ToneSpec = { container: string; icon: string; Icon: typeof AlertTriangle; role: "alert" | "status" };
 
 /**
- * Uses the same `utility-*` palette as the semantic badges rather than the solid `bg-*-primary`
- * surfaces: a full-width solid block drowns the page, and the tinted surfaces keep AA contrast for the
- * body copy in both light and dark themes (NFR-035).
+ * #336: a flat white enamel board (3px corners, like `.operate-board`) with a 2px left rule in the tone colour.
+ * Body copy stays on `bg-primary`, so AA contrast holds in both themes (NFR-035); the tone is carried by the
+ * icon + rule + title text together, never by colour alone (BR-017).
  */
 const TONES: Record<BannerTone, ToneSpec> = {
   warning: {
-    container: "border-utility-yellow-200 bg-utility-yellow-50",
+    container: "border-l-utility-yellow-500",
     icon: "text-utility-yellow-500",
     Icon: AlertTriangle,
     role: "status",
   },
   info: {
-    container: "border-utility-blue-200 bg-utility-blue-50",
+    container: "border-l-utility-blue-500",
     icon: "text-utility-blue-500",
     Icon: InfoCircle,
     role: "status",
   },
   error: {
-    container: "border-utility-red-200 bg-utility-red-50",
+    container: "border-l-utility-red-500",
     icon: "text-utility-red-500",
     Icon: AlertCircle,
     role: "alert",
@@ -60,15 +62,29 @@ export function PageBanner({
   return (
     <div
       role={role}
-      className={cx("flex flex-wrap items-start gap-3 rounded-xl border px-4 py-3", container, className)}
+      className={cx(
+        "flex flex-wrap items-start gap-3 rounded-[3px] border border-l-2 border-secondary bg-primary px-4 py-3",
+        container,
+        className,
+      )}
     >
       <Icon aria-hidden="true" className={cx("mt-0.5 size-5 shrink-0", icon)} />
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <p className="text-sm font-semibold text-primary">{title}</p>
         {description ? <p className="text-sm text-tertiary">{description}</p> : null}
       </div>
-      {action}
+      {/* Under sm the action wraps below the text, indented past the icon. */}
+      {action ? <div className="basis-full ps-8 sm:ms-auto sm:basis-auto sm:ps-0">{action}</div> : null}
     </div>
+  );
+}
+
+/** #336: banner actions are plaque links (next/link), 44px tall under sm. */
+function BannerLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Link href={href} className={plaqueClassName("sm", "min-h-11 sm:min-h-0")}>
+      {children}
+    </Link>
   );
 }
 
@@ -79,11 +95,7 @@ export function SyncFailedBanner({ href = "/system-status?tab=sync-jobs&status=f
     <PageBanner
       tone="warning"
       title="Lần đồng bộ Threads gần nhất bị lỗi. Dữ liệu có thể chưa đầy đủ."
-      action={
-        <a href={href} className="text-sm font-semibold text-secondary underline underline-offset-2">
-          Xem lượt đồng bộ lỗi
-        </a>
-      }
+      action={<BannerLink href={href}>Xem lượt đồng bộ lỗi</BannerLink>}
     />
   );
 }
@@ -102,11 +114,7 @@ export function AnalysisPendingBanner({
       tone="info"
       title={`${formatCount(count)} lượt nhắc đang chờ phân tích.`}
       description="Các tỷ lệ bên dưới chỉ tính lượt nhắc đã phân tích xong."
-      action={
-        <a href={href} className="text-sm font-semibold text-secondary underline underline-offset-2">
-          Xem lượt nhắc đang chờ
-        </a>
-      }
+      action={<BannerLink href={href}>Xem lượt nhắc đang chờ</BannerLink>}
     />
   );
 }
@@ -122,16 +130,7 @@ export function IntegrationExpiredBanner({ canManage = false }: { canManage?: bo
           ? "Việc thu thập tạm dừng cho đến khi access token được cập nhật."
           : "Việc thu thập đang tạm dừng. Hãy nhờ quản trị dự án cập nhật access token Threads."
       }
-      action={
-        canManage ? (
-          <a
-            href="/settings/integrations"
-            className="text-sm font-semibold text-secondary underline underline-offset-2"
-          >
-            Đến trang Tích hợp
-          </a>
-        ) : null
-      }
+      action={canManage ? <BannerLink href="/settings/integrations">Đến trang Tích hợp</BannerLink> : null}
     />
   );
 }

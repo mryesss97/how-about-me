@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { OverviewFreshness } from "@/features/analytics/overview-freshness";
 import { OverviewView } from "@/features/analytics/overview-view";
 import { PageHeader } from "@/features/shared/page-header";
 export const metadata = { title: "Tổng quan" };
@@ -6,7 +7,14 @@ export const metadata = { title: "Tổng quan" };
 export default function OverviewPage() {
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 lg:px-8">
-      <PageHeader title="Tổng quan" />
+      <PageHeader
+        title="Tổng quan"
+        meta={
+          <Suspense fallback={null}>
+            <OverviewFreshness />
+          </Suspense>
+        }
+      />
       {/* nuqs reads search params on the client, so the view needs a Suspense boundary. */}
       <Suspense fallback={null}>
         <OverviewView />

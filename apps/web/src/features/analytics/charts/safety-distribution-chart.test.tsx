@@ -51,6 +51,6 @@ describe("SafetyDistributionChart", () => {
   it("view-as-table toggle exposes aria-pressed", async () => {
     render(<SafetyDistributionChart data={safetyFixture()} />);
     await openTable();
-    expect(screen.getByRole("button", { name: "Xem dạng bảng" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Bảng" })).toHaveAttribute("aria-pressed", "true");
   });
 });

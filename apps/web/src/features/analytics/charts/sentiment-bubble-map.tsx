@@ -16,6 +16,7 @@ import { ChartCard } from "./chart-card";
 import { SENTIMENT_COLORS } from "./chart-data";
 import { MultiLabelNote } from "./horizontal-bar-chart";
 import { SentimentIcon } from "./sentiment-icon";
+import { TopicSentimentTable } from "./topic-sentiment-table";
 
 export type SentimentBubbleMapProps = {
   /** Topics mode data (topic-sentiment). */
@@ -86,6 +87,16 @@ export function SentimentBubbleMap({
     rowHrefs: shown.map((d) => getHref?.(d.key, null) ?? null),
   };
 
+  // #336: Topics "Bảng" view = the old heatmap cells (count · share, link per cell), same rows/order as the bubbles
+  // so the chip filter applies. Phrases keep the plain text table.
+  const topicRows = useMemo(() => {
+    const byTopic = new Map((data?.rows ?? []).map((r) => [r.topic as string, r]));
+    return shown.flatMap((d) => byTopic.get(d.key) ?? []);
+  }, [data, shown]);
+  const tableView = phrases ? undefined : (
+    <TopicSentimentTable caption={`${copy.title} (bảng)`} rows={topicRows} getCellHref={getHref} />
+  );
+
   const filterChips = (
     <ButtonGroup
       size="sm"
@@ -153,7 +164,7 @@ export function SentimentBubbleMap({
       isEmpty={!!empty}
       emptyTitle={empty?.title ?? copy.empty}
       emptyDescription={empty?.description}
-      viewToggle={{ chart: copy.viewChart, table: copy.viewTable }}
+      tableView={tableView}
       toolbar={toolbar}
       headerAction={modeToggle}
       footer={footer}
