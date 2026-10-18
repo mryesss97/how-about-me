@@ -6,7 +6,7 @@ Role bootstrap: scheduler (collector) and analysis worker are registered only wh
 
 - `scheduler.module.ts` — wires `QueryClaimRepository`, `SchedulerService` and the `COLLECTOR_RUNNER` token (bound to `CollectorService`, T-052; if a test overrides it with `null` the tick does not start).
 - `scheduler.service.ts` — `collector-tick` interval (`COLLECTOR_TICK_MS`), claim → run with bounded concurrency → `completeRun`; releases locks on shutdown.
-- `query-claim.repository.ts` — raw SQL claim (`FOR UPDATE SKIP LOCKED`, stale lock, manual-first), guarded release.
+- `query-claim.repository.ts` — raw SQL claim (`FOR UPDATE SKIP LOCKED`, stale lock, queued manual/retry job first), guarded release.
 - `next-run.ts` — pure `computeNextRunAt` (success/partial vs failure backoff, cap 3600 s).
 - `collector-runner.ts` — `CollectorRunner` / `ClaimedQuery` / `RunOutcome` contract (`ClaimedQuery.workerId` = lock holder). Creating/updating `sync_jobs` (incl. the manual job in `manualJobId`) is the runner's job.
 

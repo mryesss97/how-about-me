@@ -5,4 +5,5 @@ Design: see docs/02-architecture/02-backend-design.md §3 and the related pipeli
 
 ## Contents
 
-- `sync-job.recorder.ts` — `SyncJobRecorder` (T-052): `start` (take over a queued manual/retry job or create a `scheduled` one), `recordPageTx` (counters + `last_cursor` + `provider_usage` inside the page transaction), `recordFailedAttempts`, `finish`. Used by `CollectorService`; list/detail/retry endpoints are T-055 (a retry job must copy `last_cursor` + `window_*` from the job it retries).
+- `sync-job.recorder.ts` — `SyncJobRecorder` (T-052): `start` (take over a queued manual/retry job or create a `scheduled` one), `recordPageTx` (counters + `last_cursor` + `provider_usage` inside the page transaction), `recordFailedAttempts`, `finish`. Used by `CollectorService`.
+- `sync-jobs.controller.ts` / `sync-jobs.service.ts` / `sync-jobs.repository.ts` (T-055): `GET …/sync-jobs` (keyset list, filters), `GET …/sync-jobs/:jobId` (detail + `providerUsage` without raw headers), `POST …/sync-jobs/:jobId/retry` (admin; new queued `retry` job copying `last_cursor` + `window_*`, query row locked, audited `sync_job.retry_requested`).

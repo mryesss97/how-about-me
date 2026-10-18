@@ -24,6 +24,7 @@ export const AUDIT_ACTIONS = [
   "review.marked",
   "mentions.exported",
   "analysis_settings.updated",
+  "sync_job.retry_requested",
   "data.purged",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -59,6 +60,8 @@ export const AUDIT_METADATA_ALLOW_LIST: ReadonlySet<string> = new Set([
   "scope",
   "counts",
   "platformPostId",
+  "sourceJobId",
+  "queryId",
 ]);
 
 /** Secret-looking keys are always dropped, even when allow-listed or nested (FR-200: no secrets in audit). */
