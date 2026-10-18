@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCurrentProject } from "@/features/auth/use-current-project";
 import { useRole } from "@/features/auth/use-role";
 import { PageHeader } from "@/features/shared/page-header";
@@ -14,6 +15,7 @@ import { OverviewCards } from "./overview-cards";
 import { SyncJobsTab } from "./sync-jobs-tab";
 import { UpdatedAgo } from "./updated-ago";
 import { useStatusParams, type StatusTab } from "./use-status-params";
+import { PageFrame } from "@/features/shared/page-frame";
 
 const DEFAULT_TZ = "Asia/Ho_Chi_Minh";
 const TABS: { id: StatusTab; label: string; adminOnly?: boolean }[] = [
@@ -29,7 +31,7 @@ export function SystemStatusView() {
   const { project } = useCurrentProject();
   const { hasRole, isLoading: roleLoading } = useRole();
   const isAdmin = !roleLoading && hasRole(["admin"]);
-  const { tab: urlTab, update } = useStatusParams();
+  const { tab: urlTab, tabHref } = useStatusParams();
   // Non-admin deep-link to ?tab=audit-log falls back to Overview once the role is known (no API call).
   const tab: StatusTab = urlTab === "audit-log" && !roleLoading && !isAdmin ? "overview" : urlTab;
   const tabs = TABS.filter((t) => !t.adminOnly || isAdmin);
@@ -42,28 +44,27 @@ export function SystemStatusView() {
   const err = status.error instanceof ApiError ? status.error : null;
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 lg:px-8">
+    <PageFrame>
       <PageHeader
         title="Trạng thái hệ thống"
         // #343 ops-10: only the overview polls (FR-170), so "Cập nhật … trước" lives there; lists have "Làm mới".
         actions={tab === "overview" && status.dataUpdatedAt ? <UpdatedAgo updatedAt={status.dataUpdatedAt} /> : null}
       />
-      {/* #343: 2×2 grid under `sm`, ≥ 44 px targets; no horizontal scroll so no tab is hidden. */}
-      <div role="tablist" aria-label="Các mục trạng thái" className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+      {/* #343: 2×2 grid under `sm`, ≥ 44 px targets; no horizontal scroll so no tab is hidden.
+          #348: route sections are links + aria-current (DESIGN.md "Section tabs"), not an ARIA tablist. */}
+      <nav aria-label="Các mục trạng thái" className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
         {tabs.map((t) => (
-          <button
+          <Link
             key={t.id}
-            type="button"
-            role="tab"
-            aria-selected={tab === t.id}
+            href={tabHref(t.id)}
+            scroll={false}
             aria-current={tab === t.id ? "page" : undefined}
             className={plaqueClassName("sm", "min-h-11 justify-center text-center")}
-            onClick={() => update({ tab: t.id === "overview" ? null : t.id, job: null, action: null })}
           >
             {t.label}
-          </button>
+          </Link>
         ))}
-      </div>
+      </nav>
       {tab === "overview" ? (
         <QueryState
           isLoading={!project || status.isLoading}
@@ -92,6 +93,6 @@ export function SystemStatusView() {
       ) : (
         <SyncJobsTab pid={project.id} tz={tz} isAdmin={isAdmin} />
       )}
-    </div>
+    </PageFrame>
   );
 }

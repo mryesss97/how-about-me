@@ -3,6 +3,7 @@
 import type { ListeningQuery } from "@how-about-me/contracts";
 import { useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { notifyError } from "@/lib/toast";
 import { SlideoutMenu } from "@/components/application/slideout-menus/slideout-menu";
 import { Button } from "@/components/base/buttons/button";
 import { Toggle } from "@/components/base/toggle/toggle";
@@ -91,7 +92,7 @@ export function QueryFormDrawer({ pid, mode, query, isOpen, onClose, onOpenExist
   const onError = (err: unknown) => {
     const existingId = duplicateExistingId(err);
     if (existingId) {
-      toast.error("Truy vấn này đã tồn tại", {
+      notifyError("Truy vấn này đã tồn tại", {
         action: {
           label: "Xem truy vấn",
           onClick: () => {

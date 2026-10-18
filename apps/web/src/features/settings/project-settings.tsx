@@ -6,12 +6,17 @@ import { QueryState } from "@/features/shared/query-state";
 import { useProject } from "./api";
 import { LandingTermsForm } from "./landing-terms-form";
 import { ProjectSettingsForm } from "./project-settings-form";
-import { SettingsBoard } from "./settings-board";
+import { SettingsBoard, SettingsBoardSkeleton } from "./settings-board";
 
 function ProjectSettingsLoaded({ pid, canEdit }: { pid: string; canEdit: boolean }) {
   const q = useProject(pid);
   return (
-    <QueryState isLoading={q.isLoading} error={q.error} onRetry={() => void q.refetch()}>
+    <QueryState
+      isLoading={q.isLoading}
+      error={q.error}
+      onRetry={() => void q.refetch()}
+      skeleton={<SettingsBoardSkeleton title="Dự án" />}
+    >
       {/* key: reset local form state when the project or its server version changes */}
       {q.data ? (
         <div className="flex flex-col gap-6">
@@ -35,7 +40,7 @@ function ProjectSettingsLoaded({ pid, canEdit }: { pid: string; canEdit: boolean
 /** Page body for `/settings/project`. */
 export function ProjectSettings() {
   const { project, isLoading } = useCurrentProject();
-  if (isLoading || !project) return <QueryState isLoading>{null}</QueryState>;
+  if (isLoading || !project) return <SettingsBoardSkeleton title="Dự án" />;
   return <ProjectSettingsLoaded pid={project.id} canEdit={project.role === "admin"} />;
 }
 

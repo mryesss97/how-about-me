@@ -51,8 +51,8 @@ describe("SystemStatusView audit tab gating (TC-SYS-015)", () => {
     role = r;
     search = "tab=audit-log";
     setup();
-    expect(screen.queryByRole("tab", { name: "Nhật ký thao tác" })).not.toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Tổng quan" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.queryByRole("link", { name: "Nhật ký thao tác" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Tổng quan" })).toHaveAttribute("aria-current", "page");
     await waitFor(() => expect(paths().some((p) => p.endsWith("/system-status"))).toBe(true));
     expect(paths().some((p) => p.endsWith("/audit-logs"))).toBe(false);
   });
@@ -61,7 +61,7 @@ describe("SystemStatusView audit tab gating (TC-SYS-015)", () => {
     role = "admin";
     search = "tab=audit-log";
     setup();
-    expect(screen.getByRole("tab", { name: "Nhật ký thao tác" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("link", { name: "Nhật ký thao tác" })).toHaveAttribute("aria-current", "page");
     await waitFor(() => expect(paths().some((p) => p.endsWith("/audit-logs"))).toBe(true));
   });
 });
@@ -114,7 +114,26 @@ describe("SystemStatusView chrome (#343 ops-10)", () => {
     statusOnly();
     setup();
     expect(await screen.findByText(/^Cập nhật \d+ giây trước$/)).toBeInTheDocument();
-    for (const tab of screen.getAllByRole("tab")) expect(tab).toHaveClass("min-h-11");
+    const nav = screen.getByRole("navigation", { name: "Các mục trạng thái" });
+    for (const tab of nav.querySelectorAll("a")) expect(tab).toHaveClass("min-h-11");
+  });
+
+  it("#348: section tabs are links (no ARIA tablist) that keep filters and drop the open job", async () => {
+    role = "admin";
+    search = "tab=sync-jobs&status=failed&job=j1&from=2026-10-01";
+    // The open job drawer is modal, so the page behind it is aria-hidden (hidden: true).
+    setup();
+    expect(screen.queryByRole("tab", { hidden: true })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Lượt đồng bộ", hidden: true })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Tổng quan", hidden: true })).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("link", { name: "Lỗi phân tích", hidden: true })).toHaveAttribute(
+      "href",
+      "/system-status?status=failed&from=2026-10-01&tab=analysis-failures",
+    );
+    expect(screen.getByRole("link", { name: "Tổng quan", hidden: true })).toHaveAttribute(
+      "href",
+      "/system-status?status=failed&from=2026-10-01",
+    );
   });
 
   it.each(["sync-jobs", "analysis-failures", "audit-log"])("no 'Cập nhật' on ?tab=%s", async (t) => {

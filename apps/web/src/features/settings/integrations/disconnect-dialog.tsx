@@ -1,6 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
+import { notifyError } from "@/lib/toast";
 import { Button } from "@/components/base/buttons/button";
 import { SettingsDialog } from "@/features/shared/settings-dialog";
 import { integrationErrorMessage, useDisconnectThreads } from "./api";
@@ -12,7 +13,7 @@ export function DisconnectDialog({ pid, isOpen, onClose }: { pid: string; isOpen
     onClose();
     disconnect.mutate(undefined, {
       onSuccess: () => toast.success("Đã ngắt kết nối Threads"),
-      onError: (err) => toast.error(integrationErrorMessage(err)),
+      onError: (err) => notifyError(integrationErrorMessage(err)),
     });
   };
   return (

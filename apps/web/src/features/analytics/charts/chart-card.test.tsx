@@ -154,4 +154,14 @@ describe("ChartCard cellHrefs (#335)", () => {
     expect(screen.getByRole("link", { name: "1" })).toHaveAttribute("href", "/mentions?b=1");
     expect(screen.getByRole("link", { name: "x" })).toHaveAttribute("href", "/row");
   });
+
+  it("#348: the board title is an h2 and a load error renders inline (no board inside the board)", () => {
+    render(
+      <ChartCard title="Xu hướng" table={{ columns: [], rows: [] }} error={{ message: "x" }}>
+        <p>chart</p>
+      </ChartCard>,
+    );
+    expect(screen.getByRole("heading", { level: 2, name: "Xu hướng" })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveAttribute("data-variant", "inline");
+  });
 });

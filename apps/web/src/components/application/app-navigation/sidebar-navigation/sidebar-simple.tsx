@@ -17,6 +17,8 @@ interface SidebarNavigationProps {
     items: NavItemType[];
     /** List of footer items to display. */
     footerItems?: NavItemType[];
+    /** #348: content right under the logo (current project / switcher). */
+    header?: ReactNode;
     /** Feature card to display. */
     featureCard?: ReactNode;
     /** Whether to show the account card. */
@@ -31,6 +33,7 @@ export const SidebarNavigationSimple = ({
     activeUrl,
     items,
     footerItems = [],
+    header,
     featureCard,
     showAccountCard = true,
     className,
@@ -56,6 +59,7 @@ export const SidebarNavigationSimple = ({
                 <Link href="/" aria-label="How About Me — trang chủ" className="shell-logo-plate self-start outline-white focus-visible:outline-2 focus-visible:outline-offset-2">
                     <BrandLogo variant="horizontal" className="h-auto w-[180px]" />
                 </Link>
+                {header}
             </div>
 
             <NavList activeUrl={activeUrl} items={items} />

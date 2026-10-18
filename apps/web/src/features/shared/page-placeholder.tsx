@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { PageHeader } from "./page-header";
+import { PageFrame } from "@/features/shared/page-frame";
 
 export type PlaceholderTask = { id: string; label: string };
 
@@ -19,7 +20,7 @@ export function PagePlaceholder({
   children?: ReactNode;
 }) {
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 lg:px-8">
+    <PageFrame>
       <PageHeader title={title} description={description} />
       <section aria-labelledby="placeholder-tasks-title" className="operate-board p-5">
         <span aria-hidden className="sign-keyline" />
@@ -37,6 +38,6 @@ export function PagePlaceholder({
         </div>
       </section>
       {children}
-    </div>
+    </PageFrame>
   );
 }

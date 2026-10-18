@@ -12,6 +12,7 @@ import {
 import { useInfiniteQuery, useMutation, useQueryClient, type InfiniteData, type QueryKey } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
+import { notifyError } from "@/lib/toast";
 import { formatCount } from "@/lib/format/number";
 import { isRejectedCursor } from "@/lib/query/infinite-list";
 import { ApiError, apiFetch } from "@/lib/api/client";
@@ -139,7 +140,7 @@ export function useMarkReviewed(pid: string | null | undefined) {
       for (const [key, data] of ctx?.snapshot ?? []) qc.setQueryData(key, data);
       if (ctx?.countSnapshot) qc.setQueryData(qk.reviewCount(p), ctx.countSnapshot);
       const msg = err instanceof ApiError ? err.message : "Không thể đánh dấu đã xem lại";
-      toast.error(msg, {
+      notifyError(msg, {
         description: err instanceof ApiError && err.requestId ? `Mã yêu cầu: ${err.requestId}` : undefined,
       });
     },

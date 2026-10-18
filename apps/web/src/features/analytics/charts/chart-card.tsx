@@ -97,7 +97,8 @@ export function ChartCard({
       {/* #327: stack header under sm so the title never collapses to one word per line at 390px. */}
       <header className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h3 className="operate-board-title">{title}</h3>
+          {/* #348: board titles sit directly under the page h1. */}
+          <h2 className="operate-board-title">{title}</h2>
           {description ? <p className="text-sm text-tertiary">{description}</p> : null}
         </div>
         <div className="flex max-w-full min-w-0 flex-wrap items-center gap-2 self-start sm:shrink-0 sm:justify-end">
@@ -114,6 +115,7 @@ export function ChartCard({
         emptyTitle={emptyTitle}
         {...(emptyDescription ? { emptyDescription } : {})}
         skeleton={<ChartSkeleton />}
+        errorVariant="inline"
       >
         {asTable
           ? (tableView ?? (

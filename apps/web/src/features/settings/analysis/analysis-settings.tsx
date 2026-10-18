@@ -7,7 +7,7 @@ import { useAnalysisSettings } from "./api";
 import { AnalysisSettingsForm } from "./analysis-settings-form";
 import { PhraseThresholdSettings } from "./phrase-threshold-form";
 import { ReanalysisPromptDialog } from "./reanalysis-prompt-dialog";
-import { SettingsBoard } from "../settings-board";
+import { SettingsBoard, SettingsBoardSkeleton } from "../settings-board";
 
 /** Loaded view; the re-analysis prompt lives here because the form remounts on a new policy version. */
 export function AnalysisSettingsPanel({
@@ -22,7 +22,7 @@ export function AnalysisSettingsPanel({
   const q = useAnalysisSettings(pid);
   const [prompt, setPrompt] = useState<{ outdatedCount: number; version: string } | null>(null);
   return (
-    <QueryState isLoading={q.isLoading} error={q.error} onRetry={() => void q.refetch()}>
+    <QueryState isLoading={q.isLoading} error={q.error} onRetry={() => void q.refetch()} errorVariant="inline">
       {/* key: reset the draft when the project or the policy version changes */}
       {q.data ? (
         <AnalysisSettingsForm
@@ -56,7 +56,7 @@ export function AnalysisSettingsPanel({
 /** Page body for `/settings/analysis` (FR-190). Every role can view; only admins edit. */
 export function AnalysisSettings() {
   const { project, isLoading } = useCurrentProject();
-  if (isLoading || !project) return <QueryState isLoading>{null}</QueryState>;
+  if (isLoading || !project) return <SettingsBoardSkeleton title="Chính sách phân tích" />;
   const canEdit = project.role === "admin";
   return (
     <div className="flex flex-col gap-6">

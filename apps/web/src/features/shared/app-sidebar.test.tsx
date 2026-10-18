@@ -32,6 +32,8 @@ describe("AppSidebar", () => {
     for (const label of ["Tổng quan", "Bài nhắc", "Cần xem lại", "Truy vấn theo dõi", "Trạng thái hệ thống"])
       expect(screen.getAllByText(label).length).toBeGreaterThan(0);
     expect(screen.queryByLabelText("Dự án")).not.toBeInTheDocument();
+    // #348: the current project name is in the shell for every role.
+    expect(screen.getAllByText("P 11111111-1111-4111-8111-111111111111").length).toBeGreaterThan(0);
   });
 
   it("shows the project switcher with ≥ 2 projects", async () => {

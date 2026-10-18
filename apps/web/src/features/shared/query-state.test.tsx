@@ -74,4 +74,32 @@ describe("QueryState (UX §2.3, BR-032)", () => {
     expect(screen.getByText(/không có quyền/i)).toBeInTheDocument();
     expect(screen.queryByText("Đang tải…")).not.toBeInTheDocument();
   });
+
+  it("#348 BR-017: the error is an enamel board with a red keyline and the failure in words", () => {
+    const { container } = render(<QueryState error={{ requestId: "r-1" }}>{CONTENT}</QueryState>);
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveClass("operate-board");
+    expect(alert).not.toHaveClass("rounded-xl");
+    expect(container.querySelector(".sign-keyline--error")).not.toBeNull();
+    expect(screen.getByText("Đã xảy ra lỗi khi tải dữ liệu.")).toBeInTheDocument();
+    expect(screen.getByTestId("request-id")).toHaveTextContent("r-1");
+  });
+
+  it("#348: errorVariant='inline' drops the board for states inside a board", () => {
+    render(
+      <QueryState error={{}} errorVariant="inline">
+        {CONTENT}
+      </QueryState>,
+    );
+    expect(screen.getByRole("alert")).not.toHaveClass("operate-board");
+    expect(screen.getByRole("alert")).toHaveClass("state-inline-error");
+  });
+
+  it("#348: forbidden is a keyline board with a plaque link back to Overview", () => {
+    render(<QueryState isForbidden>{CONTENT}</QueryState>);
+    expect(screen.getByRole("status")).toHaveClass("operate-board");
+    const link = screen.getByRole("link", { name: "Về Tổng quan" });
+    expect(link).toHaveAttribute("href", "/overview");
+    expect(link).toHaveClass("plaque-button");
+  });
 });

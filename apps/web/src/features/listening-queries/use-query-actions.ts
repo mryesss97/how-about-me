@@ -3,6 +3,7 @@
 import type { ListeningQuery } from "@how-about-me/contracts";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { notifyError } from "@/lib/toast";
 import {
   queryErrorMessage,
   runningJobId,
@@ -25,7 +26,7 @@ export function useQueryActions(pid: string) {
   const onRestore = (q: ListeningQuery) =>
     restore.mutate(q.id, {
       onSuccess: () => toast.success("Đã khôi phục truy vấn"),
-      onError: (err) => toast.error(queryErrorMessage(err)),
+      onError: (err) => notifyError(queryErrorMessage(err)),
     });
 
   return {
@@ -40,7 +41,7 @@ export function useQueryActions(pid: string) {
         onSuccess: (res) => toast.success("Đã xếp lịch đồng bộ", { action: jobAction(res.jobId) }),
         onError: (err) => {
           const jobId = runningJobId(err);
-          toast.error(queryErrorMessage(err), jobId ? { action: jobAction(jobId) } : undefined);
+          notifyError(queryErrorMessage(err), jobId ? { action: jobAction(jobId) } : undefined);
         },
       });
     },
@@ -49,14 +50,14 @@ export function useQueryActions(pid: string) {
         { id: q.id, body: { enabled: !q.enabled } },
         {
           onSuccess: (res) => toast.success(res.enabled ? "Đã bật truy vấn" : "Đã tắt truy vấn"),
-          onError: (err) => toast.error(queryErrorMessage(err)),
+          onError: (err) => notifyError(queryErrorMessage(err)),
         },
       ),
     onConfirmDelete: (q: ListeningQuery) =>
       remove.mutate(q.id, {
         onSuccess: () =>
           toast.success("Đã xoá truy vấn", { action: { label: "Hoàn tác", onClick: () => onRestore(q) } }),
-        onError: (err) => toast.error(queryErrorMessage(err)),
+        onError: (err) => notifyError(queryErrorMessage(err)),
       }),
     onRestore,
   };

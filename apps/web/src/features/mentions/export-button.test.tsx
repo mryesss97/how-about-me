@@ -105,6 +105,6 @@ describe("ExportButton (T-147, FR-180/181)", () => {
   it("429 RATE_LIMITED → toast with seconds", async () => {
     apiDownload.mockRejectedValue(new ApiError(429, "RATE_LIMITED", "m", "r", { retryAfterSeconds: 42 }));
     fireEvent.click(setup());
-    await waitFor(() => expect(toastError).toHaveBeenCalledWith("Đã chạm giới hạn xuất. Thử lại sau 42 giây."));
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith("Lỗi: Đã chạm giới hạn xuất. Thử lại sau 42 giây."));
   });
 });

@@ -33,4 +33,13 @@ describe("ProjectSettings", () => {
     await waitFor(() => expect(screen.getAllByText("Chưa có thay đổi")).toHaveLength(1));
     expect(screen.getByText("giá vé")).toBeInTheDocument();
   });
+
+  it("#348: while loading it shows a board skeleton with the real section title", async () => {
+    apiFetch.mockImplementation(() => new Promise(() => {}));
+    render(<ProjectSettings />, { wrapper: Providers });
+    const title = screen.getByRole("heading", { level: 2, name: "Dự án" });
+    const board = title.closest(".operate-board");
+    expect(board).not.toBeNull();
+    expect(board?.querySelector("[aria-busy='true']")).not.toBeNull();
+  });
 });

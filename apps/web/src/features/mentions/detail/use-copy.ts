@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import { toast } from "sonner";
+import { notifyError } from "@/lib/toast";
 
 /** Copies text and reports via toast (TC-MEN-019). Clipboard needs a secure context; failures show an error toast. */
 export function useCopy() {
@@ -10,7 +11,7 @@ export function useCopy() {
       await navigator.clipboard.writeText(value);
       toast.success(`Đã sao chép ${label}`);
     } catch {
-      toast.error(`Không sao chép được ${label}`);
+      notifyError(`Không sao chép được ${label}`);
     }
   }, []);
 }

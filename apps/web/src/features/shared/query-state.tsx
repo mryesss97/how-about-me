@@ -2,9 +2,7 @@
 
 import type { ReactNode } from "react";
 import { AlertCircle, Inbox01, Lock01, RefreshCcw01 } from "@untitledui/icons";
-import { Button } from "@/components/base/buttons/button";
 import { PlaqueButton } from "./plaque-button";
-import { FeaturedIcon } from "@/components/foundations/featured-icon/featured-icon";
 import { cx } from "@/utils/cx";
 import { StateIllustration, type StateIllustrationName } from "./state-illustration";
 
@@ -32,8 +30,10 @@ export type QueryStateProps = {
   emptyTitle?: string;
   emptyDescription?: string;
   emptyAction?: ReactNode;
-  /** Opt-in brand illustration for page-level empty states only; cards/widgets keep the FeaturedIcon. */
+  /** Opt-in brand illustration for page-level empty states only; cards/widgets keep the flat icon. */
   emptyIllustration?: StateIllustrationName;
+  /** #348: `inline` when the state renders inside a board (chart card, settings board) so boards never nest. */
+  errorVariant?: "board" | "inline";
   className?: string;
   children: ReactNode;
 };
@@ -49,6 +49,7 @@ export function QueryState({
   emptyDescription = "Hãy mở rộng khoảng thời gian hoặc bỏ bớt bộ lọc.",
   emptyAction,
   emptyIllustration,
+  errorVariant,
   className,
   children,
 }: QueryStateProps) {
@@ -56,7 +57,7 @@ export function QueryState({
 
   if (forbidden) return <ForbiddenState className={className} />;
   if (isLoading) return <div className={className}>{skeleton ?? <SkeletonBlock />}</div>;
-  if (error) return <ErrorState error={error} onRetry={onRetry} className={className} />;
+  if (error) return <ErrorState error={error} onRetry={onRetry} className={className} variant={errorVariant} />;
   if (isEmpty)
     return (
       <EmptyState
@@ -70,39 +71,47 @@ export function QueryState({
   return <>{children}</>;
 }
 
-/** Full-page state; the backend already denied the request — the UI only mirrors it (BR-033). */
+/**
+ * Full-page state; the backend already denied the request — the UI only mirrors it (BR-033).
+ * #348: an enamel board with a navy keyline (DESIGN.md "Toasts & states"), no featured-icon halo.
+ */
 export function ForbiddenState({ className, backHref = "/overview" }: { className?: string; backHref?: string }) {
   return (
-    <div
-      role="status"
-      className={cx("flex flex-col items-center justify-center gap-3 px-4 py-16 text-center", className)}
-    >
-      <FeaturedIcon color="gray" theme="modern" icon={Lock01} size="lg" />
-      <h2 className="text-lg font-semibold text-primary">Bạn không có quyền xem trang này.</h2>
-      <p className="max-w-md text-sm text-tertiary">
-        Hãy hỏi quản trị viên dự án nếu bạn cần quyền truy cập. Vai trò của bạn quyết định những màn hình bạn xem được.
-      </p>
-      <Button href={backHref} color="secondary" size="sm">
-        Về Tổng quan
-      </Button>
+    <div role="status" className={cx("operate-board", className)}>
+      <span aria-hidden className="sign-keyline" />
+      <div className="relative flex flex-col items-center justify-center gap-3 px-6 py-12 text-center">
+        <Lock01 aria-hidden className="size-6 text-[var(--ink)]" />
+        <h2 className="operate-board-title">Bạn không có quyền xem trang này.</h2>
+        <p className="max-w-md text-sm text-tertiary">
+          Hãy hỏi quản trị viên dự án nếu bạn cần quyền truy cập. Vai trò của bạn quyết định những màn hình bạn xem
+          được.
+        </p>
+        <PlaqueButton href={backHref}>Về Tổng quan</PlaqueButton>
+      </div>
     </div>
   );
 }
 
-/** `requestId` is shown verbatim: it is the one thing that lets an engineer find the matching log line. */
+/**
+ * `requestId` is shown verbatim: it is the one thing that lets an engineer find the matching log line.
+ * #348: `board` = enamel board with a red keyline; `inline` = red left rule only, for use inside a board
+ * (chart card, settings board) so boards never nest. The heading text carries the meaning (BR-017).
+ */
 export function ErrorState({
   error,
   onRetry,
   className,
+  variant = "board",
 }: {
   error: QueryStateError;
   onRetry?: () => void;
   className?: string;
+  variant?: "board" | "inline";
 }) {
-  return (
-    <div role="alert" className={cx("flex flex-col gap-3 rounded-xl border border-error bg-primary p-5", className)}>
+  const body = (
+    <div className="relative flex flex-col gap-3">
       <div className="flex items-start gap-3">
-        <FeaturedIcon color="error" theme="modern" icon={AlertCircle} size="md" />
+        <AlertCircle aria-hidden className="mt-0.5 size-5 shrink-0 text-[var(--red-enamel)]" />
         <div className="flex min-w-0 flex-col gap-1">
           <p className="text-sm font-semibold text-primary">Đã xảy ra lỗi khi tải dữ liệu.</p>
           <p className="text-sm text-tertiary">{error.message ?? "Vui lòng thử lại sau giây lát."}</p>
@@ -122,11 +131,24 @@ export function ErrorState({
       ) : null}
     </div>
   );
+  if (variant === "inline")
+    return (
+      <div role="alert" data-variant="inline" className={cx("state-inline-error py-2 pl-4", className)}>
+        {body}
+      </div>
+    );
+  return (
+    <div role="alert" data-variant="board" className={cx("operate-board p-5", className)}>
+      <span aria-hidden className="sign-keyline sign-keyline--error" />
+      {body}
+    </div>
+  );
 }
 
 /**
  * `illustration` is opt-in for states that fill the page / main content area (Mentions list, Reviews queue,
- * no project). Without it the compact FeaturedIcon is kept — chart cards and widgets rely on that default.
+ * no project). Without it a flat Untitled icon is shown (#348: no featured-icon halo); the state is not wrapped in a
+ * board because it usually sits inside one.
  */
 export function EmptyState({
   title,
@@ -149,7 +171,7 @@ export function EmptyState({
       {illustration ? (
         <StateIllustration name={illustration} />
       ) : (
-        <FeaturedIcon color="gray" theme="modern" icon={Inbox01} size="lg" />
+        <Inbox01 aria-hidden className="size-6 text-[var(--ink)]" />
       )}
       <h3 className="text-md font-semibold text-primary">{title}</h3>
       {description ? <p className="max-w-md text-sm text-tertiary">{description}</p> : null}

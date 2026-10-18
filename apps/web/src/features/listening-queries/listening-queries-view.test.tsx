@@ -163,7 +163,7 @@ describe("ListeningQueriesView", () => {
       await openMenu(q);
       fireEvent.click(screen.getByRole("menuitem", { name: "Chạy ngay" }));
       await waitFor(() => expect(toastError).toHaveBeenCalled());
-      expect(toastError.mock.calls[0]?.[0]).toBe("Truy vấn đang đồng bộ.");
+      expect(toastError.mock.calls[0]?.[0]).toBe("Lỗi: Truy vấn đang đồng bộ.");
     });
 
     it("FR-055: the row toggle PATCHes { enabled }", async () => {

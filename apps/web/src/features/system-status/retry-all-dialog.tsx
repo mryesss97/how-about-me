@@ -1,6 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
+import { notifyError } from "@/lib/toast";
 import { Button } from "@/components/base/buttons/button";
 import { SettingsDialog } from "@/features/shared/settings-dialog";
 import { formatCount } from "@/lib/format/number";
@@ -26,7 +27,7 @@ export function RetryAllDialog({
         toast.success(`Đã xếp lịch ${formatCount(r.enqueued)} lượt phân tích`);
         onClose();
       },
-      onError: (e) => toast.error(retryErrorMessage(e)),
+      onError: (e) => notifyError(retryErrorMessage(e)),
     });
 
   return (

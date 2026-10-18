@@ -4,6 +4,7 @@ import { ListeningQueryPageSchema } from "@how-about-me/contracts";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 import { toast } from "sonner";
+import { notifyError } from "@/lib/toast";
 import { apiFetch } from "@/lib/api/client";
 import { integrationErrorMessage, useVerifyThreads } from "./api";
 
@@ -48,7 +49,7 @@ export function useVerifyWithNextStep(pid: string) {
               : undefined,
           });
         },
-        onError: (err) => toast.error(integrationErrorMessage(err), { id: toastId }),
+        onError: (err) => notifyError(integrationErrorMessage(err), { id: toastId }),
       }),
     [mutate, pid, router],
   );

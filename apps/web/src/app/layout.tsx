@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import Script from "next/script";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
-import { Toaster } from "sonner";
+import { AppToaster } from "@/features/shared/app-toaster";
 import { LANDING_HUNG_SCRIPT } from "@/features/landing/landing-hung";
 import { figureFont, signFont } from "@/lib/fonts/sign";
 import { QueryProvider } from "@/lib/query/provider";
@@ -34,7 +34,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <RouteProvider>
           <NuqsAdapter>
             <QueryProvider>{children}</QueryProvider>
-            <Toaster position="bottom-right" richColors />
+            <AppToaster />
           </NuqsAdapter>
         </RouteProvider>
       </body>

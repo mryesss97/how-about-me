@@ -176,7 +176,7 @@ describe("QueryFormDrawer", () => {
     fireEvent.click(screen.getByRole("button", { name: "Tạo truy vấn" }));
     await waitFor(() => expect(toastError).toHaveBeenCalled());
     const [msg, opts] = toastError.mock.calls[0] as [string, { action: { label: string; onClick: () => void } }];
-    expect(msg).toBe("Truy vấn này đã tồn tại");
+    expect(msg).toBe("Lỗi: Truy vấn này đã tồn tại");
     expect(opts.action.label).toBe("Xem truy vấn");
     act(() => opts.action.onClick());
     expect(onOpenExisting).toHaveBeenCalledWith(EXISTING);

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { notifyError } from "@/lib/toast";
 import { retryErrorMessage, useRetryAnalysisRun } from "./api";
 
 /** FR-175: per-row analysis retry; every row with a retry in flight stays disabled (shared by table + cards). */
@@ -12,7 +13,7 @@ export function useRowRetry(pid: string) {
     setBusyIds((prev) => new Set(prev).add(id));
     retry.mutate(id, {
       onSuccess: () => toast.success("Đã xếp lịch thử lại"),
-      onError: (e) => toast.error(retryErrorMessage(e)),
+      onError: (e) => notifyError(retryErrorMessage(e)),
       onSettled: () =>
         setBusyIds((prev) => {
           const next = new Set(prev);
