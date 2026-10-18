@@ -38,6 +38,7 @@
     "db:migrate": "pnpm --filter @how-about-me/api db:migrate",
     "db:deploy": "pnpm --filter @how-about-me/api db:deploy",
     "db:seed": "pnpm --filter @how-about-me/api db:seed",
+    "db:seed:demo": "pnpm --filter @how-about-me/api db:seed:demo",
     "db:reset": "pnpm --filter @how-about-me/api db:reset",
     "db:studio": "pnpm --filter @how-about-me/api db:studio",
     "backlog:render": "node scripts/backlog/render-wbs.mjs",
