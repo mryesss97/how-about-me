@@ -55,5 +55,14 @@ export function useStatusParams() {
     [router, pathname, search],
   );
 
-  return { tab, filters, auditFilters, jobId, update };
+  /** #348: href for a section tab; keeps the other params, drops the open job / audit action like `update` did. */
+  const tabHref = (id: StatusTab) => {
+    const next = new URLSearchParams(search?.toString());
+    for (const k of ["tab", "job", "action"]) next.delete(k);
+    if (id !== "overview") next.set("tab", id);
+    const qs = next.toString();
+    return `${pathname}${qs ? `?${qs}` : ""}`;
+  };
+
+  return { tab, filters, auditFilters, jobId, update, tabHref };
 }

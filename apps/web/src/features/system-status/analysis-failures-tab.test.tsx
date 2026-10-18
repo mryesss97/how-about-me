@@ -117,7 +117,7 @@ describe("AnalysisFailuresTab (FR-175, TC-SYS-012)", () => {
     mockApi([run], () => Promise.reject(new ApiError(409, "ANALYSIS_RUN_NOT_RETRYABLE", "x")));
     setup(true);
     fireEvent.click((await table()).getByRole("button", { name: /Thử lại phân tích bài/ }));
-    await waitFor(() => expect(toastError).toHaveBeenCalledWith("Lượt phân tích này không còn ở trạng thái lỗi."));
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith("Lỗi: Lượt phân tích này không còn ở trạng thái lỗi."));
   });
 
   it("TC-SYS-012 / BR-024: retry all confirms with the count and sends limit 500", async () => {

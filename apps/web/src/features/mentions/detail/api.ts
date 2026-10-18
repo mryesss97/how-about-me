@@ -12,6 +12,7 @@ import {
 } from "@how-about-me/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { notifyError } from "@/lib/toast";
 import { ApiError, apiFetch } from "@/lib/api/client";
 import { qk, staleTimes } from "@/lib/query/keys";
 
@@ -74,7 +75,7 @@ export function useReanalyze(pid: string | null | undefined, id: string) {
         return;
       }
       const msg = err instanceof ApiError ? err.message : "Không thể xếp hàng phân tích lại";
-      toast.error(msg, {
+      notifyError(msg, {
         description: err instanceof ApiError && err.requestId ? `Mã yêu cầu: ${err.requestId}` : undefined,
       });
     },
@@ -108,7 +109,7 @@ function overrideError(fallback: string, refresh: () => Promise<unknown>) {
       return;
     }
     const msg = err instanceof ApiError ? err.message : fallback;
-    toast.error(msg, {
+    notifyError(msg, {
       description: err instanceof ApiError && err.requestId ? `Mã yêu cầu: ${err.requestId}` : undefined,
     });
   };

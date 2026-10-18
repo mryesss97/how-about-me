@@ -4,6 +4,7 @@ import { RefreshCcw01 } from "@untitledui/icons";
 import type { QueryType, SyncJobDetail } from "@how-about-me/contracts";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
+import { notifyError } from "@/lib/toast";
 import { SlideoutMenu } from "@/components/application/slideout-menus/slideout-menu";
 import { Button } from "@/components/base/buttons/button";
 import { PlaqueButton } from "@/features/shared/plaque-button";
@@ -45,7 +46,7 @@ export function SyncJobDrawer({ pid, jobId, tz, isAdmin, onClose }: Props) {
               toast.success("Đã xếp lịch thử lại");
               close();
             },
-            onError: (e) => toast.error(retryErrorMessage(e)),
+            onError: (e) => notifyError(retryErrorMessage(e)),
           })
         }
       >
@@ -186,7 +187,7 @@ function JobDetail({ job, tz }: { job: SyncJobDetail; tz: string }) {
                 void navigator.clipboard
                   ?.writeText(job.lastCursor ?? "")
                   .then(() => toast.success("Đã sao chép vị trí trang"))
-                  .catch(() => toast.error("Không sao chép được"))
+                  .catch(() => notifyError("Không sao chép được"))
               }
             >
               Sao chép

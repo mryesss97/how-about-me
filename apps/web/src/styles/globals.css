@@ -613,27 +613,23 @@ html[data-landing-hung] .sign-wall .sign-board {
   background: var(--color-utility-yellow-500, #eaaa08);
 }
 
+/* #348: sign-out is a quiet text action — no border/fill, underline on hover, icon left. */
 .shell-signout {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 8px;
   min-height: 44px; /* #325: 44 px touch target */
-  padding: 8px 12px;
-  border: 2px solid #fff;
-  border-radius: 2px;
+  padding: 8px 4px;
+  border: 0;
   color: #fff;
-  font-family: var(--font-figure), sans-serif;
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  transition: background-color 160ms ease-out, color 160ms ease-out;
+  font-size: 14px;
+  font-weight: 500;
+  text-underline-offset: 3px;
 }
 
 .shell-signout:hover {
-  background: var(--enamel-white);
-  color: var(--ink);
+  text-decoration: underline;
 }
 
 .shell-signout:focus-visible {
@@ -885,4 +881,87 @@ html[data-landing-hung] .sign-wall .sign-board {
   letter-spacing: 0.03em;
   text-transform: uppercase;
   outline: none;
+}
+
+/* #348 Toasts & states (DESIGN.md "Toasts & states"): flat enamel, no shadow. */
+.sign-keyline--error {
+  --line: var(--red-enamel);
+}
+.operate-board .sign-keyline.sign-keyline--error {
+  --line: var(--red-enamel);
+}
+.state-inline-error {
+  border-left: 4px solid var(--red-enamel);
+}
+
+.enamel-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: var(--width, 356px);
+  max-width: 100%;
+  padding: 12px 14px;
+  border: 2px solid var(--ink);
+  border-radius: 2px;
+  background: var(--enamel-white);
+  box-shadow: none;
+  color: var(--ink);
+  font-family: var(--font-sans, Inter), sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.enamel-toast--error {
+  border-left: 6px solid var(--red-enamel);
+}
+.enamel-toast [data-icon] {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.enamel-toast-title {
+  font-weight: 600;
+}
+.enamel-toast-description {
+  color: var(--color-text-tertiary, #475467);
+}
+.enamel-toast-action {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* #348 Shell project: name under the logo; plate trigger when ≥ 2 projects. */
+.shell-project-label {
+  /* Full white: 75 % white on sky enamel failed WCAG AA contrast at 11 px (axe, #348). */
+  color: var(--enamel-white);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.shell-project-name {
+  overflow: hidden;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shell-project-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border-radius: 2px;
+  background: var(--enamel-white);
+  box-shadow: none;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+}
+.shell-project-trigger:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
 }

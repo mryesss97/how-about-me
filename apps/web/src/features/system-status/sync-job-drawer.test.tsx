@@ -116,7 +116,7 @@ describe("SyncJobDrawer", () => {
   it("409 SYNC_JOB_NOT_RETRYABLE → error toast", async () => {
     setup(failed(), true, () => Promise.reject(new ApiError(409, "SYNC_JOB_NOT_RETRYABLE", "no")));
     fireEvent.click(await screen.findByRole("button", { name: "Thử lại" }));
-    await waitFor(() => expect(toastError).toHaveBeenCalledWith("Lượt đồng bộ này không thể thử lại."));
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith("Lỗi: Lượt đồng bộ này không thể thử lại."));
   });
 
   it("#343 ops-4: condensed caps title, query name, plaque links to the job window and the query", async () => {

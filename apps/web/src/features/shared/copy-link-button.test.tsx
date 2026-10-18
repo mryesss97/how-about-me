@@ -43,7 +43,9 @@ describe("CopyLinkButton (#349, FR-142)", () => {
     writeText.mockRejectedValue(new Error("denied"));
     render(<CopyLinkButton compact />);
     fireEvent.click(screen.getByRole("button", { name: "Sao chép liên kết" }));
-    await waitFor(() => expect(toastError).toHaveBeenCalledWith("Không sao chép được. Hãy sao chép từ thanh địa chỉ."));
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith("Lỗi: Không sao chép được. Hãy sao chép từ thanh địa chỉ."),
+    );
     expect(toastSuccess).not.toHaveBeenCalled();
   });
 });

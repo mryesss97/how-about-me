@@ -3,6 +3,7 @@
 import { Link01 } from "@untitledui/icons";
 import { usePathname } from "next/navigation";
 import { toast } from "sonner";
+import { notifyError } from "@/lib/toast";
 import { pinRange, rangeLabel, toShareUrl } from "@/lib/filters";
 import { useFilters } from "@/lib/filters/use-filters";
 import { PlaqueButton } from "./plaque-button";
@@ -32,7 +33,7 @@ export function CopyLinkButton({ range, compact = false }: CopyLinkButtonProps) 
       await navigator.clipboard.writeText(url);
       toast.success(`Đã sao chép liên kết · ${period}`);
     } catch {
-      toast.error("Không sao chép được. Hãy sao chép từ thanh địa chỉ.");
+      notifyError("Không sao chép được. Hãy sao chép từ thanh địa chỉ.");
     }
   };
 

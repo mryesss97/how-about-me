@@ -18,7 +18,7 @@ import { useSignOut } from "@/features/auth/use-sign-out";
 import { useMobileNav } from "@/components/application/app-navigation/base-components/mobile-header";
 import { SidebarNavigationSimple } from "@/components/application/app-navigation/sidebar-navigation/sidebar-simple";
 import type { NavItemType } from "@/components/application/app-navigation/config";
-import { ProjectSwitcher } from "./project-switcher";
+import { ShellProject } from "./project-switcher";
 import { carryFilterQuery } from "@/lib/filters/carry";
 import { roleLabelVi } from "@/lib/semantics/labels";
 import { useHydrated } from "@/hooks/use-hydrated";
@@ -138,7 +138,6 @@ function SidebarShell({ search }: { search: URLSearchParams | null }) {
   // FR-011: sign out clears the session and the query cache.
   const account = (
     <div className="flex flex-col gap-3 border-t-2 border-white/90 pt-4">
-      <ProjectSwitcher />
       {me.data && (
         <div className="flex items-center gap-2">
           <p className="min-w-0 flex-1 truncate text-sm text-white">{me.data.email}</p>
@@ -153,6 +152,8 @@ function SidebarShell({ search }: { search: URLSearchParams | null }) {
       activeUrl={active}
       items={navItems}
       footerItems={navFooter}
+      // #348: current project (name, or switcher with ≥ 2) sits right under the logo, for every role.
+      header={<ShellProject />}
       featureCard={account}
       showAccountCard={false}
     />

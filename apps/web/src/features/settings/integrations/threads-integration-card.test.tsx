@@ -202,7 +202,7 @@ describe("ThreadsIntegrationCard", () => {
     renderLive(threadsStatusFixture());
     fireEvent.click(screen.getByRole("button", { name: "Kiểm tra kết nối" }));
     expect(await screen.findByText("Hết hạn")).toBeInTheDocument();
-    expect(toast.error).toHaveBeenCalledWith("Token không hợp lệ hoặc đã hết hạn.", { id: undefined });
+    expect(toast.error).toHaveBeenCalledWith("Lỗi: Token không hợp lệ hoặc đã hết hạn.", { id: undefined });
   });
 
   it("INTEGRATION_NOT_CONFIGURED maps to the update-first copy", async () => {
@@ -214,7 +214,7 @@ describe("ThreadsIntegrationCard", () => {
     renderLive(threadsStatusFixture({ status: "disconnected" }));
     fireEvent.click(screen.getByRole("button", { name: "Kiểm tra kết nối" }));
     await waitFor(() =>
-      expect(toast.error).toHaveBeenCalledWith("Chưa có token. Cập nhật token trước.", { id: undefined }),
+      expect(toast.error).toHaveBeenCalledWith("Lỗi: Chưa có token. Cập nhật token trước.", { id: undefined }),
     );
   });
 

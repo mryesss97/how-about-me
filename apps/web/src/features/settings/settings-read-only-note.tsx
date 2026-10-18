@@ -6,5 +6,5 @@ import { useCurrentProject } from "@/features/auth/use-current-project";
 export function SettingsReadOnlyNote() {
   const { project } = useCurrentProject();
   if (!project || project.role === "admin") return null;
-  return <p className="mt-3 text-sm text-tertiary">Chỉ quản trị viên dự án mới thay đổi được các cài đặt này.</p>;
+  return <p className="text-sm text-tertiary">Chỉ quản trị viên dự án mới thay đổi được các cài đặt này.</p>;
 }

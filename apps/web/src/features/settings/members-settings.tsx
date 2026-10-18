@@ -8,8 +8,8 @@ import { QueryState } from "@/features/shared/query-state";
 import { useMembers } from "./api";
 import { InviteMemberDialog } from "./invite-member-dialog";
 import { MembersTable } from "./members-table";
-import { SettingsBoard } from "./settings-board";
-import { PlaqueButton } from "@/features/shared/plaque-button";
+import { SettingsBoard, SettingsBoardSkeleton } from "./settings-board";
+import { Button } from "@/components/base/buttons/button";
 
 function MembersLoaded({ pid, timezone }: { pid: string; timezone: string }) {
   const me = useMe();
@@ -19,9 +19,10 @@ function MembersLoaded({ pid, timezone }: { pid: string; timezone: string }) {
     <SettingsBoard
       title="Thành viên"
       action={
-        <PlaqueButton iconLeading={Plus} onClick={() => setInviteOpen(true)}>
+        // #348: "create new" CTA = primary button, top-right of its board (DESIGN.md "Create action").
+        <Button size="sm" color="primary" iconLeading={Plus} onClick={() => setInviteOpen(true)}>
           Mời thành viên
-        </PlaqueButton>
+        </Button>
       }
     >
       <QueryState
@@ -29,6 +30,7 @@ function MembersLoaded({ pid, timezone }: { pid: string; timezone: string }) {
         error={q.error}
         isEmpty={q.data?.length === 0}
         emptyTitle="Chưa có thành viên"
+        errorVariant="inline"
         onRetry={() => void q.refetch()}
       >
         {q.data ? <MembersTable pid={pid} members={q.data} timezone={timezone} currentUserId={me.data?.id} /> : null}
@@ -41,6 +43,6 @@ function MembersLoaded({ pid, timezone }: { pid: string; timezone: string }) {
 /** Page body for `/settings/members` (admin only via `RequireRole`; the API enforces FR-015). */
 export function MembersSettings() {
   const { project, isLoading } = useCurrentProject();
-  if (isLoading || !project) return <QueryState isLoading>{null}</QueryState>;
+  if (isLoading || !project) return <SettingsBoardSkeleton title="Thành viên" />;
   return <MembersLoaded key={project.id} pid={project.id} timezone={project.timezone} />;
 }

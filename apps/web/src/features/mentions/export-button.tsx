@@ -6,6 +6,7 @@ import { Download01, Lock01 } from "@untitledui/icons";
 import { useId, useState } from "react";
 import { Button as AriaButton } from "react-aria-components";
 import { toast } from "sonner";
+import { notifyError } from "@/lib/toast";
 import { ApiError, apiDownload, type QueryParams } from "@/lib/api/client";
 import { formatCount } from "@/lib/format/number";
 import { Tooltip } from "@/components/base/tooltip/tooltip";
@@ -53,21 +54,21 @@ function detailNumber(err: ApiError, key: string): number | null {
 
 function showError(err: unknown) {
   if (!(err instanceof ApiError)) {
-    toast.error("Không xuất được CSV. Vui lòng thử lại.");
+    notifyError("Không xuất được CSV. Vui lòng thử lại.");
     return;
   }
   if (err.code === "EXPORT_TOO_LARGE") {
     const cap = detailNumber(err, "cap");
-    toast.error("Quá nhiều bài nhắc để xuất", {
+    notifyError("Quá nhiều bài nhắc để xuất", {
       description: `Mỗi lần xuất tối đa ${cap == null ? "số dòng cho phép" : `${formatCount(cap)} dòng`}. Hãy thu hẹp khoảng thời gian hoặc bộ lọc.`,
     });
   } else if (err.code === "RATE_LIMITED") {
     const s = detailNumber(err, "retryAfterSeconds");
-    toast.error(`Đã chạm giới hạn xuất. Thử lại sau ${s ?? 60} giây.`);
+    notifyError(`Đã chạm giới hạn xuất. Thử lại sau ${s ?? 60} giây.`);
   } else if (err.code === "FORBIDDEN_ROLE") {
-    toast.error("Bạn không có quyền xuất dữ liệu.");
+    notifyError("Bạn không có quyền xuất dữ liệu.");
   } else {
-    toast.error("Không xuất được CSV. Vui lòng thử lại.", {
+    notifyError("Không xuất được CSV. Vui lòng thử lại.", {
       description: err.requestId ? `Mã yêu cầu: ${err.requestId}` : undefined,
     });
   }

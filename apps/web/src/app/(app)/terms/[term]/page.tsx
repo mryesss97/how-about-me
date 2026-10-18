@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { parseTermSegment } from "@/lib/filters/term-segment";
 import { TermPage as TermPageView } from "./term-page";
+import { PageFrame } from "@/features/shared/page-frame";
 
 type Params = { params: Promise<{ term: string }> };
 
@@ -19,11 +20,11 @@ export default async function TermPage({ params }: Params) {
   const term = await readTerm(params);
   if (!term) notFound();
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 lg:px-8">
+    <PageFrame>
       {/* nuqs reads search params on the client, so the view needs a Suspense boundary. */}
       <Suspense fallback={null}>
         <TermPageView term={term} />
       </Suspense>
-    </div>
+    </PageFrame>
   );
 }

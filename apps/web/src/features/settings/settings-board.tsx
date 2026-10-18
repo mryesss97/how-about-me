@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { SkeletonBlock } from "@/features/shared/query-state";
 import { cx } from "@/utils/cx";
 
 interface SettingsBoardProps {
@@ -23,5 +24,14 @@ export function SettingsBoard({ title, description, action, className, children 
       </header>
       <div className="relative min-w-0">{children}</div>
     </section>
+  );
+}
+
+/** #348: loading placeholder shaped like the final board, with the real title so the heading does not jump. */
+export function SettingsBoardSkeleton({ title, lines = 6 }: { title: string; lines?: number }) {
+  return (
+    <SettingsBoard title={title}>
+      <SkeletonBlock lines={lines} />
+    </SettingsBoard>
   );
 }

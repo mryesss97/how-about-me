@@ -19,7 +19,7 @@ export function SettingsTabs() {
   const pathname = usePathname();
   const { anyDirty, confirmLeave } = useUnsavedChanges();
   return (
-    <nav aria-label="Các mục cài đặt" className="mt-4 flex flex-wrap gap-2">
+    <nav aria-label="Các mục cài đặt" className="flex flex-wrap gap-2">
       {tabs
         .filter((t) => canAccess(t.href, role))
         .map((t) => {
