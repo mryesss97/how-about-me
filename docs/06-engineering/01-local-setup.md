@@ -36,13 +36,16 @@ Fill the values marked `# REQUIRED` (see [06-environment-variables.md](06-enviro
 pnpm db:up            # docker compose up -d postgres
 pnpm db:migrate       # prisma migrate dev (apps/api)
 pnpm db:seed          # project, admin (SEED_ADMIN_EMAIL), 4 queries
+pnpm db:seed:demo     # optional (#294): demo data for every screen and state
 ```
 
 `db:seed` is idempotent: re-running never duplicates rows and never overwrites project name/timezone/settings edited in the UI, but it forces the `SEED_ADMIN_EMAIL` member back to `admin`.
 
 Reset: `pnpm db:reset`.
 
-The API's tsx scripts (`db:seed`, `seed:auth-user`, `eval:classifier`, `purge`, `secrets:rewrap`, `perf:seed`, `perf:explain`) read `apps/api/.env` themselves via `tsx --env-file-if-exists=.env`; variables already exported in the shell take precedence.
+**Demo data (#294).** `pnpm db:seed:demo` runs `db:seed` first, then adds 3 accounts (admin / analyst / viewer from `SEED_ADMIN_*`, `SEED_ANALYST_*`, `SEED_VIEWER_*`; Supabase auth users created when `SUPABASE_SERVICE_ROLE_KEY` is set, otherwise only profiles + memberships), 8 queries, 600 posts over the last 30 days with versioned analysis (all review reasons, reviewed posts, overrides with history), ~120 sync jobs, audit entries, landing terms, analysis settings v1/v2 and a `connected` integration with a fake token (encrypted with your local `INTEGRATION_ENCRYPTION_KEYS`; skipped when the key is unusable). It refuses non-local hosts, `CI`, and `NODE_ENV`/`APP_ENV` = production/staging. Re-running is safe (demo rows are replaced, same ids for the same `--seed`); `pnpm db:seed:demo -- --reset` also drops the demo analyst/viewer memberships and demo analysis-settings rows first. Runs are written for the fake providers (`PROVIDERS_MODE=fake`); keep the collector on fake too — the seeded token is not real. The one `running` sync job may be marked failed by the stuck-job reaper once the API runs; that is expected. Without a password the local Supabase invite can fail (no SMTP) — set `SEED_ANALYST_PASSWORD` / `SEED_VIEWER_PASSWORD` to log in as those roles.
+
+The API's tsx scripts (`db:seed`, `db:seed:demo`, `seed:auth-user`, `eval:classifier`, `purge`, `secrets:rewrap`, `perf:seed`, `perf:explain`) read `apps/api/.env` themselves via `tsx --env-file-if-exists=.env`; variables already exported in the shell take precedence.
 
 The container's init script (`docker/postgres/init/01-test-db.sql`) also creates `how_about_me_test`, the database the API integration tests use. It runs only on a fresh `pgdata` volume; on an older volume create it by hand: `docker exec how-about-me-postgres createdb -U postgres how_about_me_test`.
 

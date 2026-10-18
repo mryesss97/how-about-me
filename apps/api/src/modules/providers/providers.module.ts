@@ -12,6 +12,11 @@ import { OpenAiModerationProvider } from "../analysis/providers/openai-moderatio
 import { OpenAiStructuredClassifier } from "../analysis/providers/openai-structured.classifier";
 import { FakeThreadsProvider } from "../integrations/threads/fake-threads.provider";
 import { SOCIAL_DISCOVERY_PROVIDER } from "../integrations/threads/social-discovery.provider";
+import {
+  FakeThreadsTokenSource,
+  THREADS_TOKEN_SOURCE,
+  type ThreadsTokenSource,
+} from "../integrations/threads/threads-token.source";
 
 /**
  * Single place where `PROVIDERS_MODE` decides between the offline fakes and the real adapters (T-013,
@@ -32,6 +37,14 @@ import { SOCIAL_DISCOVERY_PROVIDER } from "../integrations/threads/social-discov
         cfg.PROVIDERS_MODE === "fake" ? new FakeThreadsProvider() : notImplemented("ThreadsDiscoveryProvider", "T-039"),
     },
     {
+      provide: THREADS_TOKEN_SOURCE,
+      inject: [APP_CONFIG],
+      useFactory: (cfg: AppConfig): ThreadsTokenSource =>
+        cfg.PROVIDERS_MODE === "fake"
+          ? new FakeThreadsTokenSource()
+          : { getAccessToken: async () => notImplemented("ThreadsTokenStore", "T-038/T-039") },
+    },
+    {
       provide: SAFETY_PROVIDER,
       inject: [APP_CONFIG],
       useFactory: createSafetyProvider,
@@ -42,7 +55,7 @@ import { SOCIAL_DISCOVERY_PROVIDER } from "../integrations/threads/social-discov
       useFactory: createContentClassifier,
     },
   ],
-  exports: [SOCIAL_DISCOVERY_PROVIDER, SAFETY_PROVIDER, CONTENT_CLASSIFIER],
+  exports: [SOCIAL_DISCOVERY_PROVIDER, THREADS_TOKEN_SOURCE, SAFETY_PROVIDER, CONTENT_CLASSIFIER],
 })
 export class ProvidersModule {}
 

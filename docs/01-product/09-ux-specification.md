@@ -71,6 +71,15 @@ Display labels are Vietnamese since #275 (`lib/semantics/badges.ts`): Tích cự
 | Error               | Inline error card with `requestId` and "Retry"                                                                   |
 | Forbidden           | Full-page "You don't have permission to view this page." + back link                                             |
 
+Mentions empty state by cause (FR-159, BR-032, #92). When the list is empty the empty state names only the highest-priority cause (integration > sync > pending, same order as the banners); banners above still show every cause. Overview data loading/failed → "none".
+
+| Cause         | Title (VI)                                                              | Action                                        |
+| ------------- | ----------------------------------------------------------------------- | --------------------------------------------- |
+| `integration` | "Kết nối Threads cần được kiểm tra."                                    | Link Settings → Integrations (admin only, UX) |
+| `sync`        | "Lần đồng bộ Threads gần nhất bị lỗi, dữ liệu có thể chưa đầy đủ."      | Link System Status                            |
+| `pending`     | "{N} lượt nhắc đang chờ phân tích." (+ note that filters may hide them) | Link `/mentions?analysisStatus=pending`       |
+| `none`        | "Không có lượt nhắc liên quan trong khoảng thời gian này."              | CTA "Mở rộng khoảng thời gian"                |
+
 Illustrations (#245): page-level empty states (Mentions list, Reviews queue, "not a member of any project") show the brand v2 `empty` illustration; card/widget states (chart cards, small panels) keep the compact icon. `pending` and `sync-attention` illustrations are reserved for page-level states: System Status (T-060) uses `sync-attention` for "connection needs attention / last sync failed", a future analysis-pending page uses `pending`. Banners above a page stay banners (no illustration). In light mode the illustration panel is Sky Tint (`#E0F2FE`), not Mist, so it stays visible on Mist pages (#253). Illustrations are decorative (`alt=""`, `aria-hidden`); the heading carries the meaning.
 
 Rule: never render "0 negative mentions" when `sentimentAnalyzed = 0`; render "—" with tooltip "No analysed mentions in range".

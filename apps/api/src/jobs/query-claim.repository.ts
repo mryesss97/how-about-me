@@ -70,6 +70,7 @@ export class QueryClaimRepository {
       consecutiveFailures: r.consecutive_failures,
       nextRunAt: r.next_run_at,
       manualJobId: r.manual_job_id,
+      workerId,
     }));
   }
 

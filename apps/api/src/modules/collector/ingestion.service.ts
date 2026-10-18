@@ -36,11 +36,20 @@ export class IngestionService {
     @Inject(ANALYSIS_ENQUEUER) private readonly enqueuer: AnalysisEnqueuer,
   ) {}
 
-  async ingestPage(query: IngestionQuery, posts: readonly NormalizedPost[]): Promise<IngestPageResult> {
+  /**
+   * `afterPage` runs inside the same transaction (T-052): the collector adds the page's counters and
+   * `last_cursor` to `sync_jobs` there, so a crash never leaves posts committed without their counters.
+   */
+  async ingestPage(
+    query: IngestionQuery,
+    posts: readonly NormalizedPost[],
+    afterPage?: (tx: Prisma.TransactionClient, result: IngestPageResult) => Promise<void>,
+  ): Promise<IngestPageResult> {
     return this.prisma.$transaction(
       async (tx) => {
         const result: IngestPageResult = { inserted: 0, updated: 0, duplicated: 0, excluded: 0, enqueued: 0 };
         for (const post of posts) await this.ingestOne(tx, query, post, result);
+        if (afterPage) await afterPage(tx, result);
         return result;
       },
       { timeout: 30_000 },

@@ -13,6 +13,7 @@ const q = (id: string): ClaimedQuery => ({
   consecutiveFailures: 0,
   nextRunAt: null,
   manualJobId: null,
+  workerId: "w",
 });
 
 function setup(role: AppConfig["APP_ROLE"], runner: CollectorRunner | null, claimed: ClaimedQuery[], limit = 3) {
