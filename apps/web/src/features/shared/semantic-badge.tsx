@@ -21,6 +21,7 @@ import {
 import type { AnalysisStatus } from "@how-about-me/contracts";
 import type { ConfidenceBand, RelevanceLabel, SafetyLevel, SentimentLabel } from "@how-about-me/taxonomy";
 import { Badge, BadgeWithIcon } from "@/components/base/badges/badges";
+import { cx } from "@/utils/cx";
 import {
   analysisStatusBadge,
   confidenceMarker,
@@ -62,26 +63,34 @@ const ICONS: Record<string, IconComponent> = {
 
 export type BadgeSize = "sm" | "md" | "lg";
 
-export function SemanticBadge({ spec, size = "sm" }: { spec: BadgeSpec; size?: BadgeSize }) {
+type SizeProps = { size?: BadgeSize; className?: string };
+
+export function SemanticBadge({ spec, size = "sm", className }: { spec: BadgeSpec } & SizeProps) {
   const Icon = ICONS[spec.icon] ?? HelpCircle;
   // `filled` (severe) uses the solid badge variant so it still stands out next to a row of pills.
   return (
-    <BadgeWithIcon type={spec.filled ? "color" : "pill-color"} color={spec.color} size={size} iconLeading={Icon}>
+    <BadgeWithIcon
+      type={spec.filled ? "color" : "pill-color"}
+      color={spec.color}
+      size={size}
+      iconLeading={Icon}
+      className={className}
+    >
       {spec.label}
     </BadgeWithIcon>
   );
 }
 
-export const SentimentBadge = ({ value, size }: { value: SentimentLabel; size?: BadgeSize }) => (
-  <SemanticBadge spec={sentimentBadge[value]} size={size} />
+export const SentimentBadge = ({ value, size, className }: { value: SentimentLabel } & SizeProps) => (
+  <SemanticBadge spec={sentimentBadge[value]} size={size} className={className} />
 );
 
-export const SafetyBadge = ({ value, size }: { value: SafetyLevel; size?: BadgeSize }) => (
-  <SemanticBadge spec={safetyBadge[value]} size={size} />
+export const SafetyBadge = ({ value, size, className }: { value: SafetyLevel } & SizeProps) => (
+  <SemanticBadge spec={safetyBadge[value]} size={size} className={className} />
 );
 
-export const RelevanceBadge = ({ value, size }: { value: RelevanceLabel; size?: BadgeSize }) => (
-  <SemanticBadge spec={relevanceBadge[value]} size={size} />
+export const RelevanceBadge = ({ value, size, className }: { value: RelevanceLabel } & SizeProps) => (
+  <SemanticBadge spec={relevanceBadge[value]} size={size} className={className} />
 );
 
 export const AnalysisStatusBadge = ({ value, size }: { value: AnalysisStatus; size?: BadgeSize }) => (
@@ -104,10 +113,15 @@ export function ConfidenceMarker({ band, size = "sm" }: { band: ConfidenceBand; 
 
 /** P1 (T-143): shows whether the displayed value comes from the model or from an analyst override (BR-025). */
 export function ValueSourceBadge({ source, size = "sm" }: { source: "ai" | "analyst"; size?: BadgeSize }) {
+  // #338: AI is the default source, so it reads as quiet muted text (still labelled, FR-194 / BR-017);
+  // the analyst pill stays prominent because it marks the exception.
   return source === "ai" ? (
-    <BadgeWithIcon type="pill-color" color="gray" size={size} iconLeading={Stars02}>
+    <span
+      className={cx("inline-flex items-center gap-1 font-medium text-tertiary", size === "lg" ? "text-sm" : "text-xs")}
+    >
+      <Stars02 className="size-3" aria-hidden />
       AI
-    </BadgeWithIcon>
+    </span>
   ) : (
     <BadgeWithIcon type="pill-color" color="brand" size={size} iconLeading={UserCheck01}>
       Chuyên viên

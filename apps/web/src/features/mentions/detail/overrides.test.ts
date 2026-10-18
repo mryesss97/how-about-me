@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { overrideFixture, uuid } from "./fixtures.test-utils";
-import { activeOverrides, asLabel, asLabels, formatValue } from "./overrides";
+import { detailFixture, overrideFixture, uuid } from "./fixtures.test-utils";
+import { activeOverrides, defaultOverrideField, asLabel, asLabels, formatValue } from "./overrides";
 
 describe("activeOverrides (BR-025)", () => {
   it("ignores revoked overrides", () => {
@@ -27,5 +27,17 @@ describe("asLabel / asLabels / formatValue", () => {
     expect(formatValue(["price_value", "praise"], "intents")).toBe("Price value, Khen ngợi");
     expect(formatValue("negative", "sentiment")).toBe("Tiêu cực");
     expect(formatValue(null, "topics")).toBe("—");
+  });
+});
+
+describe("defaultOverrideField (#338, FR-195)", () => {
+  it("relevance for an uncertain mention, otherwise sentiment", () => {
+    expect(
+      defaultOverrideField(detailFixture({ analysis: { relevance: { label: "uncertain", confidence: 0.5 } } })),
+    ).toBe("relevance");
+    expect(
+      defaultOverrideField(detailFixture({ analysis: { relevance: { label: "relevant", confidence: 0.9 } } })),
+    ).toBe("sentiment");
+    expect(defaultOverrideField(detailFixture({ analysis: { relevance: null } }))).toBe("sentiment");
   });
 });
