@@ -28,10 +28,12 @@ describe("MentionRow (UX §3.3)", () => {
     expect(screen.queryByText(/^Completed$/i)).toBeNull();
   });
 
-  it("TC-MEN-002: failed analysis shows status badge and error code", () => {
-    const item = mentionFixture({ analysis: { status: "failed", errorCode: "AI_TIMEOUT", sentiment: null } });
+  it("TC-MEN-002 / #338: failed analysis shows a Vietnamese error label (code in title) and Lần trước:", () => {
+    const item = mentionFixture({ analysis: { status: "failed", errorCode: "LLM_TIMEOUT" } });
     render(<MentionRow item={item} tz={TZ} href="/mentions/x" onOpen={() => {}} />);
-    expect(screen.getByText("AI_TIMEOUT")).toBeInTheDocument();
+    expect(screen.getByText("Bộ phân tích phản hồi quá lâu")).toHaveAttribute("title", "LLM_TIMEOUT");
+    expect(screen.queryByText("LLM_TIMEOUT")).toBeNull();
+    expect(screen.getByText("Lần trước:")).toBeInTheDocument();
   });
 
   it("TC-MEN-015: external link opens a new tab safely and does not open detail", () => {

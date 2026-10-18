@@ -3,10 +3,13 @@ import { describe, expect, it } from "vitest";
 import { AnalysisPendingBanner, IntegrationExpiredBanner, PageBanner, SyncFailedBanner } from "./page-banner";
 
 describe("page banners (UX §2.3, BR-032)", () => {
-  it("a failed sync warns that the data may be incomplete and links to System Status", () => {
+  it("FR-081 / #342: a failed sync warns that the data may be incomplete and links to the failed sync jobs", () => {
     render(<SyncFailedBanner />);
     expect(screen.getByText(/Lần đồng bộ Threads gần nhất bị lỗi/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /trạng thái hệ thống/i })).toHaveAttribute("href", "/system-status");
+    expect(screen.getByRole("link", { name: "Xem lượt đồng bộ lỗi" })).toHaveAttribute(
+      "href",
+      "/system-status?tab=sync-jobs&status=failed",
+    );
   });
 
   it("pending analysis is its own state, with the count and a link to those mentions", () => {

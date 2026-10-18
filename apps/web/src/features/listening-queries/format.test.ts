@@ -1,7 +1,7 @@
 import { JOB_STATUSES } from "@how-about-me/contracts";
 import { describe, expect, it } from "vitest";
 import { queryFixture } from "./fixtures.test-utils";
-import { formatDuration, formatQueryValue, syncErrorLabel, syncStatus, truncateError } from "./format";
+import { formatDuration, formatQueryValue, isStaleError, syncErrorLabel, syncStatus, truncateError } from "./format";
 
 const JOB = {
   id: "00000000-0000-4000-8000-000000000999",
@@ -63,5 +63,17 @@ describe("syncErrorLabel (#42)", () => {
 
   it("falls back to the truncated provider message for unknown codes", () => {
     expect(syncErrorLabel("SOMETHING_NEW", "x".repeat(80))).toHaveLength(60);
+  });
+});
+
+describe("isStaleError (#342 flows-5)", () => {
+  const err = { code: "X", message: "m", at: "2026-10-13T02:00:00.000Z" };
+  it("stale only when a successful sync came after the error", () => {
+    expect(isStaleError(queryFixture({ lastError: null }))).toBe(false);
+    expect(isStaleError(queryFixture({ lastError: err, lastSuccessfulSyncAt: "2026-10-13T03:00:00.000Z" }))).toBe(true);
+    expect(isStaleError(queryFixture({ lastError: err, lastSuccessfulSyncAt: "2026-10-13T01:00:00.000Z" }))).toBe(
+      false,
+    );
+    expect(isStaleError(queryFixture({ lastError: err, lastSuccessfulSyncAt: null }))).toBe(false);
   });
 });

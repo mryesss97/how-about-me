@@ -21,6 +21,7 @@ import type { NavItemType } from "@/components/application/app-navigation/config
 import { ProjectSwitcher } from "./project-switcher";
 import { carryFilterQuery } from "@/lib/filters/carry";
 import { roleLabelVi } from "@/lib/semantics/labels";
+import { useHydrated } from "@/hooks/use-hydrated";
 
 /** Product navigation — docs/01-product/09-ux-specification.md §1. Filtered by role (FR-018); UX only, server enforces. */
 type ShellNavItem = NavItemType & { match?: string };
@@ -80,8 +81,13 @@ function SidebarWithSearch() {
 
 function SidebarShell({ search }: { search: URLSearchParams | null }) {
   const pathname = usePathname();
-  const me = useMe();
-  const { role } = useRole();
+  // #361: `/me` and the role can already sit in the query cache on the client's first render but never on the
+  // server's, so anything derived from them waits for hydration (otherwise every page logs a hydration mismatch).
+  const hydrated = useHydrated();
+  const meQuery = useMe();
+  const me = hydrated ? meQuery : { ...meQuery, data: undefined };
+  const { role: loadedRole } = useRole();
+  const role = hydrated ? loadedRole : null;
   const signOut = useSignOut();
   // Until the role loads only open routes are shown, so restricted items never flash.
   const visible = (list: ShellNavItem[]) => list.filter((i) => !i.href || canAccess(i.href, role));

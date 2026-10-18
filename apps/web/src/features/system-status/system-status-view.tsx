@@ -5,9 +5,10 @@ import { useRole } from "@/features/auth/use-role";
 import { PageHeader } from "@/features/shared/page-header";
 import { QueryState, SkeletonBlock } from "@/features/shared/query-state";
 import { ApiError } from "@/lib/api/client";
-import { useSystemStatus } from "./api";
+import { useLiveQueriesForStatus, useSystemStatus } from "./api";
 import { AnalysisFailuresTab } from "./analysis-failures-tab";
 import { AuditLogTab } from "./audit-log-tab";
+import { countQueriesWithError } from "./format";
 import { OverviewCards } from "./overview-cards";
 import { SyncJobsTab } from "./sync-jobs-tab";
 import { UpdatedAgo } from "./updated-ago";
@@ -32,6 +33,10 @@ export function SystemStatusView() {
   const tab: StatusTab = urlTab === "audit-log" && !roleLoading && !isAdmin ? "overview" : urlTab;
   const tabs = TABS.filter((t) => !t.adminOnly || isAdmin);
   const status = useSystemStatus(project?.id);
+  // #342: "Truy vấn đang lỗi" is counted in the browser (no contract change). A failed list load just hides the
+  // row; it never blocks the overview.
+  const queries = useLiveQueriesForStatus(project?.id);
+  const queriesWithError = queries.data ? countQueriesWithError(queries.data.items) : null;
   const tz = project?.timezone ?? DEFAULT_TZ;
   const err = status.error instanceof ApiError ? status.error : null;
 
@@ -71,7 +76,9 @@ export function SystemStatusView() {
           onRetry={() => void status.refetch()}
           skeleton={<SkeletonBlock lines={8} className="operate-board p-4" />}
         >
-          {status.data ? <OverviewCards data={status.data} tz={tz} isAdmin={isAdmin} /> : null}
+          {status.data ? (
+            <OverviewCards data={status.data} tz={tz} isAdmin={isAdmin} queriesWithError={queriesWithError} />
+          ) : null}
         </QueryState>
       ) : !project || (tab === "audit-log" && roleLoading) ? (
         <SkeletonBlock lines={6} className="operate-board p-4" />

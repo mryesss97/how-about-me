@@ -76,4 +76,38 @@ describe("QueriesTable", () => {
     renderTable([q], true);
     expect(screen.getByRole("switch", { name: `Bật ${q.displayName}` })).toBeDisabled();
   });
+
+  it("#342: the sync status links to its job", () => {
+    const q = queryFixture();
+    renderTable([q]);
+    expect(screen.getByRole("link", { name: "Thành công — xem lượt đồng bộ" })).toHaveAttribute(
+      "href",
+      `/system-status?tab=sync-jobs&job=${q.lastJob?.id}`,
+    );
+  });
+
+  it("#342: an error re-synced since is grey with 'đã đồng bộ lại' and no job link", () => {
+    const q = queryFixture({ lastError: { code: "X", message: "m", at: "2026-10-13T02:00:00.000Z" } });
+    renderTable([q]);
+    const row = within(screen.getByTestId(`query-row-${q.id}`));
+    expect(row.getByText(/đã đồng bộ lại/)).toHaveClass("text-tertiary");
+    expect(row.queryByRole("link", { name: "Xem lượt lỗi" })).not.toBeInTheDocument();
+  });
+
+  it("#342: a current error stays red and links to the failed job", () => {
+    const q = queryFixture({
+      lastSuccessfulSyncAt: "2026-10-12T00:00:00.000Z",
+      lastError: { code: "X", message: "m", at: "2026-10-13T02:00:00.000Z" },
+    });
+    if (!q.lastJob) throw new Error("fixture has a last job");
+    const job = { ...q.lastJob, status: "failed" as const };
+    const failed = { ...q, lastJob: job };
+    renderTable([failed]);
+    const row = within(screen.getByTestId(`query-row-${q.id}`));
+    expect(row.getByRole("button", { name: "X: m" })).toHaveClass("text-error-primary");
+    expect(row.getByRole("link", { name: "Xem lượt lỗi" })).toHaveAttribute(
+      "href",
+      `/system-status?tab=sync-jobs&job=${job.id}`,
+    );
+  });
 });

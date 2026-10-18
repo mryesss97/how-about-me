@@ -3,6 +3,7 @@ import { INTENT_LABELS, LANGUAGE_CODES, TOPIC_LABELS } from "@how-about-me/taxon
 import { describe, expect, it } from "vitest";
 import {
   analysisTriggerLabelVi,
+  mediaTypeLabel,
   displayLabel,
   intentLabelVi,
   languageLabelVi,
@@ -44,5 +45,13 @@ describe("analysis trigger labels (#277)", () => {
   it("covers every trigger and stays out of the URL (enum values unchanged)", () => {
     for (const v of ANALYSIS_TRIGGERS) expect(analysisTriggerLabelVi[v]).toBeTruthy();
     expect(displayLabel("analysisTrigger", "version_change")).toBe("Đổi phiên bản");
+  });
+});
+
+describe("mediaTypeLabel (#338)", () => {
+  it("maps known Threads media types to Vietnamese and unknown ones to 'Khác'", () => {
+    expect(mediaTypeLabel("TEXT_POST")).toBe("Văn bản");
+    expect(mediaTypeLabel("CAROUSEL_ALBUM")).toBe("Album");
+    expect(mediaTypeLabel("SOME_NEW")).toBe("Khác");
   });
 });
