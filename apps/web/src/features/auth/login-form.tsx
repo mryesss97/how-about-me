@@ -78,7 +78,6 @@ export function LoginForm({ googleEnabled, reason, next }: LoginFormProps) {
           type="password"
           name="password"
           label="Mật khẩu"
-          placeholder="••••••••"
           autoComplete="current-password"
           value={password}
           onChange={setPassword}
@@ -89,7 +88,7 @@ export function LoginForm({ googleEnabled, reason, next }: LoginFormProps) {
           </p>
         )}
         <Button type="submit" size="lg" isLoading={pending} isDisabled={pending}>
-          Tiếp tục
+          Đăng nhập
         </Button>
       </form>
       {googleEnabled && (

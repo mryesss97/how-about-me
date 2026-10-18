@@ -137,11 +137,13 @@ Order (#333): hero → mentions → filter bar → charts, so the answer and the
 
 ### 3.1 Login (`/login`)
 
-Centered white enamel board on the wall (signboard style, #286): logo, title "Đăng nhập" (Bungee caps), "E-mail công việc" + "Mật khẩu", "Tiếp tục", "Tiếp tục với Google" (if enabled), generic error "E-mail hoặc mật khẩu không đúng". Banners: `?reason=expired` → "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."; `?reason=forbidden` → "Tài khoản không có quyền truy cập. Liên hệ quản trị viên." (render only; no flow sends it yet). No sign-up link. Footer: "Chưa có tài khoản? Nhờ quản trị viên cấp quyền." After sign-in → `/` (landing, #262) unless a safe `next` is given; a signed-in visit to `/login` → `/`.
+Centered white enamel board on the wall (signboard style, #286): logo, one-line tagline "Lắng nghe. Thấu hiểu.", title "Đăng nhập" (Bungee caps), "E-mail công việc" + "Mật khẩu" (no placeholder, #350), primary button "Đăng nhập", "Tiếp tục với Google" (if enabled), generic error "E-mail hoặc mật khẩu không đúng". Banners: `?reason=expired` → "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."; `?reason=forbidden` → "Tài khoản không có quyền truy cập. Liên hệ quản trị viên." (render only; no flow sends it yet). No sign-up link. Footer: "Chưa có tài khoản? Nhờ quản trị viên cấp quyền." After sign-in → `/` (landing, #262) unless a safe `next` is given; a signed-in visit to `/login` → `/`.
 
 ### 3.1a Not found (404, `not-found`)
 
-Same wall + white enamel board: "Lỗi 404", title "Không tìm thấy trang", short description; plaque buttons "Quay lại" (browser back) and "Về trang chủ" (→ `/`). Title tab: "Không tìm thấy trang".
+Same wall + white enamel board: logo (#350), "Lỗi 404", title "Không tìm thấy trang", short description; plaque buttons "Quay lại" (browser back, or `/` when there is no history — `history.length <= 1`, e.g. a link opened in a new tab, #350) and "Về trang chủ" (→ `/`). Title tab: "Không tìm thấy trang".
+
+Invalid phrase (`/terms/<invalid>`, #350): rendered inside the app shell (no logo, the sidebar carries it) — a white enamel board "Cụm từ không hợp lệ", "Cụm từ cần 1–60 ký tự và có ít nhất một chữ hoặc số." (BR-041/BR-042) and a plaque "Trang chủ" with a back-arrow icon → `/`.
 
 ### 3.2 Overview (`/overview`) — P0
 
