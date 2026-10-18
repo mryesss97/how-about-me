@@ -133,9 +133,7 @@ export function ThreadsIntegrationCard({
             </Button>
           </div>
         </div>
-      ) : (
-        <p className="text-sm text-tertiary">Chỉ quản trị viên dự án mới thay đổi được các cài đặt này.</p>
-      )}
+      ) : null}
       {canEdit ? (
         <>
           <UpdateTokenDialog pid={pid} isOpen={dialog === "token"} onClose={() => setDialog(null)} onSaved={onSaved} />

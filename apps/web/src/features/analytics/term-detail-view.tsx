@@ -161,7 +161,7 @@ export function TermDetailView({
       {heroBlock}
       {renderList?.({ counts: hero.data ? split.counts : null, total: hero.data ? split.total : null })}
 
-      <FilterBar />
+      <FilterBar shareLink />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <MentionsOverTimeChart

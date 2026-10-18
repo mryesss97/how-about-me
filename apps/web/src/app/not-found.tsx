@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BrandLogo } from "@/features/shared/brand-logo";
 import { NotFoundActions } from "@/features/shared/not-found-actions";
 
 export const metadata: Metadata = { title: "Không tìm thấy trang" };
@@ -10,6 +11,7 @@ export default function NotFound() {
       <div className="operate-board relative w-full max-w-xl">
         <span aria-hidden className="sign-keyline" />
         <div className="relative flex flex-col gap-6 p-6 sm:p-10">
+          <BrandLogo variant="stacked" className="h-20 w-auto" />
           <div className="flex flex-col gap-3">
             <span className="kpi-label">Lỗi 404</span>
             <h1 className="page-fascia-title">Không tìm thấy trang</h1>

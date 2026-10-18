@@ -5,12 +5,12 @@ import type { SafetyCategory } from "@how-about-me/taxonomy";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/base/badges/badges";
-import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { ApiError } from "@/lib/api/client";
 import { formatCount } from "@/lib/format/number";
 import { formatDateTime, formatRelativeOrAbsolute } from "@/lib/time/format";
 import { errorMessage } from "../api";
+import { SettingsSaveBar } from "../settings-save-bar";
 import {
   diffAnalysisSettings,
   errorsFromIssues,
@@ -22,7 +22,9 @@ import {
 } from "./analysis-policy-form-state";
 import { AnalysisVersions } from "./analysis-versions";
 import { useUpdateAnalysisSettings } from "./api";
-import { SafetyThresholdsTable } from "./safety-thresholds-table";
+import { formatThreshold, SafetyThresholdsTable } from "./safety-thresholds-table";
+
+const BAND_LABEL = { high: "Cao (≥)", medium: "Trung bình (≥)" } as const;
 
 function PolicyHeader({ settings, timeZone }: { settings: AnalysisSettings; timeZone?: string }) {
   const by = settings.createdBy ? (settings.createdBy.displayName ?? settings.createdBy.email) : null;
@@ -82,6 +84,10 @@ export function AnalysisSettingsForm({
   const hasErrors = Object.keys(liveErrors).length > 0;
   const dirty = Object.keys(body).length > 0 || hasErrors;
 
+  const reset = () => {
+    setDraft(toDraft(settings));
+    setServerErrors({});
+  };
   const edit = (fn: (d: AnalysisDraft) => AnalysisDraft) => {
     setDraft(fn);
     setServerErrors({});
@@ -108,25 +114,36 @@ export function AnalysisSettingsForm({
     });
   };
 
+  // #347 order: policy → bands → thresholds → errors → save bar → technical versions (after the bar).
   return (
     <form onSubmit={onSubmit} noValidate className="flex max-w-3xl flex-col gap-6" aria-label="Cài đặt phân tích">
       <PolicyHeader settings={settings} timeZone={timeZone} />
       <fieldset className="flex flex-col gap-3">
         <legend className="mb-2 text-sm font-semibold text-primary">Ngưỡng độ tin cậy</legend>
-        <div className="grid grid-cols-2 gap-4">
-          {(["high", "medium"] as const).map((k) => (
-            <Input
-              key={k}
-              label={k === "high" ? "Cao (≥)" : "Trung bình (≥)"}
-              type="number"
-              value={draft.bands[k]}
-              onChange={(v) => setBand(k, v)}
-              isDisabled={readOnly}
-              isInvalid={!!errors[`confidenceBands.${k}`]}
-              hint={errors[`confidenceBands.${k}`]}
-            />
-          ))}
-        </div>
+        {readOnly ? (
+          <dl className="grid grid-cols-2 gap-4 text-sm">
+            {(["high", "medium"] as const).map((k) => (
+              <div key={k} className="flex flex-col gap-0.5">
+                <dt className="font-medium text-secondary">{BAND_LABEL[k]}</dt>
+                <dd className="text-primary tabular-nums">{formatThreshold(draft.bands[k])}</dd>
+              </div>
+            ))}
+          </dl>
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            {(["high", "medium"] as const).map((k) => (
+              <Input
+                key={k}
+                label={BAND_LABEL[k]}
+                type="number"
+                value={draft.bands[k]}
+                onChange={(v) => setBand(k, v)}
+                isInvalid={!!errors[`confidenceBands.${k}`]}
+                hint={errors[`confidenceBands.${k}`]}
+              />
+            ))}
+          </div>
+        )}
       </fieldset>
       <SafetyThresholdsTable
         thresholds={draft.thresholds}
@@ -134,21 +151,23 @@ export function AnalysisSettingsForm({
         readOnly={readOnly}
         onChange={setThreshold}
       />
-      <AnalysisVersions settings={settings} />
       {errors.form ? (
         <p role="alert" className="text-sm text-error-primary">
           {errors.form}
         </p>
       ) : null}
-      {readOnly ? (
-        <p className="text-sm text-tertiary">Chỉ quản trị viên dự án mới thay đổi được các cài đặt này.</p>
-      ) : (
-        <div>
-          <Button type="submit" isDisabled={!dirty} isLoading={update.isPending}>
-            Tạo phiên bản chính sách mới
-          </Button>
-        </div>
+      {readOnly ? null : (
+        <SettingsSaveBar
+          id="analysis-policy"
+          dirty={dirty}
+          onReset={reset}
+          submitLabel="Tạo phiên bản chính sách mới"
+          isDisabled={hasErrors}
+          isLoading={update.isPending}
+          flushBottom={false}
+        />
       )}
+      <AnalysisVersions settings={settings} />
     </form>
   );
 }

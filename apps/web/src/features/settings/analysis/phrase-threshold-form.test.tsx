@@ -77,10 +77,19 @@ describe("PhraseThresholdForm", () => {
     expect(await screen.findByRole("alert")).toBeInTheDocument();
   });
 
-  it("FR-015: non-admins see a disabled input without Save", () => {
+  it("FR-015 / #347: non-admins see the value as text without input or Save", () => {
     render(<PhraseThresholdForm project={projectData()} canEdit={false} />, { wrapper });
-    expect(input()).toBeDisabled();
+    expect(screen.queryByRole("spinbutton")).toBeNull();
     expect(screen.queryByRole("button", { name: "Lưu" })).not.toBeInTheDocument();
-    expect(screen.getByText("Chỉ quản trị viên dự án mới thay đổi được các cài đặt này.")).toBeInTheDocument();
+    expect(screen.getByText(String(projectData().settings.phraseMinMentions))).toBeInTheDocument();
+  });
+
+  it("#347: an invalid edit keeps the strip with Save disabled; reset restores the value", () => {
+    render(<PhraseThresholdForm project={projectData()} canEdit />, { wrapper });
+    fireEvent.change(input(), { target: { value: "0" } });
+    expect(screen.getByText("Có thay đổi chưa lưu")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Lưu" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Huỷ thay đổi" }));
+    expect(input()).toHaveValue(projectData().settings.phraseMinMentions);
   });
 });

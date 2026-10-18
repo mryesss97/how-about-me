@@ -39,7 +39,7 @@ export function OverviewView() {
         // FR-015: canManage is UX only; the API enforces roles.
         <OverviewBanners data={overview.data} canManage={role === "admin"} pendingHref={pendingHref} />
       ) : null}
-      <FilterBar showCompare />
+      <FilterBar showCompare shareLink />
       <OverviewKpiSection
         projectId={project?.id}
         apiParams={apiParams}

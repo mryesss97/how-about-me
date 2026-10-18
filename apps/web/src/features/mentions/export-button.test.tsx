@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type * as ClientModule from "@/lib/api/client";
 import { ApiError } from "@/lib/api/client";
-import { canExport, ExportButton } from "./export-button";
+import { canExport, ExportButton, ExportButtonDisabled, exportGate, VIEWER_EXPORT_REASON } from "./export-button";
 
 const apiDownload = vi.fn();
 const toastSuccess = vi.fn();
@@ -50,6 +50,33 @@ describe("canExport (FR-032, BR-033 — UX only)", () => {
     expect(canExport(role, { allowViewerExport: allow })).toBe(expected);
   });
   it("viewer without settings → false", () => expect(canExport("viewer", null)).toBe(false));
+});
+
+describe("exportGate (#349, FR-032, BR-033)", () => {
+  it.each([
+    ["admin", false, "allowed"],
+    ["admin", true, "allowed"],
+    ["analyst", false, "allowed"],
+    ["analyst", true, "allowed"],
+    ["viewer", false, "viewer-disabled"],
+    ["viewer", true, "allowed"],
+    [null, false, "hidden"],
+    [null, true, "hidden"],
+  ] as const)("%s with allowViewerExport=%s → %s", (role, allow, expected) => {
+    expect(exportGate(role, { allowViewerExport: allow })).toBe(expected);
+  });
+  it("viewer before settings load → hidden", () => expect(exportGate("viewer", null)).toBe("hidden"));
+});
+
+describe("ExportButtonDisabled (#349, BR-017)", () => {
+  it("is aria-disabled, describes the reason and never downloads", () => {
+    render(<ExportButtonDisabled />);
+    const btn = screen.getByRole("button", { name: /xuất csv/i });
+    expect(btn).toHaveAttribute("aria-disabled", "true");
+    expect(btn).toHaveAccessibleDescription(VIEWER_EXPORT_REASON);
+    fireEvent.click(btn);
+    expect(apiDownload).not.toHaveBeenCalled();
+  });
 });
 
 describe("ExportButton (T-147, FR-180/181)", () => {

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { canAccess } from "@/features/auth/route-roles";
 import { useRole } from "@/features/auth/use-role";
+import { useUnsavedChanges } from "./unsaved-changes";
 
 const tabs = [
   { href: "/settings/project", label: "Dự án" },
@@ -12,10 +13,11 @@ const tabs = [
   { href: "/settings/analysis", label: "Phân tích" },
 ];
 
-/** Settings tabs filtered by role (FR-018, TC-AUTH-014). UX only — the server enforces. */
+/** Settings tabs filtered by role (FR-018, TC-AUTH-014); guarded by unsaved changes (#347). UX only — the server enforces. */
 export function SettingsTabs() {
   const { role } = useRole();
   const pathname = usePathname();
+  const { anyDirty, confirmLeave } = useUnsavedChanges();
   return (
     <nav aria-label="Các mục cài đặt" className="mt-4 flex flex-wrap gap-2">
       {tabs
@@ -28,6 +30,12 @@ export function SettingsTabs() {
               href={t.href}
               aria-current={active ? "page" : undefined}
               className="plaque-button px-3 py-1.5"
+              onClick={(e) => {
+                // #347: unsaved edits → confirm before switching tab (the dialog navigates on "Bỏ thay đổi").
+                if (!anyDirty || t.href === pathname) return;
+                e.preventDefault();
+                confirmLeave(t.href);
+              }}
             >
               {t.label}
             </Link>

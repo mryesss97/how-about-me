@@ -20,11 +20,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
           <div className="mb-2 flex justify-center">
             <BrandLogo variant="stacked" className="h-28 w-auto" />
           </div>
-          <p lang="vi" className="mb-6 text-center text-sm text-tertiary">
+          <p lang="vi" className="mb-4 text-center text-sm text-tertiary">
             Lắng nghe. Thấu hiểu.
           </p>
           <h1 className="page-fascia-title text-center">Đăng nhập</h1>
-          <p className="mt-1 text-center text-sm text-tertiary">How About Me — lắng nghe Threads</p>
           <LoginForm
             googleEnabled={env.NEXT_PUBLIC_AUTH_GOOGLE_ENABLED}
             reason={first(sp.reason)}

@@ -14,7 +14,8 @@ import { useFilters } from "@/lib/filters/use-filters";
 import { flattenUnique, useMentionsList } from "./api";
 import { MentionsList } from "./mentions-list";
 import { BulkReanalyzeButton, canBulkReanalyze } from "./bulk-reanalyze-dialog";
-import { canExport, ExportButton } from "./export-button";
+import { ExportButton, ExportButtonDisabled, exportGate } from "./export-button";
+import { CopyLinkButton } from "@/features/shared/copy-link-button";
 import { MentionsToolbar } from "./mentions-toolbar";
 import { MentionDetailSlideout } from "./detail/mention-detail-slideout";
 import { useMentionItem } from "./use-mention-item";
@@ -72,6 +73,9 @@ export function MentionsView() {
   const isFirstLoad = !project || list.isLoading;
   const pagesLoaded = (list.data?.pages.length ?? 0) > 0;
 
+  const gate = exportGate(role, settings);
+  const pinnedRange = apiParams.from && apiParams.to ? { from: apiParams.from, to: apiParams.to } : undefined;
+
   const onSearch = useCallback((q: string | null) => setFilters({ q }), [setFilters]);
   const onSort = useCallback((sort: MentionSort) => setFilters({ sort }), [setFilters]);
 
@@ -92,8 +96,11 @@ export function MentionsView() {
         actions={
           // Same pinned params as the visible list so the CSV / re-analysis preview matches the shown count (FR-180).
           hydrated && project ? (
-            <div className="flex gap-2">
-              {canExport(role, settings) ? <ExportButton pid={project.id} params={apiParams} /> : null}
+            <div className="flex flex-wrap gap-2">
+              {/* #349: the link carries the list's pinned range, not a re-resolved one. */}
+              <CopyLinkButton range={pinnedRange} />
+              {gate === "allowed" ? <ExportButton pid={project.id} params={apiParams} /> : null}
+              {gate === "viewer-disabled" ? <ExportButtonDisabled /> : null}
               {/* #337: the heavy admin action goes last. */}
               {canBulkReanalyze(role) ? <BulkReanalyzeButton pid={project.id} params={apiParams} /> : null}
             </div>
