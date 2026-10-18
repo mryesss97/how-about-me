@@ -40,6 +40,13 @@ describe("system-status api", () => {
     expect(retryErrorMessage(new ApiError(403, "FORBIDDEN_ROLE", "x"))).toBe(
       "Bạn không có quyền thực hiện thao tác này.",
     );
+    // BR-024: analysis retry conflicts (FR-175)
+    expect(retryErrorMessage(new ApiError(409, "ANALYSIS_RUN_NOT_RETRYABLE", "x"))).toBe(
+      "Lượt phân tích này không còn ở trạng thái lỗi.",
+    );
+    expect(retryErrorMessage(new ApiError(409, "ANALYSIS_ALREADY_PENDING", "x"))).toBe(
+      "Bài này đã có lượt phân tích đang chờ.",
+    );
     expect(retryErrorMessage(new ApiError(500, "INTERNAL", "boom", "req-1"))).toBe("boom (Mã yêu cầu: req-1)");
   });
 });
