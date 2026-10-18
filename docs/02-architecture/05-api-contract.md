@@ -418,8 +418,14 @@ Job object:
 { "id":"uuid","queryId":"uuid","status":"partial","trigger":"scheduled","searchType":"RECENT","searchMode":"KEYWORD",
   "windowSince":"…","windowUntil":"…","startedAt":"…","completedAt":"…",
   "pagesFetched":3,"recordsFetched":120,"recordsInserted":15,"recordsUpdated":1,"recordsDuplicated":100,"recordsInvalid":4,"recordsExcluded":2,
-  "providerRequests":3,"rateLimitEvents":1,"lastCursor":"…","error":{"code":"THREADS_RATE_LIMITED","message":"…"}|null }
+  "providerRequests":3,"rateLimitEvents":1,"lastCursor":"…","error":{"code":"THREADS_RATE_LIMITED","message":"…"}|null,"createdAt":"…" }
 ```
+
+Details (T-055):
+
+- List: sorted `created_at DESC, id DESC`; `status`/`trigger` are CSV any-of; `from` inclusive / `to` exclusive on `created_at` (UTC instants); `count=true` adds `totalCount`; bad cursor → `400 VALIDATION_ERROR`.
+- Detail: job object + `providerUsage: { remaining, resetAt, observedAt } | null` (raw provider headers are never returned). Job of another project → `404 NOT_FOUND`.
+- Retry: inserts a new `queued` job (`trigger=retry`) copying `window_*` + `last_cursor` of the source; the source job is not modified. Errors: `404 NOT_FOUND`; `409 SYNC_JOB_NOT_RETRYABLE` (status not `failed`/`partial`, query hard-deleted, disabled or soft-deleted — BR-010); `409 SYNC_ALREADY_RUNNING {details:{jobId}}` when the query already has a `queued`/`running` job. Audited as `sync_job.retry_requested`.
 
 ## 9. Analysis runs (ops)
 
@@ -508,23 +514,23 @@ PATCH behaviour: one transaction, project row locked `FOR UPDATE` (concurrent ad
 
 ## 13. Error codes
 
-| Code                                                                                                                                              | HTTP      | When                                              |
-| ------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------------------------------------------------- |
-| `VALIDATION_ERROR`                                                                                                                                | 400       | Zod failure; `details.issues[]`                   |
-| `QUERY_IMMUTABLE_FIELD`                                                                                                                           | 400       | patching `queryValue/queryType`                   |
-| `BACKFILL_WINDOW_INVALID`                                                                                                                         | 400       | until ≤ since or > max days                       |
-| `AUTH_MISSING_TOKEN` / `AUTH_INVALID_TOKEN` / `AUTH_TOKEN_EXPIRED`                                                                                | 401       |                                                   |
-| `FORBIDDEN_ROLE` / `FORBIDDEN_PROJECT`                                                                                                            | 403       |                                                   |
-| `NOT_FOUND`                                                                                                                                       | 404       |                                                   |
-| `QUERY_DUPLICATE` / `SYNC_ALREADY_RUNNING` / `LAST_ADMIN` / `MEMBER_EXISTS` / `ANALYSIS_ALREADY_PENDING` / `OVERRIDE_CONFLICT`                    | 409       |                                                   |
-| `EXPORT_TOO_LARGE`                                                                                                                                | 413       |                                                   |
-| `RATE_LIMITED`                                                                                                                                    | 429       | internal throttling                               |
-| `THREADS_UNAUTHORIZED` / `THREADS_FORBIDDEN`                                                                                                      | 502       | surfaced on verify; jobs store code               |
-| `THREADS_RATE_LIMITED` / `THREADS_UPSTREAM_ERROR` / `THREADS_TIMEOUT` / `THREADS_MALFORMED_RESPONSE`                                              | 503 / 502 |                                                   |
-| `INTEGRATION_NOT_CONFIGURED`                                                                                                                      | 409       | run/verify without token                          |
-| `INTERNAL`                                                                                                                                        | 500       | never leaks stack                                 |
-| `ANALYSIS_PROVIDER_ERROR` (retryable: 429/5xx/timeout/network) / `ANALYSIS_PROVIDER_AUTH` (401/403) / `ANALYSIS_PROVIDER_BAD_REQUEST` (other 4xx) | 502       | run `error_code` only (T-071)                     |
-| `ANALYSIS_SCHEMA_INVALID`                                                                                                                         | 500       | provider response shape invalid; run `error_code` |
+| Code                                                                                                                                                      | HTTP      | When                                              |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------------------------------------------------- |
+| `VALIDATION_ERROR`                                                                                                                                        | 400       | Zod failure; `details.issues[]`                   |
+| `QUERY_IMMUTABLE_FIELD`                                                                                                                                   | 400       | patching `queryValue/queryType`                   |
+| `BACKFILL_WINDOW_INVALID`                                                                                                                                 | 400       | until ≤ since or > max days                       |
+| `AUTH_MISSING_TOKEN` / `AUTH_INVALID_TOKEN` / `AUTH_TOKEN_EXPIRED`                                                                                        | 401       |                                                   |
+| `FORBIDDEN_ROLE` / `FORBIDDEN_PROJECT`                                                                                                                    | 403       |                                                   |
+| `NOT_FOUND`                                                                                                                                               | 404       |                                                   |
+| `QUERY_DUPLICATE` / `SYNC_ALREADY_RUNNING` / `SYNC_JOB_NOT_RETRYABLE` / `LAST_ADMIN` / `MEMBER_EXISTS` / `ANALYSIS_ALREADY_PENDING` / `OVERRIDE_CONFLICT` | 409       |                                                   |
+| `EXPORT_TOO_LARGE`                                                                                                                                        | 413       |                                                   |
+| `RATE_LIMITED`                                                                                                                                            | 429       | internal throttling                               |
+| `THREADS_UNAUTHORIZED` / `THREADS_FORBIDDEN`                                                                                                              | 502       | surfaced on verify; jobs store code               |
+| `THREADS_RATE_LIMITED` / `THREADS_UPSTREAM_ERROR` / `THREADS_TIMEOUT` / `THREADS_MALFORMED_RESPONSE`                                                      | 503 / 502 |                                                   |
+| `INTEGRATION_NOT_CONFIGURED`                                                                                                                              | 409       | run/verify without token                          |
+| `INTERNAL`                                                                                                                                                | 500       | never leaks stack                                 |
+| `ANALYSIS_PROVIDER_ERROR` (retryable: 429/5xx/timeout/network) / `ANALYSIS_PROVIDER_AUTH` (401/403) / `ANALYSIS_PROVIDER_BAD_REQUEST` (other 4xx)         | 502       | run `error_code` only (T-071)                     |
+| `ANALYSIS_SCHEMA_INVALID`                                                                                                                                 | 500       | provider response shape invalid; run `error_code` |
 
 ## 14. Versioning & compatibility
 
