@@ -15,7 +15,7 @@ export function Disclosure({ label, children }: { label: string; children: React
         aria-expanded={open}
         aria-controls={id}
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex w-fit items-center gap-1 rounded-sm text-sm font-semibold text-brand-secondary outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2"
+        className="inline-flex w-fit items-center gap-1 rounded-sm max-md:min-h-11 text-sm font-semibold text-brand-secondary outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2"
       >
         {label}
         <ChevronDown className={cx("size-4 transition-transform", open && "rotate-180")} aria-hidden />

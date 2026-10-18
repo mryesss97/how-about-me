@@ -56,7 +56,7 @@ export function SettingsSaveBar({
         ) : null}
         <Button
           type="submit"
-          className={dirty ? "min-h-11 sm:min-h-0" : undefined}
+          className="min-h-11 sm:min-h-0"
           isDisabled={!dirty || isDisabled}
           isLoading={isLoading}
           aria-describedby={dirty ? undefined : hintId}

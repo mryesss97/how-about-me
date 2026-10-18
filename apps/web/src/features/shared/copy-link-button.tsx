@@ -42,7 +42,7 @@ export function CopyLinkButton({ range, compact = false }: CopyLinkButtonProps) 
       iconLeading={Link01}
       onClick={() => void onCopy()}
       aria-label={compact ? "Sao chép liên kết" : undefined}
-      className={compact ? "min-h-11 min-w-11 shrink-0 justify-center" : "max-md:min-h-11"}
+      className={compact ? "min-h-11 min-w-11 shrink-0 justify-center" : undefined}
     >
       {compact ? null : "Sao chép liên kết"}
     </PlaqueButton>

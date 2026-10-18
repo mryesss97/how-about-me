@@ -44,7 +44,7 @@ export function BubbleModeToggle({ mode, onChange }: { mode: BubbleMode; onChang
       }}
     >
       {MODES.map((m) => (
-        <ButtonGroupItem key={m} id={m}>
+        <ButtonGroupItem key={m} id={m} className="max-md:min-h-11">
           {m === "topics" ? copy.modeTopics : copy.modePhrases}
         </ButtonGroupItem>
       ))}

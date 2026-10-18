@@ -3,7 +3,7 @@ import { join, resolve } from "node:path";
 import { Plus } from "@untitledui/icons";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { PlaqueButton } from "./plaque-button";
+import { PlaqueButton, plaqueClassName } from "./plaque-button";
 
 const SRC = resolve(__dirname, "../..");
 
@@ -60,5 +60,16 @@ describe("PlaqueButton (#330, BR-017)", () => {
       return s.includes('className="plaque"') || s.includes('"plaque-button inline-flex');
     });
     expect(offenders).toEqual([]);
+  });
+});
+
+describe("PlaqueButton touch target (#386)", () => {
+  it.each(["xs", "sm", "md"] as const)("size %s is ≥ 44 px under md", (size) => {
+    render(<PlaqueButton size={size}>Nút {size}</PlaqueButton>);
+    expect(screen.getByRole("button", { name: `Nút ${size}` })).toHaveClass("max-md:min-h-11");
+  });
+
+  it("plaqueClassName carries the same mobile min height", () => {
+    expect(plaqueClassName("xs").split(" ")).toContain("max-md:min-h-11");
   });
 });

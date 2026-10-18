@@ -111,7 +111,7 @@ export function SentimentBubbleMap({
       {FILTERS.map((f) => {
         const count = f === "all" ? all.length : all.filter((d) => d.dominant === f).length;
         return (
-          <ButtonGroupItem key={f} id={f}>
+          <ButtonGroupItem key={f} id={f} className="max-md:min-h-11">
             {f === "all" ? null : (
               <>
                 <span aria-hidden className="size-2 rounded-full" style={{ backgroundColor: SENTIMENT_COLORS[f] }} />

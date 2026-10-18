@@ -114,7 +114,7 @@ export function SentimentOverTimeChart({
                         aria-pressed={!hidden.has(k)}
                         onClick={() => toggle(k)}
                         className={cx(
-                          "flex items-center gap-2 text-sm text-tertiary outline-focus-ring focus-visible:outline-2",
+                          "flex items-center gap-2 text-sm text-tertiary outline-focus-ring focus-visible:outline-2 max-md:min-h-11",
                           hidden.has(k) && "line-through opacity-50",
                         )}
                       >

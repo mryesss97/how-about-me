@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useCurrentProject } from "@/features/auth/use-current-project";
 import { useRole } from "@/features/auth/use-role";
 import { PageHeader } from "@/features/shared/page-header";
-import { plaqueClassName } from "@/features/shared/plaque-button";
+import { SectionTabs } from "@/features/shared/section-tabs";
 import { QueryState, SkeletonBlock } from "@/features/shared/query-state";
 import { toQueryStateError } from "@/lib/semantics/api-errors";
 import { useLiveQueriesForStatus, useSystemStatus } from "./api";
@@ -51,19 +50,11 @@ export function SystemStatusView() {
       />
       {/* #343: 2×2 grid under `sm`, ≥ 44 px targets; no horizontal scroll so no tab is hidden.
           #348: route sections are links + aria-current (DESIGN.md "Section tabs"), not an ARIA tablist. */}
-      <nav aria-label="Các mục trạng thái" className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-        {tabs.map((t) => (
-          <Link
-            key={t.id}
-            href={tabHref(t.id)}
-            scroll={false}
-            aria-current={tab === t.id ? "page" : undefined}
-            className={plaqueClassName("sm", "min-h-11 justify-center text-center")}
-          >
-            {t.label}
-          </Link>
-        ))}
-      </nav>
+      <SectionTabs
+        ariaLabel="Các mục trạng thái"
+        scroll={false}
+        items={tabs.map((t) => ({ href: tabHref(t.id), label: t.label, current: tab === t.id }))}
+      />
       {tab === "overview" ? (
         <QueryState
           isLoading={!project || status.isLoading}

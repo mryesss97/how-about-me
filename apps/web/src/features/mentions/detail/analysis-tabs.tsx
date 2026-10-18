@@ -20,19 +20,16 @@ type Props = {
 export function AnalysisTabs({ mention, tz, canOverride = false, onEditField, onRevoke, isRevoking = false }: Props) {
   return (
     <Tabs defaultSelectedKey="current">
-      <Tabs.List
-        type="underline"
-        size="sm"
-        aria-label="Phân tích"
-        items={[
-          { id: "current", label: "Hiện tại" },
-          {
-            id: "history",
-            label: "Lịch sử",
-            badge: mention.runs.length + (mention.overrides?.length ?? 0) || undefined,
-          },
-        ]}
-      />
+      <Tabs.List type="underline" size="sm" aria-label="Phân tích">
+        {/* #386: tab items ≥ 44 px on mobile. */}
+        <Tabs.Item id="current" label="Hiện tại" className="max-md:min-h-11" />
+        <Tabs.Item
+          id="history"
+          label="Lịch sử"
+          badge={mention.runs.length + (mention.overrides?.length ?? 0) || undefined}
+          className="max-md:min-h-11"
+        />
+      </Tabs.List>
       <Tabs.Panel id="current" className="pt-4">
         <AnalysisCurrent
           mention={mention}

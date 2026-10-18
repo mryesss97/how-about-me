@@ -34,6 +34,7 @@ Built on the brands' own Threads conversation with classification tuned to their
 - Docs in `docs/` are the source of truth; business rules BR-xxx, requirements FR-xxx.
 - **Copy is Vietnamese**: the landing (owner decision 2026-10-14) and, screen by screen as each is restyled in the signboard world, the dashboard (owner decision 2026-10-14, #274). Screens not yet restyled are still English. One concept, one word — see the vocabulary table in `docs/01-product/09-ux-specification.md` §5 (#344).
 - Sentiment colours always come with text (BR-017); safety numbers are never shown on the landing.
+- **Phones are first-class (#386):** every control is ≥ 44 px tall below `md`, and anything shown only on hover (KPI definition + denominator) also opens on tap.
 
 ## Brand Commitments
 

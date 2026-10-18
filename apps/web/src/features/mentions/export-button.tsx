@@ -110,7 +110,7 @@ export function ExportButtonDisabled() {
           aria-disabled="true"
           aria-describedby={reasonId}
           onPress={() => setOpen(true)}
-          className={plaqueClassName("sm", "cursor-not-allowed opacity-60 max-md:min-h-11")}
+          className={plaqueClassName("sm", "cursor-not-allowed opacity-60")}
         >
           <Lock01 className="size-4 shrink-0" aria-hidden />
           Xuất CSV
