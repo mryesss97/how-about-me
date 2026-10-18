@@ -8,6 +8,7 @@ import {
   toApiParams,
   toMentionsHref,
 } from "./api-params";
+import { coverageDrillDown } from "./drill-down";
 import { filterParsers } from "./parsers";
 import { defaultFilters, type Filters } from "./schema";
 
@@ -137,5 +138,31 @@ describe("term filter (#273, BR-042)", () => {
     const url = new URL(termMentionsHref("giá vé"), "http://x");
     expect(url.pathname).toBe("/mentions");
     expect(filterParsers.term.parse(url.searchParams.get("term") ?? "")).toBe("giá vé");
+  });
+
+  describe("BR-016 exception (#328)", () => {
+    const info = "Mức liên quan: gồm cả chưa phân tích";
+    it("mentions mode adds a non-removable info chip for status-only unlabelled filters", () => {
+      const chip = appliedChips(base({ analysisStatus: ["pending"] }), {}, { mentions: true }).find(
+        (c) => c.label === info,
+      );
+      expect(chip).toMatchObject({ key: "relevance", value: "unanalysed", removable: false });
+    });
+    it("no info chip for mixed statuses or analytics mode", () => {
+      const labels = (f: Filters, mentions: boolean) => appliedChips(f, {}, { mentions }).map((c) => c.label);
+      expect(labels(base({ analysisStatus: ["pending", "completed"] }), true)).not.toContain(info);
+      expect(labels(base({ analysisStatus: ["failed"] }), false)).not.toContain(info);
+    });
+    it("coverage link keeps queries and pinned range, drops label filters", () => {
+      const q = "22222222-2222-4222-8222-222222222222";
+      const href = toMentionsHref(base({ queryIds: [q], sentiment: ["negative"] }), coverageDrillDown(), now);
+      const sp = new URLSearchParams(href.split("?")[1]);
+      expect(sp.get("queryIds")).toBe(q);
+      expect(sp.get("preset")).toBe("custom");
+      expect(sp.get("from")).toBeTruthy();
+      expect(sp.get("to")).toBeTruthy();
+      expect(sp.get("analysisStatus")).toBe("pending,processing");
+      expect(sp.has("sentiment")).toBe(false);
+    });
   });
 });

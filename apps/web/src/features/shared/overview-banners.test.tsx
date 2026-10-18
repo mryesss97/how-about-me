@@ -21,6 +21,18 @@ describe("OverviewBanners (FR-134)", () => {
     expect(bannersFor(f)).toEqual([]);
   });
 
+  it("#328: pendingHref is passed down to the pending banner link", () => {
+    const f = overviewFixture();
+    render(
+      <OverviewBanners
+        data={{ ...f, coverage: { ...f.coverage, pendingMentions: 2 } }}
+        canManage={false}
+        pendingHref="/mentions?x=1"
+      />,
+    );
+    expect(screen.getByRole("link", { name: "Xem lượt nhắc đang chờ" })).toHaveAttribute("href", "/mentions?x=1");
+  });
+
   it("TC-DASH-010: failed or partial sync shows sync banner linking to System Status", () => {
     render(<OverviewBanners data={dq({ lastSyncStatus: "failed" })} canManage={false} />);
     expect(screen.getByText("Lần đồng bộ Threads gần nhất bị lỗi. Dữ liệu có thể chưa đầy đủ.")).toBeInTheDocument();

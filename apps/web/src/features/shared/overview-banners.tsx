@@ -28,7 +28,16 @@ export function emptyReasonFor(data: BannerInput | null | undefined): EmptyReaso
 }
 
 /** `canManage` only toggles the Integrations link — UX only, the API enforces access (BR-033). */
-export function OverviewBanners({ data, canManage }: { data: BannerInput; canManage: boolean }) {
+export function OverviewBanners({
+  data,
+  canManage,
+  pendingHref,
+}: {
+  data: BannerInput;
+  canManage: boolean;
+  /** #328: keeps the current range/queries; defaults to the banner's plain link. */
+  pendingHref?: string;
+}) {
   const kinds = bannersFor(data);
   if (kinds.length === 0) return null;
   return (
@@ -39,7 +48,7 @@ export function OverviewBanners({ data, canManage }: { data: BannerInput; canMan
         ) : k === "sync" ? (
           <SyncFailedBanner key={k} />
         ) : (
-          <AnalysisPendingBanner key={k} count={data.coverage.pendingMentions} />
+          <AnalysisPendingBanner key={k} count={data.coverage.pendingMentions} href={pendingHref} />
         ),
       )}
     </div>

@@ -35,7 +35,7 @@ Rules are normative and referenced by code comments (`// BR-007`) and tests.
 
 ### Analysis
 
-- **BR-016** Relevance has three states. Dashboards include `relevant` by default, optionally `uncertain`, never `irrelevant` unless the user explicitly filters for it.
+- **BR-016** Relevance has three states. Dashboards include `relevant` by default, optionally `uncertain`, never `irrelevant` unless the user explicitly filters for it. Exception (#328, 2026-10-19): on the mentions list/count/export/bulk re-analyze, when the analysis-status filter contains only `pending`, `processing` or `failed`, posts with no relevance yet (NULL) are kept; labelled posts still follow the relevance filter. Analytics/KPIs are unchanged.
 - **BR-017** Sentiment and safety are independent. `negative` ≠ `unsafe`. Never derive one from the other.
 - **BR-018** `safe | sensitive | severe` is a product policy mapping over provider categories; the mapping is versioned (`safety_policy_version`) and configurable.
 - **BR-019** Intent and topic are multi-label; their percentages need not sum to 100 %.

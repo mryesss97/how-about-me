@@ -82,6 +82,8 @@ uncertainMentions  = distinct posts in range with relevance = uncertain    (for 
 
 Coverage counts (except `relevantMentions`) ignore relevance, analysis-status and label filters (pending/failed posts have no labels); query and time filters still apply. A post that already has an effective analysis counts as analyzed even while a re-run is pending, so pending/failed count only posts without one.
 
+Drill-down (#328): `pendingMentions` ↔ `/mentions?analysisStatus=pending,processing` + range/queryIds/phrase/term (label filters cleared; the list keeps NULL-relevance posts, BR-016 exception). Totals are equal when no pending post already has an effective analysis; a labelled pending re-run makes the list larger.
+
 Plus `dataQuality`: `lastSyncStatus` (success/partial/failed/none in last 2 × max poll interval of enabled queries, default 600 s), `integrationStatus` (Threads connection; no row → `disconnected`), `collectorStatus`:
 
 - `paused` — collector circuit breaker open (`collector_state.circuit_open_until > now`);
@@ -147,27 +149,28 @@ Rule (`apps/api/src/common/time/range.ts` `previousPeriodInTz`): when both `from
 
 Each metric maps to a mentions filter that returns exactly the counted posts:
 
-| Metric / segment              | Mentions filters                                     |
-| ----------------------------- | ---------------------------------------------------- |
-| mentionCount                  | `from,to,relevance=relevant` + active global filters |
-| mention growth                | same as mentionCount (current period)                |
-| positive segment              | `+ sentiment=positive`                               |
-| negative segment              | `+ sentiment=negative`                               |
-| sensitive+severe              | `+ safety=sensitive,severe`                          |
-| safety `severe`               | `+ safety=severe`                                    |
-| topic `ticket`                | `+ topic=ticket`                                     |
-| intent `complaint`            | `+ intent=complaint` (also complaint rate)           |
-| query share bar q             | `queryIds=q` (replaces global `queryIds`)            |
-| topic × sentiment cell (t, s) | `+ topic=t&sentiment=s`                              |
-| negative contributor t        | `+ topic=t&sentiment=negative`                       |
-| sentiment map bubble t        | `+ topic=t`                                          |
-| sentiment map detail (t, s)   | `+ topic=t&sentiment=s`                              |
-| phrase bubble p               | `+ phrase=p`                                         |
-| phrase detail (p, s)          | `+ phrase=p&sentiment=s`                             |
-| timeseries bucket             | `from=bucketStart,to=bucketEnd`                      |
-| previous period               | `from=prevFrom,to=prevTo`                            |
+| Metric / segment              | Mentions filters                                                                    |
+| ----------------------------- | ----------------------------------------------------------------------------------- |
+| mentionCount                  | `from,to,relevance=relevant` + active global filters                                |
+| mention growth                | same as mentionCount (current period)                                               |
+| positive segment              | `+ sentiment=positive`                                                              |
+| negative segment              | `+ sentiment=negative`                                                              |
+| sensitive+severe              | `+ safety=sensitive,severe`                                                         |
+| safety `severe`               | `+ safety=severe`                                                                   |
+| topic `ticket`                | `+ topic=ticket`                                                                    |
+| intent `complaint`            | `+ intent=complaint` (also complaint rate)                                          |
+| query share bar q             | `queryIds=q` (replaces global `queryIds`)                                           |
+| topic × sentiment cell (t, s) | `+ topic=t&sentiment=s`                                                             |
+| negative contributor t        | `+ topic=t&sentiment=negative`                                                      |
+| sentiment map bubble t        | `+ topic=t`                                                                         |
+| sentiment map detail (t, s)   | `+ topic=t&sentiment=s`                                                             |
+| phrase bubble p               | `+ phrase=p`                                                                        |
+| phrase detail (p, s)          | `+ phrase=p&sentiment=s`                                                            |
+| timeseries bucket             | `from=bucketStart,to=bucketEnd`                                                     |
+| previous period               | `from=prevFrom,to=prevTo`                                                           |
+| coverage pending              | `analysisStatus=pending,processing`, label filters cleared (BR-016 exception, #328) |
 
-For rates the list returns the numerator posts. Topic `other` is the top-12 remainder and has no filter, so it is not drillable. Language `other` is drillable: `language=other` matches stored `other` plus any non-NULL code outside the taxonomy, the same set the slice counts (#201). In the topic × sentiment matrix (T-149) `other` is a real label and is drillable (`topic=other`). Cell values replace the global `topic`/`sentiment` keys (as for every segment), so with a global `topic` filter active a cell of another topic can count fewer posts than its list (the matrix counts posts with both topics). Phrase rows (#223): `phrase=p` matches posts whose current analysis has phrase `p` (normalised per BR-041 on the server, so a copied link always matches). The list does not require a sentiment, but every completed v2 analysis that has phrases is a full (non-irrelevant) analysis with a sentiment, so `/mentions?phrase=p` totals equal the row `total`; an AI-irrelevant post overridden to relevant has no phrases and never appears in either. FE mapping: `apps/web/src/lib/filters/drill-down.ts` (T-102).
+For rates the list returns the numerator posts. Topic `other` is the top-12 remainder and has no filter, so it is not drillable. Language `other` is drillable: `language=other` matches stored `other` plus any non-NULL code outside the taxonomy, the same set the slice counts (#201). In the topic × sentiment matrix (T-149) `other` is a real label and is drillable (`topic=other`). Cell values replace the global `topic`/`sentiment` keys (as for every segment), so with a global `topic` filter active a cell of another topic can count fewer posts than its list (the matrix counts posts with both topics). Phrase rows (#223): `phrase=p` matches posts whose current analysis has phrase `p` (normalised per BR-041 on the server, so a copied link always matches). The list does not require a sentiment, but every completed v2 analysis that has phrases is a full (non-irrelevant) analysis with a sentiment, so `/mentions?phrase=p` totals equal the row `total`; an AI-irrelevant post overridden to relevant has no phrases and never appears in either. Analytics ↔ mentions equivalence does not hold for status-only filters (`pending`/`processing`/`failed`): the list keeps NULL-relevance posts, analytics does not (#328). FE mapping: `apps/web/src/lib/filters/drill-down.ts` (T-102).
 
 QA reconciles list totals (`totalCount` header from `/mentions?count=true`) against chart numbers. Automated on the shared fixture (T-094): `apps/api/test/integration/analytics/fixture-equivalence.int-spec.ts`, expected numbers in `apps/api/test/fixtures/analytics-expected.ts`.
 

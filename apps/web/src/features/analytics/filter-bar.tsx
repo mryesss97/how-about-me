@@ -21,6 +21,8 @@ export interface QueryOption {
 interface FilterBarProps {
   showCompare?: boolean;
   queryOptions?: QueryOption[];
+  /** Mentions list mode: shows list-only info chips (#328). */
+  mentions?: boolean;
 }
 
 const MULTI_SELECTS: { key: Exclude<EnumFilterKey, "relevance">; label: string }[] = [
@@ -33,7 +35,7 @@ const MULTI_SELECTS: { key: Exclude<EnumFilterKey, "relevance">; label: string }
 ];
 
 /** Sticky shared filter bar for Overview & Mentions — UX §2.1, FR-130/131. State lives in the URL (nuqs). */
-export function FilterBar({ showCompare = false, queryOptions = [] }: FilterBarProps) {
+export function FilterBar({ showCompare = false, queryOptions = [], mentions = false }: FilterBarProps) {
   const { filters, setFilters, reset } = useFilters();
   const queryNames = Object.fromEntries(queryOptions.map((q) => [q.id, q.type === "tag" ? `#${q.name}` : q.name]));
 
@@ -90,7 +92,7 @@ export function FilterBar({ showCompare = false, queryOptions = [] }: FilterBarP
           Đặt lại
         </Button>
       </div>
-      <AppliedFilterChips filters={filters} setFilters={setFilters} queryNames={queryNames} />
+      <AppliedFilterChips filters={filters} setFilters={setFilters} queryNames={queryNames} mentions={mentions} />
     </section>
   );
 }

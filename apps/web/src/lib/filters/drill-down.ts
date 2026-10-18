@@ -1,5 +1,5 @@
 import type { IntentLabel, LanguageCode, SafetyLevel, SentimentLabel, TopicLabel } from "@how-about-me/taxonomy";
-import type { Filters } from "./schema";
+import { DEFAULT_RELEVANCE, type Filters } from "./schema";
 
 /**
  * Drill-down mapping (FR-142, doc 07 §6): KPI / segment / bucket → the extra Mentions filters that return
@@ -26,6 +26,23 @@ export function kpiDrillDown(id: DrillKpiId): Partial<Filters> {
     case "complaint":
       return { intent: ["complaint"] };
   }
+}
+
+/**
+ * Coverage "pending" banner / empty state → `analysisStatus=pending,processing` (metric-definitions §2, #328).
+ * Clears the label filters coverage ignores, so the list total equals `pendingMentions` (the API keeps
+ * NULL-relevance posts for status-only filters, BR-016 exception). Range, queries, phrase and term are kept.
+ */
+export function coverageDrillDown(): Partial<Filters> {
+  return {
+    analysisStatus: ["pending", "processing"],
+    relevance: [...DEFAULT_RELEVANCE],
+    sentiment: [],
+    safety: [],
+    intent: [],
+    topic: [],
+    language: [],
+  };
 }
 
 export type SegmentDimension = "sentiment" | "safety" | "topic" | "intent" | "language";

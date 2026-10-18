@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 import { toMentionsHref } from "@/lib/filters/api-params";
-import { type DrillKpiId, kpiDrillDown } from "@/lib/filters/drill-down";
+import { coverageDrillDown, type DrillKpiId, kpiDrillDown } from "@/lib/filters/drill-down";
 import type { Filters } from "@/lib/filters/schema";
 import type { useFilters } from "@/lib/filters/use-filters";
 
@@ -21,5 +21,7 @@ export function useOverviewDrillDown(filters: Filters, apiParams: OverviewApiPar
   );
   const navigate = useCallback((to: string) => router.push(to), [router]);
   const kpiHref = useCallback((id: DrillKpiId) => href(kpiDrillDown(id)) ?? "/mentions", [href]);
-  return { href, navigate, kpiHref };
+  // #328: pending banner link keeps range/queries and matches coverage.pendingMentions.
+  const pendingHref = href(coverageDrillDown()) ?? undefined;
+  return { href, navigate, kpiHref, pendingHref };
 }

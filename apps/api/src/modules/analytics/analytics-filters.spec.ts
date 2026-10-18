@@ -150,3 +150,33 @@ describe("buildBaseSetCte term filter (BR-042)", () => {
     expect(norm(buildBaseSetCte(scopeOf({ term: "x" }), { ignore: ["term"] }))).not.toContain("social_posts tp");
   });
 });
+
+describe("BR-016 exception (#328): unlabelledMatchRelevance", () => {
+  const sqlOf = (raw: Record<string, unknown>, opts?: Parameters<typeof buildBaseSetCte>[1]) =>
+    buildBaseSetCte(scopeOf(raw), opts);
+
+  it("analytics default ignores the exception even for status-only filters", () => {
+    const s = norm(sqlOf({ analysisStatus: "failed" }));
+    expect(s).toContain("e.relevance_label = ANY(");
+    expect(s).not.toContain("IS NULL");
+  });
+  it("pending,processing + option keeps NULL relevance, values bound", () => {
+    const sql = sqlOf({ analysisStatus: "pending,processing" }, { unlabelledMatchRelevance: true });
+    expect(norm(sql)).toContain("OR e.relevance_label IS NULL");
+    expect(sql.sql).not.toContain("'relevant'");
+    expect(sql.values).toContainEqual(["relevant"]);
+  });
+  it("mixed statuses (pending,completed) do not trigger it", () => {
+    expect(norm(sqlOf({ analysisStatus: "pending,completed" }, { unlabelledMatchRelevance: true }))).not.toContain(
+      "IS NULL",
+    );
+  });
+  it("no status filter does not trigger it", () => {
+    expect(norm(sqlOf({}, { unlabelledMatchRelevance: true }))).not.toContain("IS NULL");
+  });
+  it("ignore relevance drops the clause entirely", () => {
+    const s = norm(sqlOf({ analysisStatus: "failed" }, { unlabelledMatchRelevance: true, ignore: ["relevance"] }));
+    expect(s).not.toContain("relevance_label =");
+    expect(s).not.toContain("IS NULL");
+  });
+});

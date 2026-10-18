@@ -16,6 +16,8 @@ export function mentionsEmptyCopy(opts: {
   pendingCount: number;
   canManage: boolean;
   onWidenRange: () => void;
+  /** #328: pending link keeping the current range/queries. */
+  pendingHref?: string;
 }): EmptyCopy {
   const widen = (
     <Button color="secondary" size="sm" onClick={opts.onWidenRange}>
@@ -49,7 +51,7 @@ export function mentionsEmptyCopy(opts: {
         title: `${formatCount(opts.pendingCount)} lượt nhắc đang chờ phân tích.`,
         description: "Lượt nhắc chưa phân tích có thể bị bộ lọc cảm xúc/chủ đề loại ra cho tới khi phân tích xong.",
         action: (
-          <Link href="/mentions?analysisStatus=pending" className={linkClass}>
+          <Link href={opts.pendingHref ?? "/mentions?analysisStatus=pending,processing"} className={linkClass}>
             Xem lượt nhắc đang chờ
           </Link>
         ),
