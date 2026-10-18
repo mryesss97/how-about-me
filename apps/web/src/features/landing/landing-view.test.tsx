@@ -64,7 +64,7 @@ describe("LandingView", () => {
     setup();
     const boards = await boardsIn();
     expect(boards).toHaveLength(3);
-    expect(screen.getByRole("link", { name: '"giá vé" · 62,0% tích cực · 100 lượt nhắc' })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: '"giá vé" · 62,0% tích cực · 100 bài nhắc' })).toHaveAttribute(
       "href",
       "/terms/gi%C3%A1%20v%C3%A9?preset=30d",
     );
@@ -104,7 +104,7 @@ describe("LandingView", () => {
   it("figures error → hidden, door plaque still there", async () => {
     setup({ overview: "error" });
     await boardsIn();
-    await waitFor(() => expect(screen.queryByText("lượt nhắc · 30 ngày")).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText("bài nhắc · 30 ngày")).not.toBeInTheDocument());
     expect(screen.getByRole("link", { name: "Vào dashboard" })).toBeInTheDocument();
   });
 

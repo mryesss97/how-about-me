@@ -30,8 +30,8 @@ describe("toLandingBoards", () => {
 
   it("#271: Vietnamese label and split with decimal commas; phrase in straight quotes", () => {
     const [full, empty] = toLandingBoards([row("giá vé", 62, 38, 0), row("x", 0, 0, 0)]);
-    expect(full && boardLabel(full)).toBe('"giá vé" · 62,0% tích cực · 100 lượt nhắc');
-    expect(full && boardSplit(full)).toBe("100 lượt nhắc · 62,0% tích cực · 38,0% trung tính · 0,0% tiêu cực");
+    expect(full && boardLabel(full)).toBe('"giá vé" · 62,0% tích cực · 100 bài nhắc');
+    expect(full && boardSplit(full)).toBe("100 bài nhắc · 62,0% tích cực · 38,0% trung tính · 0,0% tiêu cực");
     expect(empty && boardLabel(empty)).toBe('"x" · chưa ai nhắc');
   });
 

@@ -762,7 +762,9 @@ html[data-landing-hung] .sign-wall .sign-board {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 10px;
+  /* #333: 44px touch target. */
+  min-height: 44px;
+  padding: 10px 12px;
   border: 2px solid currentColor;
   border-radius: 2px;
   font-family: var(--font-figure), sans-serif;
@@ -779,6 +781,11 @@ html[data-landing-hung] .sign-wall .sign-board {
 .term-hero-link:focus-visible {
   outline: 3px solid currentColor;
   outline-offset: 2px;
+}
+
+/* #333: mentions board scrolled to from the hero split. */
+#bai-nhac {
+  scroll-margin-top: 16px;
 }
 
 /* The split always sits on a white plate so the three sentiment colours read on any enamel. */
