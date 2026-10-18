@@ -6,6 +6,7 @@ import type { ClaimedQuery } from "../../jobs/collector-runner";
 import type { SearchPage, SocialDiscoveryProvider } from "../integrations/threads/social-discovery.provider";
 import type { IntegrationHealthService } from "../integrations/integration-health.service";
 import type { SyncJobRecorder } from "../sync-jobs/sync-job.recorder";
+import { MetricsService } from "../../common/metrics/metrics.service";
 import { CollectorService } from "./collector.service";
 import type { IngestionService } from "./ingestion.service";
 
@@ -87,6 +88,7 @@ function setup(
   };
   const logger = { setContext: jest.fn(), info: jest.fn(), error: jest.fn() };
   const health = { recordProviderAuthFailure: jest.fn().mockResolvedValue(true) };
+  const metrics = new MetricsService();
   const svc = new CollectorService(
     prisma as unknown as PrismaService,
     cfg,
@@ -96,9 +98,10 @@ function setup(
     recorder as unknown as SyncJobRecorder,
     health as unknown as IntegrationHealthService,
     logger as unknown as PinoLogger,
+    metrics,
     { sleep: async () => undefined, random: () => 0 },
   );
-  return { svc, prisma, search, recorder, deltas, health };
+  return { svc, prisma, search, recorder, deltas, health, metrics };
 }
 
 describe("CollectorService (T-052, doc 06 §5)", () => {
@@ -234,5 +237,37 @@ describe("CollectorService (T-052, doc 06 §5)", () => {
     await svc.run({ ...claimed, manualJobId: "job2" });
     expect(search.mock.calls[0]).toEqual([expect.objectContaining({ cursor: "c2" }), expect.anything()]);
     expect(recorder.start).toHaveBeenCalledWith(expect.objectContaining({ queuedJobId: "job2", workerId: "w1" }));
+  });
+
+  describe("FR-174 metrics (T-058, doc 09 §2)", () => {
+    it("success → sync job + provider ok + record counters", async () => {
+      const { svc, metrics } = setup([page([item("a", 1)], "c1"), page([item("b", 2)])]);
+      await svc.run(claimed);
+      const text = await metrics.render();
+      expect(text).toContain('collector_sync_jobs_total{status="success",trigger="scheduled"} 1');
+      expect(text).toContain('collector_provider_requests_total{provider="threads",outcome="ok"} 2');
+      expect(text).toContain('collector_records_total{kind="fetched"} 2');
+      expect(text).toContain('collector_records_total{kind="inserted"} 2');
+    });
+
+    it("429 retry → outcome rate_limited + rate_limit_events_total", async () => {
+      const { svc, metrics } = setup([
+        new ProviderError("THREADS_RATE_LIMITED", "slow down", { retryAfterMs: 1 }),
+        page([item("a", 1)]),
+      ]);
+      await svc.run(claimed);
+      const text = await metrics.render();
+      expect(text).toContain('collector_provider_requests_total{provider="threads",outcome="rate_limited"} 1');
+      expect(text).toContain('collector_rate_limit_events_total{provider="threads"} 1');
+    });
+
+    it("timeout → outcome timeout; failed job counted", async () => {
+      const t = () => new ProviderError("THREADS_TIMEOUT", "slow");
+      const { svc, metrics } = setup([t(), t(), t(), t()]);
+      await svc.run(claimed);
+      const text = await metrics.render();
+      expect(text).toMatch(/collector_provider_requests_total\{provider="threads",outcome="timeout"\} \d+/);
+      expect(text).toContain('collector_sync_jobs_total{status="failed",trigger="scheduled"} 1');
+    });
   });
 });

@@ -35,6 +35,15 @@
 | `http_request_duration_ms`               | histogram   | `route`                                                                   |
 | `db_pool_connections`                    | gauge       | `state`                                                                   |
 
+Implementation (T-058, `apps/api/src/common/metrics/`):
+
+- Auth: `Authorization: Bearer <METRICS_TOKEN>` (Prometheus `bearer_token`) or `x-metrics-token: <METRICS_TOKEN>`, compared timing-safe. Missing → 401 `AUTH_MISSING_TOKEN`; wrong → 401 `AUTH_INVALID_TOKEN`. No JWT, not throttled, outside `/api/v1`.
+- `METRICS_TOKEN` unset → `GET /metrics` returns 404 `NOT_FOUND` and the process logs a pino `metrics` line every 60 s (histograms reduced to sum/count). Processes with `APP_ROLE=worker` always log this line too, since collector metrics live in the worker.
+- Histogram buckets (ms): 50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000.
+- `http_requests_total.route` is the Express route template (e.g. `/api/v1/projects/:projectId`), `unmatched` for 404s; `/metrics` itself is not counted. Recorded on response `finish`, so guard rejections (401/403) are counted.
+- `collector_sync_jobs_total.trigger` = `manual` when the run took over a queued manual job, else `scheduled`.
+- Not exported yet: `analysis_*` (M3), `collector_collection_lag_seconds` (with FR-176 lag work), `db_pool_connections` (needs Prisma `metrics` preview).
+
 Business gauges derived on demand by System Status (not exported as metrics): approximate posts/analyses counts.
 
 ## 3. Health

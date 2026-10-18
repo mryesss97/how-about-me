@@ -4,6 +4,7 @@ import { AppError } from "../../common/errors/app.error";
 import type { RetryPolicy } from "../../common/retry/retry.policy";
 import { retryPolicyFromConfig } from "../../common/retry/retry.policy";
 import { withRetry } from "../../common/retry/with-retry";
+import { MetricsService, type ProviderOutcome } from "../../common/metrics/metrics.service";
 import { APP_CONFIG, type AppConfig } from "../../config/config.module";
 import { PrismaService } from "../../database/prisma.service";
 import type { ClaimedQuery, CollectorRunner, RunOutcome, RunStatus } from "../../jobs/collector-runner";
@@ -49,6 +50,7 @@ export class CollectorService implements CollectorRunner {
     private readonly recorder: SyncJobRecorder,
     private readonly health: IntegrationHealthService,
     private readonly logger: PinoLogger,
+    private readonly metrics: MetricsService,
     @Optional() @Inject(COLLECTOR_RETRY_OVERRIDES) private readonly retryOverrides: Partial<RetryPolicy> | null = null,
   ) {
     this.logger.setContext(CollectorService.name);
@@ -103,25 +105,36 @@ export class CollectorService implements CollectorRunner {
         let page: SearchPage;
         try {
           page = await withRetry(
-            (attempt) => {
+            async (attempt) => {
               attempts = attempt;
-              return this.provider.search(
-                {
-                  query: query.queryValue,
-                  searchMode: query.searchMode,
-                  searchType: query.scheduledSearchType,
-                  since,
-                  until,
-                  limit: this.cfg.COLLECTOR_PAGE_LIMIT,
-                  ...(cursor ? { cursor } : {}),
-                },
-                ctx,
-              );
+              const started = Date.now();
+              try {
+                const res = await this.provider.search(
+                  {
+                    query: query.queryValue,
+                    searchMode: query.searchMode,
+                    searchType: query.scheduledSearchType,
+                    since,
+                    until,
+                    limit: this.cfg.COLLECTOR_PAGE_LIMIT,
+                    ...(cursor ? { cursor } : {}),
+                  },
+                  ctx,
+                );
+                this.metrics.observeProviderRequest(this.provider.platform, "ok", Date.now() - started);
+                return res;
+              } catch (err: unknown) {
+                this.metrics.observeProviderRequest(this.provider.platform, providerOutcome(err), Date.now() - started);
+                throw err;
+              }
             },
             {
               ...retryPolicyFromConfig(this.cfg, this.retryOverrides ?? {}),
               onRetry: (info) => {
-                if (info.code === "THREADS_RATE_LIMITED" || info.fromRetryAfter) rateLimited++;
+                if (info.code === "THREADS_RATE_LIMITED" || info.fromRetryAfter) {
+                  rateLimited++;
+                  this.metrics.incRateLimit(this.provider.platform);
+                }
               },
             },
           );
@@ -152,6 +165,12 @@ export class CollectorService implements CollectorRunner {
         totals.updated += result.updated;
         totals.duplicated += result.duplicated;
         totals.invalid += invalid.length;
+        this.metrics.addRecords("fetched", page.items.length);
+        this.metrics.addRecords("inserted", result.inserted);
+        this.metrics.addRecords("updated", result.updated);
+        this.metrics.addRecords("duplicated", result.duplicated);
+        this.metrics.addRecords("invalid", invalid.length);
+        this.metrics.addRecords("excluded", result.excluded);
 
         if (!nextCursor) break;
         cursor = nextCursor;
@@ -188,6 +207,7 @@ export class CollectorService implements CollectorRunner {
       }
     }
     await this.recorder.finish(job.id, { status, errorCode, errorMessage });
+    this.metrics.incSyncJob(status, claimed.manualJobId ? "manual" : "scheduled");
 
     this.logger.info(
       { jobId: job.id, queryId: query.id, windowReason: computed.reason, status, errorCode, ...totals },
@@ -200,6 +220,14 @@ export class CollectorService implements CollectorRunner {
       ...(errorMessage ? { errorMessage } : {}),
     };
   }
+}
+
+/** Maps a provider failure to the `outcome` label of collector_provider_requests_total (doc 09 §2). */
+function providerOutcome(err: unknown): ProviderOutcome {
+  const code = err instanceof AppError ? err.code : (err as { code?: unknown } | null)?.code;
+  if (code === "THREADS_RATE_LIMITED") return "rate_limited";
+  if (code === "THREADS_TIMEOUT") return "timeout";
+  return "error";
 }
 
 /** Only parsed numbers/strings from the provider headers are kept — never the token (doc 06 §9). */
