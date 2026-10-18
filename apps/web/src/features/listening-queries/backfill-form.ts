@@ -1,5 +1,6 @@
 import type { BackfillBody, JobStatus, SearchType, SyncJobDetail } from "@how-about-me/contracts";
 import { calendarRangeToInstants } from "@/lib/filters";
+import { jobStatusLabelVi } from "@/lib/semantics/labels";
 
 /** FE hint only; the server enforces `COLLECTOR_MAX_BACKFILL_DAYS` (FR-063). */
 export const BACKFILL_MAX_DAYS = 30;
@@ -56,14 +57,7 @@ export function toBackfillBody(
 export const isTerminal = (status: JobStatus) => status !== "queued" && status !== "running";
 
 /** Text label for every status — colour is never the only signal (BR-017). */
-export const jobStatusLabel: Record<JobStatus, string> = {
-  queued: "Đang chờ",
-  running: "Đang chạy",
-  success: "Thành công",
-  partial: "Một phần",
-  failed: "Lỗi",
-  cancelled: "Đã huỷ",
-};
+export const jobStatusLabel: Record<JobStatus, string> = jobStatusLabelVi;
 
 export function progressSummary(
   job: Pick<SyncJobDetail, "pagesFetched" | "recordsFetched" | "recordsInserted" | "recordsDuplicated">,

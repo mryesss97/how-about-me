@@ -137,10 +137,10 @@ describe("OverviewCards (TC-SYS-001)", () => {
     };
     const { rerender } = render(<OverviewCards data={data} tz={TZ} isAdmin={false} />);
     expect(screen.getByText("Bài nhắc (ước tính)")).toBeInTheDocument();
-    expect(screen.queryByText("Migration cuối")).not.toBeInTheDocument();
+    expect(screen.queryByText("Cập nhật CSDL cuối (kỹ thuật)")).not.toBeInTheDocument();
     expect(screen.getByText("gpt-x · prompt p1 · taxonomy-v1")).toBeInTheDocument();
     rerender(<OverviewCards data={data} tz={TZ} isAdmin />);
-    expect(screen.getByText("Migration cuối")).toBeInTheDocument();
+    expect(screen.getByText("Cập nhật CSDL cuối (kỹ thuật)")).toBeInTheDocument();
   });
 
   it("#342: a Threads error older than the last success is grey with 'đã kết nối lại'", () => {

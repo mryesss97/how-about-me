@@ -36,7 +36,7 @@ export function AnalysisFailuresTable({ items, tz, isAdmin, busyIds, onRetry }: 
             <tr>
               <th className={TH}>Thời gian</th>
               <th className={TH}>Lỗi</th>
-              <th className={TH}>Bài viết</th>
+              <th className={TH}>Bài nhắc</th>
               <th className={TH}>Số lần thử</th>
               <th className={TH}>Kích hoạt</th>
               {isAdmin ? (

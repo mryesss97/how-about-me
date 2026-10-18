@@ -83,7 +83,7 @@ export function ReviewTable(p: Props) {
                       />
                     </th>
                   ) : null}
-                  <th className={TH}>Bài viết</th>
+                  <th className={TH}>Bài nhắc</th>
                   <th className={TH}>Lý do</th>
                   <th className={TH}>Mức liên quan</th>
                   <th className={TH}>Cảm xúc</th>

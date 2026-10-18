@@ -1,6 +1,7 @@
-import type { ListeningQuery, QueryType } from "@how-about-me/contracts";
+import type { JobStatus, ListeningQuery } from "@how-about-me/contracts";
+import { jobStatusLabelVi, queryTypeLabelVi } from "@/lib/semantics/labels";
 
-export const queryTypeLabelVi: Record<QueryType, string> = { keyword: "Từ khoá", topic_tag: "Chủ đề" };
+export { queryTypeLabelVi };
 
 /** BR-004: tag values are stored without `#`; the UI shows it. */
 export function formatQueryValue(q: Pick<ListeningQuery, "queryType" | "queryValue">): string {
@@ -10,6 +11,15 @@ export function formatQueryValue(q: Pick<ListeningQuery, "queryType" | "queryVal
 export type SyncTone = "success" | "error" | "warning" | "progress" | "neutral";
 export type SyncStatus = { tone: SyncTone; label: string };
 
+const SYNC_TONE: Record<JobStatus, SyncTone> = {
+  success: "success",
+  partial: "warning",
+  failed: "error",
+  cancelled: "neutral",
+  running: "progress",
+  queued: "progress",
+};
+
 /**
  * Sync dot for "Lần đồng bộ cuối" (UX §3.5). Every status carries a text label — colour is never the only signal
  * (BR-017). Order: deleted → disabled → never run → last job status.
@@ -17,21 +27,10 @@ export type SyncStatus = { tone: SyncTone; label: string };
 export function syncStatus(q: Pick<ListeningQuery, "deletedAt" | "enabled" | "lastJob" | "lastError">): SyncStatus {
   if (q.deletedAt) return { tone: "neutral", label: "Đã xoá" };
   if (!q.enabled) return { tone: "neutral", label: "Tắt" };
-  if (!q.lastJob) return q.lastError ? { tone: "error", label: "Lỗi" } : { tone: "neutral", label: "Chưa đồng bộ" };
-  switch (q.lastJob.status) {
-    case "success":
-      return { tone: "success", label: "Thành công" };
-    case "partial":
-      return { tone: "warning", label: "Một phần" };
-    case "failed":
-      return { tone: "error", label: "Lỗi" };
-    case "cancelled":
-      return { tone: "neutral", label: "Đã huỷ" };
-    case "running":
-      return { tone: "progress", label: "Đang chạy" };
-    case "queued":
-      return { tone: "progress", label: "Đang chờ" };
-  }
+  if (!q.lastJob)
+    return q.lastError ? { tone: "error", label: jobStatusLabelVi.failed } : { tone: "neutral", label: "Chưa đồng bộ" };
+  // #344: same word as System Status (shared map).
+  return { tone: SYNC_TONE[q.lastJob.status], label: jobStatusLabelVi[q.lastJob.status] };
 }
 
 export { syncErrorLabel } from "@/lib/semantics/sync-errors";

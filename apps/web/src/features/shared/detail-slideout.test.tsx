@@ -59,7 +59,7 @@ describe("DetailSlideout nav (#339)", () => {
   function NavHarness({ onNext, onPrev, itemKey }: { onNext: () => void; onPrev: () => void; itemKey: string }) {
     return (
       <DetailSlideout
-        title="Chi tiết bài viết"
+        title="Chi tiết bài nhắc"
         regionLabel="Chi tiết"
         fullPageHref={() => "/mentions/1"}
         fallbackHref="/reviews"
@@ -99,7 +99,7 @@ describe("DetailSlideout nav (#339)", () => {
   it("focus moves to the heading when the item changes in place", () => {
     const { rerender } = render(<NavHarness onNext={vi.fn()} onPrev={vi.fn()} itemKey="a" />);
     rerender(<NavHarness onNext={vi.fn()} onPrev={vi.fn()} itemKey="b" />);
-    expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Chi tiết bài viết" }));
+    expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Chi tiết bài nhắc" }));
   });
 
   it("without nav (Mentions): no hint and J does nothing", () => {

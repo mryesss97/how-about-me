@@ -34,3 +34,21 @@ export function tzLabel(timeZone: string, at: Date = new Date()) {
   const off = `GMT${sign}${Math.floor(abs / 60)}${mins ? `:${String(mins).padStart(2, "0")}` : ""}`;
   return `${off} · ${timeZone}`;
 }
+
+/**
+ * Compact "HH:mm dd/MM" in `timeZone` (#344, History tables). Built from parts because vi-VN `{day, month}` formats
+ * as "17-10"; `h23` avoids "24:05" at midnight. No year — callers put the full date in `title`.
+ */
+export function formatShortDateTime(iso: string | Date, timeZone: string = env.NEXT_PUBLIC_DEFAULT_TIMEZONE) {
+  const d = typeof iso === "string" ? new Date(iso) : iso;
+  const parts = new Intl.DateTimeFormat("vi-VN", {
+    timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    day: "2-digit",
+    month: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(d);
+  const get = (t: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === t)?.value ?? "";
+  return `${get("hour")}:${get("minute")} ${get("day")}/${get("month")}`;
+}

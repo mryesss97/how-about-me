@@ -23,7 +23,7 @@ export type SyncJobsListProps = {
 /** #343: jobs of one query (push, so Back returns to the unfiltered list). */
 export const queryJobsHref = (queryId: string) => `/system-status?tab=sync-jobs&queryId=${queryId}`;
 
-/** Query name cell: filter link unless already filtered on it; "Toàn cục" for global jobs. */
+/** Query name cell: filter link unless already filtered on it; "Tất cả truy vấn" for global jobs. */
 export function JobQueryName({
   job,
   queryNames,
@@ -35,7 +35,7 @@ export function JobQueryName({
   currentQueryId: string;
   className?: string;
 }) {
-  if (!job.queryId) return <>Toàn cục</>;
+  if (!job.queryId) return <>Tất cả truy vấn</>;
   const name = queryNames.get(job.queryId) ?? DASH;
   if (job.queryId === currentQueryId) return <>{name}</>;
   return (

@@ -26,7 +26,11 @@ export function AnalysisTabs({ mention, tz, canOverride = false, onEditField, on
         aria-label="Phân tích"
         items={[
           { id: "current", label: "Hiện tại" },
-          { id: "history", label: "Lịch sử", badge: mention.runs.length || undefined },
+          {
+            id: "history",
+            label: "Lịch sử",
+            badge: mention.runs.length + (mention.overrides?.length ?? 0) || undefined,
+          },
         ]}
       />
       <Tabs.Panel id="current" className="pt-4">

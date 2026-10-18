@@ -1,4 +1,4 @@
-import { ANALYSIS_TRIGGERS } from "@how-about-me/contracts";
+import { ANALYSIS_TRIGGERS, JOB_STATUSES, QUERY_TYPES, SEARCH_MODES, SEARCH_TYPES } from "@how-about-me/contracts";
 import { INTENT_LABELS, LANGUAGE_CODES, TOPIC_LABELS } from "@how-about-me/taxonomy";
 import { describe, expect, it } from "vitest";
 import {
@@ -53,5 +53,23 @@ describe("mediaTypeLabel (#338)", () => {
     expect(mediaTypeLabel("TEXT_POST")).toBe("Văn bản");
     expect(mediaTypeLabel("CAROUSEL_ALBUM")).toBe("Album");
     expect(mediaTypeLabel("SOME_NEW")).toBe("Khác");
+  });
+});
+
+describe("shared vocabulary maps (#344)", () => {
+  it("every enum value has a Vietnamese label without the raw code", async () => {
+    const m = await import("./labels");
+    const tables: [readonly string[], Record<string, string>][] = [
+      [JOB_STATUSES, m.jobStatusLabelVi],
+      [SEARCH_TYPES, m.searchTypeLabelVi],
+      [SEARCH_MODES, m.searchModeLabelVi],
+      [QUERY_TYPES, m.queryTypeLabelVi],
+    ];
+    for (const [values, table] of tables)
+      for (const v of values) {
+        expect(table[v]).toBeTruthy();
+        expect(table[v]).not.toMatch(/RECENT|TOP|KEYWORD|TAG|topic_tag|keyword/);
+      }
+    expect(m.jobStatusLabelVi.failed).toBe("Lỗi");
   });
 });

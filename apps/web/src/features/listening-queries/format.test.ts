@@ -1,5 +1,6 @@
 import { JOB_STATUSES } from "@how-about-me/contracts";
 import { describe, expect, it } from "vitest";
+import { jobStatusLabelVi } from "@/lib/semantics/labels";
 import { queryFixture } from "./fixtures.test-utils";
 import {
   formatDuration,
@@ -118,5 +119,16 @@ describe("#343 jobHref", () => {
   it("adds the query filter when given, so closing the drawer shows that query's history", () => {
     expect(jobHref("j1")).toBe("/system-status?tab=sync-jobs&job=j1");
     expect(jobHref("j1", "q1")).toBe("/system-status?tab=sync-jobs&queryId=q1&job=j1");
+  });
+});
+
+describe("syncStatus vocabulary (#344, BR-017)", () => {
+  it("uses the shared job status word for every status", () => {
+    for (const status of JOB_STATUSES) {
+      const lastJob = { ...JOB, status };
+      expect(syncStatus(queryFixture({ enabled: true, deletedAt: null, lastJob })).label).toBe(
+        jobStatusLabelVi[status],
+      );
+    }
   });
 });

@@ -83,7 +83,11 @@ describe("BackfillDialog (FR-063)", () => {
       Promise.resolve(init?.method === "POST" ? { jobId: JOB, status: "queued" } : job("queued")),
     );
     setup();
-    fireEvent.click(screen.getByRole("radio", { name: "Nổi bật (TOP)" }));
+    // #344: visible "Thứ tự lấy" is the group's accessible name; no raw RECENT/TOP in labels.
+    expect(screen.getByRole("radiogroup", { name: "Thứ tự lấy" })).toBeInTheDocument();
+    expect(screen.getByText("Nổi bật lấy các bài có nhiều tương tác trước.")).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Mới nhất trước" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: "Nổi bật trước" }));
     fireEvent.click(submit());
     await waitFor(() => expect(posts()).toHaveLength(1));
     expect(sentBody()).toMatchObject({ searchType: "TOP" });

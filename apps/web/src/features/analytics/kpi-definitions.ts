@@ -17,8 +17,8 @@ export const KPI_DEFINITIONS: readonly KpiDefinition[] = [
   {
     id: "mentions",
     label: "Tổng lượt nhắc liên quan",
-    definition: "Số bài viết (không trùng) trong khoảng thời gian, khớp bộ lọc hiện tại.",
-    denominator: "bài viết (không trùng) đăng trong khoảng thời gian có mức liên quan = liên quan",
+    definition: "Số bài nhắc (không trùng) trong khoảng thời gian, khớp bộ lọc hiện tại.",
+    denominator: "bài nhắc (không trùng) đăng trong khoảng thời gian có mức liên quan = liên quan",
   },
   {
     id: "growth",

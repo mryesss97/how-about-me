@@ -142,8 +142,8 @@ export function ListeningQueriesView() {
         emptyTitle={includeDeleted ? "Chưa có truy vấn nào" : "Chưa có truy vấn đang hoạt động"}
         emptyDescription={
           isAdmin
-            ? "Thêm từ khoá hoặc chủ đề để bắt đầu thu thập bài viết."
-            : "Quản trị viên dự án sẽ thêm từ khoá hoặc chủ đề để thu thập bài viết."
+            ? "Thêm từ khoá hoặc chủ đề để bắt đầu thu thập bài nhắc."
+            : "Quản trị viên dự án sẽ thêm từ khoá hoặc chủ đề để thu thập bài nhắc."
         }
         emptyAction={createButton}
       >

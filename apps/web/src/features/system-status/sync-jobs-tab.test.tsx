@@ -105,8 +105,8 @@ describe("SyncJobsTab (TC-SYS-013)", () => {
     mockApi([job]);
     setup();
     const t = within(await screen.findByRole("table"));
-    expect(t.getByText("Thất bại")).toBeInTheDocument();
-    fireEvent.click(t.getByText("Toàn cục"));
+    expect(t.getAllByText("Lỗi").length).toBeGreaterThan(0);
+    fireEvent.click(t.getByText("Tất cả truy vấn"));
     expect(replace).toHaveBeenCalledWith(`/system-status?tab=sync-jobs&job=${job.id}`, { scroll: false });
   });
 
@@ -178,7 +178,7 @@ describe("SyncJobsTab (TC-SYS-013)", () => {
     mockApi([job]);
     setup();
     const card = within(await screen.findByTestId(`job-card-${job.id}`));
-    expect(card.getByText("Thất bại")).toBeInTheDocument();
+    expect(card.getByText("Lỗi")).toBeInTheDocument();
     expect(card.getByText(/40 lấy · 10 mới · 5 cập nhật/)).toBeInTheDocument();
     fireEvent.click(card.getByRole("button", { name: /xem chi tiết/ }));
     expect(replace).toHaveBeenCalledWith(`/system-status?tab=sync-jobs&job=${job.id}`, { scroll: false });

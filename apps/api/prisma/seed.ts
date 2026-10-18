@@ -17,6 +17,17 @@ export const SEED_QUERIES: { displayName: string; queryValue: string; queryType:
   { displayName: "#eventista", queryValue: "eventista", queryType: QueryType.topic_tag },
 ];
 
+/**
+ * #344: names used by seeds before #356. A DB seeded earlier keeps them (existing queries are skipped), so a re-run
+ * renames only an exact match — a name an admin edited is never touched.
+ */
+export const LEGACY_SEED_NAMES: Record<string, string> = {
+  "1zone (keyword)": "1zone",
+  "#1zone (topic tag)": "#1zone",
+  "eventista (keyword)": "eventista",
+  "#eventista (topic tag)": "#eventista",
+};
+
 export async function runSeed(
   prisma: PrismaClient,
   opts: { adminEmail?: string; log?: (m: string) => void; queries?: typeof SEED_QUERIES } = {},
@@ -41,6 +52,12 @@ export async function runSeed(
     });
     if (existingId) {
       log(`query exists: ${q.queryType} ${queryValue}`);
+      const legacy = Object.keys(LEGACY_SEED_NAMES).filter((k) => LEGACY_SEED_NAMES[k] === q.displayName);
+      const renamed = await prisma.listeningQuery.updateMany({
+        where: { id: existingId, displayName: { in: legacy } },
+        data: { displayName: q.displayName },
+      });
+      if (renamed.count > 0) log(`query renamed: ${q.queryType} ${queryValue} → ${q.displayName}`);
       continue;
     }
     try {

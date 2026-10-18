@@ -54,6 +54,24 @@ describe("idempotent seed (T-008)", () => {
     );
   });
 
+  it("#344: re-run renames exact legacy seed names only; admin-edited names stay", async () => {
+    const { projectId } = await runSeed(prisma);
+    const kw = (value: string) =>
+      prisma.listeningQuery.findFirstOrThrow({ where: { projectId, queryType: QueryType.keyword, queryValue: value } });
+    await prisma.listeningQuery.update({
+      where: { id: (await kw("1zone")).id },
+      data: { displayName: "1zone (keyword)" },
+    });
+    await prisma.listeningQuery.update({
+      where: { id: (await kw("eventista")).id },
+      data: { displayName: "Eventista chính" },
+    });
+    await runSeed(prisma);
+    await runSeed(prisma);
+    expect((await kw("1zone")).displayName).toBe("1zone");
+    expect((await kw("eventista")).displayName).toBe("Eventista chính");
+  });
+
   it("TC-AUTH-017 / FR-019: admin email normalized; role forced back to admin on re-run", async () => {
     const { projectId, adminUserId } = await runSeed(prisma, { adminEmail: "  Admin@Example.COM " });
     const profile = await prisma.userProfile.findUniqueOrThrow({ where: { id: adminUserId } });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDateTime, formatRelativeOrAbsolute, tzLabel } from "./format";
+import { formatDateTime, formatShortDateTime, formatRelativeOrAbsolute, tzLabel } from "./format";
 
 describe("tzLabel", () => {
   const at = new Date("2026-01-15T00:00:00Z");
@@ -22,5 +22,14 @@ describe("formatRelativeOrAbsolute (#277: Vietnamese)", () => {
       formatDateTime(new Date("2026-01-10T03:30:00Z"), "Asia/Ho_Chi_Minh"),
     );
     expect(formatDateTime(new Date("2026-01-10T03:30:00Z"), "Asia/Ho_Chi_Minh")).toContain("2026");
+  });
+});
+
+describe("formatShortDateTime (#344)", () => {
+  it("formats HH:mm dd/MM in the given timezone", () => {
+    expect(formatShortDateTime("2026-10-17T16:46:00Z", "Asia/Ho_Chi_Minh")).toBe("23:46 17/10");
+  });
+  it("uses h23 at midnight (no 24:xx)", () => {
+    expect(formatShortDateTime("2026-10-17T17:05:00Z", "Asia/Ho_Chi_Minh")).toBe("00:05 18/10");
   });
 });

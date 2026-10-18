@@ -82,8 +82,8 @@ export function ReviewCard({
           {formatRelativeOrAbsolute(item.publishedAt, new Date(), tz)}
         </time>
         {a.hasOverride ? (
-          <span title="Đã có chỉnh sửa của chuyên viên" className="text-tertiary">
-            <Edit05 className="size-4" aria-label="Đã chỉnh sửa" />
+          <span title="Có ghi đè của chuyên viên" className="text-tertiary">
+            <Edit05 className="size-4" aria-label="Có ghi đè" />
           </span>
         ) : null}
       </div>
