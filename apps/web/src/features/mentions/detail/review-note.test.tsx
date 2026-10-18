@@ -14,7 +14,10 @@ describe("ReviewNote (#339)", () => {
       />,
     );
     expect(screen.getByText("Đang chờ xem lại · Chưa chắc, Độ tin cậy thấp")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Mở trong Cần xem lại" })).toHaveAttribute("href", `/reviews?item=${ID}`);
+    expect(screen.getByRole("link", { name: "Mở trong Cần xem lại" })).toHaveAttribute(
+      "href",
+      `/reviews?reason=uncertain&item=${ID}`, // #390: first reason narrows the queue
+    );
   });
 
   it("reviewed / null / absent → nothing", () => {

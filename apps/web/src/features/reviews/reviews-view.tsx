@@ -9,11 +9,12 @@ import { useHydrated } from "@/hooks/use-hydrated";
 import { flattenUnique } from "@/lib/query/infinite-list";
 import { ApiError } from "@/lib/api/client";
 import { env } from "@/lib/env";
-import { canMarkReviewed, useMarkReviewed, useReviewQueue, type ReviewFilters } from "./api";
+import { canMarkReviewed, useItemReview, useMarkReviewed, useReviewQueue, type ReviewFilters } from "./api";
 import { ReviewDetailSlideout, type RenderReviewDetail } from "./review-detail-slideout";
 import { ReviewTable } from "./review-table";
 import { ReviewTabs } from "./review-tabs";
 import { SelectionBar } from "./selection-bar";
+import { useLocateItem } from "./use-locate-item";
 import { useQueueNav } from "./use-queue-nav";
 import { useReviewParams } from "./use-review-params";
 
@@ -89,7 +90,22 @@ export function ReviewsView({ renderDetail }: { renderDetail: RenderReviewDetail
     const r = await fetchNextPage();
     return r.data ? flattenUnique(r.data.pages).map((i) => i.id) : null;
   }, [fetchNextPage]);
+  // #390: a deep link outside page 1 loads up to 4 pages, then falls back to the post's own review state.
+  const { inList, notFound } = useLocateItem({
+    scope,
+    item,
+    items,
+    pages: list.data?.pages.length ?? 0,
+    hasNextPage: list.hasNextPage,
+    isFetchingNextPage: list.isFetchingNextPage,
+    isFetchNextPageError: list.isFetchNextPageError,
+    fetchNextPage,
+  });
+  const review = useItemReview(pid, item, notFound);
+  // BR-040: status is server-computed; FR-015: canMark already gates the role.
+  const fallbackMark = notFound && review?.status === "unreviewed";
   const { nav, isCurrent } = useQueueNav({
+    outOfList: notFound,
     items,
     item,
     hasNextPage: list.hasNextPage,
@@ -137,12 +153,14 @@ export function ReviewsView({ renderDetail }: { renderDetail: RenderReviewDetail
           pid={pid}
           postId={item}
           item={items.find((i) => i.id === item)}
-          canMark={canMark && items.some((i) => i.id === item)}
+          canMark={canMark && (inList || fallbackMark)}
           nav={nav}
           isCurrent={isCurrent}
           onMove={params.moveToItem}
           onClose={params.closeItem}
           renderDetail={renderDetail}
+          fallbackReasons={fallbackMark ? review.reasons : undefined}
+          outOfList={notFound}
         />
       ) : null}
     </div>

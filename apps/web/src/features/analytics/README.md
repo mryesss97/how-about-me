@@ -18,7 +18,7 @@ Files:
   - T-148: `language-distribution-chart.tsx` — language donut + 8-row table (P1 row, FR-143).
   - T-150: `query-share-chart.tsx` — keyword share bars (FR-145), overlap note, drill-down `queryIds=[id]` via `queryDrillDown`.
   - T-149: `topic-sentiment-table.tsx` (HTML grid, cells are links; since #336 the sentiment map's Topics "Bảng" view, no separate card) and `negative-topics-chart.tsx` (contributors, per-row denominator printed on the row via `HorizontalBarChart.rowDenominator`); drill-down via `topicSentimentDrillDown`.
-  - #222: `sentiment-bubble-map.tsx` (Sentiment map card), `bubble-canvas.tsx` (3D bubbles + motion), `bubble-detail-panel.tsx`, `sentiment-icon.tsx`, `bubble-layout.ts` (`toTopicBubbles` / `toPhraseBubbles` / `filterBubbles`; re-exports the core — dominant sentiment, intensity, deterministic packing — from `features/shared/bubbles/`, #262; `bubble-canvas.tsx` uses the shared `BubbleShell`/`BubbleLabel`), `bubble-mode.tsx` (#243 Topics | Phrases toggle + empty states); copy in `../copy.ts`.
+  - #222: `sentiment-bubble-map.tsx` (Sentiment map card), `bubble-canvas.tsx` (3D bubbles + motion), `bubble-detail-panel.tsx`, `sentiment-icon.tsx` (re-export; the icon moved to `features/shared/bubbles/sentiment-icon.tsx` in #389), `bubble-layout.ts` (`toTopicBubbles` / `toPhraseBubbles` / `filterBubbles`; re-exports the core — dominant sentiment, intensity, deterministic packing — from `features/shared/bubbles/`, #262; `bubble-canvas.tsx` uses the shared `BubbleShell`/`BubbleLabel`), `bubble-mode.tsx` (#243 Topics | Phrases toggle + empty states); copy in `../copy.ts`.
 
 ## Drill-down (T-102, FR-142)
 

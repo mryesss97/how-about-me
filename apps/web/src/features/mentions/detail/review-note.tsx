@@ -10,11 +10,15 @@ import { reviewReasonLabelVi } from "@/lib/semantics/labels";
  */
 export function ReviewNote({ mentionId, review }: { mentionId: string; review: MentionDetail["review"] }) {
   if (!review || review.status !== "unreviewed") return null;
+  // #390: carry the first reason so the queue opens on a narrow tab where the item is likely on page 1.
+  const qs = new URLSearchParams();
+  if (review.reasons[0]) qs.set("reason", review.reasons[0]);
+  qs.set("item", mentionId);
   return (
     <p className="flex flex-wrap items-center gap-x-2 text-sm text-secondary">
       <span>Đang chờ xem lại · {review.reasons.map((r) => reviewReasonLabelVi[r]).join(", ")}</span>
       <Link
-        href={`/reviews?item=${encodeURIComponent(mentionId)}`}
+        href={`/reviews?${qs.toString()}`}
         className="font-semibold text-[var(--ink)] underline-offset-2 hover:underline"
       >
         Mở trong Cần xem lại

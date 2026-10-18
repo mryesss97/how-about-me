@@ -14,6 +14,8 @@ type Args = {
   /** Loads the next page; resolves with the ids of the whole list after the load. */
   fetchNextIds: () => Promise<string[] | null>;
   onMove: (id: string) => void;
+  /** #390: the item was looked for and is not in the loaded pages → show the nav frame, disabled. */
+  outOfList?: boolean;
 };
 
 /**
@@ -21,7 +23,7 @@ type Args = {
  * tab count, which may be omitted on timeout BR-032), prev/next with the `lastIndex` fallback when the open item left
  * the list, and loading the next page from the last loaded item.
  */
-export function useQueueNav({ items, item, hasNextPage, isFetchingNextPage, fetchNextIds, onMove }: Args) {
+export function useQueueNav({ items, item, hasNextPage, isFetchingNextPage, fetchNextIds, onMove, outOfList }: Args) {
   const ids = items.map((i) => i.id);
   const index = item ? ids.indexOf(item) : -1;
   // Remember where the open item was (adjust-state-during-render, no effect needed).
@@ -49,9 +51,20 @@ export function useQueueNav({ items, item, hasNextPage, isFetchingNextPage, fetc
     return idx === null ? null : queueNeighbours(all, itemRef.current, idx).nextId;
   }, [hasNextPage, fetchNextIds]);
 
+  const total = `${formatCount(ids.length)}${hasNextPage ? "+" : ""}`;
+  if (item && outOfList) {
+    const off: ReviewNav = {
+      label: `– / ${total}`,
+      prevDisabled: true,
+      nextDisabled: true,
+      onPrev: () => {},
+      onNext: () => {},
+      resolveNext: async () => null,
+    };
+    return { nav: off, isCurrent };
+  }
   // Seen in the list at least once → navigable; a deep link outside the tab gets no nav.
   if (!item || !n || (n.index === null && lastIndex === null)) return { nav: undefined, isCurrent };
-  const total = `${formatCount(ids.length)}${hasNextPage ? "+" : ""}`;
   const nav: ReviewNav = {
     label: `${n.index === null ? "–" : formatCount(n.index + 1)} / ${total}`,
     prevDisabled: !n.prevId,

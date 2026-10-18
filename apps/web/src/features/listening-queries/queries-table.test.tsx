@@ -17,7 +17,7 @@ describe("QueriesTable", () => {
       "Bật",
       "Đồng bộ gần nhất",
       "Lịch quét",
-      "Bài khớp (24 giờ / tất cả)",
+      "Bài khớp mới (24 giờ / tổng)",
       "Thao tác",
     ]);
     expect(screen.queryByRole("columnheader", { name: "Người tạo" })).not.toBeInTheDocument();
@@ -31,17 +31,19 @@ describe("QueriesTable", () => {
     expect(row.queryByText("An Admin")).not.toBeInTheDocument();
   });
 
-  it("#340 flows-6: 'Bài khớp' counts link to Mentions filtered to the query (24h / 30d)", () => {
+  it("#391: matched counts are text with a tooltip; a number-free link opens Mentions with every relevance", () => {
     const q = queryFixture();
     renderTable([q]);
     const row = within(screen.getByTestId(`query-row-${q.id}`));
-    expect(row.getByRole("link", { name: `Xem 12 bài khớp 24 giờ qua của ${q.displayName}` })).toHaveAttribute(
+    for (const link of row.getAllByRole("link")) expect(link.textContent).not.toMatch(/^(12|4\.321)$/);
+    expect(
+      row.getByRole("button", { name: /^12: .*gồm cả bài chưa phân tích hoặc không liên quan/ }),
+    ).toBeInTheDocument();
+    expect(row.getByRole("button", { name: /^4\.321: .*từ trước tới nay/ })).toBeInTheDocument();
+    // BR-016: ingest counts include uncertain/irrelevant, so the link widens the relevant-only default.
+    expect(row.getByRole("link", { name: `Xem bài nhắc của ${q.displayName}` })).toHaveAttribute(
       "href",
-      `/mentions?queryIds=${q.id}&preset=24h`,
-    );
-    expect(row.getByRole("link", { name: /bài khớp 30 ngày qua.*4\.321/ })).toHaveAttribute(
-      "href",
-      `/mentions?queryIds=${q.id}&preset=30d`,
+      `/mentions?queryIds=${q.id}&preset=30d&relevance=relevant,uncertain,irrelevant`,
     );
   });
 
