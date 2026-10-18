@@ -2,6 +2,7 @@ import type {
   AnalysisTrigger,
   JobStatus,
   JobTrigger,
+  OverrideField,
   QueryType,
   ReviewReason,
   SearchMode,
@@ -146,3 +147,12 @@ export const searchTypeLabelVi: Record<SearchType, string> = { RECENT: "Mới nh
 export const searchModeLabelVi: Record<SearchMode, string> = { KEYWORD: "Từ khoá", TAG: "Chủ đề" };
 
 export const queryTypeLabelVi: Record<QueryType, string> = { keyword: "Từ khoá", topic_tag: "Chủ đề" };
+
+/** Overridable analysis fields (FR-191); shared by mention detail and the audit log (#393). */
+export const overrideFieldLabelVi: Record<OverrideField, string> = {
+  relevance: "Mức liên quan",
+  sentiment: "Cảm xúc",
+  safety_level: "Mức an toàn",
+  intents: "Ý định",
+  topics: "Chủ đề",
+};

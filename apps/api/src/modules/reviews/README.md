@@ -8,7 +8,7 @@ Analyst overrides — T-142 (FR-191/192/193, BR-025). Contract: docs/02-architec
   intents/topics are deduped; `[]` = no labels.
 - `DELETE …/overrides/:overrideId` (admin · analyst) → `204`; keeps the row (`revoked_at/revoked_by`); already revoked → no-op.
 - Post row lock (`FOR UPDATE`) serializes concurrent writes; leftover P2002 → `409 OVERRIDE_CONFLICT`.
-- Audit `override.created` `{ field, before, after, reason }`, `override.revoked` `{ field, before }` (FR-200, no post text).
+- Audit `override.created` `{ field, before, after, reason, postIds:[postId] }`, `override.revoked` `{ field, before, postIds:[postId] }` (FR-200, post id but no post text; #393).
 - Reads: `effective_post_analysis` / `effective_post_intents` / `effective_post_topics` views (doc 04 §5);
   `OverridesRepository.listForPost` feeds mention detail `overrides[]`.
 

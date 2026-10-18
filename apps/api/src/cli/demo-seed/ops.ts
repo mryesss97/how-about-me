@@ -10,7 +10,15 @@ import {
 import { QueryType } from "@prisma/client";
 import { normalizeQuery } from "../../common/queries/normalize-query";
 import type { Rng } from "../perf-seed/prng";
-import type { DemoAnalysisSetting, DemoAuditLog, DemoInput, DemoQuery, DemoSyncJob, QueryKind } from "./types";
+import type {
+  DemoAnalysisSetting,
+  DemoAuditLog,
+  DemoInput,
+  DemoOverride,
+  DemoQuery,
+  DemoSyncJob,
+  QueryKind,
+} from "./types";
 
 export const MIN = 60_000;
 export const HOUR = 60 * MIN;
@@ -183,7 +191,8 @@ export function buildSyncJobs(rng: Rng, ids: Rng, input: DemoInput, queries: rea
 
 type AuditRefs = {
   queryIds: readonly string[];
-  overrideIds: readonly string[];
+  // #393: field + post id so demo override rows read "Ghi đè · {trường}" and link to the mention.
+  overrides: readonly Pick<DemoOverride, "id" | "postId" | "field">[];
   postIds: readonly string[];
   settingsId: string;
 };
@@ -201,18 +210,24 @@ export function buildAuditLogs(rng: Rng, ids: Rng, input: DemoInput, refs: Audit
       entityId: users.viewer,
       metadata: { from: "analyst", to: "viewer" },
     }),
-    () => ({
-      action: "override.created",
-      entityType: "analysis_override",
-      entityId: rng.pick(refs.overrideIds),
-      metadata: {},
-    }),
-    () => ({
-      action: "override.revoked",
-      entityType: "analysis_override",
-      entityId: rng.pick(refs.overrideIds),
-      metadata: {},
-    }),
+    () => {
+      const o = rng.pick(refs.overrides);
+      return {
+        action: "override.created",
+        entityType: "analysis_override",
+        entityId: o.id,
+        metadata: { field: o.field, postIds: [o.postId] },
+      };
+    },
+    () => {
+      const o = rng.pick(refs.overrides);
+      return {
+        action: "override.revoked",
+        entityType: "analysis_override",
+        entityId: o.id,
+        metadata: { field: o.field, postIds: [o.postId] },
+      };
+    },
     () => ({
       action: "project.updated",
       entityType: "monitoring_project",

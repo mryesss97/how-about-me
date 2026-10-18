@@ -101,7 +101,7 @@ export function buildDemoDataset(input: DemoInput): DemoDataset {
   if (!settingsV2) throw new Error("demo seed: missing analysis settings v2");
   const auditLogs = buildAuditLogs(rng, ids, input, {
     queryIds: queries.map((q) => q.id),
-    overrideIds: overrides.map((o) => o.id),
+    overrides: overrides.map(({ id, postId, field }) => ({ id, postId, field })),
     postIds: postsResult.posts.slice(0, 50).map((p) => p.id),
     settingsId: settingsV2.id,
   });

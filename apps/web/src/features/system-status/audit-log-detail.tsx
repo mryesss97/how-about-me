@@ -20,11 +20,11 @@ export function AuditLogDetail({ log, tz }: { log: AuditLog; tz: string }) {
               <dt className="text-tertiary">{r.label}</dt>
               <dd className="min-w-0 break-words text-primary">
                 {r.href ? (
-                  <Link href={r.href} className="text-brand-secondary hover:underline">
+                  <Link href={r.href} title={r.title} className="text-brand-secondary hover:underline">
                     {r.value}
                   </Link>
                 ) : (
-                  r.value
+                  <span title={r.title}>{r.value}</span>
                 )}
               </dd>
             </div>

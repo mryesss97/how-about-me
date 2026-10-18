@@ -205,4 +205,16 @@ describe("demo seed generator (#294)", () => {
     expect(DATA.auditLogs.every((l) => l.metadata.demo === true)).toBe(true);
     expect(DATA.auditLogs.some((l) => l.action === "override.created")).toBe(true);
   });
+
+  it("#393: override audit rows carry the field and one existing post id (FR-200)", () => {
+    const postIds = new Set(DATA.posts.map((p) => p.id));
+    const fields = new Set<unknown>(DATA.overrides.map((o) => o.field));
+    const rows = DATA.auditLogs.filter((l) => l.action.startsWith("override."));
+    expect(rows.length).toBeGreaterThan(0);
+    for (const l of rows) {
+      expect(fields.has(l.metadata.field)).toBe(true);
+      const ids = l.metadata.postIds;
+      expect(Array.isArray(ids) && ids.length === 1 && postIds.has(String(ids[0]))).toBe(true);
+    }
+  });
 });

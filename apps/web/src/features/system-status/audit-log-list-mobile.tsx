@@ -1,13 +1,16 @@
 "use client";
 
+import type { AuditLog } from "@how-about-me/contracts";
 import { PlaqueButton } from "@/features/shared/plaque-button";
 import { formatDateTime } from "@/lib/time/format";
+import { auditEntityCompact, type NameMaps } from "./audit-format";
 import { AuditLogDetail } from "./audit-log-detail";
 import { actorName, AuditEntity, hasDetail, useToggleSet, type AuditListProps } from "./audit-log-table";
 import { auditActionText } from "./format";
 
 /** #343 (ops-8/ops-12): audit log as cards below `md`. */
-export function AuditLogListMobile({ items, tz, queryNames, memberNames }: AuditListProps) {
+export function AuditLogListMobile({ items, tz, queryNames, memberNames, project }: AuditListProps) {
+  const names: NameMaps = { queryNames, memberNames, project };
   const { open, toggle } = useToggleSet();
   return (
     <ul className="flex flex-col gap-3 md:hidden">
@@ -26,9 +29,7 @@ export function AuditLogListMobile({ items, tz, queryNames, memberNames }: Audit
             <p className="mt-1 text-sm font-semibold text-primary" title={l.action}>
               {auditActionText(l.action)}
             </p>
-            <div className="text-sm text-primary">
-              <AuditEntity log={l} names={{ queryNames, memberNames }} className="inline-flex min-h-11 items-center" />
-            </div>
+            <CardEntity log={l} names={names} />
             {hasDetail(l) ? (
               <PlaqueButton
                 className="mt-2 min-h-11 w-full justify-center"
@@ -48,5 +49,16 @@ export function AuditLogListMobile({ items, tz, queryNames, memberNames }: Audit
         );
       })}
     </ul>
+  );
+}
+
+/** #393: entity line without repeating the action word; omitted entirely when nothing is left to say. */
+function CardEntity({ log, names }: { log: AuditLog; names: NameMaps }) {
+  const actionText = auditActionText(log.action);
+  if (!auditEntityCompact(log, actionText, names)) return null;
+  return (
+    <div className="text-sm text-primary">
+      <AuditEntity log={log} names={names} compact={{ actionText }} className="inline-flex min-h-11 items-center" />
+    </div>
   );
 }
