@@ -14,7 +14,7 @@ import {
 import type { OverviewRowProps } from "./overview-row-props";
 import { toQueryError } from "./query-error";
 
-/** Mentions over time, sentiment donut + stacked bars, safety (T-100/T-101). */
+/** Mentions over time 8 + sentiment donut 4; sentiment over time 8 + safety 4 (T-100/T-101, #336: both time charts span 8 so dates line up). */
 export function OverviewTrendRow({ projectId, apiParams, isProjectLoading, href, navigate }: OverviewRowProps) {
   const timeseries = useMentionsTimeseries(projectId, apiParams);
   // One request feeds both the donut and the stacked bars.
@@ -61,7 +61,7 @@ export function OverviewTrendRow({ projectId, apiParams, isProjectLoading, href,
       <SentimentOverTimeChart
         getSegmentHref={sentimentHref}
         onNavigate={navigate}
-        className="lg:col-span-6"
+        className="lg:col-span-8"
         data={sentiment.data}
         timezone={apiParams.timezone ?? DEFAULT_TZ}
         isLoading={isProjectLoading || sentiment.isLoading}
@@ -71,7 +71,7 @@ export function OverviewTrendRow({ projectId, apiParams, isProjectLoading, href,
       <SafetyDistributionChart
         getHref={(k) => href(segmentDrillDown("safety", k))}
         onNavigate={navigate}
-        className="lg:col-span-6"
+        className="lg:col-span-4"
         data={safety.data}
         isLoading={isProjectLoading || safety.isLoading}
         error={toQueryError(safety.error)}

@@ -1,5 +1,8 @@
 import type { LandingTermsResponse, OverviewResponse } from "@how-about-me/contracts";
+import { viUpdated } from "@/lib/format/relative-time";
 import { landingCopy as copy } from "./copy";
+
+export { viUpdated };
 
 export type Sentiment = "positive" | "neutral" | "negative";
 
@@ -106,24 +109,6 @@ export type LandingStat = {
   /** A state rather than a number ("Chưa đồng bộ"): set as small print, not as a painted figure. */
   status?: boolean;
 };
-
-/** "5 phút trước" / "3 giờ trước", else "14/10 09:30" in the range timezone (#271). */
-export function viUpdated(iso: string, now: Date, timeZone: string): string {
-  const min = Math.round((now.getTime() - new Date(iso).getTime()) / 60_000);
-  if (min < 1) return "vừa xong";
-  if (min < 60) return `${min} phút trước`;
-  if (min < 24 * 60) return `${Math.round(min / 60)} giờ trước`;
-  const parts = new Intl.DateTimeFormat("vi-VN", {
-    timeZone,
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(new Date(iso));
-  const p = (t: string) => parts.find((x) => x.type === t)?.value ?? "";
-  return `${p("day")}/${p("month")} ${p("hour")}:${p("minute")}`;
-}
 
 /**
  * The 4 painted figures of the main sign (#262, #271) from the overview over the landing range. Safety is never

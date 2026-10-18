@@ -59,4 +59,15 @@ describe("page banners (UX §2.3, BR-032)", () => {
     expect(screen.getByText("Heads up")).toBeInTheDocument();
     expect(screen.getByText("Something worth knowing.")).toBeInTheDocument();
   });
+
+  it("#336: flat enamel board with a tone rule (no rounded-xl tint); action is a plaque link; icon + title stay (BR-017)", () => {
+    render(<SyncFailedBanner href="/x" />);
+    const banner = screen.getByRole("status");
+    expect(banner.className).not.toContain("rounded-xl");
+    expect(banner.className).toContain("border-l-2");
+    expect(banner.querySelector("svg")).not.toBeNull();
+    const link = screen.getByRole("link", { name: "Xem lượt đồng bộ lỗi" });
+    expect(link).toHaveAttribute("href", "/x");
+    expect(link.className).toContain("plaque-button");
+  });
 });

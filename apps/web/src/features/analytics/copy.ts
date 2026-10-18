@@ -10,8 +10,6 @@ const sentimentWord = (s: SentimentLabel) => sentimentBadge[s].label.toLowerCase
 export const bubbleMapCopy = {
   title: "Bản đồ cảm xúc",
   description: "Chủ đề trong các lượt nhắc đã phân tích",
-  viewChart: "Bong bóng",
-  viewTable: "Bảng dữ liệu",
   filterLabel: "Lọc theo cảm xúc chủ đạo",
   filterAll: "Tất cả",
   canvasLabel: "Bong bóng bản đồ cảm xúc",

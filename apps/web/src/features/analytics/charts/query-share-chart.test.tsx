@@ -47,7 +47,7 @@ describe("QueryShareChart (T-150)", () => {
 
   it("loading state hides the table toggle", () => {
     render(<QueryShareChart isLoading />);
-    expect(screen.queryByRole("button", { name: "Xem dạng bảng" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Bảng" })).toBeNull();
   });
 
   it("error state shows request ID and Retry", () => {
