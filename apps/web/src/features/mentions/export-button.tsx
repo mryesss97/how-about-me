@@ -2,17 +2,36 @@
 
 import type { ProjectSettings, UserRole } from "@how-about-me/contracts";
 import { useMutation } from "@tanstack/react-query";
-import { Download01 } from "@untitledui/icons";
+import { Download01, Lock01 } from "@untitledui/icons";
+import { useId, useState } from "react";
+import { Button as AriaButton } from "react-aria-components";
 import { toast } from "sonner";
 import { ApiError, apiDownload, type QueryParams } from "@/lib/api/client";
 import { formatCount } from "@/lib/format/number";
-import { PlaqueButton } from "@/features/shared/plaque-button";
+import { Tooltip } from "@/components/base/tooltip/tooltip";
+import { PlaqueButton, plaqueClassName } from "@/features/shared/plaque-button";
 
 /** FR-032 / personas §3: UX only — the API enforces the same gate (FR-015, BR-033). */
 export function canExport(role: UserRole | null, settings: Pick<ProjectSettings, "allowViewerExport"> | null) {
   if (role === "admin" || role === "analyst") return true;
   return role === "viewer" && settings?.allowViewerExport === true;
 }
+
+export type ExportGate = "allowed" | "viewer-disabled" | "hidden";
+
+/**
+ * #349: viewer without the project flag sees a locked button with the reason instead of nothing (FR-032, BR-033).
+ * No role yet (or viewer before settings load) → hidden, so the button never flashes locked then enabled.
+ */
+export function exportGate(
+  role: UserRole | null,
+  settings: Pick<ProjectSettings, "allowViewerExport"> | null,
+): ExportGate {
+  if (canExport(role, settings)) return "allowed";
+  return role === "viewer" && settings ? "viewer-disabled" : "hidden";
+}
+
+export const VIEWER_EXPORT_REASON = "Quản trị viên chưa bật quyền xuất cho Người xem";
 
 function saveBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -66,12 +85,39 @@ export function useExportMentions(pid: string) {
   });
 }
 
-/** Header action on /mentions — UX §3.3 (T-147). Render only when `canExport`. */
+/** Header action on /mentions — UX §3.3 (T-147). Render only when `exportGate` is "allowed". */
 export function ExportButton({ pid, params }: { pid: string; params: QueryParams }) {
   const m = useExportMentions(pid);
   return (
     <PlaqueButton iconLeading={Download01} isLoading={m.isPending} onClick={() => m.mutate(params)}>
       Xuất CSV
     </PlaqueButton>
+  );
+}
+
+/**
+ * #349 locked export for viewers: `aria-disabled` (still focusable so the reason is reachable), lock icon + reason
+ * tooltip — not grey alone (BR-017). Tap/press opens the tooltip too, since touch has no hover. Never calls the API.
+ */
+export function ExportButtonDisabled() {
+  const reasonId = useId();
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Tooltip title={VIEWER_EXPORT_REASON} isOpen={open} onOpenChange={setOpen}>
+        <AriaButton
+          aria-disabled="true"
+          aria-describedby={reasonId}
+          onPress={() => setOpen(true)}
+          className={plaqueClassName("sm", "cursor-not-allowed opacity-60 max-md:min-h-11")}
+        >
+          <Lock01 className="size-4 shrink-0" aria-hidden />
+          Xuất CSV
+        </AriaButton>
+      </Tooltip>
+      <span id={reasonId} className="sr-only">
+        {VIEWER_EXPORT_REASON}
+      </span>
+    </>
   );
 }

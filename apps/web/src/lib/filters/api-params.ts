@@ -42,17 +42,27 @@ export function toApiParams(filters: Filters, opts: { target: ApiTarget; now?: D
   return Object.fromEntries(Object.entries(out).sort(([a], [b]) => a.localeCompare(b)));
 }
 
+/** Resolves the range once and pins it as `custom` (FR-142); `range` overrides with an already pinned range. */
+export function pinRange(filters: Filters, now: Date = new Date(), range?: { from: string; to: string }): Filters {
+  const r = range ?? resolveRange(filters, now);
+  return { ...filters, preset: "custom", from: new Date(r.from), to: new Date(r.to) };
+}
+
 /** Drill-down link (FR-142): pins the resolved range as `custom` so Mentions shows the same post set; no `compare`. */
 export function toMentionsHref(filters: Filters, extra: Partial<Filters> = {}, now: Date = new Date()): string {
-  const merged: Filters = { ...filters, ...extra };
-  const range = resolveRange(merged, now);
-  return `/mentions${serializeFilters({
-    ...merged,
-    preset: "custom",
-    from: new Date(range.from),
-    to: new Date(range.to),
-    compare: null,
-  })}`;
+  return `/mentions${serializeFilters({ ...pinRange({ ...filters, ...extra }, now), compare: null })}`;
+}
+
+/**
+ * #349 share link: absolute URL of `pathname` with the range pinned as `custom` so the recipient sees the same
+ * post set (FR-142/FR-130). `compare` is kept — it adds a comparison, never changes the set.
+ */
+export function toShareUrl(
+  pathname: string,
+  filters: Filters,
+  opts: { origin: string; now?: Date; range?: { from: string; to: string } },
+): string {
+  return `${opts.origin}${pathname}${serializeFilters(pinRange(filters, opts.now, opts.range))}`;
 }
 
 /**

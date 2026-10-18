@@ -22,6 +22,7 @@ vi.mock("@/lib/api/client", async (orig) => ({
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push, replace, back }),
   useSearchParams: () => new URLSearchParams(searchState),
+  usePathname: () => "/mentions",
 }));
 // The slide-out body has its own tests; keep this view test on the list ↔ `?item=` wiring (#326).
 vi.mock("./detail/mention-detail", () => ({
@@ -98,15 +99,19 @@ describe("MentionsView (UX §3.3)", () => {
   });
 
   it.each([
-    ["admin", false, true],
-    ["viewer", false, false],
-    ["viewer", true, true],
-  ] as const)("T-147 / FR-032: %s (allowViewerExport=%s) sees Export CSV → %s", async (role, allow, visible) => {
+    ["admin", false, "enabled"],
+    ["viewer", false, "locked"],
+    ["viewer", true, "enabled"],
+  ] as const)("T-147 / FR-032 / #349: %s (allowViewerExport=%s) → Export CSV %s", async (role, allow, state) => {
     roleState = { role, settings: { allowViewerExport: allow } };
     apiFetch.mockResolvedValueOnce(page(1, null, 1));
     setup();
     await waitFor(() => expect(screen.getAllByTestId("mention-row")).toHaveLength(1));
-    expect(screen.queryByRole("button", { name: /xuất csv/i }) !== null).toBe(visible);
+    const exp = screen.getByRole("button", { name: /xuất csv/i });
+    expect(exp.getAttribute("aria-disabled") === "true").toBe(state === "locked");
+    // #349: every role can copy the share link; it sits first in the toolbar.
+    const copy = screen.getByRole("button", { name: "Sao chép liên kết" });
+    expect(copy.compareDocumentPosition(exp) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("TC-MEN-001 / BR-016: first page has 25 rows, count=true, relevance=relevant, sort=newest, total shown", async () => {
