@@ -8,7 +8,7 @@ export const landingCopy = {
   legend: "Biển càng to, càng nhiều người nhắc. Màu biển là cảm xúc chủ đạo.",
   statsLabel: "30 ngày qua",
   stats: {
-    mentions: "lượt nhắc · 30 ngày",
+    mentions: "bài nhắc · 30 ngày",
     positive: "tích cực",
     negative: "tiêu cực",
     lastUpdated: "cập nhật",
@@ -19,6 +19,6 @@ export const landingCopy = {
   emptyAdmin: "Thêm cụm từ cho landing trong Cài đặt",
   emptyOther: "Chưa có cụm từ nào được cấu hình.",
   sentiment: { positive: "tích cực", neutral: "trung tính", negative: "tiêu cực" },
-  mentions: (n: string) => `${n} lượt nhắc`,
+  mentions: (n: string) => `${n} bài nhắc`,
   noMentions: "chưa ai nhắc",
 };

@@ -51,15 +51,25 @@ export const bubbleMapCopy = {
 
 /** Phrase detail page `/terms/[term]` (#276). */
 export const termDetailCopy = {
-  back: "Về bức tường cụm từ",
-  allMentions: "Xem tất cả trong Bài nhắc",
-  withSentiment: (n: string) => `${n} lượt nhắc có cảm xúc`,
+  back: "Trang chủ",
+  withSentiment: (n: string) => `${n} bài nhắc`,
   /** Hero period (#332): relative presets as words, custom as its dates. */
   period: (filters: Filters, now?: Date) => PERIOD[filters.preset] ?? rangeLabel(filters, now).replace(" – ", "–"),
   none: "Chưa ai nhắc tới cụm từ này trong khoảng thời gian đã chọn.",
   splitLabel: "Tỷ lệ cảm xúc",
   sentiment: { positive: "Tích cực", neutral: "Trung tính", negative: "Tiêu cực" },
-  matchNote: "Đếm các bài có nội dung hoặc cụm từ khoá chứa cụm này (BR-042), giống biển ở trang chủ.",
+  matchNote: "Tính các bài nhắc có cụm này trong nội dung hoặc trong cụm từ khoá — cùng cách đếm với biển ở trang chủ.",
+  /** #333 entry-5: change vs the window right before. */
+  change: (pct: string) => `${pct} so với kỳ trước`,
+  flat: "Không đổi so với kỳ trước",
+  newTerm: "Mới trong kỳ này",
+  previous: (n: string) => `kỳ trước: ${n}`,
+  negativeVsPrevious: (now: string, prev: string) => `Tiêu cực: ${now} (kỳ trước ${prev})`,
+  filteredNote: (labels: string) => `Biểu đồ và danh sách bên dưới đang lọc: ${labels}`,
+  splitLink: (label: string, rate: string, n: string) => `${label} ${rate} (${n} bài nhắc)`,
+  otherTerms: "Cụm từ khác:",
+  widenTo30d: "Mở rộng ra 30 ngày",
+  home: "Về trang chủ",
 } as const;
 
 const PERIOD: Record<string, string | undefined> = {
