@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { bannersFor, OverviewBanners } from "./overview-banners";
+import { bannersFor, emptyReasonFor, OverviewBanners } from "./overview-banners";
 import { overviewFixture } from "./overview-fixture.test-utils";
 
 const dq = (patch: Partial<ReturnType<typeof overviewFixture>["dataQuality"]>) => {
@@ -43,5 +43,22 @@ describe("OverviewBanners (FR-134)", () => {
       "sync",
       "pending",
     ]);
+  });
+});
+
+describe("emptyReasonFor (FR-159, BR-032)", () => {
+  it("returns none for healthy or missing data", () => {
+    expect(emptyReasonFor(overviewFixture())).toBe("none");
+    expect(emptyReasonFor(undefined)).toBe("none");
+  });
+
+  it("maps each cause and keeps priority integration > sync > pending", () => {
+    const f = overviewFixture();
+    const pending = { ...f, coverage: { ...f.coverage, pendingMentions: 3 } };
+    expect(emptyReasonFor(pending)).toBe("pending");
+    const sync = { ...pending, dataQuality: { ...f.dataQuality, lastSyncStatus: "failed" as const } };
+    expect(emptyReasonFor(sync)).toBe("sync");
+    const integ = { ...sync, dataQuality: { ...sync.dataQuality, integrationStatus: "expired" as const } };
+    expect(emptyReasonFor(integ)).toBe("integration");
   });
 });

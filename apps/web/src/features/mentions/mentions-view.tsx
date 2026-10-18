@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { MentionSort } from "@how-about-me/contracts";
 import { useOverview } from "@/features/shared/use-overview";
-import { OverviewBanners } from "@/features/shared/overview-banners";
+import { emptyReasonFor, OverviewBanners } from "@/features/shared/overview-banners";
 import { useCurrentProject } from "@/features/auth/use-current-project";
 import { useRole } from "@/features/auth/use-role";
 import { useHydrated } from "@/hooks/use-hydrated";
@@ -107,6 +107,9 @@ export function MentionsView() {
         fetchNextPage={() => void list.fetchNextPage()}
         onOpen={onOpen}
         onWidenRange={() => setFilters({ preset: "30d", from: null, to: null })}
+        emptyReason={emptyReasonFor(overview.data)}
+        pendingCount={overview.data?.coverage.pendingMentions ?? 0}
+        canManage={role === "admin"}
       />
     </div>
   );
