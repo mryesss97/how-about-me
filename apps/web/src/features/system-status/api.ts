@@ -199,3 +199,25 @@ export function useQueryNames(pid: string | null | undefined) {
   });
   return useMemo(() => (q.data?.items ?? []).map((x) => ({ id: x.id, name: x.displayName })), [q.data]);
 }
+
+/**
+ * #342: listening queries for the overview "Truy vấn đang lỗi" count (computed in the browser, no contract change).
+ * Live queries only, first page (200 — MVP projects have a few dozen). Own key suffix: feature folders must not
+ * import `listening-queries` (frontend-design §1).
+ */
+export function useLiveQueriesForStatus(pid: string | null | undefined) {
+  return useQuery({
+    queryKey: [...qk.queries(pid ?? "", { includeDeleted: false }), "status"] as const,
+    queryFn: async () =>
+      ListeningQueryPageSchema.parse(
+        await apiFetch<unknown>(`/projects/${pid}/listening-queries`, {
+          params: { includeDeleted: "false", limit: "200" },
+        }),
+      ),
+    staleTime: staleTimes.queries,
+    // Follows the overview poll so the count stays in step with the cards.
+    refetchInterval: SYSTEM_STATUS_REFETCH_MS,
+    refetchIntervalInBackground: false,
+    enabled: !!pid,
+  });
+}

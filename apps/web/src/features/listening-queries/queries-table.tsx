@@ -3,30 +3,15 @@
 import type { ListeningQuery } from "@how-about-me/contracts";
 import { Badge } from "@/components/base/badges/badges";
 import { Toggle } from "@/components/base/toggle/toggle";
-import { Tooltip, TooltipTrigger } from "@/components/base/tooltip/tooltip";
 import { DASH, formatCount } from "@/lib/format/number";
 import { formatDateTime, formatRelativeOrAbsolute } from "@/lib/time/format";
 import { cx } from "@/utils/cx";
-import {
-  formatDuration,
-  formatQueryValue,
-  queryTypeLabelVi,
-  syncErrorLabel,
-  syncStatus,
-  type SyncTone,
-} from "./format";
+import { formatDuration, formatQueryValue, queryTypeLabelVi } from "./format";
+import { LastErrorCell, SyncStatusCell } from "./sync-cells";
 import { QueryActionsMenu, type QueryActionHandlers } from "./query-actions-menu";
 
 const TH = "whitespace-nowrap px-3 py-2 text-left text-xs font-semibold text-tertiary";
 const TD = "px-3 py-3 align-top text-sm";
-
-const DOT: Record<SyncTone, string> = {
-  success: "bg-fg-success-secondary",
-  error: "bg-fg-error-secondary",
-  warning: "bg-fg-warning-secondary",
-  progress: "bg-fg-brand-secondary",
-  neutral: "bg-fg-quaternary",
-};
 
 type Props = QueryActionHandlers & {
   items: ListeningQuery[];
@@ -96,7 +81,6 @@ function QueryRow({
   handlers: QueryActionHandlers;
 }) {
   const deleted = !!q.deletedAt;
-  const status = syncStatus(q);
   return (
     <tr data-testid={`query-row-${q.id}`} className={cx("border-t border-secondary", deleted && "opacity-60")}>
       <td className={TD}>
@@ -128,11 +112,7 @@ function QueryRow({
       <td className={cx(TD, "whitespace-nowrap text-secondary")}>{formatDuration(q.pollIntervalSeconds)}</td>
       <td className={cx(TD, "whitespace-nowrap text-secondary")}>{formatDuration(q.overlapSeconds)}</td>
       <td className={cx(TD, "whitespace-nowrap")}>
-        {/* BR-017: the dot always comes with a text label. */}
-        <span className="flex items-center gap-2 text-secondary">
-          <span aria-hidden className={cx("size-2 shrink-0 rounded-full", DOT[status.tone])} />
-          {status.label}
-        </span>
+        <SyncStatusCell q={q} />
         <span
           className="text-tertiary"
           title={q.lastSuccessfulSyncAt ? formatDateTime(q.lastSuccessfulSyncAt, tz) : undefined}
@@ -150,21 +130,7 @@ function QueryRow({
         {formatCount(q.matchedPosts.last24h)} / {formatCount(q.matchedPosts.total)}
       </td>
       <td className={cx(TD, "max-w-64")}>
-        {q.lastError ? (
-          <Tooltip
-            title={`${q.lastError.code}: ${q.lastError.message}`}
-            description={formatDateTime(q.lastError.at, tz)}
-          >
-            <TooltipTrigger
-              aria-label={`${q.lastError.code}: ${q.lastError.message}`}
-              className="text-left text-error-primary"
-            >
-              {syncErrorLabel(q.lastError.code, q.lastError.message)}
-            </TooltipTrigger>
-          </Tooltip>
-        ) : (
-          <span className="text-tertiary">{DASH}</span>
-        )}
+        <LastErrorCell q={q} tz={tz} />
       </td>
       <td className={cx(TD, "whitespace-nowrap text-secondary")}>
         {q.createdBy ? (q.createdBy.displayName ?? q.createdBy.email ?? DASH) : DASH}

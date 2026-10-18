@@ -1,5 +1,6 @@
 import type {
   AnalysisTrigger,
+  ListeningQuery,
   AuditAction,
   IntegrationStatus,
   JobStatus,
@@ -7,7 +8,7 @@ import type {
   SystemStatusResponse,
 } from "@how-about-me/contracts";
 import { parseDate } from "@internationalized/date";
-import { DASH } from "@/lib/format/number";
+import { DASH, formatCount } from "@/lib/format/number";
 
 export type Tone = "success" | "warning" | "error" | "progress" | "neutral";
 export type StatusLabel = { label: string; tone: Tone };
@@ -146,4 +147,106 @@ const AUDIT_ENTITY_LABEL_VI: Record<string, string> = {
 
 export function auditEntityLabel(type: string): string {
   return AUDIT_ENTITY_LABEL_VI[type] ?? type;
+}
+
+// ── Overview summary (#342, UX §3.6) ─────────────────────────────────────────────────────────────────────────
+
+/** Token warning window: "Sắp hết hạn" when the Threads token expires within this many days. */
+export const TOKEN_WARN_DAYS = 7;
+const DAY_MS = 86_400_000;
+
+/** Whole days until the token expires (ceil, by elapsed ms, not calendar days); ≤ 0 = expired; null = unknown. */
+export function tokenDaysLeft(expiresAt: string | null, nowMs: number): number | null {
+  if (!expiresAt) return null;
+  const t = Date.parse(expiresAt);
+  if (!Number.isFinite(t)) return null;
+  return Math.ceil((t - nowMs) / DAY_MS);
+}
+
+type Threads = SystemStatusResponse["threads"];
+
+/** Threads plate: a connected token past expiry → "Đã hết hạn" (error); within 7 days → "Sắp hết hạn" (warning). */
+export function threadsPlate(threads: Threads, nowMs: number): StatusLabel {
+  if (threads.status === "connected") {
+    const days = tokenDaysLeft(threads.tokenExpiresAt, nowMs);
+    if (days != null && days <= 0) return { label: "Đã hết hạn", tone: "error" };
+    if (days != null && days <= TOKEN_WARN_DAYS) return { label: "Sắp hết hạn", tone: "warning" };
+  }
+  return integrationStatusLabel[threads.status];
+}
+
+/** "classifier-v2 · taxonomy-v1": the `prompt`/`taxonomy` prefix is added only when the value lacks it. */
+export function formatVersions(v: SystemStatusResponse["analysis"]["versions"]): string {
+  const pre = (prefix: string, value: string | null) =>
+    value ? (value.toLowerCase().startsWith(prefix) ? value : `${prefix} ${value}`) : null;
+  return (
+    [v.classifierModel, pre("prompt", v.promptVersion), pre("taxonomy", v.taxonomyVersion)]
+      .filter(Boolean)
+      .join(" · ") || DASH
+  );
+}
+
+/**
+ * Live (enabled, not deleted) queries whose sync dot is "Lỗi" — same rule as `syncStatus` in listening-queries
+ * (UX §3.5; features may not import each other): last job failed, or never synced but has an error. An error
+ * already followed by a successful sync is not counted.
+ */
+export function countQueriesWithError(
+  queries: readonly Pick<ListeningQuery, "deletedAt" | "enabled" | "lastJob" | "lastError">[],
+): number {
+  return queries.filter((q) => !q.deletedAt && q.enabled && (q.lastJob ? q.lastJob.status === "failed" : !!q.lastError))
+    .length;
+}
+
+export type SummaryClause = { text: string; href: string | null };
+export type Summary = { ok: true } | { ok: false; clauses: SummaryClause[] };
+
+export const FAILED_JOBS_HREF = "/system-status?tab=sync-jobs&status=failed";
+
+/** Sync-jobs link for the collector: failed first; only partial → `status=partial` (one status per URL). */
+export function failedJobsHref(failed: number, partial: number): string | null {
+  if (failed > 0) return FAILED_JOBS_HREF;
+  if (partial > 0) return "/system-status?tab=sync-jobs&status=partial";
+  return null;
+}
+
+/**
+ * One-line overview summary, most urgent first: Threads → collector → failed syncs → queries with errors → analyser.
+ * `nowMs` should be the payload's `generatedAt` (server clock) so the result is stable and testable.
+ */
+export function buildSummary(args: {
+  data: SystemStatusResponse;
+  nowMs: number;
+  queriesWithError: number | null;
+  isAdmin: boolean;
+}): Summary {
+  const { data, nowMs, queriesWithError, isAdmin } = args;
+  const { threads, collector, analysis } = data;
+  const clauses: SummaryClause[] = [];
+  // Settings is admin-only; non-admins get plain text (FR-015 is still enforced by the API).
+  const settings = isAdmin ? "/settings/integrations" : null;
+  if (threads.status === "expired" || threads.status === "permission_error" || threads.status === "error") {
+    clauses.push({ text: "kết nối Threads lỗi", href: settings });
+  } else if (threads.status === "connected") {
+    const days = tokenDaysLeft(threads.tokenExpiresAt, nowMs);
+    if (days != null && days <= 0) clauses.push({ text: "token Threads đã hết hạn", href: settings });
+    else if (days != null && days <= TOKEN_WARN_DAYS)
+      clauses.push({ text: `token Threads hết hạn sau ${formatCount(days)} ngày`, href: settings });
+  }
+  if (collector.status === "paused" || collector.circuit.open)
+    clauses.push({ text: "bộ thu thập tạm dừng", href: null });
+  if (collector.failedJobs24h > 0)
+    clauses.push({
+      text: `${formatCount(collector.failedJobs24h)} lượt đồng bộ lỗi trong 24 giờ`,
+      href: FAILED_JOBS_HREF,
+    });
+  if (queriesWithError != null && queriesWithError > 0)
+    clauses.push({ text: `${formatCount(queriesWithError)} truy vấn đang lỗi`, href: "/listening-queries" });
+  if (analysis.failed24h > 0)
+    clauses.push({
+      text: `${formatCount(analysis.failed24h)} lượt phân tích lỗi trong 24 giờ`,
+      href: "/system-status?tab=analysis-failures",
+    });
+  if (analysis.status === "budget_paused") clauses.push({ text: "bộ phân tích tạm dừng (ngân sách)", href: null });
+  return clauses.length ? { ok: false, clauses } : { ok: true };
 }
