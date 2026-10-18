@@ -6,16 +6,18 @@ import { PageHeader } from "@/features/shared/page-header";
 import { QueryState, SkeletonBlock } from "@/features/shared/query-state";
 import { ApiError } from "@/lib/api/client";
 import { useSystemStatus } from "./api";
+import { AnalysisFailuresTab } from "./analysis-failures-tab";
 import { OverviewCards } from "./overview-cards";
 import { SyncJobsTab } from "./sync-jobs-tab";
 import { UpdatedAgo } from "./updated-ago";
 import { useStatusParams, type StatusTab } from "./use-status-params";
 
 const DEFAULT_TZ = "Asia/Ho_Chi_Minh";
-// "Lỗi phân tích" (T-106) and "Nhật ký thao tác" (T-061) tabs are added by their own tickets.
+// "Nhật ký thao tác" (T-061) tab is added by its own ticket.
 const TABS: { id: StatusTab; label: string }[] = [
   { id: "overview", label: "Tổng quan" },
   { id: "sync-jobs", label: "Lượt đồng bộ" },
+  { id: "analysis-failures", label: "Lỗi phân tích" },
 ];
 
 /** /system-status (T-060, UX §3.6, FR-170). */
@@ -66,10 +68,12 @@ export function SystemStatusView() {
         >
           {status.data ? <OverviewCards data={status.data} tz={tz} isAdmin={isAdmin} /> : null}
         </QueryState>
-      ) : project ? (
-        <SyncJobsTab pid={project.id} tz={tz} isAdmin={isAdmin} />
-      ) : (
+      ) : !project ? (
         <SkeletonBlock lines={6} className="operate-board p-4" />
+      ) : tab === "analysis-failures" ? (
+        <AnalysisFailuresTab pid={project.id} tz={tz} isAdmin={isAdmin} />
+      ) : (
+        <SyncJobsTab pid={project.id} tz={tz} isAdmin={isAdmin} />
       )}
     </div>
   );

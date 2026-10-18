@@ -12,6 +12,7 @@ export const qk = {
   mention: (pid: string, id: string) => ["project", pid, "mention", id] as const,
   queries: (pid: string, filters?: unknown) => ["project", pid, "listening-queries", filters ?? {}] as const,
   syncJobs: (pid: string, filters?: unknown) => ["project", pid, "sync-jobs", filters ?? {}] as const,
+  analysisRuns: (pid: string, filters?: unknown) => ["project", pid, "analysis-runs", filters ?? {}] as const,
   systemStatus: (pid: string) => ["project", pid, "system-status"] as const,
   integration: (pid: string) => ["project", pid, "integrations", "threads"] as const,
   members: (pid: string) => ["project", pid, "members"] as const,

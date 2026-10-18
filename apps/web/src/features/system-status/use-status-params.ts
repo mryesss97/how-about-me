@@ -4,7 +4,8 @@ import { JOB_STATUSES, type JobStatus } from "@how-about-me/contracts";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 
-export type StatusTab = "overview" | "sync-jobs";
+export type StatusTab = "overview" | "sync-jobs" | "analysis-failures";
+const TAB_IDS: readonly StatusTab[] = ["overview", "sync-jobs", "analysis-failures"];
 export type SyncJobsParams = { queryId: string; status: JobStatus | ""; from: string; to: string };
 
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -21,7 +22,8 @@ export function useStatusParams() {
   const rawStatus = get("status");
   const day = (k: string) => (DAY_RE.test(get(k)) ? get(k) : "");
 
-  const tab: StatusTab = get("tab") === "sync-jobs" ? "sync-jobs" : "overview";
+  const rawTab = get("tab");
+  const tab: StatusTab = (TAB_IDS as readonly string[]).includes(rawTab) ? (rawTab as StatusTab) : "overview";
   const filters: SyncJobsParams = {
     queryId: get("queryId"),
     status: (JOB_STATUSES as readonly string[]).includes(rawStatus) ? (rawStatus as JobStatus) : "",

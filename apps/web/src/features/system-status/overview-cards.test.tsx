@@ -48,4 +48,28 @@ describe("OverviewCards (TC-SYS-001)", () => {
     expect(screen.getByText(/THREADS_UNAUTHORIZED: bad/)).toBeInTheDocument();
     expect(screen.getAllByText("—").length).toBeGreaterThan(0);
   });
+
+  // TC-SYS-004 / BR-017: analyzer plate is shown as text, not colour only.
+  it.each([
+    ["healthy", "Hoạt động tốt"],
+    ["degraded", "Chậm"],
+    ["budget_paused", "Tạm dừng (ngân sách)"],
+  ] as const)("analyzer plate %s → %s", (status, label) => {
+    const base = statusFixture();
+    render(<OverviewCards data={{ ...base, analysis: { ...base.analysis, status } }} tz={TZ} isAdmin={false} />);
+    expect(within(screen.getByRole("region", { name: "Bộ phân tích" })).getByText(label)).toBeInTheDocument();
+  });
+
+  it("links to the analysis failures tab only when failed24h > 0", () => {
+    const base = statusFixture();
+    const { rerender } = render(
+      <OverviewCards data={{ ...base, analysis: { ...base.analysis, failed24h: 0 } }} tz={TZ} isAdmin={false} />,
+    );
+    expect(screen.queryByRole("link", { name: "Xem lỗi" })).not.toBeInTheDocument();
+    rerender(<OverviewCards data={base} tz={TZ} isAdmin={false} />);
+    expect(screen.getByRole("link", { name: "Xem lỗi" })).toHaveAttribute(
+      "href",
+      "/system-status?tab=analysis-failures",
+    );
+  });
 });
