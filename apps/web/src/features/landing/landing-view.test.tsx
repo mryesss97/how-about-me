@@ -8,7 +8,8 @@ const apiFetch = vi.fn();
 vi.mock("@/lib/api/client", () => ({ apiFetch: (...a: unknown[]) => apiFetch(...a) }));
 let reduced = false;
 vi.mock("@/hooks/use-prefers-reduced-motion", () => ({ usePrefersReducedMotion: () => reduced }));
-vi.mock("@/hooks/use-breakpoint", () => ({ useBreakpoint: () => true }));
+let wide = true;
+vi.mock("@/hooks/use-breakpoint", () => ({ useBreakpoint: () => wide }));
 
 const LANDING = {
   range: { from: "2026-09-14T12:00:00+07:00", to: "2026-10-14T12:00:00+07:00", timezone: "Asia/Ho_Chi_Minh" },
@@ -51,6 +52,8 @@ afterAll(() => {
 beforeEach(() => {
   apiFetch.mockReset();
   reduced = false;
+  wide = true;
+  document.documentElement.removeAttribute("data-landing-hung");
 });
 
 const boardsIn = () => screen.findAllByRole("link", { name: /^"/ });
@@ -130,5 +133,54 @@ describe("LandingView", () => {
     setup();
     await boardsIn();
     expect(screen.getByRole("main")).toHaveAttribute("data-motion", "reduced");
+  });
+
+  it("#334: hang-in once per session — the html flag → data-motion still; reduced motion still wins", async () => {
+    document.documentElement.setAttribute("data-landing-hung", "");
+    const { unmount } = setup();
+    await boardsIn();
+    expect(screen.getByRole("main")).toHaveAttribute("data-motion", "still");
+    unmount();
+    reduced = true;
+    setup();
+    await boardsIn();
+    expect(screen.getByRole("main")).toHaveAttribute("data-motion", "reduced");
+  });
+
+  it("#334: first visit hangs in (full); leaving marks the session even if sessionStorage throws", async () => {
+    const spy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("private mode");
+    });
+    const { unmount } = setup();
+    await boardsIn();
+    expect(screen.getByRole("main")).toHaveAttribute("data-motion", "full");
+    unmount();
+    expect(document.documentElement.hasAttribute("data-landing-hung")).toBe(true);
+    spy.mockRestore();
+  });
+
+  it("#334: legend tells the user boards are clickable; no Mới badge", async () => {
+    setup();
+    expect(await screen.findByText(/Bấm vào biển để xem bài nhắc/)).toBeInTheDocument();
+    expect(screen.queryByText("Mới")).not.toBeInTheDocument();
+  });
+
+  it("#334, FR-149: links follow rank order (DOM/tab order) at every width; share line ≥ 13 px", async () => {
+    const rows = [LANDING.rows[2], LANDING.rows[1], LANDING.rows[0]];
+    for (const w of [true, false]) {
+      wide = w;
+      const { unmount } = setup({ landing: { ...LANDING, rows } });
+      const boards = await boardsIn();
+      expect(boards.map((b) => b.getAttribute("aria-label")?.split(" · ")[0])).toEqual([
+        '"giá vé"',
+        '"dịch vụ"',
+        '"im lặng"',
+      ]);
+      for (const b of boards) {
+        const fig = b.querySelector<HTMLElement>(".sign-figure");
+        expect(Number.parseFloat(fig?.style.fontSize ?? "0")).toBeGreaterThanOrEqual(13);
+      }
+      unmount();
+    }
   });
 });

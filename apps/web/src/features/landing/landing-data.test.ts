@@ -58,10 +58,10 @@ describe("landing figures", () => {
     expect(JSON.stringify(stats)).not.toMatch(/safety|an toàn/i);
   });
 
-  it("#267, #271: growth capped at >999% on screen, exact in aria; Mới; null hidden", () => {
+  it("#267, #271: growth capped at >999% on screen, exact in aria; #334: new period has no badge", () => {
     expect(landingGrowth(14150, "up")).toEqual({ text: ">999%", direction: "up", aria: "+14.150,0%" });
     expect(landingGrowth(-12, "down")).toEqual({ text: "12,0%", direction: "down", aria: "−12,0%" });
-    expect(landingGrowth(null, "new")).toMatchObject({ text: "Mới", direction: "new" });
+    expect(landingGrowth(null, "new")).toBeNull();
     expect(landingGrowth(null, "up")).toBeNull();
   });
 
@@ -74,7 +74,10 @@ describe("landing figures", () => {
 
   it("#271: growth carries its base (previous period count) as small print", () => {
     expect(formatLandingStats(overviewFixture())[0]?.note).toBe("kỳ trước: 1.000");
-    expect(formatLandingStats(overviewFixture({ growthState: "new", growthPct: null }))[0]?.note).toBeUndefined();
+    // #334: a new period reads "kỳ trước: 0" instead of a "Mới" badge.
+    const fresh = formatLandingStats(overviewFixture({ growthState: "new", growthPct: null }))[0];
+    expect(fresh?.note).toBe("kỳ trước: 0");
+    expect(fresh?.growth).toBeNull();
   });
 
   it("updated: minutes, hours, then a date in the range timezone", () => {

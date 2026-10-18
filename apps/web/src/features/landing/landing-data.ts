@@ -77,7 +77,7 @@ export function boardSplit(b: LandingBoard): string {
   ].join(" · ");
 }
 
-export type GrowthDirection = "up" | "down" | "flat" | "new";
+export type GrowthDirection = "up" | "down" | "flat";
 /** Growth figure (#267, #271): `text` capped at ">999%" (direction drawn as an icon), `aria` keeps the exact value. */
 export type LandingGrowth = { text: string; direction: GrowthDirection; aria: string };
 export const GROWTH_CAP = 999;
@@ -86,7 +86,8 @@ export function landingGrowth(
   pct: number | null | undefined,
   state: OverviewResponse["kpis"]["mentionCount"]["growthState"],
 ): LandingGrowth | null {
-  if (state === "new") return { text: copy.growthNew, direction: "new", aria: copy.growthNew };
+  // #334: no "Mới" badge — a new period shows its figure with "kỳ trước: 0" instead.
+  if (state === "new") return null;
   if (pct == null) return null;
   const sign = pct > 0 ? "+" : pct < 0 ? "−" : "";
   const aria = `${sign}${pct1.format(Math.abs(pct))}%`;
@@ -138,7 +139,12 @@ export function formatLandingStats(o: OverviewResponse, now: Date = new Date()):
       label: copy.stats.mentions,
       growth: landingGrowth(m.growthPct, m.growthState),
       // The base behind the growth figure, so a jump from a nearly empty previous period reads as such.
-      note: m.previous != null && m.growthState !== "new" ? copy.previous(viCount(m.previous)) : undefined,
+      note:
+        m.growthState === "new"
+          ? copy.previous(viCount(0)) // "new" ⇔ nothing in the previous period
+          : m.previous != null
+            ? copy.previous(viCount(m.previous))
+            : undefined,
     },
     { key: "positive", value: viRate(o.kpis.positiveRate.value), label: copy.stats.positive, growth: null },
     { key: "negative", value: viRate(o.kpis.negativeRate.value), label: copy.stats.negative, growth: null },

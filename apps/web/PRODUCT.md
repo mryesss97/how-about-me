@@ -24,7 +24,7 @@ Built on the brands' own Threads conversation with classification tuned to their
 ## Operating Context
 
 - Signed-in only; no public pages. Roles: admin, analyst, viewer.
-- Landing `/` (FR-020): balloons for admin-configured phrases/keywords (`landingTerms`, ≤ 20, BR-042) with their sentiment over the last 30 days, 4 stats (mentions + growth, positive %, negative %, last updated), one CTA into the dashboard `/overview`.
+- Landing `/` (FR-020): a wall of signboards (each a link to its phrase detail) for admin-configured phrases/keywords (`landingTerms`, ≤ 20, BR-042) with their sentiment over the last 30 days, 4 stats (mentions + growth, positive %, negative %, last updated), one CTA into the dashboard `/overview`.
 - Used on laptops (1280–1920 wide), big office screens, tablets, and phones.
 - Timestamps in UTC, analytics in `Asia/Ho_Chi_Minh` by default.
 

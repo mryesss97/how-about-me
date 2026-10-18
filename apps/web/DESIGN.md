@@ -217,9 +217,9 @@ A cool concrete wall carrying four enamels: navy for lettering, sky for the shop
 
 ## Layout
 
-The wall fills the viewport (`100dvh`, no scroll) from `sm` up, inset 3px, with boards separated by 6px seams. The main sign is positioned in the wall, centred horizontally and slightly above middle (47% from top): 400–560px wide on tablet, 520–680px (~44vw) on desktop. Boards fill every region around it as a squarified treemap, area proportional to mentions with a floor of 22% of the largest so small phrases stay legible. The #1 board shares a full edge with the main sign (its full height beside it, or its full width above/below), capped at 72% of its band and 2.4:1 aspect. Every configured phrase is visible at every width.
+The wall fills the viewport (`100dvh`, no scroll) from `sm` up, inset 3px, with boards separated by 6px seams. The main sign is positioned in the wall, centred horizontally and slightly above middle (47% from top): 400–560px wide on tablet, 520–680px (~44vw) on desktop. Boards fill every region around it as a squarified treemap, area proportional to mentions with a floor of 22% of the largest so small phrases stay legible. The #1 board shares a full edge with the main sign (its full height beside it, or its full width above/below). Every configured phrase is visible at every width. Invariants (#334): no bare wall shows beyond a seam (a band left without a board takes one from the fullest band); #1 always holds the largest board (it starts at up to 72% of its band and grows step by step, up to the whole band); boards stay ≥ 72px a side before the seam inset where the canvas allows (20 phrases under 1024px wide may go smaller: every phrase showing wins, BR-042). DOM and tab order follow the rank.
 
-Phones: the main sign stacks on top (6px page padding), and the wall continues below in rows of 128px, two boards per row, scrolling.
+Phones (#334): the main sign stacks on top (6px page padding), and the wall continues below in rank order, scrolling: #1 alone on a full-width row 160px tall, ranks 2–3 in rows of 144px, the rest 112px, two boards per row. A board whose phrase would set under 22px at half width, and an odd last board, take the full row.
 
 Inside a board: keyline 5px in, rank plate 11px from top-left (9px on compact boards under 96×72px), content centred with 12px padding and 0.35em gap between phrase and share line. When the phrase's first line would reach the plate, the content drops by a reserved band (28px; 20px compact). Main sign: 24px padding (32px from `sm`), 20px stack gap, figures ruled off by a 2px white line with 16px above, in a 2-column grid (14px × 20px gaps), 4 columns from 1024px.
 
@@ -239,11 +239,11 @@ Squared enamel plates with barely eased corners, in a three-step hierarchy: plat
 
 ### Sign Board
 
-Flat enamel phrase board, absolutely positioned by the treemap, `role="img"`, focusable, named with the full text (`"giá vé" · 62,0% tích cực · 100 lượt nhắc`). Not a link.
+Flat enamel phrase board, absolutely positioned by the treemap (rows on phones), a link to `/terms/<term>?preset=30d` (#276), named with the full text (`"giá vé" · 62,0% tích cực · 100 lượt nhắc`).
 
 - **Tones:** neutral (navy on white), negative/positive solid (white on red/green), negative/positive mixed (red/green lettering on white), blank (grey lettering, dashed keyline, no sub-sign).
-- **Contents:** keyline, rank plate, phrase (quoted Bungee, condensed caps, stacked vertical, or blade sign), share line.
-- **Hang-in:** each board animates in once with `sign-hang` (720ms, `cubic-bezier(0.16, 1, 0.3, 1)`, staggered 55ms per board, swinging from ±2.4° alternately, pivoting at the top centre). Reduced motion hangs them still.
+- **Contents:** keyline, rank plate, phrase (quoted Bungee, condensed caps, stacked vertical, or blade sign), share line (never under 13px; when one line would be smaller it wraps between the share and the label, #334).
+- **Hang-in:** each board animates in once with `sign-hang` (720ms, `cubic-bezier(0.16, 1, 0.3, 1)`, staggered 55ms per board, swinging from ±2.4° alternately, pivoting at the top centre), only on the first `/` of a session (#334): a revisit shows them already hung (`data-motion="still"`, or `html[data-landing-hung]` set before hydration). Reduced motion hangs them still.
 - **Focus:** 3px navy outline, 2px offset, raised above neighbours.
 
 ### Rank Plate
