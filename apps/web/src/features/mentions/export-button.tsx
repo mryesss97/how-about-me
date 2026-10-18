@@ -6,6 +6,7 @@ import { Download01 } from "@untitledui/icons";
 import { toast } from "sonner";
 import { ApiError, apiDownload, type QueryParams } from "@/lib/api/client";
 import { formatCount } from "@/lib/format/number";
+import { PlaqueButton } from "@/features/shared/plaque-button";
 
 /** FR-032 / personas §3: UX only — the API enforces the same gate (FR-015, BR-033). */
 export function canExport(role: UserRole | null, settings: Pick<ProjectSettings, "allowViewerExport"> | null) {
@@ -69,15 +70,8 @@ export function useExportMentions(pid: string) {
 export function ExportButton({ pid, params }: { pid: string; params: QueryParams }) {
   const m = useExportMentions(pid);
   return (
-    <button
-      type="button"
-      disabled={m.isPending}
-      aria-busy={m.isPending}
-      onClick={() => m.mutate(params)}
-      className="plaque-button inline-flex items-center gap-2 px-3 py-1.5 outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60"
-    >
-      <Download01 className="size-4" aria-hidden />
+    <PlaqueButton iconLeading={Download01} isLoading={m.isPending} onClick={() => m.mutate(params)}>
       Xuất CSV
-    </button>
+    </PlaqueButton>
   );
 }

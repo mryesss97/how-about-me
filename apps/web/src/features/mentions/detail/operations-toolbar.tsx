@@ -10,9 +10,7 @@ import { safePermalink } from "../mention-row";
 import { isInFlight } from "./api";
 import { OverrideDialog } from "./override-form";
 import { useCopy } from "./use-copy";
-
-const PLAQUE =
-  "plaque-button inline-flex items-center gap-2 px-3 py-1.5 outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+import { PlaqueButton } from "@/features/shared/plaque-button";
 
 type Props = {
   mention: MentionDetail;
@@ -46,39 +44,33 @@ export function OperationsToolbar({
     <div className="flex flex-wrap items-center gap-2" role="toolbar" aria-label="Thao tác">
       {canReanalyze ? (
         <RequireRole roles={["admin", "analyst"]} fallback={null}>
-          <button
-            type="button"
-            className={PLAQUE}
-            disabled={busy}
+          <PlaqueButton
+            iconLeading={RefreshCw01}
+            isDisabled={busy}
             aria-busy={isReanalyzing}
             onClick={() => setConfirm(true)}
           >
-            <RefreshCw01 className="size-4" aria-hidden />
             Phân tích lại
-          </button>
+          </PlaqueButton>
         </RequireRole>
       ) : null}
       {canOverride ? (
         <RequireRole roles={["admin", "analyst"]} fallback={null}>
-          <button type="button" className={PLAQUE} onClick={() => setOverriding(true)}>
-            <UserCheck01 className="size-4" aria-hidden />
+          <PlaqueButton iconLeading={UserCheck01} onClick={() => setOverriding(true)}>
             Ghi đè
-          </button>
+          </PlaqueButton>
         </RequireRole>
       ) : null}
-      <button type="button" className={PLAQUE} onClick={() => void copy(m.platformPostId, "ID bài")}>
-        <Copy01 className="size-4" aria-hidden />
+      <PlaqueButton iconLeading={Copy01} onClick={() => void copy(m.platformPostId, "ID bài")}>
         Sao chép ID bài
-      </button>
-      <button
-        type="button"
-        className={PLAQUE}
-        disabled={!m.permalink}
+      </PlaqueButton>
+      <PlaqueButton
+        iconLeading={Copy01}
+        isDisabled={!m.permalink}
         onClick={() => m.permalink && void copy(m.permalink, "liên kết")}
       >
-        <Copy01 className="size-4" aria-hidden />
         Sao chép liên kết
-      </button>
+      </PlaqueButton>
       {link ? (
         <a
           href={link}

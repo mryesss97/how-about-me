@@ -1,10 +1,12 @@
 "use client";
 
+import { RefreshCcw01 } from "@untitledui/icons";
 import type { SyncJobDetail } from "@how-about-me/contracts";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { SlideoutMenu } from "@/components/application/slideout-menus/slideout-menu";
 import { Button } from "@/components/base/buttons/button";
+import { PlaqueButton } from "@/features/shared/plaque-button";
 import { ErrorState, SkeletonBlock } from "@/features/shared/query-state";
 import { ApiError } from "@/lib/api/client";
 import { DASH, formatCount } from "@/lib/format/number";
@@ -29,8 +31,8 @@ export function SyncJobDrawer({ pid, jobId, tz, isAdmin, onClose }: Props) {
   // Retry only for `failed` (UX §3.6); the button is UX only — the server answers 403 for non-admins (FR-015).
   const retryButton =
     isAdmin && job.data?.status === "failed" ? (
-      <Button
-        size="sm"
+      <PlaqueButton
+        iconLeading={RefreshCcw01}
         isLoading={retry.isPending}
         isDisabled={retry.isPending}
         onClick={() =>
@@ -44,7 +46,7 @@ export function SyncJobDrawer({ pid, jobId, tz, isAdmin, onClose }: Props) {
         }
       >
         Thử lại
-      </Button>
+      </PlaqueButton>
     ) : null;
 
   return (

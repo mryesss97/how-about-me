@@ -5,6 +5,7 @@ import { Plus } from "@untitledui/icons";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/base/buttons/button";
+import { PlaqueButton } from "@/features/shared/plaque-button";
 import { Toggle } from "@/components/base/toggle/toggle";
 import { useCurrentProject } from "@/features/auth/use-current-project";
 import { useRole } from "@/features/auth/use-role";
@@ -141,15 +142,9 @@ export function ListeningQueriesView() {
           ) : null}
           {list.hasNextPage ? (
             <div className="flex justify-center">
-              <Button
-                color="secondary"
-                size="sm"
-                className="plaque"
-                isLoading={list.isFetchingNextPage}
-                onClick={() => void list.fetchNextPage()}
-              >
+              <PlaqueButton isLoading={list.isFetchingNextPage} onClick={() => void list.fetchNextPage()}>
                 Tải thêm
-              </Button>
+              </PlaqueButton>
             </div>
           ) : null}
         </div>

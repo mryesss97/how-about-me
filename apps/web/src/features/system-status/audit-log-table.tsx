@@ -5,6 +5,7 @@ import { Fragment, useState } from "react";
 import { DASH } from "@/lib/format/number";
 import { formatDateTime } from "@/lib/time/format";
 import { auditActionText, truncateMiddle, auditEntityLabel } from "./format";
+import { PlaqueButton } from "@/features/shared/plaque-button";
 
 const TH = "whitespace-nowrap px-3 py-2 text-left text-xs font-semibold text-tertiary";
 const TD = "px-3 py-3 align-top text-sm text-primary";
@@ -57,15 +58,14 @@ export function AuditLogTable({ items, tz }: { items: AuditLog[]; tz: string }) 
                     </td>
                     <td className={`${TD} text-right`}>
                       {hasDetail ? (
-                        <button
-                          type="button"
-                          className="plaque-button px-2 py-1 text-xs"
+                        <PlaqueButton
+                          size="xs"
                           aria-expanded={expanded}
                           aria-controls={detailId}
                           onClick={() => toggle(l.id)}
                         >
                           Chi tiết
-                        </button>
+                        </PlaqueButton>
                       ) : null}
                     </td>
                   </tr>

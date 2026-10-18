@@ -9,6 +9,7 @@ import { useMembers } from "./api";
 import { InviteMemberDialog } from "./invite-member-dialog";
 import { MembersTable } from "./members-table";
 import { SettingsBoard } from "./settings-board";
+import { PlaqueButton } from "@/features/shared/plaque-button";
 
 function MembersLoaded({ pid, timezone }: { pid: string; timezone: string }) {
   const me = useMe();
@@ -18,14 +19,9 @@ function MembersLoaded({ pid, timezone }: { pid: string; timezone: string }) {
     <SettingsBoard
       title="Thành viên"
       action={
-        <button
-          type="button"
-          className="plaque-button inline-flex items-center gap-1.5 px-3 py-1.5"
-          onClick={() => setInviteOpen(true)}
-        >
-          <Plus aria-hidden className="size-4" />
+        <PlaqueButton iconLeading={Plus} onClick={() => setInviteOpen(true)}>
           Mời thành viên
-        </button>
+        </PlaqueButton>
       }
     >
       <QueryState

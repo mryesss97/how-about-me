@@ -115,4 +115,31 @@ describe("AnalysisFailuresTab (FR-175, TC-SYS-012)", () => {
     expect(posts()[0]?.[0]).toBe(`/projects/${PID}/analysis-runs/retry-failed`);
     expect(JSON.parse(posts()[0]?.[1].body ?? "{}")).toEqual({ limit: 500 });
   });
+
+  it("#330 BR-017: retry all is a labelled plaque in the toolbar panel (admin only)", async () => {
+    mockApi();
+    setup(true);
+    const btn = await screen.findByRole("button", { name: "Thử lại tất cả lỗi (≤ 500)" });
+    expect(btn).toHaveClass("plaque-button");
+    expect(btn.closest('[data-testid="failures-toolbar"]')).not.toBeNull();
+    expect(screen.getByText("Đã tải 1 lượt lỗi")).toBeInTheDocument();
+  });
+
+  it("#330: viewer sees no toolbar panel", async () => {
+    mockApi();
+    setup(false);
+    await screen.findByText("LLM_TIMEOUT");
+    expect(screen.queryByTestId("failures-toolbar")).not.toBeInTheDocument();
+  });
+
+  it("#330: row retry is a plaque and is aria-busy while running", async () => {
+    const run = analysisRunFixture();
+    mockApi([run], () => new Promise(() => {}));
+    setup(true);
+    const btn = await screen.findByRole("button", { name: `Thử lại lượt phân tích ${run.id}` });
+    expect(btn).toHaveClass("plaque-button");
+    fireEvent.click(btn);
+    await waitFor(() => expect(btn).toHaveAttribute("aria-busy", "true"));
+    expect(btn).toBeDisabled();
+  });
 });

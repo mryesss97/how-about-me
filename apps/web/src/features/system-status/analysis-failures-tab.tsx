@@ -1,9 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Button } from "@/components/base/buttons/button";
+import { RefreshCcw01 } from "@untitledui/icons";
+import { PlaqueButton } from "@/features/shared/plaque-button";
 import { QueryState, SkeletonBlock } from "@/features/shared/query-state";
 import { ApiError } from "@/lib/api/client";
+import { formatCount } from "@/lib/format/number";
 import { flattenUnique } from "@/lib/query/infinite-list";
 import { useFailedAnalysisRuns } from "./api";
 import { AnalysisFailuresTable } from "./analysis-failures-table";
@@ -25,10 +27,15 @@ export function AnalysisFailuresTab({ pid, tz, isAdmin }: { pid: string; tz: str
   return (
     <div className="flex flex-col gap-4">
       {isAdmin && items.length > 0 ? (
-        <div className="flex justify-end">
-          <Button color="secondary" size="sm" className="plaque" onClick={() => setConfirmOpen(true)}>
+        // #330: tab actions live in the white toolbar panel with the 2px navy rule (DESIGN.md System Status).
+        <div
+          data-testid="failures-toolbar"
+          className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-[var(--ink)] bg-[var(--enamel-white)] px-4 py-3"
+        >
+          <p className="text-sm text-tertiary">Đã tải {formatCount(items.length)} lượt lỗi</p>
+          <PlaqueButton iconLeading={RefreshCcw01} onClick={() => setConfirmOpen(true)}>
             Thử lại tất cả lỗi (≤ 500)
-          </Button>
+          </PlaqueButton>
         </div>
       ) : null}
       <QueryState
@@ -44,15 +51,9 @@ export function AnalysisFailuresTab({ pid, tz, isAdmin }: { pid: string; tz: str
           <AnalysisFailuresTable pid={pid} items={items} tz={tz} isAdmin={isAdmin} />
           {list.hasNextPage ? (
             <div className="flex justify-center">
-              <Button
-                color="secondary"
-                size="sm"
-                className="plaque"
-                isLoading={list.isFetchingNextPage}
-                onClick={() => void list.fetchNextPage()}
-              >
+              <PlaqueButton isLoading={list.isFetchingNextPage} onClick={() => void list.fetchNextPage()}>
                 Tải thêm
-              </Button>
+              </PlaqueButton>
             </div>
           ) : null}
         </div>

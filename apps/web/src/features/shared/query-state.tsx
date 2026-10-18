@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { AlertCircle, Inbox01, Lock01, RefreshCcw01 } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
+import { PlaqueButton } from "./plaque-button";
 import { FeaturedIcon } from "@/components/foundations/featured-icon/featured-icon";
 import { cx } from "@/utils/cx";
 import { StateIllustration, type StateIllustrationName } from "./state-illustration";
@@ -114,9 +115,9 @@ export function ErrorState({
       </div>
       {onRetry ? (
         <div>
-          <Button color="secondary" size="sm" iconLeading={RefreshCcw01} onClick={onRetry}>
+          <PlaqueButton iconLeading={RefreshCcw01} onClick={onRetry}>
             Thử lại
-          </Button>
+          </PlaqueButton>
         </div>
       ) : null}
     </div>
