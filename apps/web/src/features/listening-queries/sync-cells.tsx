@@ -28,7 +28,7 @@ export function SyncStatusCell({ q }: { q: ListeningQuery }) {
   if (!q.lastJob) return <span className="flex items-center gap-2 text-secondary">{body}</span>;
   return (
     <Link
-      href={jobHref(q.lastJob.id)}
+      href={jobHref(q.lastJob.id, q.id)}
       aria-label={`${status.label} — xem lượt đồng bộ`}
       className="flex items-center gap-2 text-secondary underline-offset-2 hover:underline"
     >
@@ -58,7 +58,7 @@ export function LastErrorCell({ q, tz }: { q: ListeningQuery; tz: string }) {
       </Tooltip>
       {failedJob && q.lastJob ? (
         <Link
-          href={jobHref(q.lastJob.id)}
+          href={jobHref(q.lastJob.id, q.id)}
           className="block text-xs font-semibold text-secondary underline underline-offset-2"
         >
           Xem lượt lỗi

@@ -29,7 +29,14 @@ export class AnalysisRunsRepository {
     const keys = await pageKeysByCreatedAt(this.prisma, "analysis_runs", where, cursor, q.limit);
     const pageKeys = keys.slice(0, q.limit);
     const ids = pageKeys.map((k) => k.id);
-    const rows = ids.length === 0 ? [] : await this.prisma.analysisRun.findMany({ where: { id: { in: ids } } });
+    const rows =
+      ids.length === 0
+        ? []
+        : await this.prisma.analysisRun.findMany({
+            where: { id: { in: ids } },
+            // #343: excerpt + author for the ops list; FK cascade guarantees the post exists.
+            include: { post: { select: { text: true, username: true } } },
+          });
     const last = pageKeys.at(-1);
     const nextCursor = keys.length > q.limit && last ? encodeCreatedAtCursor(last) : null;
     const page: AnalysisRunsPage = { items: orderByIds(ids, rows).map(toAnalysisRun), nextCursor };
@@ -89,7 +96,18 @@ export function buildAnalysisRunsWhereSql(projectId: string, q: AnalysisRunsList
 
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
 
-export function toAnalysisRun(r: AnalysisRunRow): AnalysisRun {
+/** #343: whitespace-collapsed text cut to `max` code points (never splits an emoji) + "…"; null when empty. */
+export function toPostExcerpt(text: string | null, max = 80): string | null {
+  if (text == null) return null;
+  const collapsed = text.replace(/\s+/g, " ").trim();
+  if (!collapsed) return null;
+  const chars = Array.from(collapsed);
+  return chars.length > max ? `${chars.slice(0, max).join("").trimEnd()}…` : collapsed;
+}
+
+type AnalysisRunWithPost = AnalysisRunRow & { post?: { text: string | null; username: string | null } | null };
+
+export function toAnalysisRun(r: AnalysisRunWithPost): AnalysisRun {
   return {
     id: r.id,
     postId: r.postId,
@@ -102,5 +120,6 @@ export function toAnalysisRun(r: AnalysisRunRow): AnalysisRun {
     startedAt: iso(r.startedAt),
     completedAt: iso(r.completedAt),
     createdAt: r.createdAt.toISOString(),
+    post: { excerpt: toPostExcerpt(r.post?.text ?? null), username: r.post?.username ?? null },
   };
 }

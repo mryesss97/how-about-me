@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type * as ClientModule from "@/lib/api/client";
 import { ApiError } from "@/lib/api/client";
@@ -21,6 +21,8 @@ vi.mock("sonner", () => ({
 
 type Call = [string, { method?: string; body?: string; params?: Record<string, string | undefined> }];
 const calls = () => apiFetch.mock.calls as Call[];
+const table = async () => within(await screen.findByRole("table"));
+const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 const posts = () => calls().filter(([, init]) => init?.method === "POST");
 
 function setup(isAdmin: boolean) {
@@ -33,10 +35,11 @@ function setup(isAdmin: boolean) {
 }
 
 type Handler = (path: string, init?: Call[1]) => Promise<unknown>;
-function mockApi(runs = [analysisRunFixture()], onPost?: Handler) {
+function mockApi(runs = [analysisRunFixture()], onPost?: Handler, totalCount?: number) {
   apiFetch.mockImplementation((path: string, init?: Call[1]) => {
     if (init?.method === "POST") return onPost ? onPost(path, init) : Promise.resolve({});
-    if (path.endsWith("/analysis-runs")) return Promise.resolve({ items: runs, nextCursor: null });
+    if (path.endsWith("/analysis-runs"))
+      return Promise.resolve({ items: runs, nextCursor: null, ...(totalCount != null ? { totalCount } : {}) });
     return new Promise(() => {});
   });
 }
@@ -48,19 +51,34 @@ beforeEach(() => {
 });
 
 describe("AnalysisFailuresTab (FR-175, TC-SYS-012)", () => {
-  it("lists failed runs with error code and post link", async () => {
+  it("#343 ops-11: lists failed runs with error label, post excerpt + @username and no UUID on screen", async () => {
     const run = analysisRunFixture();
     mockApi([run]);
     setup(false);
-    expect(await screen.findByText("LLM_TIMEOUT")).toBeInTheDocument();
-    // Vietnamese label in the cell; the raw message stays in the tooltip (title).
-    expect(screen.getByText("Bộ phân tích phản hồi quá lâu")).toBeInTheDocument();
-    expect(screen.getByTitle("LLM_TIMEOUT: Provider timed out")).toBeInTheDocument();
-    expect(screen.getByRole("link")).toHaveAttribute(
+    const t = await table();
+    // Vietnamese label in the cell; code + raw message stay in the tooltip (title).
+    expect(t.getByText("Bộ phân tích phản hồi quá lâu")).toBeInTheDocument();
+    expect(t.getByTitle("LLM_TIMEOUT: Provider timed out")).toBeInTheDocument();
+    expect(t.queryByText("LLM_TIMEOUT")).not.toBeInTheDocument();
+    expect(t.getByText("@an.nguyen")).toBeInTheDocument();
+    expect(t.getByRole("link", { name: /Giao hàng chậm quá/ })).toHaveAttribute(
       "href",
-      `/mentions/${run.postId}?back=%2Fsystem-status`, // #331: back link returns to System Status
+      `/mentions/${run.postId}?back=${encodeURIComponent("/system-status?tab=analysis-failures")}`, // #331 back link
     );
-    expect(calls()[0]?.[1].params).toMatchObject({ status: "failed", limit: "50" });
+    expect(screen.getByRole("table").textContent ?? "").not.toMatch(UUID_RE);
+    expect(calls()[0]?.[1].params).toMatchObject({ status: "failed", limit: "50", count: "true" });
+  });
+
+  it("#343: a media-only post shows 'Bài không có chữ'", async () => {
+    mockApi([analysisRunFixture({ post: { excerpt: null, username: "b" } })]);
+    setup(false);
+    expect((await table()).getByText("Bài không có chữ")).toBeInTheDocument();
+  });
+
+  it("#343: toolbar shows the total from totalCount", async () => {
+    mockApi([analysisRunFixture()], undefined, 12);
+    setup(true);
+    expect(await screen.findByText("12 lượt lỗi")).toBeInTheDocument();
   });
 
   it("shows the empty state", async () => {
@@ -79,7 +97,7 @@ describe("AnalysisFailuresTab (FR-175, TC-SYS-012)", () => {
   it("FR-015 UX: analyst sees no retry actions", async () => {
     mockApi();
     setup(false);
-    await screen.findByText("LLM_TIMEOUT");
+    await table();
     expect(screen.queryByRole("button", { name: /Thử lại/ })).not.toBeInTheDocument();
   });
 
@@ -87,7 +105,7 @@ describe("AnalysisFailuresTab (FR-175, TC-SYS-012)", () => {
     const run = analysisRunFixture();
     mockApi([run], () => Promise.resolve({ runId: run.id, status: "pending" }));
     setup(true);
-    fireEvent.click(await screen.findByRole("button", { name: `Thử lại lượt phân tích ${run.id}` }));
+    fireEvent.click((await table()).getByRole("button", { name: /Thử lại phân tích bài/ }));
     await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Đã xếp lịch thử lại"));
     expect(posts()[0]?.[0]).toBe(`/projects/${PID}/analysis-runs/${run.id}/retry`);
     // invalidation refetches the list
@@ -98,18 +116,21 @@ describe("AnalysisFailuresTab (FR-175, TC-SYS-012)", () => {
     const run = analysisRunFixture();
     mockApi([run], () => Promise.reject(new ApiError(409, "ANALYSIS_RUN_NOT_RETRYABLE", "x")));
     setup(true);
-    fireEvent.click(await screen.findByRole("button", { name: `Thử lại lượt phân tích ${run.id}` }));
+    fireEvent.click((await table()).getByRole("button", { name: /Thử lại phân tích bài/ }));
     await waitFor(() => expect(toastError).toHaveBeenCalledWith("Lượt phân tích này không còn ở trạng thái lỗi."));
   });
 
-  it("TC-SYS-012: retry all asks for confirmation and sends limit 500", async () => {
-    mockApi([analysisRunFixture()], () => Promise.resolve({ enqueued: 1234 }));
+  it("TC-SYS-012 / BR-024: retry all confirms with the count and sends limit 500", async () => {
+    mockApi([analysisRunFixture()], () => Promise.resolve({ enqueued: 1234 }), 1500);
     setup(true);
-    fireEvent.click(await screen.findByRole("button", { name: "Thử lại tất cả lỗi (≤ 500)" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Thử lại tất cả (≤ 500)" }));
     fireEvent.click(await screen.findByRole("button", { name: "Huỷ" }));
     expect(posts()).toHaveLength(0);
 
-    fireEvent.click(screen.getByRole("button", { name: "Thử lại tất cả lỗi (≤ 500)" }));
+    fireEvent.click(screen.getByRole("button", { name: "Thử lại tất cả (≤ 500)" }));
+    expect(
+      await screen.findByText(/Có 1\.500 lượt lỗi\. Hệ thống sẽ xếp lịch phân tích lại tối đa 500 lượt/),
+    ).toBeInTheDocument();
     fireEvent.click(await screen.findByRole("button", { name: "Xác nhận" }));
     await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Đã xếp lịch 1.234 lượt phân tích"));
     expect(posts()[0]?.[0]).toBe(`/projects/${PID}/analysis-runs/retry-failed`);
@@ -119,24 +140,45 @@ describe("AnalysisFailuresTab (FR-175, TC-SYS-012)", () => {
   it("#330 BR-017: retry all is a labelled plaque in the toolbar panel (admin only)", async () => {
     mockApi();
     setup(true);
-    const btn = await screen.findByRole("button", { name: "Thử lại tất cả lỗi (≤ 500)" });
+    const btn = await screen.findByRole("button", { name: "Thử lại tất cả (≤ 500)" });
     expect(btn).toHaveClass("plaque-button");
     expect(btn.closest('[data-testid="failures-toolbar"]')).not.toBeNull();
     expect(screen.getByText("Đã tải 1 lượt lỗi")).toBeInTheDocument();
   });
 
-  it("#330: viewer sees no toolbar panel", async () => {
+  it("#343 FR-015 UX: viewer sees the toolbar (count + Làm mới) but no retry plaque", async () => {
     mockApi();
     setup(false);
-    await screen.findByText("LLM_TIMEOUT");
-    expect(screen.queryByTestId("failures-toolbar")).not.toBeInTheDocument();
+    const bar = within(await screen.findByTestId("failures-toolbar"));
+    expect(bar.getByRole("button", { name: "Làm mới" })).toBeInTheDocument();
+    expect(bar.queryByRole("button", { name: /Thử lại tất cả/ })).not.toBeInTheDocument();
+  });
+
+  it("#343: 'Làm mới' refetches the list", async () => {
+    mockApi();
+    setup(false);
+    fireEvent.click(within(await screen.findByTestId("failures-toolbar")).getByRole("button", { name: "Làm mới" }));
+    await waitFor(() => expect(calls().filter(([p]) => p.endsWith("/analysis-runs")).length).toBe(2));
+  });
+
+  it("#343 FR-015 UX: mobile card has a full-width 'Thử lại' for admin only", async () => {
+    const run = analysisRunFixture();
+    mockApi([run]);
+    const { unmount } = setup(true);
+    const card = within(await screen.findByTestId(`failure-card-${run.id}`));
+    expect(card.getByRole("button", { name: /Thử lại phân tích bài/ })).toHaveClass("w-full");
+    unmount();
+    setup(false);
+    const viewerCard = within(await screen.findByTestId(`failure-card-${run.id}`));
+    expect(viewerCard.queryByRole("button")).not.toBeInTheDocument();
+    expect(viewerCard.getByText("@an.nguyen")).toBeInTheDocument();
   });
 
   it("#330: row retry is a plaque and is aria-busy while running", async () => {
     const run = analysisRunFixture();
     mockApi([run], () => new Promise(() => {}));
     setup(true);
-    const btn = await screen.findByRole("button", { name: `Thử lại lượt phân tích ${run.id}` });
+    const btn = (await table()).getByRole("button", { name: /^Thử lại phân tích bài "Giao hàng chậm quá/ });
     expect(btn).toHaveClass("plaque-button");
     fireEvent.click(btn);
     await waitFor(() => expect(btn).toHaveAttribute("aria-busy", "true"));

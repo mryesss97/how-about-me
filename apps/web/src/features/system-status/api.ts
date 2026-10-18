@@ -4,6 +4,7 @@ import {
   AnalysisRunsPageSchema,
   AuditLogsPageSchema,
   ListeningQueryPageSchema,
+  MemberListResponseSchema,
   RetryAnalysisRunResponseSchema,
   RetryFailedBodySchema,
   RetryFailedResponseSchema,
@@ -62,7 +63,7 @@ export function useSyncJobs(pid: string | null | undefined, filters: SyncJobFilt
   });
 }
 
-export type AuditLogFilters = { action?: string; from?: string; to?: string };
+export type AuditLogFilters = { action?: string; actorUserId?: string; from?: string; to?: string };
 
 /** FR-201: admin-only audit log list; only fires when `enabled` (caller is admin) to avoid a 403 (TC-SYS-015). */
 export function useAuditLogs(pid: string | null | undefined, filters: AuditLogFilters, enabled: boolean) {
@@ -75,6 +76,7 @@ export function useAuditLogs(pid: string | null | undefined, filters: AuditLogFi
           params: {
             limit: String(AUDIT_LOGS_PAGE_SIZE),
             action: filters.action,
+            actorUserId: filters.actorUserId,
             from: filters.from,
             to: filters.to,
             ...(pageParam ? { cursor: pageParam } : {}),
@@ -120,7 +122,8 @@ export function useFailedAnalysisRuns(pid: string | null | undefined) {
           params: {
             status: "failed",
             limit: String(ANALYSIS_FAILURES_PAGE_SIZE),
-            ...(pageParam ? { cursor: pageParam } : {}),
+            // #343: first page asks for `totalCount` so the toolbar can show the real number of failures.
+            ...(pageParam ? { cursor: pageParam } : { count: "true" }),
           },
         }),
       ),
@@ -198,7 +201,8 @@ export function useQueryNames(pid: string | null | undefined) {
     enabled: !!pid,
   });
   return useMemo(
-    () => (q.data?.items ?? []).map((x) => ({ id: x.id, name: x.displayName, type: x.queryType })),
+    () =>
+      (q.data?.items ?? []).map((x) => ({ id: x.id, name: x.displayName, type: x.queryType, deletedAt: x.deletedAt })),
     [q.data],
   );
 }
@@ -223,4 +227,17 @@ export function useLiveQueriesForStatus(pid: string | null | undefined) {
     refetchIntervalInBackground: false,
     enabled: !!pid,
   });
+}
+
+/**
+ * #343: member id → name for the audit "Người thực hiện" filter. Same endpoint/key/shape as settings `useMembers`
+ * (shared cache is safe); admin-only endpoint, so only enabled for admins. Errors degrade to an empty list.
+ */
+export function useMemberNames(pid: string | null | undefined, enabled: boolean) {
+  const q = useQuery({
+    queryKey: qk.members(pid ?? ""),
+    queryFn: async () => MemberListResponseSchema.parse(await apiFetch<unknown>(`/projects/${pid}/members`)),
+    enabled: !!pid && enabled,
+  });
+  return useMemo(() => (q.data ?? []).map((m) => ({ id: m.userId, name: m.displayName ?? m.email })), [q.data]);
 }

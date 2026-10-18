@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { INestApplication } from "@nestjs/common";
 import type { Prisma } from "@prisma/client";
+import { AnalysisRunsPageSchema } from "@how-about-me/contracts";
 import request from "supertest";
 import type { PrismaService } from "../../src/database/prisma.service";
 import { AnalysisPauseService } from "../../src/modules/analysis/analysis-pause.service";
@@ -91,6 +92,21 @@ describe("Analysis runs ops (T-077)", () => {
     expect((p2.body.items as { id: string }[]).map((i) => i.id)).toEqual([a]);
     expect(p2.body.nextCursor).toBeNull();
     expect((await list("viewer", "?status=bogus")).status).toBe(400);
+  });
+
+  it("#343: list items carry the post excerpt (≤ 80 code points) and username; media-only → null", async () => {
+    const long = (await createPost(prisma, { projectId, text: `  ${"x".repeat(90)}\n `, username: "an.nguyen" })).id;
+    const media = await seedPost();
+    await prisma.socialPost.update({ where: { id: media }, data: { text: null, username: null } });
+    const a = await seedRun(long, { createdAt: new Date("2026-10-01T00:00:00Z") });
+    const b = await seedRun(media, { createdAt: new Date("2026-10-02T00:00:00Z") });
+
+    const res = await list("viewer", "?status=failed");
+    expect(res.status).toBe(200);
+    expect(AnalysisRunsPageSchema.safeParse(res.body).success).toBe(true);
+    const byId = new Map((res.body.items as { id: string; post: unknown }[]).map((i) => [i.id, i.post]));
+    expect(byId.get(a)).toEqual({ excerpt: `${"x".repeat(80)}…`, username: "an.nguyen" });
+    expect(byId.get(b)).toEqual({ excerpt: null, username: null });
   });
 
   it("TC-SYS-012: retry moves failed → pending in place, resets attempts, writes audit", async () => {

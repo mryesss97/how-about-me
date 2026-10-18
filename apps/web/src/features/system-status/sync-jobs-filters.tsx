@@ -1,30 +1,62 @@
 "use client";
 
-import { JOB_STATUSES } from "@how-about-me/contracts";
+import { JOB_STATUSES, type JobStatus } from "@how-about-me/contracts";
 import { NativeSelect } from "@/components/base/select/select-native";
+import { plaqueClassName } from "@/features/shared/plaque-button";
 import { useQueryNames } from "./api";
-import { jobStatusLabel } from "./format";
+import { DateRangeFields, FilterPanel } from "./filter-panel";
+import { activeFilterCount, jobStatusLabel } from "./format";
 import type { SyncJobsParams } from "./use-status-params";
 
-const FIELD = "flex flex-col gap-1.5 text-sm font-medium text-secondary";
-const CONTROL =
-  "rounded-lg bg-primary px-3 py-2 text-sm text-primary shadow-xs ring-1 ring-primary ring-inset outline-hidden focus-visible:ring-2 focus-visible:ring-brand";
+/** #343 quick status plaques; one `status` per URL ("Đang chạy" = `running` only). */
+const QUICK: { label: string; status: JobStatus | "" }[] = [
+  { label: "Tất cả", status: "" },
+  { label: "Lỗi", status: "failed" },
+  { label: "Một phần", status: "partial" },
+  { label: "Đang chạy", status: "running" },
+];
 
-/** Filters for the sync job list (TC-SYS-013): query, status, date range (calendar days in the project tz). */
-export function SyncJobsFilters({
-  pid,
-  value,
-  onChange,
-}: {
+type Props = {
   pid: string;
   value: SyncJobsParams;
   onChange: (patch: Partial<SyncJobsParams>) => void;
-}) {
+  onRefresh: () => void;
+  isRefreshing: boolean;
+};
+
+/** Filters for the sync job list (TC-SYS-013, #343): quick status, query, status, date range (project tz). */
+export function SyncJobsFilters({ pid, value, onChange, onRefresh, isRefreshing }: Props) {
   const options = useQueryNames(pid);
+  const quick = (
+    <div role="group" aria-label="Lọc nhanh theo trạng thái" className="flex gap-2 overflow-x-auto">
+      {QUICK.map((q) => {
+        // A status picked in the select that has no plaque (queued/success/cancelled) lights none of them.
+        const selected = value.status === q.status;
+        return (
+          <button
+            key={q.label}
+            type="button"
+            className={plaqueClassName("sm", "min-h-11 shrink-0 whitespace-nowrap")}
+            aria-pressed={selected}
+            data-selected={selected ? "true" : undefined}
+            onClick={() => onChange({ status: q.status })}
+          >
+            {q.label}
+          </button>
+        );
+      })}
+    </div>
+  );
   return (
-    // Filter panel (DESIGN.md → Operate Surfaces): white enamel panel with a 2px navy rule, Untitled controls.
-    <div className="border-b-2 border-[var(--ink)] bg-[var(--enamel-white)] px-4 py-3">
-      <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <FilterPanel
+      fieldsId="sync-jobs-filter-fields"
+      activeCount={activeFilterCount(value)}
+      onRefresh={onRefresh}
+      isRefreshing={isRefreshing}
+      quick={quick}
+      gridClassName="lg:grid-cols-4"
+    >
+      <div className="col-span-2 md:col-span-1">
         <NativeSelect
           label="Truy vấn"
           size="sm"
@@ -32,6 +64,8 @@ export function SyncJobsFilters({
           options={[{ value: "", label: "Tất cả" }, ...options.map((q) => ({ value: q.id, label: q.name }))]}
           onChange={(e) => onChange({ queryId: e.target.value })}
         />
+      </div>
+      <div className="col-span-2 md:col-span-1">
         <NativeSelect
           label="Trạng thái"
           size="sm"
@@ -42,27 +76,8 @@ export function SyncJobsFilters({
           ]}
           onChange={(e) => onChange({ status: e.target.value as SyncJobsParams["status"] })}
         />
-        <label className={FIELD}>
-          Từ ngày
-          <input
-            type="date"
-            className={CONTROL}
-            value={value.from}
-            max={value.to || undefined}
-            onChange={(e) => onChange({ from: e.target.value })}
-          />
-        </label>
-        <label className={FIELD}>
-          Đến ngày
-          <input
-            type="date"
-            className={CONTROL}
-            value={value.to}
-            min={value.from || undefined}
-            onChange={(e) => onChange({ to: e.target.value })}
-          />
-        </label>
       </div>
-    </div>
+      <DateRangeFields from={value.from} to={value.to} onChange={onChange} />
+    </FilterPanel>
   );
 }

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { queryFixture } from "./fixtures.test-utils";
 import {
   formatDuration,
+  jobHref,
   formatQueryValue,
   isJobActive,
   isStaleError,
@@ -110,5 +111,12 @@ describe("#340 helpers", () => {
     expect(
       isJobActive({ ...q, deletedAt: "2026-10-13T00:00:00.000Z", lastJob: { ...q.lastJob, status: "queued" } }),
     ).toBe(false);
+  });
+});
+
+describe("#343 jobHref", () => {
+  it("adds the query filter when given, so closing the drawer shows that query's history", () => {
+    expect(jobHref("j1")).toBe("/system-status?tab=sync-jobs&job=j1");
+    expect(jobHref("j1", "q1")).toBe("/system-status?tab=sync-jobs&queryId=q1&job=j1");
   });
 });

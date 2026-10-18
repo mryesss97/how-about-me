@@ -28,7 +28,7 @@ Design: see docs/02-architecture/02-backend-design.md §3 and the related pipeli
 
 - `analysis-failure-policy.ts` — `decideFailure` (retry / fail / fail_and_pause), `backoffMs`, `AnalysisLockLostError` (doc 07 §8, FR-113).
 - `analysis-pause.service.ts` — `AnalysisPauseService.getState()`: daily budget (UTC) and provider-auth pause, read from the DB (doc 07 §9). Used by System Status (T-077).
-- `analysis-runs.repository.ts` / `analysis-runs.service.ts` — ops list, in-place retry of a failed run, bulk `retry-failed` (T-077, FR-175, BR-024), mark-stale (T-145).
+- `analysis-runs.repository.ts` / `analysis-runs.service.ts` — ops list, in-place retry of a failed run, bulk `retry-failed` (T-077, FR-175, BR-024), mark-stale (T-145). #343: the list includes `post { excerpt, username }` (`toPostExcerpt`: whitespace-collapsed, 80 code points + "…").
 - Tests: `analysis-failure-policy.spec.ts`, `analysis-worker.service.spec.ts`, `test/integration/analysis-failures.int-spec.ts`.
 
 ## Analysis settings (T-151, FR-190)

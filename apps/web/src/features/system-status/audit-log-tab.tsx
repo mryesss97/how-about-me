@@ -5,8 +5,9 @@ import { PlaqueButton } from "@/features/shared/plaque-button";
 import { QueryState, SkeletonBlock } from "@/features/shared/query-state";
 import { ApiError } from "@/lib/api/client";
 import { flattenUnique } from "@/lib/query/infinite-list";
-import { useAuditLogs, type AuditLogFilters as ApiFilters } from "./api";
+import { useAuditLogs, useMemberNames, useQueryNames, type AuditLogFilters as ApiFilters } from "./api";
 import { AuditLogFilters } from "./audit-log-filters";
+import { AuditLogListMobile } from "./audit-log-list-mobile";
 import { AuditLogTable } from "./audit-log-table";
 import { dayStartUtc, nextDayStartUtc } from "./format";
 import { useStatusParams, type AuditLogParams } from "./use-status-params";
@@ -25,17 +26,30 @@ export function AuditLogTab({ pid, tz }: { pid: string; tz: string }) {
   const apiFilters = useMemo<ApiFilters>(
     () => ({
       action: auditFilters.action || undefined,
+      actorUserId: auditFilters.actor || undefined,
       from: auditFilters.from ? dayStartUtc(auditFilters.from, tz) : undefined,
       to: auditFilters.to ? nextDayStartUtc(auditFilters.to, tz) : undefined,
     }),
-    [auditFilters.action, auditFilters.from, auditFilters.to, tz],
+    [auditFilters.action, auditFilters.actor, auditFilters.from, auditFilters.to, tz],
   );
   const list = useAuditLogs(pid, apiFilters, true);
   const items = useMemo(() => flattenUnique(list.data?.pages ?? []), [list.data]);
+  // #343: names for entities / actor filter. Tab is admin-only, so /members (admin) never 403s here.
+  const queries = useQueryNames(pid);
+  const members = useMemberNames(pid, true);
+  const queryNames = useMemo(() => new Map(queries.map((q) => [q.id, q.name])), [queries]);
+  const memberNames = useMemo(() => new Map(members.map((m) => [m.id, m.name])), [members]);
+  const listProps = { items, tz, queryNames, memberNames };
 
   return (
     <div className="flex flex-col gap-4">
-      <AuditLogFilters value={auditFilters} onChange={(patch: Partial<AuditLogParams>) => update(patch)} />
+      <AuditLogFilters
+        value={auditFilters}
+        onChange={(patch: Partial<AuditLogParams>) => update(patch)}
+        members={members}
+        onRefresh={() => void list.refetch()}
+        isRefreshing={list.isRefetching && !list.isFetchingNextPage}
+      />
       <QueryState
         isLoading={list.isLoading}
         error={toStateError(list.error)}
@@ -46,7 +60,8 @@ export function AuditLogTab({ pid, tz }: { pid: string; tz: string }) {
         emptyDescription="Hãy đổi bộ lọc hoặc khoảng ngày."
       >
         <div className="flex flex-col gap-3">
-          <AuditLogTable items={items} tz={tz} />
+          <AuditLogTable {...listProps} />
+          <AuditLogListMobile {...listProps} />
           {list.hasNextPage ? (
             <div className="flex justify-center">
               <PlaqueButton isLoading={list.isFetchingNextPage} onClick={() => void list.fetchNextPage()}>

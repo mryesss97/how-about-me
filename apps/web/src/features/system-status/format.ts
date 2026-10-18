@@ -250,3 +250,8 @@ export function buildSummary(args: {
   if (analysis.status === "budget_paused") clauses.push({ text: "bộ phân tích tạm dừng (ngân sách)", href: null });
   return clauses.length ? { ok: false, clauses } : { ok: true };
 }
+
+/** #343: number of non-empty fields in a collapsible filter panel ("Bộ lọc · n"). */
+export function activeFilterCount(fields: Record<string, string>): number {
+  return Object.values(fields).filter((v) => v !== "").length;
+}

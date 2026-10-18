@@ -3,6 +3,7 @@
 import { useCurrentProject } from "@/features/auth/use-current-project";
 import { useRole } from "@/features/auth/use-role";
 import { PageHeader } from "@/features/shared/page-header";
+import { plaqueClassName } from "@/features/shared/plaque-button";
 import { QueryState, SkeletonBlock } from "@/features/shared/query-state";
 import { ApiError } from "@/lib/api/client";
 import { useLiveQueriesForStatus, useSystemStatus } from "./api";
@@ -44,9 +45,11 @@ export function SystemStatusView() {
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 lg:px-8">
       <PageHeader
         title="Trạng thái hệ thống"
-        actions={status.dataUpdatedAt ? <UpdatedAgo updatedAt={status.dataUpdatedAt} /> : null}
+        // #343 ops-10: only the overview polls (FR-170), so "Cập nhật … trước" lives there; lists have "Làm mới".
+        actions={tab === "overview" && status.dataUpdatedAt ? <UpdatedAgo updatedAt={status.dataUpdatedAt} /> : null}
       />
-      <div role="tablist" aria-label="Các mục trạng thái" className="flex flex-wrap gap-2">
+      {/* #343: 2×2 grid under `sm`, ≥ 44 px targets; no horizontal scroll so no tab is hidden. */}
+      <div role="tablist" aria-label="Các mục trạng thái" className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -54,7 +57,7 @@ export function SystemStatusView() {
             role="tab"
             aria-selected={tab === t.id}
             aria-current={tab === t.id ? "page" : undefined}
-            className="plaque-button px-3 py-1.5"
+            className={plaqueClassName("sm", "min-h-11 justify-center text-center")}
             onClick={() => update({ tab: t.id === "overview" ? null : t.id, job: null, action: null })}
           >
             {t.label}

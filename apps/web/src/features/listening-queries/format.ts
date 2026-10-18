@@ -50,8 +50,9 @@ export function formatDuration(seconds: number): string {
   return parts.join(" ");
 }
 
-/** "Xem lượt đồng bộ" target (#43). The sync-jobs detail view lands with #55/#56; the params are reserved for it. */
-export const jobHref = (jobId: string) => `/system-status?tab=sync-jobs&job=${jobId}`;
+/** "Xem lượt đồng bộ" target (#43). #343: with `queryId` the list behind the drawer is already that query's job history. */
+export const jobHref = (jobId: string, queryId?: string) =>
+  `/system-status?tab=sync-jobs${queryId ? `&queryId=${queryId}` : ""}&job=${jobId}`;
 
 /** The last error is history when a successful sync happened after it (#342 flows-5): shown grey, not red. */
 export function isStaleError(q: Pick<ListeningQuery, "lastError" | "lastSuccessfulSyncAt">): boolean {

@@ -1,9 +1,11 @@
 System Status (`/system-status`, T-060 #55, UX §3.6) — see docs/02-architecture/03-frontend-design.md §1.
 
-- `api.ts` — `useSystemStatus` (30 s poll), `useLiveQueriesForStatus` (#342 "Truy vấn đang lỗi"), `useSyncJobs`, `useSyncJob`, `useRetrySyncJob`, `useFailedAnalysisRuns`, `useRetryAnalysisRun`, `useRetryAllFailedAnalysis`, `useAuditLogs`, `retryErrorMessage`.
-- `format.ts` — status → label/tone maps (BR-017), lag, project-tz day bounds → UTC; overview helpers (#342): `tokenDaysLeft`, `threadsPlate`, `formatVersions`, `countQueriesWithError`, `failedJobsHref`, `buildSummary`.
-- `use-status-params.ts` — URL state (`tab`, `queryId`, `status`, `from`, `to`, `job`, `action`).
+- `api.ts` — `useSystemStatus` (30 s poll), `useLiveQueriesForStatus` (#342 "Truy vấn đang lỗi"), `useSyncJobs`, `useSyncJob`, `useRetrySyncJob`, `useFailedAnalysisRuns`, `useRetryAnalysisRun`, `useRetryAllFailedAnalysis`, `useAuditLogs` (+ `actorUserId`), `useQueryNames` (+ `deletedAt`), `useMemberNames` (#343, admin), `retryErrorMessage`. `useFailedAnalysisRuns` sends `count=true` on the first page.
+- `format.ts` — status → label/tone maps (BR-017), lag, project-tz day bounds → UTC; overview helpers (#342): `tokenDaysLeft`, `threadsPlate`, `formatVersions`, `countQueriesWithError`, `failedJobsHref`, `buildSummary`; `activeFilterCount` (#343).
+- `audit-format.ts` — #343: `auditEntityHref`, `auditEntityName`/`auditEntityText`, `auditMetadataRows` (metadata → label/value rows).
+- `filter-panel.tsx` — #343 shared "Bộ lọc · n" panel + "Làm mới" + date range fields.
+- `use-status-params.ts` — URL state (`tab`, `queryId`, `status`, `from`, `to`, `job`, `action`, `actor` — UUID only).
 - `system-status-view.tsx` — page body + tabs; `overview-cards.tsx` (+ `overview-board.tsx`, `overview-summary.tsx`), `status-plate.tsx` (enamel `.status-plate`), `updated-ago.tsx`.
-- `sync-jobs-tab.tsx`, `sync-jobs-filters.tsx`, `sync-jobs-table.tsx`, `sync-job-drawer.tsx` (admin retry, FR-175).
-- `analysis-failures-tab.tsx`, `analysis-failures-table.tsx`, `retry-all-dialog.tsx` — "Lỗi phân tích" tab (T-106 #93, FR-175, BR-024): per-run retry + retry all ≤ 500 (admin).
-- `audit-log-tab.tsx`, `audit-log-filters.tsx`, `audit-log-table.tsx` — "Nhật ký thao tác" tab (T-061 #56, FR-201), admin-only, expandable metadata.
+- `sync-jobs-tab.tsx`, `sync-jobs-filters.tsx`, `sync-jobs-table.tsx`, `sync-jobs-list-mobile.tsx` (#343 cards below `md`), `sync-job-drawer.tsx` (admin retry, FR-175; plaque links to mentions/query).
+- `analysis-failures-tab.tsx`, `analysis-failures-table.tsx`, `analysis-failures-list-mobile.tsx`, `analysis-failure-post.tsx` (excerpt link), `use-row-retry.ts`, `retry-all-dialog.tsx` — "Lỗi phân tích" tab (T-106 #93, FR-175, BR-024): per-run retry + retry all ≤ 500 (admin).
+- `audit-log-tab.tsx`, `audit-log-filters.tsx`, `audit-log-table.tsx`, `audit-log-list-mobile.tsx`, `audit-log-detail.tsx` (metadata fields + "Xem JSON") — "Nhật ký thao tác" tab (T-061 #56, FR-201), admin-only, expandable metadata.

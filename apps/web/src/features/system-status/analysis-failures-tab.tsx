@@ -8,8 +8,10 @@ import { ApiError } from "@/lib/api/client";
 import { formatCount } from "@/lib/format/number";
 import { flattenUnique } from "@/lib/query/infinite-list";
 import { useFailedAnalysisRuns } from "./api";
+import { AnalysisFailuresListMobile } from "./analysis-failures-list-mobile";
 import { AnalysisFailuresTable } from "./analysis-failures-table";
 import { RetryAllDialog } from "./retry-all-dialog";
+import { useRowRetry } from "./use-row-retry";
 
 const toStateError = (err: unknown) =>
   err
@@ -22,20 +24,37 @@ const toStateError = (err: unknown) =>
 export function AnalysisFailuresTab({ pid, tz, isAdmin }: { pid: string; tz: string; isAdmin: boolean }) {
   const list = useFailedAnalysisRuns(pid);
   const items = useMemo(() => flattenUnique(list.data?.pages ?? []), [list.data]);
+  const total = list.data?.pages[0]?.totalCount;
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const { busyIds, onRetry } = useRowRetry(pid);
+  const listProps = { items, tz, isAdmin, busyIds, onRetry };
 
   return (
     <div className="flex flex-col gap-4">
-      {isAdmin && items.length > 0 ? (
-        // #330: tab actions live in the white toolbar panel with the 2px navy rule (DESIGN.md System Status).
+      {list.data ? (
+        // #330/#343: toolbar panel for every role — count + "Làm mới"; bulk retry stays admin-only UX (FR-015).
         <div
           data-testid="failures-toolbar"
           className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-[var(--ink)] bg-[var(--enamel-white)] px-4 py-3"
         >
-          <p className="text-sm text-tertiary">Đã tải {formatCount(items.length)} lượt lỗi</p>
-          <PlaqueButton iconLeading={RefreshCcw01} onClick={() => setConfirmOpen(true)}>
-            Thử lại tất cả lỗi (≤ 500)
-          </PlaqueButton>
+          <p className="text-sm text-secondary">
+            {total != null ? `${formatCount(total)} lượt lỗi` : `Đã tải ${formatCount(items.length)} lượt lỗi`}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <PlaqueButton
+              className="min-h-11"
+              iconLeading={RefreshCcw01}
+              isLoading={list.isRefetching && !list.isFetchingNextPage}
+              onClick={() => void list.refetch()}
+            >
+              Làm mới
+            </PlaqueButton>
+            {isAdmin && (total ?? items.length) > 0 ? (
+              <PlaqueButton className="min-h-11" onClick={() => setConfirmOpen(true)}>
+                Thử lại tất cả (≤ 500)
+              </PlaqueButton>
+            ) : null}
+          </div>
         </div>
       ) : null}
       <QueryState
@@ -48,7 +67,8 @@ export function AnalysisFailuresTab({ pid, tz, isAdmin }: { pid: string; tz: str
         emptyDescription="Mọi lượt phân tích gần đây đều thành công."
       >
         <div className="flex flex-col gap-3">
-          <AnalysisFailuresTable pid={pid} items={items} tz={tz} isAdmin={isAdmin} />
+          <AnalysisFailuresTable {...listProps} />
+          <AnalysisFailuresListMobile {...listProps} />
           {list.hasNextPage ? (
             <div className="flex justify-center">
               <PlaqueButton isLoading={list.isFetchingNextPage} onClick={() => void list.fetchNextPage()}>
@@ -58,7 +78,9 @@ export function AnalysisFailuresTab({ pid, tz, isAdmin }: { pid: string; tz: str
           ) : null}
         </div>
       </QueryState>
-      {isAdmin ? <RetryAllDialog pid={pid} isOpen={confirmOpen} onClose={() => setConfirmOpen(false)} /> : null}
+      {isAdmin ? (
+        <RetryAllDialog pid={pid} total={total} isOpen={confirmOpen} onClose={() => setConfirmOpen(false)} />
+      ) : null}
     </div>
   );
 }

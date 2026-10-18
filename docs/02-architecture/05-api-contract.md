@@ -448,7 +448,7 @@ Details (T-055):
 
 **Analysis runs ops (T-077, FR-175).** List sorted `createdAt desc, id desc` (keyset cursor, `count=true` adds `totalCount`); `from`/`to` filter `created_at` (`[from, to)`). Retry is **in place**: the same run goes `failed → pending` (same `id`, `attempt_count = 0`, lock/started/completed/error fields cleared). Errors: `404 NOT_FOUND` (not in the project); `409 ANALYSIS_RUN_NOT_RETRYABLE` (status not `failed`); `409 ANALYSIS_ALREADY_PENDING` when the post has another `pending|processing` run (BR-024). `retry-failed` resets at most `limit` failed runs, newest first, only the latest failed run per post and only posts without an open run (BR-024); no throttle. Both audit `analysis.retry_requested` (single: `entity_type=analysis_run`, metadata `{ postIds:[postId] }`; bulk: `entity_type=monitoring_project`, metadata `{ scope:"failed", counts:{ enqueued, limit } }`). While the daily budget is exceeded the worker does not claim retried runs; they stay `pending` until the UTC reset (doc 07 §9).
 
-Run object: `{ id, postId, status, trigger, effectiveVersion, attemptCount, errorCode, errorMessage, startedAt, completedAt, createdAt }`.
+Run object: `{ id, postId, status, trigger, effectiveVersion, attemptCount, errorCode, errorMessage, startedAt, completedAt, createdAt, post: { excerpt, username } }`. #343: `post.excerpt` is the post text with whitespace collapsed, cut to 80 code points + "…" (null when the post has no text); `post.username` is the author handle (nullable). System Status sends `count=true` on the first page for the toolbar total.
 
 ### Analysis settings (P1, FR-190, T-151)
 

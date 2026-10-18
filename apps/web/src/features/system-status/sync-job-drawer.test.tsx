@@ -19,7 +19,7 @@ vi.mock("sonner", () => ({
 }));
 
 /** Minimal ListeningQuery for `useQueryNames` (no cross-feature fixture import). */
-const namedQuery = (id: string) => ({
+const namedQuery = (id: string, deletedAt: string | null = null) => ({
   id,
   displayName: "1zone",
   queryValue: "1zone",
@@ -41,15 +41,20 @@ const namedQuery = (id: string) => ({
   createdBy: null,
   createdAt: "2026-10-01T00:00:00.000Z",
   updatedAt: "2026-10-01T00:00:00.000Z",
-  deletedAt: null,
+  deletedAt,
 });
 
-function setup(job: ReturnType<typeof jobDetailFixture>, isAdmin: boolean, retry?: () => Promise<unknown>) {
+function setup(
+  job: ReturnType<typeof jobDetailFixture>,
+  isAdmin: boolean,
+  retry?: () => Promise<unknown>,
+  deletedAt: string | null = null,
+) {
   apiFetch.mockImplementation((path: string, init?: { method?: string }) => {
     if (init?.method === "POST") return retry ? retry() : Promise.resolve({ jobId: job.id, status: "queued" });
     if (path.endsWith("/listening-queries"))
       return Promise.resolve({
-        items: [namedQuery(job.queryId ?? "")],
+        items: [namedQuery(job.queryId ?? "", deletedAt)],
         nextCursor: null,
       });
     return Promise.resolve(job);
@@ -114,20 +119,42 @@ describe("SyncJobDrawer", () => {
     await waitFor(() => expect(toastError).toHaveBeenCalledWith("Lượt đồng bộ này không thể thử lại."));
   });
 
-  it("#340 flows-6: header names the query; footer links back and to its mentions in the job window", async () => {
+  it("#343 ops-4: condensed caps title, query name, plaque links to the job window and the query", async () => {
     const job = jobDetailFixture();
     setup(job, false);
-    expect(await screen.findByText("Truy vấn: 1zone (Từ khoá)")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "← Về truy vấn" })).toHaveAttribute("href", "/listening-queries");
-    expect(screen.getByRole("link", { name: "Xem bài nhắc của truy vấn →" })).toHaveAttribute(
+    expect(screen.getByRole("heading", { name: "Lượt đồng bộ" })).toHaveClass("operate-board-title");
+    expect(await screen.findByText("1zone")).toBeInTheDocument();
+    expect(screen.getByText("Từ khoá")).toBeInTheDocument();
+    const mentions = screen.getByRole("link", { name: "Xem bài nhắc" });
+    expect(mentions).toHaveClass("plaque-button");
+    expect(mentions).toHaveAttribute(
       "href",
       `/mentions?queryIds=${job.queryId}&preset=custom&from=2026-10-13T02%3A00%3A00.000Z&to=2026-10-13T03%3A00%3A00.000Z`,
     );
+    // Viewer/analyst: the edit drawer is admin-only, so the plain list.
+    expect(screen.getByRole("link", { name: "Xem truy vấn" })).toHaveAttribute("href", "/listening-queries");
+  });
+
+  it("#343: admin 'Xem truy vấn' opens the query editor", async () => {
+    const job = jobDetailFixture();
+    setup(job, true);
+    await screen.findByText("1zone");
+    expect(screen.getByRole("link", { name: "Xem truy vấn" })).toHaveAttribute(
+      "href",
+      `/listening-queries?edit=${job.queryId}`,
+    );
+  });
+
+  it("#343: a deleted query links to the deleted list and says 'Đã xoá'", async () => {
+    setup(jobDetailFixture(), true, undefined, "2026-10-02T00:00:00.000Z");
+    expect(await screen.findByText("Từ khoá · Đã xoá")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Xem truy vấn" })).toHaveAttribute("href", "/listening-queries?deleted=1");
   });
 
   it("#340: a job without a query hides the links", async () => {
     setup(jobDetailFixture({ queryId: null }), false);
     expect(await screen.findByText("Không gắn truy vấn")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Xem bài nhắc của truy vấn →" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Xem bài nhắc" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Xem truy vấn" })).not.toBeInTheDocument();
   });
 });
