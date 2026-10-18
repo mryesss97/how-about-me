@@ -6,6 +6,7 @@ import {
   type ListeningQuery,
   ListeningQueryListQuerySchema,
   type ListeningQueryListQuery,
+  type QueuedJobResponse,
   UpdateListeningQueryBodySchema,
   type UpdateListeningQueryBody,
 } from "@how-about-me/contracts";
@@ -13,6 +14,7 @@ import { type AuthUser, CurrentUser } from "../../common/auth/current-user.decor
 import { Roles } from "../../common/auth/roles.decorator";
 import { RequestId } from "../../common/logging/request-id.decorator";
 import { zod } from "../../common/pipes/zod-validation.pipe";
+import { SyncJobsService } from "../sync-jobs/sync-jobs.service";
 import type { ListeningQueryPage } from "./listening-queries.repository";
 import { ListeningQueriesService } from "./listening-queries.service";
 import { RejectImmutableFieldsPipe } from "./reject-immutable-fields.pipe";
@@ -22,7 +24,10 @@ import { RejectImmutableFieldsPipe } from "./reject-immutable-fields.pipe";
 @ApiBearerAuth()
 @Controller("projects/:projectId/listening-queries")
 export class ListeningQueriesController {
-  constructor(private readonly service: ListeningQueriesService) {}
+  constructor(
+    private readonly service: ListeningQueriesService,
+    private readonly syncJobs: SyncJobsService,
+  ) {}
 
   @Get()
   list(
@@ -86,5 +91,18 @@ export class ListeningQueriesController {
     @RequestId() requestId: string | null,
   ): Promise<ListeningQuery> {
     return this.service.restore({ projectId, user, requestId }, queryId);
+  }
+
+  /** T-043 / FR-058 / NFR-017: queue a manual sync job; 409 SYNC_ALREADY_RUNNING, 429 RATE_LIMITED. */
+  @Post(":queryId/run")
+  @Roles("admin")
+  @HttpCode(202)
+  run(
+    @Param("projectId", ParseUUIDPipe) projectId: string,
+    @Param("queryId", ParseUUIDPipe) queryId: string,
+    @CurrentUser() user: AuthUser,
+    @RequestId() requestId: string | null,
+  ): Promise<QueuedJobResponse> {
+    return this.syncJobs.runNow({ projectId, user, requestId }, queryId);
   }
 }

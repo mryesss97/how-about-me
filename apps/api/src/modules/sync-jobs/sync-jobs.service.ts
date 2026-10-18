@@ -4,6 +4,7 @@ import type { AuthUser } from "../../common/auth/current-user.decorator";
 import { AppError } from "../../common/errors/app.error";
 import { PrismaService } from "../../database/prisma.service";
 import { AuditService } from "../audit/audit.service";
+import { RUN_NOW_AUDIT_ACTION, RunNowThrottle } from "./run-now-throttle";
 import { type SyncJobsPage, SyncJobsRepository } from "./sync-jobs.repository";
 
 type Ctx = { projectId: string; user: AuthUser; requestId: string | null };
@@ -17,6 +18,7 @@ export class SyncJobsService {
     private readonly prisma: PrismaService,
     private readonly repo: SyncJobsRepository,
     private readonly audit: AuditService,
+    private readonly throttle: RunNowThrottle,
   ) {}
 
   list(projectId: string, q: SyncJobsListQuery): Promise<SyncJobsPage> {
@@ -61,6 +63,41 @@ export class SyncJobsService {
         tx,
       );
       return { jobId: newId, status: "queued" as const };
+    });
+  }
+
+  /**
+   * T-043 / FR-058: queue a `manual` job for the query (picked up by the recorder on the next tick).
+   * NFR-017 throttle first (cheap 429), then BR-010 (deleted → 404, disabled → 400), then 409 if a job is
+   * queued/running. Audit `query.run_requested` (BR-034) in the same tx — it is also the throttle token.
+   */
+  async runNow(ctx: Ctx, queryId: string): Promise<{ jobId: string; status: "queued" }> {
+    return this.prisma.$transaction(async (tx) => {
+      await this.throttle.assertAllowed(tx, ctx.projectId);
+      const q = await this.repo.findRunnableQueryTx(tx, ctx.projectId, queryId);
+      if (!q || q.deleted) throw AppError.notFound("Listening query");
+      if (!q.enabled) throw new AppError("VALIDATION_ERROR", "Listening query is disabled");
+      const active = await this.repo.findActiveForQueryTx(tx, queryId);
+      if (active)
+        throw new AppError("SYNC_ALREADY_RUNNING", "A sync job is already queued or running", { jobId: active });
+      const jobId = await this.repo.createManualTx(
+        tx,
+        { projectId: ctx.projectId, queryId, searchMode: q.searchMode },
+        ctx.user.id,
+      );
+      await this.audit.record(
+        {
+          projectId: ctx.projectId,
+          actorUserId: ctx.user.id,
+          action: RUN_NOW_AUDIT_ACTION,
+          entityType: "listening_query",
+          entityId: queryId,
+          metadata: { jobId },
+          requestId: ctx.requestId,
+        },
+        tx,
+      );
+      return { jobId, status: "queued" as const };
     });
   }
 }
