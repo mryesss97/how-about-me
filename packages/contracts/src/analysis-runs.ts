@@ -10,6 +10,13 @@ import {
 } from "./common.js";
 import { AnalysisStatusSchema, AnalysisTriggerSchema } from "./enums.js";
 
+/**
+ * #343: short post context for the ops list (docs 05 §9). `excerpt` is whitespace-collapsed text cut to 80 code
+ * points (+ "…"), null for media-only posts; `username` matches `MentionSchema.username`.
+ */
+export const AnalysisRunPostSchema = z.object({ excerpt: z.string().nullable(), username: z.string().nullable() });
+export type AnalysisRunPost = z.infer<typeof AnalysisRunPostSchema>;
+
 /** Ops view of analysis_runs — docs/02-architecture/05-api-contract.md §9, data model §4.10. */
 export const AnalysisRunSchema = z.object({
   id: UuidSchema,
@@ -23,6 +30,7 @@ export const AnalysisRunSchema = z.object({
   startedAt: IsoDateTimeSchema.nullable(),
   completedAt: IsoDateTimeSchema.nullable(),
   createdAt: IsoDateTimeSchema,
+  post: AnalysisRunPostSchema,
 });
 export type AnalysisRun = z.infer<typeof AnalysisRunSchema>;
 

@@ -102,6 +102,7 @@ export function analysisRunFixture(over: Partial<AnalysisRun> = {}): AnalysisRun
     startedAt: "2026-10-13T03:00:00.000Z",
     completedAt: "2026-10-13T03:00:30.000Z",
     createdAt: "2026-10-13T03:00:00.000Z",
+    post: { excerpt: "Giao hàng chậm quá, đợi 5 ngày mới tới", username: "an.nguyen" },
     ...over,
   };
 }

@@ -9,6 +9,7 @@ import { useQueryNames, useSyncJobs, type SyncJobFilters } from "./api";
 import { dayEndUtc, dayStartUtc } from "./format";
 import { SyncJobDrawer } from "./sync-job-drawer";
 import { SyncJobsFilters } from "./sync-jobs-filters";
+import { SyncJobsListMobile } from "./sync-jobs-list-mobile";
 import { SyncJobsTable } from "./sync-jobs-table";
 import { useStatusParams, type SyncJobsParams } from "./use-status-params";
 
@@ -37,11 +38,24 @@ export function SyncJobsTab({ pid, tz, isAdmin }: { pid: string; tz: string; isA
   const names = useQueryNames(pid);
   const queryNames = useMemo(() => new Map(names.map((q) => [q.id, q.name])), [names]);
 
+  const listProps = {
+    items,
+    tz,
+    queryNames,
+    currentQueryId: filters.queryId,
+    onOpen: (id: string) => update({ job: id }),
+  };
   const onFilter = (patch: Partial<SyncJobsParams>) => update({ ...patch, job: null });
 
   return (
     <div className="flex flex-col gap-4">
-      <SyncJobsFilters pid={pid} value={filters} onChange={onFilter} />
+      <SyncJobsFilters
+        pid={pid}
+        value={filters}
+        onChange={onFilter}
+        onRefresh={() => void list.refetch()}
+        isRefreshing={list.isRefetching && !list.isFetchingNextPage}
+      />
       <QueryState
         isLoading={list.isLoading}
         error={toStateError(list.error)}
@@ -52,7 +66,8 @@ export function SyncJobsTab({ pid, tz, isAdmin }: { pid: string; tz: string; isA
         emptyDescription="Hãy đổi bộ lọc hoặc khoảng ngày."
       >
         <div className="flex flex-col gap-3">
-          <SyncJobsTable items={items} tz={tz} queryNames={queryNames} onOpen={(id) => update({ job: id })} />
+          <SyncJobsTable {...listProps} />
+          <SyncJobsListMobile {...listProps} />
           {list.hasNextPage ? (
             <div className="flex justify-center">
               <PlaqueButton isLoading={list.isFetchingNextPage} onClick={() => void list.fetchNextPage()}>

@@ -46,6 +46,32 @@ function mockApi(jobs = [jobFixture()]) {
   });
 }
 
+/** Minimal ListeningQuery for `useQueryNames` (no cross-feature fixture import). */
+const namedQuery = (id: string) => ({
+  id,
+  displayName: "1zone",
+  queryValue: "1zone",
+  queryType: "keyword",
+  searchMode: "KEYWORD",
+  scheduledSearchType: "RECENT",
+  enabled: true,
+  excludeTerms: [],
+  includeTerms: [],
+  pollIntervalSeconds: 600,
+  overlapSeconds: 1200,
+  initialBackfillDays: 1,
+  nextRunAt: null,
+  lastRunAt: null,
+  lastSuccessfulSyncAt: null,
+  lastError: null,
+  lastJob: null,
+  matchedPosts: { total: 0, last24h: 0 },
+  createdBy: null,
+  createdAt: "2026-10-01T00:00:00.000Z",
+  updatedAt: "2026-10-01T00:00:00.000Z",
+  deletedAt: null,
+});
+
 describe("SyncJobsTab (TC-SYS-013)", () => {
   it("sends URL filters to the API with day bounds converted to UTC", async () => {
     search = `tab=sync-jobs&status=failed&queryId=${uuid(500)}&from=2026-10-13&to=2026-10-13`;
@@ -78,9 +104,83 @@ describe("SyncJobsTab (TC-SYS-013)", () => {
     const job = jobFixture({ queryId: null, status: "failed", error: { code: "INTERNAL", message: "x" } });
     mockApi([job]);
     setup();
-    expect(await screen.findByText("Toàn cục")).toBeInTheDocument();
-    expect(within(screen.getByRole("table")).getByText("Thất bại")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Toàn cục"));
+    const t = within(await screen.findByRole("table"));
+    expect(t.getByText("Thất bại")).toBeInTheDocument();
+    fireEvent.click(t.getByText("Toàn cục"));
+    expect(replace).toHaveBeenCalledWith(`/system-status?tab=sync-jobs&job=${job.id}`, { scroll: false });
+  });
+
+  it("#343: quick plaque 'Lỗi' writes status=failed; selection follows the URL; 'Tất cả' clears it", async () => {
+    mockApi();
+    const { unmount } = setup();
+    const group = within(await screen.findByRole("group", { name: "Lọc nhanh theo trạng thái" }));
+    expect(group.getByRole("button", { name: "Tất cả" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(group.getByRole("button", { name: "Lỗi" }));
+    expect(replace).toHaveBeenCalledWith("/system-status?tab=sync-jobs&status=failed", { scroll: false });
+    unmount();
+    replace.mockReset();
+    search = "tab=sync-jobs&status=failed";
+    setup();
+    const g2 = within(await screen.findByRole("group", { name: "Lọc nhanh theo trạng thái" }));
+    expect(g2.getByRole("button", { name: "Lỗi" })).toHaveAttribute("data-selected", "true");
+    expect(g2.getByRole("button", { name: "Tất cả" })).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(g2.getByRole("button", { name: "Tất cả" }));
+    expect(replace).toHaveBeenCalledWith("/system-status?tab=sync-jobs", { scroll: false });
+  });
+
+  it("#343: a select-only status (cancelled) lights no quick plaque", async () => {
+    search = "tab=sync-jobs&status=cancelled";
+    mockApi();
+    setup();
+    const group = within(await screen.findByRole("group", { name: "Lọc nhanh theo trạng thái" }));
+    for (const b of group.getAllByRole("button")) expect(b).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("#343: 'Bộ lọc · n' counts panel fields and toggles aria-expanded", async () => {
+    search = `tab=sync-jobs&queryId=${uuid(500)}&from=2026-10-01`;
+    mockApi();
+    setup();
+    const toggle = await screen.findByRole("button", { name: "Bộ lọc · 2" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("#343: 'Làm mới' refetches the job list", async () => {
+    mockApi();
+    setup();
+    await screen.findByRole("table");
+    fireEvent.click(screen.getByRole("button", { name: "Làm mới" }));
+    await waitFor(() => expect(jobsCalls().length).toBe(2));
+  });
+
+  it("#343: the query name links to its job history without opening the drawer (click or Enter)", async () => {
+    const job = jobFixture();
+    apiFetch.mockImplementation((path: string) => {
+      if (path.endsWith("/listening-queries"))
+        return Promise.resolve({ items: [namedQuery(uuid(500))], nextCursor: null });
+      if (path.endsWith("/sync-jobs")) return Promise.resolve({ items: [job], nextCursor: null });
+      return new Promise(() => {});
+    });
+    setup();
+    const t = within(await screen.findByRole("table"));
+    const link = await t.findByRole("link", { name: "Xem các lượt đồng bộ của 1zone" });
+    expect(link).toHaveAttribute("href", `/system-status?tab=sync-jobs&queryId=${uuid(500)}`);
+    // jsdom cannot navigate; block the default only (React handlers still run).
+    link.addEventListener("click", (e) => e.preventDefault());
+    fireEvent.keyDown(link, { key: "Enter" });
+    fireEvent.click(link);
+    expect(replace).not.toHaveBeenCalledWith(expect.stringContaining("job="), expect.anything());
+  });
+
+  it("#343 BR-017: mobile card shows a status plate and a worded error; tapping it opens the drawer", async () => {
+    const job = jobFixture({ status: "failed", error: { code: "INTERNAL", message: "x" } });
+    mockApi([job]);
+    setup();
+    const card = within(await screen.findByTestId(`job-card-${job.id}`));
+    expect(card.getByText("Thất bại")).toBeInTheDocument();
+    expect(card.getByText(/40 lấy · 10 mới · 5 cập nhật/)).toBeInTheDocument();
+    fireEvent.click(card.getByRole("button", { name: /xem chi tiết/ }));
     expect(replace).toHaveBeenCalledWith(`/system-status?tab=sync-jobs&job=${job.id}`, { scroll: false });
   });
 });

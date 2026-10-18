@@ -2,7 +2,6 @@
 
 import { RefreshCcw01 } from "@untitledui/icons";
 import type { SyncJobDetail } from "@how-about-me/contracts";
-import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { SlideoutMenu } from "@/components/application/slideout-menus/slideout-menu";
@@ -63,7 +62,8 @@ export function SyncJobDrawer({ pid, jobId, tz, isAdmin, onClose }: Props) {
     >
       <SlideoutMenu.Header onClose={close}>
         <div className="flex items-center gap-3 pr-8">
-          <h2 className="text-lg font-semibold text-primary">Chi tiết lượt đồng bộ</h2>
+          {/* #343 ops-4: condensed caps title like the other operate drawers. */}
+          <h2 className="operate-board-title pr-8 text-[var(--ink)]">Lượt đồng bộ</h2>
           {retryButton ? <div className="ml-auto">{retryButton}</div> : null}
         </div>
         {job.data ? <QueryLine queryId={queryId} names={names} /> : null}
@@ -81,21 +81,21 @@ export function SyncJobDrawer({ pid, jobId, tz, isAdmin, onClose }: Props) {
         )}
       </SlideoutMenu.Content>
       {job.data && queryId ? (
-        // Close the loop back to the query and its mentions (#340 flows-6).
-        <SlideoutMenu.Footer className="flex flex-wrap justify-between gap-3 text-sm font-semibold">
-          <Link href="/listening-queries" className="text-secondary underline-offset-2 hover:underline">
-            ← Về truy vấn
-          </Link>
-          <Link
+        // Close the loop back to the query and its mentions (#340 flows-6, #343 ops-4: plaque actions).
+        <SlideoutMenu.Footer className="flex flex-wrap gap-3">
+          <PlaqueButton
+            fullWidthOnMobile
             href={
               job.data.windowSince && job.data.windowUntil
                 ? mentionsWindowHref(queryId, job.data.windowSince, job.data.windowUntil)
                 : mentionsHref(queryId, "30d")
             }
-            className="text-brand-secondary underline-offset-2 hover:underline"
           >
-            Xem bài nhắc của truy vấn →
-          </Link>
+            Xem bài nhắc
+          </PlaqueButton>
+          <PlaqueButton fullWidthOnMobile href={queryHref(queryId, isAdmin, names)}>
+            Xem truy vấn
+          </PlaqueButton>
         </SlideoutMenu.Footer>
       ) : null}
     </SlideoutMenu>
@@ -104,20 +104,31 @@ export function SyncJobDrawer({ pid, jobId, tz, isAdmin, onClose }: Props) {
 
 const TYPE_VI = { keyword: "Từ khoá", topic_tag: "Chủ đề" } as const;
 
-/** "Truy vấn: 1zone (Từ khoá)" under the title; names come from the first 200 queries (incl. deleted). */
-function QueryLine({
-  queryId,
-  names,
-}: {
-  queryId: string | null;
-  names: { id: string; name: string; type: keyof typeof TYPE_VI }[];
-}) {
+type QueryName = { id: string; name: string; type: keyof typeof TYPE_VI; deletedAt: string | null };
+
+/**
+ * #343: admins open the query's edit drawer; a deleted query goes to the deleted list; others get the list
+ * (the edit drawer is admin-only, so `?edit=` would be a dead link for them).
+ */
+function queryHref(queryId: string, isAdmin: boolean, names: QueryName[]): string {
+  if (names.find((n) => n.id === queryId)?.deletedAt) return "/listening-queries?deleted=1";
+  return isAdmin ? `/listening-queries?edit=${queryId}` : "/listening-queries";
+}
+
+/** Query name under the title (names come from the first 200 queries, incl. deleted), type on a second line. */
+function QueryLine({ queryId, names }: { queryId: string | null; names: QueryName[] }) {
   if (!queryId) return <p className="text-sm text-tertiary">Không gắn truy vấn</p>;
   const found = names.find((n) => n.id === queryId);
   return (
-    <p className="text-sm text-secondary" data-testid="job-query">
-      Truy vấn: {found ? `${found.name} (${TYPE_VI[found.type]})` : `Truy vấn ${queryId.slice(0, 8)}`}
-    </p>
+    <div data-testid="job-query">
+      <p className="text-md font-semibold text-primary">{found ? found.name : `Truy vấn ${queryId.slice(0, 8)}`}</p>
+      {found ? (
+        <p className="text-sm text-tertiary">
+          {TYPE_VI[found.type]}
+          {found.deletedAt ? " · Đã xoá" : ""}
+        </p>
+      ) : null}
+    </div>
   );
 }
 

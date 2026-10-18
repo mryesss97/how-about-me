@@ -102,3 +102,28 @@ describe("SystemStatusView overview: queries with errors (#342)", () => {
     expect(screen.queryByText("Truy vấn đang lỗi")).not.toBeInTheDocument();
   });
 });
+
+describe("SystemStatusView chrome (#343 ops-10)", () => {
+  const statusOnly = () =>
+    apiFetch.mockImplementation((p: string) =>
+      p.endsWith("/system-status") ? Promise.resolve(statusFixture()) : new Promise(() => {}),
+    );
+
+  it("'Cập nhật … trước' shows on Tổng quan; tabs are ≥ 44 px", async () => {
+    role = "admin";
+    statusOnly();
+    setup();
+    expect(await screen.findByText(/^Cập nhật \d+ giây trước$/)).toBeInTheDocument();
+    for (const tab of screen.getAllByRole("tab")) expect(tab).toHaveClass("min-h-11");
+  });
+
+  it.each(["sync-jobs", "analysis-failures", "audit-log"])("no 'Cập nhật' on ?tab=%s", async (t) => {
+    role = "admin";
+    search = `tab=${t}`;
+    statusOnly();
+    setup();
+    await waitFor(() => expect(paths().some((p) => p.endsWith("/system-status"))).toBe(true));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.queryByText(/^Cập nhật \d+ giây trước$/)).not.toBeInTheDocument();
+  });
+});

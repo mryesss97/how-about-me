@@ -1,6 +1,7 @@
 import { INTEGRATION_STATUSES, JOB_STATUSES } from "@how-about-me/contracts";
 import { describe, expect, it } from "vitest";
 import {
+  activeFilterCount,
   analysisStatusLabel,
   collectorStatusLabel,
   dayEndUtc,
@@ -29,5 +30,10 @@ describe("system-status format", () => {
   it("day bounds are computed in the project timezone and returned as UTC", () => {
     expect(dayStartUtc("2026-10-13", "Asia/Ho_Chi_Minh")).toBe("2026-10-12T17:00:00.000Z");
     expect(dayEndUtc("2026-10-13", "Asia/Ho_Chi_Minh")).toBe("2026-10-13T16:59:59.999Z");
+  });
+
+  it("#343: activeFilterCount counts non-empty fields", () => {
+    expect(activeFilterCount({ queryId: "q", status: "", from: "2026-10-01", to: "" })).toBe(2);
+    expect(activeFilterCount({})).toBe(0);
   });
 });

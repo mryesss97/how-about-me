@@ -1,19 +1,29 @@
 "use client";
 
 import type { AuditLog } from "@how-about-me/contracts";
+import Link from "next/link";
 import { Fragment, useState } from "react";
+import { PlaqueButton } from "@/features/shared/plaque-button";
 import { DASH } from "@/lib/format/number";
 import { formatDateTime } from "@/lib/time/format";
-import { auditActionText, truncateMiddle, auditEntityLabel } from "./format";
-import { PlaqueButton } from "@/features/shared/plaque-button";
+import { auditEntityHref, auditEntityText } from "./audit-format";
+import { AuditLogDetail } from "./audit-log-detail";
+import { auditActionText } from "./format";
 
 const TH = "whitespace-nowrap px-3 py-2 text-left text-xs font-semibold text-tertiary";
 const TD = "px-3 py-3 align-top text-sm text-primary";
 
-const actorName = (a: AuditLog["actor"]) => (a ? (a.displayName ?? a.email ?? a.id) : "Hệ thống");
+export const actorName = (a: AuditLog["actor"]) => (a ? (a.displayName ?? a.email ?? a.id) : "Hệ thống");
 
-/** Audit log list (FR-201, UX §3.6). "Chi tiết" expands sanitized metadata + request id. */
-export function AuditLogTable({ items, tz }: { items: AuditLog[]; tz: string }) {
+export type AuditListProps = {
+  items: AuditLog[];
+  tz: string;
+  queryNames: Map<string, string>;
+  memberNames: Map<string, string>;
+};
+
+/** Open/closed detail rows (each view keeps its own; only one view is visible at a time). */
+export function useToggleSet() {
   const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
   const toggle = (id: string) =>
     setOpen((prev) => {
@@ -22,9 +32,42 @@ export function AuditLogTable({ items, tz }: { items: AuditLog[]; tz: string }) 
       else next.add(id);
       return next;
     });
+  return { open, toggle };
+}
 
+export const hasDetail = (l: AuditLog) => l.metadata != null || l.requestId != null;
+
+/** #343 (ops-12): the audited object links to where it lives; unknown types stay text. */
+export function AuditEntity({
+  log,
+  names,
+  className,
+}: {
+  log: AuditLog;
+  names: Omit<AuditListProps, "items" | "tz">;
+  className?: string;
+}) {
+  const text = auditEntityText(log, names);
+  if (!text) return <>{DASH}</>;
+  const href = auditEntityHref(log);
+  return href ? (
+    <Link
+      href={href}
+      title={log.entityId ?? undefined}
+      className={`text-brand-secondary hover:underline ${className ?? ""}`}
+    >
+      {text}
+    </Link>
+  ) : (
+    <span title={log.entityId ?? undefined}>{text}</span>
+  );
+}
+
+/** Audit log list (FR-201, UX §3.6), `md`+ only (#343 cards below). "Chi tiết" expands metadata + request id. */
+export function AuditLogTable({ items, tz, queryNames, memberNames }: AuditListProps) {
+  const { open, toggle } = useToggleSet();
   return (
-    <div className="operate-board min-w-0">
+    <div className="operate-board hidden min-w-0 md:block">
       <span aria-hidden className="sign-keyline" />
       <div className="relative overflow-x-auto p-3">
         <table className="w-full">
@@ -43,7 +86,6 @@ export function AuditLogTable({ items, tz }: { items: AuditLog[]; tz: string }) 
             {items.map((l) => {
               const expanded = open.has(l.id);
               const detailId = `audit-detail-${l.id}`;
-              const hasDetail = l.metadata != null || l.requestId != null;
               return (
                 <Fragment key={l.id}>
                   <tr className="border-b border-secondary">
@@ -52,12 +94,11 @@ export function AuditLogTable({ items, tz }: { items: AuditLog[]; tz: string }) 
                     <td className={TD} title={l.action}>
                       {auditActionText(l.action)}
                     </td>
-                    <td className={TD} title={l.entityId ?? undefined}>
-                      {l.entityType ? auditEntityLabel(l.entityType) : DASH}
-                      {l.entityId ? ` · ${truncateMiddle(l.entityId, 16)}` : ""}
+                    <td className={TD}>
+                      <AuditEntity log={l} names={{ queryNames, memberNames }} />
                     </td>
                     <td className={`${TD} text-right`}>
-                      {hasDetail ? (
+                      {hasDetail(l) ? (
                         <PlaqueButton
                           size="xs"
                           aria-expanded={expanded}
@@ -72,14 +113,7 @@ export function AuditLogTable({ items, tz }: { items: AuditLog[]; tz: string }) 
                   {expanded ? (
                     <tr id={detailId} className="border-b border-secondary bg-secondary">
                       <td colSpan={5} className={TD}>
-                        {l.metadata ? (
-                          <pre className="max-h-64 overflow-auto text-xs break-all whitespace-pre-wrap">
-                            {JSON.stringify(l.metadata, null, 2)}
-                          </pre>
-                        ) : (
-                          <p className="text-xs text-tertiary">Không có dữ liệu bổ sung.</p>
-                        )}
-                        {l.requestId ? <p className="mt-2 text-xs text-tertiary">Mã yêu cầu: {l.requestId}</p> : null}
+                        <AuditLogDetail log={l} tz={tz} />
                       </td>
                     </tr>
                   ) : null}

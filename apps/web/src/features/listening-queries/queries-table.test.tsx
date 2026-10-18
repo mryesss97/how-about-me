@@ -104,12 +104,12 @@ describe("QueriesTable", () => {
     expect(screen.getByRole("switch", { name: `Bật ${q.displayName}` })).toBeDisabled();
   });
 
-  it("#342: the sync status links to its job", () => {
+  it("#342/#343: the sync status links to its job inside the query history", () => {
     const q = queryFixture();
     renderTable([q]);
     expect(screen.getByRole("link", { name: "Thành công — xem lượt đồng bộ" })).toHaveAttribute(
       "href",
-      `/system-status?tab=sync-jobs&job=${q.lastJob?.id}`,
+      `/system-status?tab=sync-jobs&queryId=${q.id}&job=${q.lastJob?.id}`,
     );
   });
 
@@ -134,7 +134,7 @@ describe("QueriesTable", () => {
     expect(row.getByRole("button", { name: "X: m" })).toHaveClass("text-error-primary");
     expect(row.getByRole("link", { name: "Xem lượt lỗi" })).toHaveAttribute(
       "href",
-      `/system-status?tab=sync-jobs&job=${job.id}`,
+      `/system-status?tab=sync-jobs&queryId=${q.id}&job=${job.id}`,
     );
   });
 });

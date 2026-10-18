@@ -2,24 +2,30 @@
 
 import { AUDIT_ACTIONS } from "@how-about-me/contracts";
 import { NativeSelect } from "@/components/base/select/select-native";
-import { auditActionLabel } from "./format";
+import { DateRangeFields, FilterPanel } from "./filter-panel";
+import { activeFilterCount, auditActionLabel } from "./format";
 import type { AuditLogParams } from "./use-status-params";
 
-const FIELD = "flex flex-col gap-1.5 text-sm font-medium text-secondary";
-const CONTROL =
-  "rounded-lg bg-primary px-3 py-2 text-sm text-primary shadow-xs ring-1 ring-primary ring-inset outline-hidden focus-visible:ring-2 focus-visible:ring-brand";
-
-/** Filters for the audit log (FR-201): action + date range (calendar days in the project tz). */
-export function AuditLogFilters({
-  value,
-  onChange,
-}: {
+type Props = {
   value: AuditLogParams;
   onChange: (patch: Partial<AuditLogParams>) => void;
-}) {
+  /** #343: project members for "Người thực hiện" (no "Hệ thống": `actorUserId` only takes a UUID). */
+  members: { id: string; name: string }[];
+  onRefresh: () => void;
+  isRefreshing: boolean;
+};
+
+/** Filters for the audit log (FR-201, #343): action, actor, date range (calendar days in the project tz). */
+export function AuditLogFilters({ value, onChange, members, onRefresh, isRefreshing }: Props) {
   return (
-    <div className="border-b-2 border-[var(--ink)] bg-[var(--enamel-white)] px-4 py-3">
-      <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-3">
+    <FilterPanel
+      fieldsId="audit-log-filter-fields"
+      activeCount={activeFilterCount(value)}
+      onRefresh={onRefresh}
+      isRefreshing={isRefreshing}
+      gridClassName="lg:grid-cols-4"
+    >
+      <div className="col-span-2 md:col-span-1">
         <NativeSelect
           label="Thao tác"
           size="sm"
@@ -30,27 +36,17 @@ export function AuditLogFilters({
           ]}
           onChange={(e) => onChange({ action: e.target.value as AuditLogParams["action"] })}
         />
-        <label className={FIELD}>
-          Từ ngày
-          <input
-            type="date"
-            className={CONTROL}
-            value={value.from}
-            max={value.to || undefined}
-            onChange={(e) => onChange({ from: e.target.value })}
-          />
-        </label>
-        <label className={FIELD}>
-          Đến ngày
-          <input
-            type="date"
-            className={CONTROL}
-            value={value.to}
-            min={value.from || undefined}
-            onChange={(e) => onChange({ to: e.target.value })}
-          />
-        </label>
       </div>
-    </div>
+      <div className="col-span-2 md:col-span-1">
+        <NativeSelect
+          label="Người thực hiện"
+          size="sm"
+          value={value.actor}
+          options={[{ value: "", label: "Tất cả" }, ...members.map((m) => ({ value: m.id, label: m.name }))]}
+          onChange={(e) => onChange({ actor: e.target.value })}
+        />
+      </div>
+      <DateRangeFields from={value.from} to={value.to} onChange={onChange} />
+    </FilterPanel>
   );
 }
