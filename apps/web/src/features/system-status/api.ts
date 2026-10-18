@@ -2,6 +2,7 @@
 
 import {
   AnalysisRunsPageSchema,
+  AuditLogsPageSchema,
   ListeningQueryPageSchema,
   RetryAnalysisRunResponseSchema,
   RetryFailedBodySchema,
@@ -21,6 +22,7 @@ import { qk, staleTimes } from "@/lib/query/keys";
 export const SYSTEM_STATUS_REFETCH_MS = 30_000;
 export const SYNC_JOBS_PAGE_SIZE = 50;
 export const ANALYSIS_FAILURES_PAGE_SIZE = 50;
+export const AUDIT_LOGS_PAGE_SIZE = 50;
 /** FR-175: "retry all failed" re-queues at most 500 runs per call (contract max). */
 export const RETRY_ALL_LIMIT = 500;
 
@@ -57,6 +59,30 @@ export function useSyncJobs(pid: string | null | undefined, filters: SyncJobFilt
       ),
     getNextPageParam: (last) => last.nextCursor ?? undefined,
     enabled: !!pid,
+  });
+}
+
+export type AuditLogFilters = { action?: string; from?: string; to?: string };
+
+/** FR-201: admin-only audit log list; only fires when `enabled` (caller is admin) to avoid a 403 (TC-SYS-015). */
+export function useAuditLogs(pid: string | null | undefined, filters: AuditLogFilters, enabled: boolean) {
+  return useInfiniteQuery({
+    queryKey: qk.auditLogs(pid ?? "", filters),
+    initialPageParam: null as string | null,
+    queryFn: async ({ pageParam }) =>
+      AuditLogsPageSchema.parse(
+        await apiFetch<unknown>(`/projects/${pid}/audit-logs`, {
+          params: {
+            limit: String(AUDIT_LOGS_PAGE_SIZE),
+            action: filters.action,
+            from: filters.from,
+            to: filters.to,
+            ...(pageParam ? { cursor: pageParam } : {}),
+          },
+        }),
+      ),
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    enabled: !!pid && enabled,
   });
 }
 
