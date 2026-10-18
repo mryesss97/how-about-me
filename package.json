@@ -25,6 +25,7 @@
     "verify:quiet": "bash scripts/verify-quiet.sh",
     "git:check-base": "bash scripts/check-base-branch.sh",
     "agent": "node scripts/agent.mjs",
+    "perf:k6": "k6 run tools/perf/all.js",
     "agent:test": "node --test scripts/agent-workflow.test.mjs scripts/pr-done.test.mjs scripts/pr-conventions.test.mjs scripts/merge-state.test.mjs scripts/verify-lock.test.mjs scripts/verify-stamp.test.mjs scripts/fe-secrets.test.mjs scripts/audit-check.test.mjs",
     "issue:start": "node scripts/issue.mjs start",
     "issue:tidy": "node scripts/issue.mjs tidy",

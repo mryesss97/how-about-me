@@ -32,7 +32,10 @@ import { SystemStatusModule } from "./modules/system-status/system-status.module
   imports: [
     AppConfigModule,
     LoggerModule.forRootAsync({ inject: [APP_CONFIG], useFactory: (cfg: AppConfig) => buildLoggerParams(cfg) }),
-    ThrottlerModule.forRoot([{ name: "global", ttl: 60_000, limit: 300 }]),
+    ThrottlerModule.forRootAsync({
+      inject: [APP_CONFIG],
+      useFactory: (cfg: AppConfig) => [{ name: "global", ttl: 60_000, limit: cfg.THROTTLE_GLOBAL_LIMIT }],
+    }),
     ScheduleModule.forRoot(),
     MetricsModule,
     PrismaModule,

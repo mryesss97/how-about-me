@@ -4,8 +4,8 @@
 | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Status  | Measured 2026-10-13 (issue #84)                                                                                                                                                                                                   |
 | Targets | [../01-product/05-non-functional-requirements.md](../01-product/05-non-functional-requirements.md) NFR-001 (overview p95 < 1.5 s), NFR-002 (list < 1.0 s), NFR-003 (detail < 700 ms), NFR-007 (`q` < 1.5 s), NFR-042 (aggregates) |
-| Tests   | TC-DASH-025, TC-MEN-022, TC-MEN-023                                                                                                                                                                                               |
-| Code    | `apps/api/src/cli/perf-seed.ts`, `apps/api/src/cli/perf-explain.ts`, `apps/api/src/cli/perf-seed/`                                                                                                                                |
+| Tests   | TC-DASH-025, TC-MEN-022, TC-MEN-023; staging k6 acceptance run: §7 (T-120, issue #100)                                                                                                                                            |
+| Code    | `apps/api/src/cli/perf-seed.ts`, `apps/api/src/cli/perf-explain.ts`, `apps/api/src/cli/perf-seed/`, k6 + Lighthouse: `tools/perf/`                                                                                                |
 
 ## 1. Summary
 
@@ -111,3 +111,56 @@ Overview 30d is the slowest endpoint (p50 191–195 ms): its KPI query evaluates
 4. `pnpm --filter @how-about-me/api perf:explain -- --runs 20 --out /tmp/perf.md` (add `--prepared-cache` for §4.1).
 
 Update this report when a migration touches `social_posts`, `post_analyses`, `analysis_*`, `post_query_matches` or the effective views, or before the staging k6 run (TC-DASH-025, TC-MEN-022).
+
+## 7. Staging k6 acceptance run (T-120)
+
+Scripts and how to run them: [tools/perf/README.md](../../tools/perf/README.md) (`pnpm perf:k6`). Concurrent load over real HTTP (auth guard, Zod, serialization, pooler) — the complement of the single-client plans above.
+
+**Status: pending.** The scripts are in place and statically checked (`k6 inspect`); the staging run waits on the owner for (1) a staging API/web URL and a dedicated perf database to seed with 100 k posts, (2) a Supabase perf user that is a member of `perf-large`, (3) a relaxed global throttler for the run — now configurable: set `THROTTLE_GLOBAL_LIMIT` on the API for the run (default 300 req/min per client rejects 20 VU from one IP with 429). Fill the tables below when the run happens.
+
+### 7.0 Local baseline (2026-10-18)
+
+Run on the developer Mac before staging exists, to prove the scripts and get a first reading. Not the acceptance run: one machine runs k6, the API and Postgres.
+
+| Field   | Value                                                                                                                                                           |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dataset | `perf:seed --posts 100000` (anchor = run time) in a separate Postgres 16 container with `--shm-size=256m`; perf user = local seed admin, member of `perf-large` |
+| API     | branch build, `APP_ROLE=api`, `THROTTLE_GLOBAL_LIMIT=100000`, fake providers; k6 0.5x–1.5x think time `PERF_THINK_S=3`                                          |
+| Load    | `all.js`, 20 VU, 30 s warm-up + 3 min measured; 5,109 requests (~28 req/s), **0 errors** (5,108 × 200)                                                          |
+
+| Endpoint (20 VU)    | p50    | p95    | max    | Target                 | Result |
+| ------------------- | ------ | ------ | ------ | ---------------------- | ------ |
+| overview            | 113 ms | 276 ms | 698 ms | p95 < 1.5 s (NFR-001)  | pass   |
+| other dashboard API | 74 ms  | 211 ms | 832 ms | —                      | —      |
+| mentions list       | 66 ms  | 303 ms | 706 ms | p95 < 1.0 s (NFR-002)  | pass   |
+| mentions `q`        | 33 ms  | 111 ms | 709 ms | p95 < 1.5 s (NFR-007)  | pass   |
+| mention detail      | 11 ms  | 52 ms  | 222 ms | p95 < 700 ms (NFR-003) | pass   |
+
+Found and fixed during the baseline:
+
+- **No think time** in the first scripts: one VU fired ~1,500 req/s and the global throttler answered 429 to 98 % of them. Every scenario now sleeps `PERF_THINK_S` ± 50 % per iteration, like a user reading a page.
+- **Throttler hard-coded** at 300 req/min per client: now `THROTTLE_GLOBAL_LIMIT` (default 300, NFR-017 unchanged), raised only for perf runs.
+- **Docker `/dev/shm` 64 MB:** in the first 20 VU run on the developer's Postgres container, 35 analytics queries failed with `could not resize shared memory segment` (SQLSTATE 53100) — parallel query workers ran out of shared memory. `docker-compose.yml` now sets `shm_size: 256mb` for `postgres`; with it the run above had no errors. Hosted Postgres (Supabase) is not affected. Local containers created before this change keep 64 MB until recreated.
+
+### 7.1 Staging acceptance run
+
+| Field                                                                           | Value |
+| ------------------------------------------------------------------------------- | ----- |
+| Date / anchor of `perf:seed`                                                    | —     |
+| Environment (API instance, DB, pooler, `connection_limit`, k6 machine location) | —     |
+| Throttler setting during run                                                    | —     |
+
+| Endpoint (20 VU) | Range    | p50 | p95 | p99 | RPS | Errors | Target                 | Result  |
+| ---------------- | -------- | --- | --- | --- | --- | ------ | ---------------------- | ------- |
+| overview         | 24h / 7d | —   | —   | —   | —   | —      | p95 < 1.5 s (NFR-001)  | pending |
+| mentions list    | 7d / 30d | —   | —   | —   | —   | —      | p95 < 1.0 s (NFR-002)  | pending |
+| mentions `q`     | 7d / 30d | —   | —   | —   | —   | —      | p95 < 1.5 s (NFR-007)  | pending |
+| mention detail   | —        | —   | —   | —   | —   | —      | p95 < 700 ms (NFR-003) | pending |
+
+| Page (Lighthouse desktop, warm cache, median of 5) | TTI | LCP | Target            | Result  |
+| -------------------------------------------------- | --- | --- | ----------------- | ------- |
+| Overview                                           | —   | —   | < 2.5 s (NFR-004) | pending |
+| Mentions explorer                                  | —   | —   | < 2.5 s           | pending |
+| Mention detail                                     | —   | —   | < 2.5 s           | pending |
+
+If a target fails, check first: `pgbouncer=true` on `DATABASE_URL` (§4.1), Prisma `connection_limit` vs 20 VU (pool queueing), API CPU. Add indexes or caching only with measurements; aggregate tables only per NFR-042.
