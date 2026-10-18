@@ -14,20 +14,42 @@ import { canAccess } from "@/features/auth/route-roles";
 import { useMe } from "@/features/auth/use-me";
 import { useRole } from "@/features/auth/use-role";
 import { useSignOut } from "@/features/auth/use-sign-out";
+import { useMobileNav } from "@/components/application/app-navigation/base-components/mobile-header";
 import { SidebarNavigationSimple } from "@/components/application/app-navigation/sidebar-navigation/sidebar-simple";
 import type { NavItemType } from "@/components/application/app-navigation/config";
 import { ProjectSwitcher } from "./project-switcher";
 import { roleLabelVi } from "@/lib/semantics/labels";
 
 /** Product navigation — docs/01-product/09-ux-specification.md §1. Filtered by role (FR-018); UX only, server enforces. */
-const items: NavItemType[] = [
+type ShellNavItem = NavItemType & { match?: string };
+
+const items: ShellNavItem[] = [
   { label: "Tổng quan", href: "/overview", icon: BarChartSquare02 },
   { label: "Bài nhắc", href: "/mentions", icon: MessageChatSquare },
   { label: "Truy vấn theo dõi", href: "/listening-queries", icon: SearchLg },
   { label: "Cần xem lại", href: "/reviews", icon: CheckDone01 },
   { label: "Trạng thái hệ thống", href: "/system-status", icon: Activity },
 ];
-const footerItems: NavItemType[] = [{ label: "Cài đặt", href: "/settings/project", icon: Settings01 }];
+// #325: "Cài đặt" is current on every /settings/* tab.
+const footerItems: ShellNavItem[] = [
+  { label: "Cài đặt", href: "/settings/project", icon: Settings01, match: "/settings" },
+];
+
+/**
+ * #325: the current nav item is the one whose `match` (default `href`) is the longest
+ * segment-aligned prefix of the pathname. Exactly one item is current, or none (BR-017: shown
+ * as a plate + aria-current, not colour alone). FR-018: callers pass only role-visible items.
+ */
+export function resolveActiveHref(pathname: string, list: ShellNavItem[]): string | undefined {
+  let best: ShellNavItem | undefined;
+  for (const item of list) {
+    const match = item.match ?? item.href;
+    if (!match) continue;
+    if (pathname !== match && !pathname.startsWith(`${match}/`)) continue;
+    if (!best || match.length > (best.match ?? best.href ?? "").length) best = item;
+  }
+  return best?.href;
+}
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -35,10 +57,10 @@ export function AppSidebar() {
   const { role } = useRole();
   const signOut = useSignOut();
   // Until the role loads only open routes are shown, so restricted items never flash.
-  const visible = (list: NavItemType[]) => list.filter((i) => !i.href || canAccess(i.href, role));
+  const visible = (list: ShellNavItem[]) => list.filter((i) => !i.href || canAccess(i.href, role));
   const navItems = visible(items);
   const navFooter = visible(footerItems);
-  const active = [...navItems, ...navFooter].find((i) => i.href && pathname.startsWith(i.href))?.href ?? pathname;
+  const active = resolveActiveHref(pathname, [...navItems, ...navFooter]);
   // FR-011: sign out clears the session and the query cache.
   const account = (
     <div className="flex flex-col gap-3 border-t-2 border-white/90 pt-4">
@@ -49,10 +71,7 @@ export function AppSidebar() {
           {role && <span className="shell-role-plate">{roleLabelVi[role]}</span>}
         </div>
       )}
-      <button type="button" className="shell-signout" onClick={() => void signOut()}>
-        <LogOut01 aria-hidden className="size-4" />
-        Đăng xuất
-      </button>
+      <SignOutButton onSignOut={signOut} />
     </div>
   );
   return (
@@ -63,5 +82,23 @@ export function AppSidebar() {
       featureCard={account}
       showAccountCard={false}
     />
+  );
+}
+
+/** Rendered inside the drawer too, so it can reach the mobile menu context (#325). */
+function SignOutButton({ onSignOut }: { onSignOut: () => Promise<void> | void }) {
+  const mobileNav = useMobileNav();
+  return (
+    <button
+      type="button"
+      className="shell-signout"
+      onClick={() => {
+        mobileNav?.close();
+        void onSignOut();
+      }}
+    >
+      <LogOut01 aria-hidden className="size-4" />
+      Đăng xuất
+    </button>
   );
 }

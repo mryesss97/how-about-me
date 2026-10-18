@@ -38,7 +38,10 @@ describe("TermMentions", () => {
       params: expect.objectContaining({ term: "giá vé", count: "true" }),
     });
     expect(screen.getByRole("heading", { name: 'Bài nhắc tới "giá vé"' })).toBeInTheDocument();
-    fireEvent.click(await screen.findByTestId("mention-row"));
-    expect(push).toHaveBeenCalledWith(`/mentions/${m.id}`);
+    // #326: the row is a real link to the full page (no slide-out on /terms).
+    const link = await screen.findByRole("link", { name: /Bài nhắc của/ });
+    expect(link).toHaveAttribute("href", `/mentions/${m.id}`);
+    expect(fireEvent.click(link)).toBe(true);
+    expect(push).not.toHaveBeenCalled();
   });
 });

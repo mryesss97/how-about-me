@@ -2,7 +2,8 @@
 
 import type { MentionListItem } from "@how-about-me/contracts";
 import { LinkExternal01 } from "@untitledui/icons";
-import { forwardRef, type KeyboardEvent } from "react";
+import Link from "next/link";
+import { forwardRef, type KeyboardEvent, type MouseEvent } from "react";
 import { Badge } from "@/components/base/badges/badges";
 import { AnalysisStatusBadge, ConfidenceMarker, SafetyBadge, SentimentBadge } from "@/features/shared/semantic-badge";
 import { displayLabel, type LabelKind } from "@/lib/semantics/labels";
@@ -45,13 +46,18 @@ type Props = {
   item: MentionListItem;
   query?: string | null;
   tz: string;
-  onOpen: (id: string) => void;
-  onKeyDown?: (e: KeyboardEvent<HTMLElement>) => void;
+  /** Real link target (full page) — cmd/ctrl/middle-click opens it in a new tab (#326). */
+  href: string;
+  /** Plain left-click handler; when set, the click is intercepted (e.g. open the `?item=` slide-out). */
+  onOpen?: (id: string) => void;
+  onKeyDown?: (e: KeyboardEvent<HTMLAnchorElement>) => void;
 };
 
+const isPlainClick = (e: MouseEvent) => e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
+
 /** One card row of the Mentions Explorer — UX §3.3, TC-MEN-002. */
-export const MentionRow = forwardRef<HTMLElement, Props>(function MentionRow(
-  { item, query, tz, onOpen, onKeyDown },
+export const MentionRow = forwardRef<HTMLAnchorElement, Props>(function MentionRow(
+  { item, query, tz, href, onOpen, onKeyDown },
   ref,
 ) {
   const a = item.analysis;
@@ -59,17 +65,10 @@ export const MentionRow = forwardRef<HTMLElement, Props>(function MentionRow(
   // TC-MEN-021: queries whose exclude terms matched are not shown in the list (detail shows them, T-104).
   const queries = item.matchedQueries.filter((q) => !q.excludedByTerms);
   return (
+    // Whole card is clickable via a stretched link (#326); focus ring sits on the card (BR-017: not colour-only).
     <article
-      ref={ref}
-      tabIndex={0}
       data-testid="mention-row"
-      aria-label={`Bài nhắc của ${item.username ? `@${item.username}` : "người dùng không rõ"}`}
-      onClick={() => onOpen(item.id)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" && e.target === e.currentTarget) onOpen(item.id);
-        onKeyDown?.(e);
-      }}
-      className="flex cursor-pointer flex-col gap-3 rounded-xl border border-secondary bg-primary p-4 outline-none hover:bg-primary_hover focus-visible:ring-2 focus-visible:ring-brand md:flex-row"
+      className="relative flex cursor-pointer flex-col gap-3 rounded-xl border border-secondary bg-primary p-4 hover:bg-primary_hover has-[a[data-row-link]:focus-visible]:ring-2 has-[a[data-row-link]:focus-visible]:ring-brand md:flex-row"
     >
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -93,17 +92,30 @@ export const MentionRow = forwardRef<HTMLElement, Props>(function MentionRow(
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Mở trên Threads"
-              onClick={(e) => e.stopPropagation()}
-              onKeyDown={(e) => e.stopPropagation()}
-              className="ml-auto text-tertiary hover:text-primary"
+              className="relative z-10 ml-auto text-tertiary hover:text-primary"
             >
               <LinkExternal01 className="size-4" aria-hidden />
             </a>
           ) : null}
         </div>
-        <p className={cx("line-clamp-2 text-sm", item.text ? "text-primary" : "text-quaternary")}>
-          {item.text ? <HighlightText text={item.text} query={query} /> : "Không có nội dung"}
-        </p>
+        <Link
+          ref={ref}
+          href={href}
+          prefetch={false}
+          data-row-link=""
+          aria-label={`Bài nhắc của ${item.username ? `@${item.username}` : "người dùng không rõ"}`}
+          onClick={(e) => {
+            if (!onOpen || !isPlainClick(e)) return;
+            e.preventDefault();
+            onOpen(item.id);
+          }}
+          onKeyDown={onKeyDown}
+          className="outline-none after:absolute after:inset-0 after:rounded-xl after:content-['']"
+        >
+          <p className={cx("line-clamp-2 text-sm", item.text ? "text-primary" : "text-quaternary")}>
+            {item.text ? <HighlightText text={item.text} query={query} /> : "Không có nội dung"}
+          </p>
+        </Link>
         {a.summary ? <p className="line-clamp-1 text-xs text-tertiary">{a.summary}</p> : null}
       </div>
       <div className="flex flex-wrap content-start items-start gap-1.5 md:w-72 md:justify-end">

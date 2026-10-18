@@ -1,15 +1,20 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { meFixture, P1, P2, projectFixture, Providers } from "@/features/auth/test-utils";
-import { AppSidebar } from "./app-sidebar";
+import { AppSidebar, resolveActiveHref } from "./app-sidebar";
 
 const apiFetch = vi.fn();
 vi.mock("@/lib/api/client", () => ({ apiFetch: (...a: unknown[]) => apiFetch(...a) }));
-vi.mock("next/navigation", () => ({ usePathname: () => "/overview", useRouter: () => ({ push: vi.fn() }) }));
+let pathname = "/overview";
+vi.mock("next/navigation", () => ({ usePathname: () => pathname, useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("@/features/auth/use-sign-out", () => ({ useSignOut: () => vi.fn() }));
 
 // FR-018, FR-036
 describe("AppSidebar", () => {
+  beforeEach(() => {
+    pathname = "/overview";
+  });
+
   it("shows the shared nav to a viewer with role badge and no switcher for 1 project (TC-AUTH-014, TC-PROJ-012)", async () => {
     apiFetch.mockResolvedValue(meFixture([projectFixture(P1, "viewer")]));
     render(<AppSidebar />, { wrapper: Providers });
@@ -40,5 +45,72 @@ describe("AppSidebar", () => {
     apiFetch.mockResolvedValue(meFixture([projectFixture(P1, "viewer")]));
     render(<AppSidebar />, { wrapper: Providers });
     expect((await screen.findAllByRole("button", { name: "Đăng xuất" })).length).toBeGreaterThan(0);
+  });
+});
+
+// #325, BR-017: exactly one current item per rendered sidebar (content renders in drawer + desktop).
+function currentLabels(): string[] {
+  return screen
+    .getAllByRole("link", { hidden: true })
+    .filter((a) => a.getAttribute("aria-current") === "page")
+    .map((a) => a.textContent?.trim() ?? "");
+}
+
+describe("AppSidebar current item (#325, BR-017)", () => {
+  it("moves the plate when the pathname changes", async () => {
+    apiFetch.mockResolvedValue(meFixture([projectFixture(P1, "admin")]));
+    pathname = "/overview";
+    const { rerender } = render(<AppSidebar />, { wrapper: Providers });
+    await screen.findAllByText("Quản trị");
+    expect(new Set(currentLabels())).toEqual(new Set(["Tổng quan"]));
+    pathname = "/reviews";
+    rerender(<AppSidebar />);
+    const labels = currentLabels();
+    expect(new Set(labels)).toEqual(new Set(["Cần xem lại"]));
+    expect(labels.length).toBeLessThanOrEqual(2);
+  });
+
+  it.each(["/settings/members", "/settings/integrations", "/settings/analysis", "/settings/project"])(
+    "marks Cài đặt current on %s",
+    async (p) => {
+      apiFetch.mockResolvedValue(meFixture([projectFixture(P1, "admin")]));
+      pathname = p;
+      render(<AppSidebar />, { wrapper: Providers });
+      await screen.findAllByText("Quản trị");
+      expect(await screen.findAllByRole("link", { name: /Cài đặt/, hidden: true })).not.toHaveLength(0);
+      expect(new Set(currentLabels())).toEqual(new Set(["Cài đặt"]));
+    },
+  );
+
+  it("marks Bài nhắc current on a mention detail", async () => {
+    apiFetch.mockResolvedValue(meFixture([projectFixture(P1, "viewer")]));
+    pathname = "/mentions/abc";
+    render(<AppSidebar />, { wrapper: Providers });
+    await screen.findAllByText("Chỉ xem");
+    expect(new Set(currentLabels())).toEqual(new Set(["Bài nhắc"]));
+  });
+
+  it("marks nothing current on an unknown path", async () => {
+    apiFetch.mockResolvedValue(meFixture([projectFixture(P1, "viewer")]));
+    pathname = "/foo";
+    render(<AppSidebar />, { wrapper: Providers });
+    await screen.findAllByText("Chỉ xem");
+    expect(currentLabels()).toEqual([]);
+  });
+});
+
+describe("resolveActiveHref (#325)", () => {
+  const list = [
+    { label: "A", href: "/mentions" },
+    { label: "B", href: "/mentions/saved" },
+    { label: "S", href: "/settings/project", match: "/settings" },
+  ];
+  it("picks the longest segment-aligned prefix", () => {
+    expect(resolveActiveHref("/mentions/saved/1", list)).toBe("/mentions/saved");
+    expect(resolveActiveHref("/mentions/1", list)).toBe("/mentions");
+    expect(resolveActiveHref("/settings/members", list)).toBe("/settings/project");
+  });
+  it("does not match a partial segment", () => {
+    expect(resolveActiveHref("/mentionsx", list)).toBeUndefined();
   });
 });

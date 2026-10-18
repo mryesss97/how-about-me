@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import type { MentionSort } from "@how-about-me/contracts";
 import { useOverview } from "@/features/shared/use-overview";
 import { emptyReasonFor, OverviewBanners } from "@/features/shared/overview-banners";
@@ -15,6 +14,8 @@ import { MentionsList } from "./mentions-list";
 import { BulkReanalyzeButton, canBulkReanalyze } from "./bulk-reanalyze-dialog";
 import { canExport, ExportButton } from "./export-button";
 import { MentionsToolbar } from "./mentions-toolbar";
+import { MentionDetailSlideout } from "./detail/mention-detail-slideout";
+import { useMentionItem } from "./use-mention-item";
 
 /**
  * `useFilters` re-resolves relative presets ("last 7 days") against `now` floored to the minute, so its params
@@ -39,8 +40,8 @@ const toStateError = (err: unknown) =>
 
 /** /mentions body (T-103): banners → toolbar → list. Filter bar is rendered by the page. */
 export function MentionsView() {
-  const router = useRouter();
-  const search = useSearchParams();
+  // #326: `?item=` opens the slide-out over the list; the list stays mounted (scroll + loaded pages kept).
+  const { item, openItem, closeItem, detailHref } = useMentionItem();
   const { project } = useCurrentProject();
   const { role, settings } = useRole();
   const hydrated = useHydrated();
@@ -64,13 +65,6 @@ export function MentionsView() {
 
   const onSearch = useCallback((q: string | null) => setFilters({ q }), [setFilters]);
   const onSort = useCallback((sort: MentionSort) => setFilters({ sort }), [setFilters]);
-  const onOpen = useCallback(
-    (id: string) => {
-      const qs = search?.toString();
-      router.push(`/mentions/${id}${qs ? `?${qs}` : ""}`);
-    },
-    [router, search],
-  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -105,12 +99,16 @@ export function MentionsView() {
         isFetchingNextPage={list.isFetchingNextPage}
         nextPageError={pagesLoaded && list.isFetchNextPageError ? toStateError(list.error) : null}
         fetchNextPage={() => void list.fetchNextPage()}
-        onOpen={onOpen}
+        onOpen={openItem}
+        hrefFor={detailHref}
         onWidenRange={() => setFilters({ preset: "30d", from: null, to: null })}
         emptyReason={emptyReasonFor(overview.data)}
         pendingCount={overview.data?.coverage.pendingMentions ?? 0}
         canManage={role === "admin"}
       />
+      {item ? (
+        <MentionDetailSlideout key={item} mentionId={item} onClose={closeItem} fullPageHref={detailHref(item)} />
+      ) : null}
     </div>
   );
 }
