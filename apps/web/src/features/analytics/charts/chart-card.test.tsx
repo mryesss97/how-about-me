@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { seriousViolations } from "@/test/axe";
 import { describe, expect, it } from "vitest";
 import { ChartCard } from "./chart-card";
+import { openTable } from "./table-utils.test-utils";
 
 const table = {
   columns: ["Thời gian", "Lượt nhắc"],
@@ -117,5 +118,21 @@ describe("ChartCard — axe (#95, TC-DASH-022, NFR-032)", () => {
     await press(screen.getByRole("button", { name: "Xem dạng bảng" }), "Enter");
     expect(screen.getByRole("grid")).toBeInTheDocument();
     expect(await seriousViolations(container)).toEqual([]);
+  });
+});
+
+describe("ChartCard cellHrefs (#335)", () => {
+  it("FR-142: cellHrefs links individual cells; null cells stay text", async () => {
+    render(
+      <ChartCard
+        title="T"
+        table={{ columns: ["A", "B"], rows: [["x", "1"]], cellHrefs: [[null, "/mentions?b=1"]], rowHrefs: ["/row"] }}
+      >
+        <div />
+      </ChartCard>,
+    );
+    await openTable();
+    expect(screen.getByRole("link", { name: "1" })).toHaveAttribute("href", "/mentions?b=1");
+    expect(screen.getByRole("link", { name: "x" })).toHaveAttribute("href", "/row");
   });
 });

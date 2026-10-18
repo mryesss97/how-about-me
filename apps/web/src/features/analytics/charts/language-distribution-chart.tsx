@@ -78,6 +78,7 @@ export function LanguageDistributionChart({
                     lines={[{ name: s.name, count: s.count, share: s.share, color: LANGUAGE_COLORS[s.key] }]}
                     denominator={denominator}
                     denominatorLabel="lượt nhắc có ngôn ngữ"
+                    drillable={!!select?.canSelect(s)}
                   />
                 );
               }}

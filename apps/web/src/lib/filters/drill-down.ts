@@ -109,3 +109,18 @@ export function bucketDrillDown(
   if (!(from < to)) return null;
   return { preset: "custom", from: new Date(from), to: new Date(to) };
 }
+
+/**
+ * Sentiment-over-time segment / table cell (FR-136, FR-142, doc 07 §6) → bucket `[from, to)` + `sentiment=[s]`.
+ * Without a sentiment drills the whole bucket. Null when the bucket is out of range (same as `bucketDrillDown`).
+ */
+export function bucketSentimentDrillDown(
+  times: readonly string[],
+  index: number,
+  range: { from: string; to: string },
+  sentiment?: SentimentLabel | null,
+): Partial<Filters> | null {
+  const bucket = bucketDrillDown(times, index, range);
+  if (!bucket) return null;
+  return sentiment ? { ...bucket, sentiment: [sentiment] } : bucket;
+}

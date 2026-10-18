@@ -41,3 +41,15 @@ describe("TopTopicsChart", () => {
     expect(screen.queryByRole("link", { name: "Lượt nhắc có chủ đề" })).toBeNull();
   });
 });
+
+describe("TopTopicsChart bar rows (#335)", () => {
+  it("FR-142: each drillable bar is a link with the same href as the table; Other is not", () => {
+    const getHref = (k: string) => (k === "other" ? null : `/mentions?topic=${k}`);
+    render(<TopTopicsChart data={topicsFixture()} getHref={getHref} onNavigate={() => {}} />);
+    expect(screen.getByRole("link", { name: /^Vé: .* — Xem bài nhắc$/ })).toHaveAttribute(
+      "href",
+      "/mentions?topic=ticket",
+    );
+    expect(screen.queryByRole("link", { name: /^Khác:/ })).toBeNull();
+  });
+});

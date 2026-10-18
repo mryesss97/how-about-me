@@ -126,4 +126,36 @@ describe("KpiCards (FR-132)", () => {
     render(<KpiCards kpis={overviewFixture().kpis} />);
     expect(screen.queryAllByRole("link")).toHaveLength(0);
   });
+
+  it("#335 / FR-142: every linked card shows the visible 'Xem bài nhắc' footer", () => {
+    render(<KpiCards kpis={overviewFixture().kpis} hrefFor={(id) => `/mentions?kpi=${id}`} />);
+    expect(screen.getAllByText("Xem bài nhắc")).toHaveLength(6);
+  });
+
+  it("#335 / FR-140: each rate names its own denominator; mentions and growth sub-lines", () => {
+    const base = overviewFixture().kpis;
+    render(<KpiCards kpis={{ ...base, mentionCount: { ...base.mentionCount, previous: 102 } }} />);
+    expect(screen.getAllByText("trên 2.410 đã phân tích")).toHaveLength(2);
+    expect(screen.getByText("trên 2.410 có mức an toàn")).toBeInTheDocument();
+    expect(screen.getByText("trên 2.000 có ý định")).toBeInTheDocument();
+    expect(screen.getByText("bài nhắc (không trùng)")).toBeInTheDocument();
+    expect(screen.getByText("so với kỳ trước (102)")).toBeInTheDocument();
+  });
+
+  it("#335 / BR-017: pinned sentiment filter → both sentiment cards ink + 'Đang lọc theo'", () => {
+    render(<KpiCards kpis={overviewFixture().kpis} filters={{ sentiment: ["negative"], safety: [], intent: [] }} />);
+    expect(screen.getAllByText("Đang lọc theo Cảm xúc: Tiêu cực")).toHaveLength(2);
+    expect(document.querySelector('[class*="enamel"].kpi-figure, .kpi-figure[class*="-enamel"]')).toBeNull();
+  });
+
+  it("#335: pinned safety / intent filters mark only their own card", () => {
+    render(
+      <KpiCards kpis={overviewFixture().kpis} filters={{ sentiment: [], safety: ["severe"], intent: ["complaint"] }} />,
+    );
+    expect(screen.getAllByText(/^Đang lọc theo /)).toHaveLength(2);
+    expect(screen.getByText("Đang lọc theo Mức an toàn: Nghiêm trọng")).toBeInTheDocument();
+    expect(screen.getByText(/^Đang lọc theo Ý định: /)).toBeInTheDocument();
+    // Sentiment cards keep their enamel tint when sentiment is not pinned.
+    expect(document.querySelectorAll('.kpi-figure[class*="-enamel"]')).toHaveLength(2);
+  });
 });

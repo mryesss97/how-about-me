@@ -3,7 +3,7 @@
 import type { QueryShareResponse } from "@how-about-me/contracts";
 import type { QueryStateError } from "@/features/shared/query-state";
 import { formatCount, formatRate } from "@/lib/format/number";
-import { ChartCard, type DrillDownProps, drillSelect, segmentHref } from "./chart-card";
+import { ChartCard, type DrillDownProps, segmentHref } from "./chart-card";
 import type { BarRow } from "./chart-data";
 import { HorizontalBarChart } from "./horizontal-bar-chart";
 
@@ -32,7 +32,6 @@ export function QueryShareChart({
   className,
   queryNames,
   getHref,
-  onNavigate,
 }: QueryShareChartProps) {
   const denominator = data?.denominator ?? 0;
   const rows: BarRow[] = (data?.distribution ?? []).map((d) => ({
@@ -66,7 +65,7 @@ export function QueryShareChart({
         rows={rows}
         getFill={() => "var(--color-utility-brand-500)"}
         denominator={denominator}
-        onSelect={drillSelect({ getHref, onNavigate })}
+        getRowHref={(r) => segmentHref(getHref, r)}
         denominatorLabel="lượt nhắc"
       />
       <p className="text-xs text-tertiary">{OVERLAP_NOTE}</p>

@@ -23,6 +23,9 @@ export type SentimentOverTimeChartProps = {
   error?: QueryStateError | null;
   onRetry?: () => void;
   className?: string;
+  /** FR-142 (#335): href for bucket `index` + sentiment (null = whole bucket); null result = not drillable. */
+  getSegmentHref?: (index: number, sentiment: SentimentLabel | null) => string | null;
+  onNavigate?: (href: string) => void;
 };
 
 /** Sentiment over time, stacked bars (FR-136). No ghost series: the contract has no previous-period data. */
@@ -33,6 +36,8 @@ export function SentimentOverTimeChart({
   error,
   onRetry,
   className,
+  getSegmentHref,
+  onNavigate,
 }: SentimentOverTimeChartProps) {
   const rows = useMemo(() => toSentimentStackRows(data?.timeseries, timezone), [data, timezone]);
   const [hidden, setHidden] = useState<ReadonlySet<SentimentLabel>>(new Set());
@@ -45,7 +50,16 @@ export function SentimentOverTimeChart({
       return next;
     });
 
+  // Empty buckets / zero segments are not drillable (same rule as segmentHref).
+  const cellHref = (i: number, k: SentimentLabel | null) => {
+    const row = rows[i];
+    if (!row || (k ? row[k] : row.total) <= 0) return null;
+    return getSegmentHref?.(i, k) ?? null;
+  };
+  const drillable = !!getSegmentHref && !!onNavigate;
   const table = {
+    // Time column → whole bucket; sentiment columns → bucket + sentiment; "Tổng" is plain text.
+    cellHrefs: rows.map((_, i) => [cellHref(i, null), ...SENTIMENT_ORDER.map((k) => cellHref(i, k)), null]),
     columns: ["Thời gian", ...SENTIMENT_ORDER.map((k) => sentimentBadge[k].label), "Tổng"],
     rows: rows.map((r) => [r.label, ...SENTIMENT_ORDER.map((k) => formatCount(r[k])), formatCount(r.total)]),
   };
@@ -83,6 +97,7 @@ export function SentimentOverTimeChart({
                     }))}
                     denominator={row.total}
                     denominatorLabel="lượt nhắc đã phân tích"
+                    drillable={drillable && row.total > 0}
                   />
                 );
               }}
@@ -120,6 +135,11 @@ export function SentimentOverTimeChart({
                 hide={hidden.has(k)}
                 fill={SENTIMENT_COLORS[k]}
                 isAnimationActive={false}
+                cursor={drillable ? "pointer" : undefined}
+                onClick={(_entry: unknown, index: number) => {
+                  const href = cellHref(index, k);
+                  if (href && onNavigate) onNavigate(href);
+                }}
               />
             ))}
           </BarChart>

@@ -5,7 +5,7 @@ import type { IntentsDistributionResponse } from "@how-about-me/contracts";
 import type { IntentLabel } from "@how-about-me/taxonomy";
 import type { QueryStateError } from "@/features/shared/query-state";
 import { formatCount, formatRate } from "@/lib/format/number";
-import { ChartCard, type DrillDownProps, drillSelect, segmentHref } from "./chart-card";
+import { ChartCard, type DrillDownProps, segmentHref } from "./chart-card";
 import { sumShares, toBarRows } from "./chart-data";
 import { HorizontalBarChart, MultiLabelNote } from "./horizontal-bar-chart";
 
@@ -25,7 +25,6 @@ export function IntentDistributionChart({
   onRetry,
   className,
   getHref,
-  onNavigate,
 }: IntentDistributionChartProps) {
   const denominator = data?.denominator ?? 0;
   const rows = toBarRows(data?.distribution ?? [], (k) => displayLabel("intent", k));
@@ -54,7 +53,7 @@ export function IntentDistributionChart({
         rows={rows}
         getFill={(r) => (r.key === "other" ? "var(--color-utility-neutral-400)" : "var(--color-utility-brand-500)")}
         denominator={denominator}
-        onSelect={drillSelect({ getHref, onNavigate })}
+        getRowHref={(r) => segmentHref(getHref, r)}
         denominatorLabel="lượt nhắc có ý định"
       />
       {sumShares(rows) > 1 ? <MultiLabelNote noun="ý định" /> : null}
