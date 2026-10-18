@@ -43,7 +43,7 @@ System Status `/system-status` · Health `GET /health/ready` · Logs (host) · S
 ## 4. Manual run / backfill
 
 - Run now: Listening Queries → ⋯ → Run now (admin). Only one non-terminal job per query.
-- Backfill: `POST /api/v1/projects/:pid/listening-queries/:id/backfill {since, until}`; watch job in Sync jobs; verify no duplicates (counters show `duplicated`).
+- Backfill: `POST /api/v1/projects/:pid/listening-queries/:id/backfill {since, until, searchType?}` (window ≤ `COLLECTOR_MAX_BACKFILL_DAYS`, until not in the future; does not move the query watermark); a `partial` (page cap) backfill is resumed with Retry; watch job in Sync jobs; verify no duplicates (counters show `duplicated`).
 
 ## 5. Re-analysis after prompt/model change
 

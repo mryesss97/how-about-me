@@ -1,6 +1,8 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import {
+  BackfillBodySchema,
+  type BackfillBody,
   CreateListeningQueryBodySchema,
   type CreateListeningQueryBody,
   type ListeningQuery,
@@ -104,5 +106,19 @@ export class ListeningQueriesController {
     @RequestId() requestId: string | null,
   ): Promise<QueuedJobResponse> {
     return this.syncJobs.runNow({ projectId, user, requestId }, queryId);
+  }
+
+  /** T-140 / FR-063: queue a backfill job; 400 BACKFILL_WINDOW_INVALID, 409 SYNC_ALREADY_RUNNING. */
+  @Post(":queryId/backfill")
+  @Roles("admin")
+  @HttpCode(202)
+  backfill(
+    @Param("projectId", ParseUUIDPipe) projectId: string,
+    @Param("queryId", ParseUUIDPipe) queryId: string,
+    @Body(zod(BackfillBodySchema)) body: BackfillBody,
+    @CurrentUser() user: AuthUser,
+    @RequestId() requestId: string | null,
+  ): Promise<QueuedJobResponse> {
+    return this.syncJobs.backfill({ projectId, user, requestId }, queryId, body);
   }
 }

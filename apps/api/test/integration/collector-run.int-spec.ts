@@ -197,6 +197,60 @@ describe("CollectorService run loop (T-052, doc 06 §5)", () => {
     expect(job.windowSince).not.toBeNull();
   });
 
+  it("T-140 / BR-014: backfill job runs its fixed window, page cap → partial, retry resumes; watermark untouched", async () => {
+    cfg.COLLECTOR_MAX_PAGES_PER_JOB = 2;
+    const q = await seedQuery("fake-multipage");
+    const watermark = new Date(Date.now() - 3_600_000);
+    await prisma.listeningQuery.update({ where: { id: q.id }, data: { lastSuccessfulSyncAt: watermark } });
+    const windowSince = new Date(Date.now() - 20 * 86_400_000);
+    const windowUntil = new Date(); // fixture posts are recent; the fake provider filters by window
+    const bfId = uuidv7();
+    await prisma.syncJob.create({
+      data: {
+        id: bfId,
+        projectId,
+        queryId: q.id,
+        status: "queued",
+        trigger: "backfill",
+        searchType: "RECENT",
+        searchMode: "KEYWORD",
+        windowSince,
+        windowUntil,
+      },
+    });
+    expect((await svc.run({ ...q, manualJobId: bfId })).status).toBe("partial");
+    const first = await prisma.syncJob.findUniqueOrThrow({ where: { id: bfId } });
+    expect(first).toMatchObject({
+      trigger: "backfill",
+      pagesFetched: 2,
+      lastCursor: "fake-page-2",
+      windowSince,
+      windowUntil,
+    });
+
+    const retryId = uuidv7();
+    await prisma.syncJob.create({
+      data: {
+        id: retryId,
+        projectId,
+        queryId: q.id,
+        status: "queued",
+        trigger: "backfill",
+        searchType: "RECENT",
+        searchMode: "KEYWORD",
+        windowSince,
+        windowUntil,
+        lastCursor: "fake-page-2",
+      },
+    });
+    cfg.COLLECTOR_MAX_PAGES_PER_JOB = defaultMaxPages;
+    expect((await svc.run({ ...q, manualJobId: retryId })).status).toBe("success");
+    expect(await prisma.syncJob.count()).toBe(2);
+    expect(await prisma.socialPost.count()).toBe(5); // unique (platform, platform_post_id), no duplicates
+    const lq = await prisma.listeningQuery.findUniqueOrThrow({ where: { id: q.id } });
+    expect(lq.lastSuccessfulSyncAt?.getTime()).toBe(watermark.getTime());
+  });
+
   it("scheduler tick drives the real runner end to end (next_run_at advanced, lock released)", async () => {
     const q = await seedQuery("eventista");
     await prisma.listeningQuery.update({ where: { id: q.id }, data: { lockedBy: null, lockedAt: null } });

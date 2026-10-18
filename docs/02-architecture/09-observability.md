@@ -41,7 +41,7 @@ Implementation (T-058, `apps/api/src/common/metrics/`):
 - `METRICS_TOKEN` unset → `GET /metrics` returns 404 `NOT_FOUND` and the process logs a pino `metrics` line every 60 s (histograms reduced to sum/count). Processes with `APP_ROLE=worker` always log this line too, since collector metrics live in the worker.
 - Histogram buckets (ms): 50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000.
 - `http_requests_total.route` is the Express route template (e.g. `/api/v1/projects/:projectId`), `unmatched` for 404s; `/metrics` itself is not counted. Recorded on response `finish`, so guard rejections (401/403) are counted.
-- `collector_sync_jobs_total.trigger` = `manual` when the run took over a queued manual job, else `scheduled`.
+- `collector_sync_jobs_total.trigger` = the job's `trigger` (`scheduled`, `manual`, `retry`, `backfill`; T-140).
 - Analysis metrics (#310) are emitted by the worker (`APP_ROLE ∈ {worker, all}`); an `api`-only process exposes only their HELP lines.
   - `analysis_runs_total`: `completed` / `skipped` from the pipeline, counted only after the transaction commits (irrelevant results are `completed`, matching the DB); `failed` / `retried` from the worker, only when its guarded `requeue` / `markFailed` transition succeeded (lock lost → not counted). Watchdog recoveries (`requeueStuck`) are not counted.
   - `analysis_queue_depth`: system-wide count of `pending` / `processing` runs, refreshed every worker tick (also while paused); a count failure only logs a warning.

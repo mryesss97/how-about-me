@@ -35,6 +35,7 @@ export const AUDIT_METADATA_ALLOW_LIST: ReadonlySet<string> = new Set([
   "platformPostId",
   "sourceJobId",
   "queryId",
+  "searchType",
 ]);
 
 /** Secret-looking keys are always dropped, even when allow-listed or nested (FR-200: no secrets in audit). */

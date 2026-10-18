@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { Prisma, type SearchMode, type SearchType } from "@prisma/client";
+import { type JobTrigger, Prisma, type SearchMode, type SearchType } from "@prisma/client";
 import { v7 as uuidv7 } from "uuid";
 import { PrismaService } from "../../database/prisma.service";
 
@@ -32,6 +32,9 @@ export type StartedJob = {
   windowUntil: Date | null;
   /** Resume cursor copied onto a retry job (TC-COL-008). */
   lastCursor: string | null;
+  /** Search type stored on the job — a backfill may use TOP (BR-008, T-140). */
+  searchType: SearchType;
+  trigger: JobTrigger;
 };
 
 export type PageDelta = {
@@ -69,12 +72,19 @@ export class SyncJobRecorder {
       if (taken.count === 1) {
         const job = await this.prisma.syncJob.findUniqueOrThrow({
           where: { id: input.queuedJobId },
-          select: { id: true, windowSince: true, windowUntil: true, lastCursor: true },
+          select: { id: true, windowSince: true, windowUntil: true, lastCursor: true, searchType: true, trigger: true },
         });
         const windowSince = job.windowSince ?? input.windowSince;
         const windowUntil = job.windowUntil ?? input.windowUntil;
         await this.prisma.syncJob.update({ where: { id: job.id }, data: { windowSince, windowUntil } });
-        return { id: job.id, windowSince: job.windowSince, windowUntil: job.windowUntil, lastCursor: job.lastCursor };
+        return {
+          id: job.id,
+          windowSince: job.windowSince,
+          windowUntil: job.windowUntil,
+          lastCursor: job.lastCursor,
+          searchType: job.searchType,
+          trigger: job.trigger,
+        };
       }
     }
     const id = uuidv7();
@@ -93,7 +103,14 @@ export class SyncJobRecorder {
         lockedBy: input.workerId,
       },
     });
-    return { id, windowSince: null, windowUntil: null, lastCursor: null };
+    return {
+      id,
+      windowSince: null,
+      windowUntil: null,
+      lastCursor: null,
+      searchType: input.searchType,
+      trigger: "scheduled",
+    };
   }
 
   /** Adds one committed page; called inside the page's ingestion transaction (doc 06 §5). */

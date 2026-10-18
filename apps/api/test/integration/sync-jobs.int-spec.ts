@@ -155,6 +155,29 @@ describe("Sync jobs (T-055)", () => {
     expect(again.body.error.details).toEqual({ jobId: created.id });
   });
 
+  it("T-140 / BR-014: retry of a partial backfill stays trigger=backfill, keeps cursor/window/searchType", async () => {
+    const since = new Date("2026-08-01T00:00:00Z");
+    const until = new Date("2026-08-10T00:00:00Z");
+    const src = await seedJob({
+      status: "partial",
+      trigger: "backfill",
+      searchType: "TOP",
+      lastCursor: "cur-9",
+      windowSince: since,
+      windowUntil: until,
+    });
+    const res = await retry("admin", src);
+    expect(res.status).toBe(202);
+    const created = await prisma.syncJob.findUniqueOrThrow({ where: { id: res.body.jobId as string } });
+    expect(created).toMatchObject({
+      trigger: "backfill",
+      searchType: "TOP",
+      lastCursor: "cur-9",
+      windowSince: since,
+      windowUntil: until,
+    });
+  });
+
   it.each(["viewer", "analyst"] as const)("TC-SYS-011 / FR-015: %s retry → 403 FORBIDDEN_ROLE", async (who) => {
     const src = await seedJob({ status: "failed" });
     const res = await retry(who, src);
