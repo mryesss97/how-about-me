@@ -1,13 +1,16 @@
 "use client";
 
 import {
+  BackfillBodySchema,
   CreateListeningQueryBodySchema,
   ListeningQueryPageSchema,
   ListeningQuerySchema,
   QueryDuplicateDetailsSchema,
   QueuedJobResponseSchema,
   RunQueryResponseSchema,
+  SyncJobDetailSchema,
   UpdateListeningQueryBodySchema,
+  type BackfillBody,
   type CreateListeningQueryBody,
   type UpdateListeningQueryBody,
 } from "@how-about-me/contracts";
@@ -71,6 +74,8 @@ export function queryErrorMessage(err: unknown): string {
       return "Truy vấn này đã tồn tại.";
     case "SYNC_ALREADY_RUNNING":
       return "Truy vấn đang đồng bộ.";
+    case "BACKFILL_WINDOW_INVALID":
+      return "Khoảng thời gian không hợp lệ (tối đa 30 ngày, không vượt quá hiện tại).";
     case "QUERY_IMMUTABLE_FIELD":
       return "Không thể đổi giá trị hoặc loại truy vấn. Hãy tạo truy vấn mới.";
     case "FORBIDDEN_ROLE":
@@ -151,4 +156,41 @@ export function useRunListeningQuery(pid: string) {
   return useQueryMutation(pid, async (id: string) =>
     RunQueryResponseSchema.parse(await apiFetch<unknown>(`${base(pid)}/${id}/run`, { method: "POST" })),
   );
+}
+
+/** Backfill a window (FR-063): 202 `{ jobId, status: "queued" }`; 409 SYNC_ALREADY_RUNNING when a job is active (BR-010). */
+export function useBackfillListeningQuery(pid: string) {
+  return useQueryMutation(pid, async ({ id, body }: { id: string; body: BackfillBody }) =>
+    QueuedJobResponseSchema.parse(
+      await apiFetch<unknown>(`${base(pid)}/${id}/backfill`, {
+        method: "POST",
+        body: JSON.stringify(BackfillBodySchema.parse(body)),
+      }),
+    ),
+  );
+}
+
+export const BACKFILL_POLL_MS = 3000;
+
+/**
+ * GET …/sync-jobs/:id polled every 3 s while queued/running; stops at a terminal status, on unmount and when the tab
+ * is hidden. Kept local (not imported from features/system-status) to avoid cross-feature coupling.
+ */
+export function useBackfillJobProgress(pid: string, jobId: string | null) {
+  return useQuery({
+    queryKey: [...qk.syncJobs(pid), "detail", jobId] as const,
+    queryFn: async () => SyncJobDetailSchema.parse(await apiFetch<unknown>(`/projects/${pid}/sync-jobs/${jobId}`)),
+    enabled: !!pid && !!jobId,
+    refetchInterval: (q) => {
+      const s = q.state.data?.status;
+      return s === "queued" || s === "running" ? BACKFILL_POLL_MS : false;
+    },
+    refetchIntervalInBackground: false,
+  });
+}
+
+/** Invalidate the list so "Lần đồng bộ cuối" refreshes after a backfill ends. */
+export function useInvalidateQueryList(pid: string) {
+  const qc = useQueryClient();
+  return useCallback(() => void qc.invalidateQueries({ queryKey: listPrefix(pid) }), [qc, pid]);
 }

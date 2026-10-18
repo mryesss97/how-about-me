@@ -3,7 +3,14 @@ import { describe, expect, it, vi } from "vitest";
 import { queryFixture } from "./fixtures.test-utils";
 import { QueryActionsMenu, mentionsHrefFor } from "./query-actions-menu";
 
-const handlers = { onEdit: vi.fn(), onRun: vi.fn(), onToggle: vi.fn(), onDelete: vi.fn(), onRestore: vi.fn() };
+const handlers = {
+  onEdit: vi.fn(),
+  onRun: vi.fn(),
+  onBackfill: vi.fn(),
+  onToggle: vi.fn(),
+  onDelete: vi.fn(),
+  onRestore: vi.fn(),
+};
 
 function open(isAdmin: boolean, q = queryFixture()) {
   render(<QueryActionsMenu query={q} isAdmin={isAdmin} {...handlers} />);
@@ -37,6 +44,22 @@ describe("QueryActionsMenu", () => {
   it("admin on a deleted query sees only Khôi phục besides 'Xem bài nhắc'", () => {
     open(true, queryFixture({ deletedAt: "2026-10-13T00:00:00.000Z" }));
     expect(screen.getAllByRole("menuitem").map((e) => e.textContent)).toEqual(["Xem bài nhắc", "Khôi phục"]);
+  });
+
+  it("FR-063 / BR-033: Backfill only for admins, on enabled non-deleted queries", () => {
+    const q = open(true);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Lấy dữ liệu cũ" }));
+    expect(handlers.onBackfill).toHaveBeenCalledWith(q);
+  });
+
+  it("BR-033: viewer gets no Backfill item", () => {
+    open(false);
+    expect(screen.queryByRole("menuitem", { name: "Lấy dữ liệu cũ" })).not.toBeInTheDocument();
+  });
+
+  it("no Backfill for a disabled query", () => {
+    open(true, queryFixture({ enabled: false }));
+    expect(screen.queryByRole("menuitem", { name: "Lấy dữ liệu cũ" })).not.toBeInTheDocument();
   });
 
   it("admin items without a handler are not rendered (#43 wires them)", () => {

@@ -2,7 +2,7 @@
 
 import type { PropsWithChildren } from "react";
 import { useRouter } from "next/navigation";
-import { RouterProvider } from "react-aria-components";
+import { I18nProvider, RouterProvider } from "react-aria-components";
 
 declare module "react-aria-components" {
   interface RouterConfig {
@@ -13,5 +13,11 @@ declare module "react-aria-components" {
 export const RouteProvider = ({ children }: PropsWithChildren) => {
   const router = useRouter();
 
-  return <RouterProvider navigate={router.push}>{children}</RouterProvider>;
+  // React Aria formats dates/calendars from this locale (not the browser's), so pickers read in Vietnamese
+  // like the rest of the app (#112).
+  return (
+    <I18nProvider locale="vi-VN">
+      <RouterProvider navigate={router.push}>{children}</RouterProvider>
+    </I18nProvider>
+  );
 };
