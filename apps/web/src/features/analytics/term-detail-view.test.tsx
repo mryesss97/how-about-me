@@ -3,6 +3,9 @@ import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { meFixture, P1, projectFixture, Providers } from "@/features/auth/test-utils";
+import { defaultFilters } from "@/lib/filters";
+import { DEFAULT_TZ } from "@/lib/filters/parsers";
+import { termDetailCopy as copy } from "./copy";
 import { TermDetailView, termSplit } from "./term-detail-view";
 
 const apiFetch = vi.fn();
@@ -70,11 +73,24 @@ describe("termSplit", () => {
   });
 });
 
+describe("termDetailCopy.period (#332)", () => {
+  it("presets as words, custom as dd/MM–dd/MM", () => {
+    expect(copy.period({ ...defaultFilters(DEFAULT_TZ), preset: "30d" })).toBe("30 NGÀY QUA");
+    const custom = {
+      ...defaultFilters(DEFAULT_TZ),
+      preset: "custom" as const,
+      from: new Date("2026-09-30T17:00:00.000Z"),
+      to: new Date("2026-10-07T17:00:00.000Z"),
+    };
+    expect(copy.period(custom)).toBe("01/10–07/10");
+  });
+});
+
 describe("TermDetailView", () => {
   it("hero: quoted phrase, dominant share + count, split with words, links back and to Bài nhắc", async () => {
     setup();
     expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent('"giá vé"');
-    expect(await screen.findByText(/54,9% Tiêu cực · 82 lượt nhắc có cảm xúc/)).toBeInTheDocument();
+    expect(await screen.findByText(/54,9% Tiêu cực · 82 lượt nhắc có cảm xúc · 30 NGÀY QUA/)).toBeInTheDocument();
     expect(screen.getByText("Tích cực")).toBeInTheDocument();
     // #331 / FR-142: the link pins the page range (30 days) as custom and keeps the term.
     const all = new URL(

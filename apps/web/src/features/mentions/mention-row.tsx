@@ -6,6 +6,7 @@ import Link from "next/link";
 import { forwardRef, type KeyboardEvent, type MouseEvent } from "react";
 import { Badge } from "@/components/base/badges/badges";
 import { AnalysisStatusBadge, ConfidenceMarker, SafetyBadge, SentimentBadge } from "@/features/shared/semantic-badge";
+import { analysisErrorLabel } from "@/lib/semantics/analysis-errors";
 import { displayLabel, type LabelKind } from "@/lib/semantics/labels";
 import { formatDateTime, formatRelativeOrAbsolute, tzLabel } from "@/lib/time/format";
 import { cx } from "@/utils/cx";
@@ -119,6 +120,9 @@ export const MentionRow = forwardRef<HTMLAnchorElement, Props>(function MentionR
         {a.summary ? <p className="line-clamp-1 text-xs text-tertiary">{a.summary}</p> : null}
       </div>
       <div className="flex flex-wrap content-start items-start gap-1.5 md:w-72 md:justify-end">
+        {a.status === "failed" && (a.sentiment || a.safety) ? (
+          <span className="text-xs text-tertiary">Lần trước:</span>
+        ) : null}
         {a.sentiment ? <SentimentBadge value={a.sentiment.label} /> : null}
         {a.safety ? <SafetyBadge value={a.safety.level} /> : null}
         <LabelList kind="intent" labels={a.intents.map((i) => i.label)} />
@@ -131,7 +135,9 @@ export const MentionRow = forwardRef<HTMLAnchorElement, Props>(function MentionR
         {a.confidenceBand ? <ConfidenceMarker band={a.confidenceBand} /> : null}
         {a.status !== "completed" ? <AnalysisStatusBadge value={a.status} /> : null}
         {a.status === "failed" && a.errorCode ? (
-          <span className="font-mono text-xs text-error-primary">{a.errorCode}</span>
+          <span className="text-xs text-error-primary" title={a.errorCode}>
+            {analysisErrorLabel(a.errorCode)}
+          </span>
         ) : null}
       </div>
     </article>

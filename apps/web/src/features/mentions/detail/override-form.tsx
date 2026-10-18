@@ -60,6 +60,8 @@ type Props = {
   onClose: () => void;
   onSubmit: (body: CreateOverrideBody) => void;
   isPending: boolean;
+  /** Field preselected on open — from a per-field "Sửa" or `defaultOverrideField` (#338). */
+  initialField?: OverrideField;
 };
 
 /**
@@ -67,17 +69,25 @@ type Props = {
  * Reason is required in the UI (FR-191 "with reason") although the contract keeps it optional.
  * State is local and only seeded on open, so the 5 s detail polling never resets what the user typed.
  */
-export function OverrideDialog({ mention, isOpen, onClose, onSubmit, isPending }: Props) {
+export function OverrideDialog({ mention, isOpen, onClose, onSubmit, isPending, initialField = "sentiment" }: Props) {
   return (
     <SettingsDialog isOpen={isOpen} onClose={onClose} title="Ghi đè kết quả phân tích">
-      {isOpen ? <OverrideForm mention={mention} onClose={onClose} onSubmit={onSubmit} isPending={isPending} /> : null}
+      {isOpen ? (
+        <OverrideForm
+          mention={mention}
+          onClose={onClose}
+          onSubmit={onSubmit}
+          isPending={isPending}
+          initialField={initialField}
+        />
+      ) : null}
     </SettingsDialog>
   );
 }
 
-function OverrideForm({ mention, onClose, onSubmit, isPending }: Omit<Props, "isOpen">) {
-  const [field, setField] = useState<OverrideField>("sentiment");
-  const [values, setValues] = useState<string[]>(() => effectiveValue(mention, "sentiment"));
+function OverrideForm({ mention, onClose, onSubmit, isPending, initialField = "sentiment" }: Omit<Props, "isOpen">) {
+  const [field, setField] = useState<OverrideField>(initialField);
+  const [values, setValues] = useState<string[]>(() => effectiveValue(mention, initialField));
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
   const multi = isMulti(field);

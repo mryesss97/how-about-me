@@ -3,8 +3,10 @@
 import type { MentionDetail } from "@how-about-me/contracts";
 import { LinkExternal01 } from "@untitledui/icons";
 import { Badge } from "@/components/base/badges/badges";
+import { mediaTypeLabel } from "@/lib/semantics/labels";
 import { formatDateTime, formatRelativeOrAbsolute, tzLabel } from "@/lib/time/format";
 import { safePermalink } from "../mention-row";
+import { Disclosure } from "./disclosure";
 import { linkify } from "./linkify";
 
 function ExternalLink({ href, children }: { href: string; children: string }) {
@@ -72,9 +74,10 @@ export function OriginalPanel({ mention: m, tz }: { mention: MentionDetail; tz: 
         ) : null}
       </div>
       {m.text ? <PlainText text={m.text} /> : <p className="text-sm text-quaternary">Không có nội dung</p>}
-      {m.mediaType ? (
+      {/* #338: never show the raw enum; a plain text post has no media line at all. */}
+      {m.mediaType && m.mediaType !== "TEXT_POST" ? (
         <div className="flex flex-col gap-2 text-sm text-tertiary">
-          <span>Media: {m.mediaType}</span>
+          <span>Phương tiện: {mediaTypeLabel(m.mediaType)}</span>
           {thumb ? (
             // eslint-disable-next-line @next/next/no-img-element -- remote Threads CDN, not optimisable
             <img
@@ -104,20 +107,25 @@ export function OriginalPanel({ mention: m, tz }: { mention: MentionDetail; tz: 
           </div>
         </div>
       ) : null}
-      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs text-tertiary">
-        <dt>ID bài</dt>
-        <dd className="font-mono">{m.platformPostId}</dd>
-        <dt>Thấy lần đầu</dt>
-        <dd>
-          <When iso={m.firstSeenAt} tz={tz} />
-        </dd>
-        <dt>Thấy lần cuối</dt>
-        <dd>
-          <When iso={m.lastSeenAt} tz={tz} />
-        </dd>
-        <dt>Bản sửa</dt>
-        <dd>{m.revision}</dd>
-      </dl>
+      {/* #338: technical post metadata is folded away by default. */}
+      <Disclosure label="Thông tin bài">
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs text-tertiary">
+          <dt>Loại bài</dt>
+          <dd>{m.mediaType ? mediaTypeLabel(m.mediaType) : "—"}</dd>
+          <dt>ID bài</dt>
+          <dd className="font-mono">{m.platformPostId}</dd>
+          <dt>Thấy lần đầu</dt>
+          <dd>
+            <When iso={m.firstSeenAt} tz={tz} />
+          </dd>
+          <dt>Thấy lần cuối</dt>
+          <dd>
+            <When iso={m.lastSeenAt} tz={tz} />
+          </dd>
+          <dt>Bản sửa</dt>
+          <dd>{m.revision}</dd>
+        </dl>
+      </Disclosure>
     </section>
   );
 }

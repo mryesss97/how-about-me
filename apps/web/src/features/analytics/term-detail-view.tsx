@@ -84,7 +84,7 @@ export function TermDetailView({ term }: { term: string }) {
               <>
                 <p className="term-hero-figure">
                   {formatRate(split.share)} {copy.sentiment[split.dominant]} ·{" "}
-                  {copy.withSentiment(formatCount(split.total))}
+                  {copy.withSentiment(formatCount(split.total))} · {copy.period(filters)}
                 </p>
                 <div className="term-split">
                   <p className="sr-only">{copy.splitLabel}</p>

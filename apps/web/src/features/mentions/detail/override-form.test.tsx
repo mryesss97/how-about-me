@@ -66,4 +66,37 @@ describe("OverrideDialog (FR-191)", () => {
     fireEvent.change(reason(), { target: { value: "x" } });
     expect(save()).toBeDisabled();
   });
+
+  it("#338: initialField=relevance preselects the field and its current value", () => {
+    render(
+      <OverrideDialog
+        mention={detailFixture({ analysis: { relevance: { label: "uncertain", confidence: 0.5 } } })}
+        isOpen
+        initialField="relevance"
+        onClose={vi.fn()}
+        onSubmit={vi.fn()}
+        isPending={false}
+      />,
+    );
+    const selects = within(screen.getByRole("dialog")).getAllByRole("combobox") as HTMLSelectElement[];
+    expect(selects[0].value).toBe("relevance");
+    expect(selects[1].value).toBe("uncertain");
+  });
+
+  it("#338: initialField=intents shows the checkbox list with current labels ticked", () => {
+    render(
+      <OverrideDialog
+        mention={detailFixture({ analysis: { intents: [{ label: "complaint", confidence: 0.9 }] } })}
+        isOpen
+        initialField="intents"
+        onClose={vi.fn()}
+        onSubmit={vi.fn()}
+        isPending={false}
+      />,
+    );
+    const checked = within(screen.getByRole("dialog"))
+      .getAllByRole("checkbox")
+      .filter((c) => (c as HTMLInputElement).checked);
+    expect(checked).toHaveLength(1);
+  });
 });

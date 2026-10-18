@@ -38,6 +38,13 @@ describe("AnalysisCurrent", () => {
       },
     });
     render(<AnalysisCurrent mention={m} tz={TZ} />);
+    // #338: technical details are folded by default and not in the DOM.
+    const toggle = screen.getByRole("button", { name: "Chi tiết kỹ thuật" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("gpt-x")).toBeNull();
+    expect(screen.queryByText("Phân tích lúc")).toBeNull();
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
     for (const v of ["gpt-x", "p3", "t2", "omni-mod", "s1"]) expect(screen.getByText(v)).toBeInTheDocument();
     expect(screen.getAllByText("openai")).toHaveLength(2);
     expect(screen.getByText("Phân tích lúc")).toBeInTheDocument();
@@ -61,6 +68,7 @@ describe("AnalysisCurrent", () => {
     expect(screen.getAllByText("AI").length).toBeGreaterThan(0);
     expect(screen.getByText("90%")).toBeInTheDocument();
     expect(screen.queryByText("80%")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Chi tiết kỹ thuật" }));
     expect(screen.getByText(/là giá trị AI, không phải ghi đè của chuyên viên/)).toBeInTheDocument();
   });
 
@@ -97,6 +105,46 @@ describe("AnalysisCurrent", () => {
     render(<AnalysisCurrent mention={m} tz={TZ} />);
     expect(screen.getByText("Phàn nàn")).toBeInTheDocument();
     expect(screen.getByText("Giá trị AI: Khen ngợi")).toBeInTheDocument();
+  });
+
+  describe("#338 verdict first, per-field Sửa, previous-run note", () => {
+    it("Kết luận comes before Nội dung and holds relevance, sentiment and safety", () => {
+      render(<AnalysisCurrent mention={detailFixture()} tz={TZ} />);
+      const headings = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
+      expect(headings.indexOf("Kết luận")).toBeLessThan(headings.indexOf("Nội dung"));
+      const verdict = within(screen.getByRole("region", { name: "Kết luận" }));
+      for (const l of ["Mức liên quan", "Cảm xúc", "An toàn"])
+        expect(verdict.getAllByText(l).length).toBeGreaterThan(0);
+      expect(verdict.queryByText("Ý định")).toBeNull();
+    });
+
+    it("FR-191: Sửa on the 5 overridable fields calls onEditField; none on Cụm từ khoá", () => {
+      const onEditField = vi.fn();
+      render(<AnalysisCurrent mention={detailFixture()} tz={TZ} canOverride onEditField={onEditField} />);
+      for (const f of ["Mức liên quan", "Cảm xúc", "Mức an toàn", "Ý định", "Chủ đề"])
+        expect(screen.getByRole("button", { name: `Sửa ${f}` })).toBeInTheDocument();
+      expect(screen.getAllByRole("button", { name: /^Sửa/ })).toHaveLength(5);
+      fireEvent.click(screen.getByRole("button", { name: "Sửa Cảm xúc" }));
+      expect(onEditField).toHaveBeenCalledWith("sentiment");
+    });
+
+    it("FR-015 / BR-033: no Sửa without canOverride", () => {
+      render(<AnalysisCurrent mention={detailFixture()} tz={TZ} canOverride={false} onEditField={vi.fn()} />);
+      expect(screen.queryByRole("button", { name: /^Sửa/ })).toBeNull();
+    });
+
+    it("failed run with earlier values shows the previous-run note; completed does not", () => {
+      const { unmount } = render(
+        <AnalysisCurrent
+          mention={detailFixture({ analysis: { status: "failed", analyzedAt: "2026-10-12T03:00:00.000Z" } })}
+          tz={TZ}
+        />,
+      );
+      expect(screen.getByText(/từ lần phân tích trước/)).toBeInTheDocument();
+      unmount();
+      render(<AnalysisCurrent mention={detailFixture()} tz={TZ} />);
+      expect(screen.queryByText(/từ lần phân tích trước/)).toBeNull();
+    });
   });
 
   describe("key phrases (#250, FR-120, BR-041)", () => {

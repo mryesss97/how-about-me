@@ -1,7 +1,8 @@
 "use client";
 
+import type { OverrideField } from "@how-about-me/contracts";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useCurrentProject } from "@/features/auth/use-current-project";
 import { useRole } from "@/features/auth/use-role";
 import { EmptyState, QueryState, SkeletonBlock } from "@/features/shared/query-state";
@@ -11,18 +12,35 @@ import { cx } from "@/utils/cx";
 import { AnalysisTabs } from "./analysis-tabs";
 import { canOverride, canReanalyze, useCreateOverride, useMentionDetail, useReanalyze, useRevokeOverride } from "./api";
 import { OperationsToolbar } from "./operations-toolbar";
+import { OriginalActions } from "./original-actions";
 import { OriginalPanel } from "./original-panel";
+import { OverrideDialog } from "./override-form";
+import { defaultOverrideField } from "./overrides";
 import { StatusBanner } from "./status-banner";
 
 type Props = { mentionId: string; variant: "page" | "slideout" };
 
 /** One column of the detail as an Operate board (#277): navy keyline + condensed caps title, Inter inside. */
-function DetailBoard({ title, variant, children }: { title: string; variant: Props["variant"]; children: ReactNode }) {
+function DetailBoard({
+  title,
+  variant,
+  actions,
+  children,
+}: {
+  title: string;
+  variant: Props["variant"];
+  /** Board-level utility actions (icon buttons) on the title row (#338). */
+  actions?: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <div className="operate-board min-w-0">
       <span aria-hidden className="sign-keyline" />
       <div className={cx("relative flex min-w-0 flex-col gap-4", variant === "page" ? "p-5 sm:p-6" : "p-4")}>
-        <h2 className="operate-board-title">{title}</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="operate-board-title">{title}</h2>
+          {actions}
+        </div>
         {children}
       </div>
     </div>
@@ -40,6 +58,10 @@ export function MentionDetail({ mentionId, variant }: Props) {
   const createOverride = useCreateOverride(pid, mentionId);
   const revokeOverride = useRevokeOverride(pid, mentionId);
   const mayOverride = canOverride(role);
+  // FR-155 / FR-156, BR-033: banner "Thử lại" and toolbar "Phân tích lại" share one rule; server enforces.
+  const mayReanalyze = canReanalyze(role, settings);
+  // Override dialog lives here so both the toolbar and per-field "Sửa" can open it (#338).
+  const [overrideField, setOverrideField] = useState<OverrideField | null>(null);
 
   if (q.error instanceof ApiError && q.error.code === "NOT_FOUND")
     return (
@@ -72,26 +94,33 @@ export function MentionDetail({ mentionId, variant }: Props) {
         <div className="flex flex-col gap-4">
           <StatusBanner
             analysis={m.analysis}
-            canRetry={role === "admin"}
+            canRetry={mayReanalyze}
             onRetry={() => reanalyze.mutate()}
             isRetrying={reanalyze.isPending}
           />
           <OperationsToolbar
             mention={m}
-            canReanalyze={canReanalyze(role, settings)}
+            canReanalyze={mayReanalyze}
             onReanalyze={() => reanalyze.mutate()}
             isReanalyzing={reanalyze.isPending}
             canOverride={mayOverride}
-            onOverride={(body) =>
-              createOverride.mutateAsync(body).then(
-                () => true,
-                () => false,
+            onOpenOverride={() => setOverrideField(defaultOverrideField(m))}
+          />
+          <OverrideDialog
+            mention={m}
+            isOpen={overrideField !== null}
+            initialField={overrideField ?? "sentiment"}
+            onClose={() => setOverrideField(null)}
+            isPending={createOverride.isPending}
+            onSubmit={(body) =>
+              void createOverride.mutateAsync(body).then(
+                () => setOverrideField(null),
+                () => undefined,
               )
             }
-            isOverriding={createOverride.isPending}
           />
           <div className={cx("grid gap-6", variant === "page" && "lg:grid-cols-2")}>
-            <DetailBoard title="Bài gốc" variant={variant}>
+            <DetailBoard title="Bài gốc" variant={variant} actions={<OriginalActions mention={m} />}>
               <OriginalPanel mention={m} tz={tz} />
             </DetailBoard>
             <DetailBoard title="Phân tích" variant={variant}>
@@ -99,6 +128,7 @@ export function MentionDetail({ mentionId, variant }: Props) {
                 mention={m}
                 tz={tz}
                 canOverride={mayOverride}
+                onEditField={mayOverride ? setOverrideField : undefined}
                 onRevoke={(oid) => revokeOverride.mutate(oid)}
                 isRevoking={revokeOverride.isPending}
               />

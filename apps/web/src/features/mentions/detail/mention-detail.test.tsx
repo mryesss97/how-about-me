@@ -86,7 +86,7 @@ describe("Operations (FR-155, TC-MEN-013, TC-MEN-019)", () => {
     role = "viewer";
     apiFetch.mockResolvedValue(m);
     setup();
-    await screen.findByText("Sao chép ID bài");
+    await screen.findByRole("button", { name: "Sao chép ID bài" });
     expect(screen.queryByRole("button", { name: "Phân tích lại" })).toBeNull();
   });
 
@@ -95,7 +95,7 @@ describe("Operations (FR-155, TC-MEN-013, TC-MEN-019)", () => {
     allow = false;
     apiFetch.mockResolvedValue(m);
     setup();
-    await screen.findByText("Sao chép ID bài");
+    await screen.findByRole("button", { name: "Sao chép ID bài" });
     expect(screen.queryByRole("button", { name: "Phân tích lại" })).toBeNull();
   });
 
@@ -155,6 +155,77 @@ describe("Operations (FR-155, TC-MEN-013, TC-MEN-019)", () => {
   });
 });
 
+describe("#338 toolbar, Thử lại rule, per-field Sửa", () => {
+  const failed = detailFixture({ ...m, analysis: { status: "failed", errorCode: "ANALYSIS_PROVIDER_ERROR" } });
+
+  it("BR-033: analyst sees Thử lại and Phân tích lại on a failed post only when allowed", async () => {
+    role = "analyst";
+    apiFetch.mockResolvedValue(failed);
+    setup();
+    expect(await screen.findByRole("button", { name: "Thử lại" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Phân tích lại" })).toBeInTheDocument();
+  });
+
+  it("BR-033: analyst without allowAnalystReanalyze sees neither", async () => {
+    role = "analyst";
+    allow = false;
+    apiFetch.mockResolvedValue(failed);
+    setup();
+    await screen.findByText(/Bộ phân tích đang lỗi/);
+    expect(screen.queryByRole("button", { name: "Thử lại" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Phân tích lại" })).toBeNull();
+  });
+
+  it("admin always gets Thử lại, even when analysts are not allowed", async () => {
+    allow = false;
+    apiFetch.mockResolvedValue(failed);
+    setup();
+    expect(await screen.findByRole("button", { name: "Thử lại" })).toBeInTheDocument();
+  });
+
+  it("FR-155 / FR-015: viewer has no toolbar and no Sửa but can still copy", async () => {
+    role = "viewer";
+    apiFetch.mockResolvedValue(failed);
+    setup();
+    expect(await screen.findByRole("button", { name: "Sao chép ID bài" })).toBeInTheDocument();
+    expect(screen.queryByRole("toolbar")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Thử lại" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Sửa/ })).toBeNull();
+  });
+
+  it("TC-REV-001: Sửa Cảm xúc opens the dialog with sentiment preselected and POSTs it", async () => {
+    role = "analyst";
+    apiFetch.mockImplementation((_p: string, init?: { method?: string }) =>
+      Promise.resolve(init?.method === "POST" ? overrideFixture() : m),
+    );
+    setup();
+    fireEvent.click(await screen.findByRole("button", { name: "Sửa Cảm xúc" }));
+    const dialog = await screen.findByRole("dialog");
+    const [field, value] = dialog.querySelectorAll("select");
+    expect(field).toHaveValue("sentiment");
+    fireEvent.change(value, { target: { value: "neutral" } });
+    fireEvent.change(dialog.querySelector("textarea") as HTMLElement, { target: { value: "Sarcasm" } });
+    fireEvent.click(screen.getByRole("button", { name: /Lưu ghi đè/ }));
+    await waitFor(() =>
+      expect(apiFetch).toHaveBeenCalledWith(`/projects/${PID}/mentions/${m.id}/overrides`, {
+        method: "POST",
+        body: JSON.stringify({ field: "sentiment", value: "neutral", reason: "Sarcasm" }),
+      }),
+    );
+  });
+
+  it("FR-195: toolbar Ghi đè preselects relevance on an uncertain post", async () => {
+    role = "analyst";
+    apiFetch.mockResolvedValue(
+      detailFixture({ ...m, analysis: { relevance: { label: "uncertain", confidence: 0.5 } } }),
+    );
+    setup();
+    fireEvent.click(await screen.findByRole("button", { name: "Ghi đè" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog.querySelectorAll("select")[0]).toHaveValue("relevance");
+  });
+});
+
 describe("Override (FR-191, FR-193, FR-015)", () => {
   const ov = overrideFixture();
 
@@ -162,7 +233,7 @@ describe("Override (FR-191, FR-193, FR-015)", () => {
     role = "viewer";
     apiFetch.mockResolvedValue(detailFixture({ ...m, overrides: [ov] }));
     setup();
-    await screen.findByText("Sao chép ID bài");
+    await screen.findByRole("button", { name: "Sao chép ID bài" });
     expect(screen.queryByRole("button", { name: "Ghi đè" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Thu hồi" })).toBeNull();
   });
