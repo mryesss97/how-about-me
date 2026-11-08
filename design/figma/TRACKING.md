@@ -31,7 +31,7 @@ Mỗi section cùng bố cục: tiêu đề, mục UX spec, route, rồi các h�
 | J6    | Rà soát             | `/reviews`                                                                                            | §3.8        | `21:5649`  | 9   | Đã dựng 08/11/2026, chờ anh xem        |
 | J7    | Truy vấn theo dõi   | `/listening-queries`                                                                                  | §3.5        | `24:7725`  | 11  | Đã dựng 08/11/2026, chờ anh xem        |
 | J8    | Trạng thái hệ thống | `/system-status`                                                                                      | §3.6        | `27:10347` | 12  | Đã dựng 08/11/2026, chờ anh xem        |
-| J9    | Cài đặt             | `/settings`, `/settings/project`, `/settings/members`, `/settings/integrations`, `/settings/analysis` | §3.7        |            |     | Đã ship, chưa dựng Figma               |
+| J9    | Cài đặt             | `/settings`, `/settings/project`, `/settings/members`, `/settings/integrations`, `/settings/analysis` | §3.7        | `29:12377` | 14  | Đã dựng 08/11/2026, chờ anh xem        |
 
 Thứ tự J theo hành trình người dùng (vào landing, xem cụm từ, đăng nhập, rồi tới màn làm việc), không theo thứ tự làm. Thứ tự làm ở [WORKFLOW.md](WORKFLOW.md) mục 0.
 
