@@ -22,9 +22,9 @@ Mỗi section cùng bố cục: tiêu đề, mục UX spec, route, rồi các h�
 
 | Chặng | Section             | Route                                                                                                 | UX spec     | Node       | Màn | Trạng thái                             |
 | ----- | ------------------- | ----------------------------------------------------------------------------------------------------- | ----------- | ---------- | --- | -------------------------------------- |
-| J0    | Landing             | `/`                                                                                                   | §3.0        |            |     | Đã ship, chưa dựng Figma               |
-| J1    | Cụm từ              | `/terms/[term]`                                                                                       | §3.0b       |            |     | Đã ship, chưa dựng Figma               |
-| J2    | Đăng nhập, 404      | `/login`, `not-found`                                                                                 | §3.1, §3.1a |            |     | Đã ship, chưa dựng Figma               |
+| J0    | Landing             | `/`                                                                                                   | §3.0        | `31:14282` | 6   | Đã dựng 08/11/2026, chờ anh xem        |
+| J1    | Cụm từ              | `/terms/[term]`                                                                                       | §3.0b       | `32:14570` | 3   | Đã dựng 08/11/2026, chờ anh xem        |
+| J2    | Đăng nhập, 404      | `/login`, `not-found`                                                                                 | §3.1, §3.1a | `32:15075` | 4   | Đã dựng 08/11/2026, chờ anh xem        |
 | J3    | Tổng quan           | `/overview`                                                                                           | §3.2        | `14:5`     | 8   | Đã dựng 08/11/2026 (#410), chờ anh xem |
 | J4    | Bài nhắc tới        | `/mentions`                                                                                           | §3.3        | `17:2325`  | 9   | Đã dựng 08/11/2026, chờ anh xem        |
 | J5    | Chi tiết bài        | `/mentions/[id]`                                                                                      | §3.4        | `19:4727`  | 9   | Đã dựng 08/11/2026, chờ anh xem        |
