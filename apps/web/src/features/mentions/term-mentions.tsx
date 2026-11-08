@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useMemo } from "react";
 import { useCurrentProject } from "@/features/auth/use-current-project";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { PlaqueButton } from "@/features/shared/plaque-button";
 import { ApiError } from "@/lib/api/client";
 import { toMentionsHref } from "@/lib/filters/api-params";
@@ -47,7 +48,12 @@ interface TermMentionsProps {
  * tab that replaces the `sentiment` filter for this list only.
  */
 export function TermMentions({ term, counts, total }: TermMentionsProps) {
-  const { project } = useCurrentProject();
+  const { project: cachedProject } = useCurrentProject();
+  // #409: read the project (and so every query keyed on it) only after hydration. TanStack Query may already hold
+  // /me and the analytics data when the Suspense boundary hydrates; rendering them then would differ from the
+  // server HTML (loading markup) and React regenerates the tree. Same pattern as `useHydrated` in mentions-view.
+  const hydrated = useHydrated();
+  const project = hydrated ? cachedProject : null;
   const { filters, setFilters, apiParams: live } = useFilters("mentions");
   const [tab, setTab] = useQueryState("list", listParser);
   const params = usePinnedParams(`${JSON.stringify(filters)}|${term}|${tab ?? ""}`, {
