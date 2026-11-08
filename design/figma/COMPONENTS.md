@@ -102,6 +102,19 @@ Quy ước chung:
 | `MemberRow`         | `features/settings/members-table.tsx`                | State: Default, Self (quản trị duy nhất khoá) · đầu bảng `MemberRow/Header` (`28:256`, key `bda983a925523b86ab11fe526e6f117c421f6e79`)                                                                               | `28:295` | `5ae290101c733e9276a405570a6e45878fa13aed` |
 | `SettingsSaveBar`   | `features/settings/settings-save-bar.tsx`            | State: Pristine, Dirty                                                                                                                                                                                               | `28:308` | `bcb0ec4ad1df9f34be6b37d0625e532aed62ded3` |
 
+## Đề xuất MVP+1 (chưa có code)
+
+Dựng cho J10–J17 (D-001…D-005). Chưa có file code nên cột code là "—"; khi làm ticket thì thay bằng đường dẫn thật.
+
+| Component      | Code | Ghi chú                                                                                                                                                                                                              | Node     | Key                                        |
+| -------------- | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------ |
+| `SetupStep`    | —    | State: Todo, Done · một bước checklist thiết lập lần đầu (UX §3.9, FR-210, T-156)                                                                                                                                    | `36:268` | `158ae0c8bdaf1b25e26f98cd1882c7ced59f7351` |
+| `AlertRow`     | —    | Tone: warning, error · State: Unread, Acked · một lần cảnh báo trong trung tâm cảnh báo, luôn có biểu tượng + chữ (UX §3.11, FR-223/224, T-159)                                                                      | `36:306` | `cd8f1df62525fc6020406bee5c9ce71242ad4361` |
+| `CaseRow`      | —    | State: Default, Overdue · dòng việc chăm sóc; ưu tiên và trạng thái là `StatusPlate`, SLA quá hạn tô lỗi + chữ. Đầu bảng `CaseRow/Header` (`36:309`, key `0d5a0001c3ddd3754a83243eefe3da8a2d58cd9e`) (FR-252, T-166) | `36:364` | `cf629278016a34757f6a53eec210e7af4b4c8600` |
+| `TimelineItem` | —    | Kind: Status, Note · mục dòng thời gian của việc: đổi trạng thái, ghi chú (FR-253, T-166)                                                                                                                            | `36:380` | `26102e1e78a3a6362c1084e1f18f4435808fb6e4` |
+
+`Sidebar` (`9:171`) có thêm hai boolean đề xuất: "Show bell (đề xuất)" (chuông + biển số, J12) và "Show cases (đề xuất)" (mục Việc chăm sóc, J15). Mặc định tắt để J1–J9 vẫn khớp code hiện tại. Màn điện thoại J17 ghép từ component sẵn có (thẻ = khung enamel-white + Keyline), không thêm component mới.
+
 ## Biển hiệu (`Sign/*`, landing)
 
 Đặc tả đủ ở frontmatter `components` của `apps/web/DESIGN.md`.
