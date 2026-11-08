@@ -10,7 +10,7 @@ File chính: https://www.figma.com/design/jczRPmHz0rLbbGrK1uxqK5 (dựng 08/11/2
 | -------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------- |
 | 00 Định hướng  | `0:1` | Bìa: cách dùng file, danh sách page, sơ đồ J0–J9. Frame `5:771`                                                                  |
 | 01 Foundations | `2:2` | Bảng tra biến `primitives` (131), `semantic` Light (215), `sign` (6), `scale` (28); 42 text style; 7 effect style. Frame `5:202` |
-| 02 Components  | `2:3` | 7 component set, xem [COMPONENTS.md](COMPONENTS.md)                                                                              |
+| 02 Components  | `2:3` | 76 icon, 19 component và set: atoms, form, bảng, hộp thoại, drawer, khung app, biển hiệu. Xem [COMPONENTS.md](COMPONENTS.md)     |
 | 03 App         | `2:4` | Chưa có section                                                                                                                  |
 | 99 Lưu trữ     | `2:5` | Trống                                                                                                                            |
 
@@ -41,7 +41,6 @@ Chưa có. Khi nối: mỗi section một flow `★` theo hàng Luồng chính; 
 
 ## Còn lại
 
-- Dựng tiếp component còn thiếu trong [COMPONENTS.md](COMPONENTS.md) (Input, Select, Table, Modal, SlideoutMenu, khung app) trước khi dựng section màn.
-- Biểu tượng trong `SemanticBadge`, `PageBanner` đang là vòng tròn giữ chỗ; thay bằng icon Untitled UI khi có bộ icon trên Figma.
+- Component chưa dựng (cột Node id trống trong [COMPONENTS.md](COMPONENTS.md)): ButtonUtility, ButtonGroup, InputTags, Textarea, Checkbox, RadioButtons, Toggle, Tooltip, Tags, Dropdown, Tabs, DateRangePicker, Pagination, EmptyState, LoadingIndicator, Chart và các component theo màn. Dựng khi flow đầu tiên cần tới (WORKFLOW mục 2 bước 3).
 - Dựng section J0–J9 trên `03 App`, mỗi lần một flow (WORKFLOW mục 2).
 - `/dev/ui` là trang thử component cho dev, không dựng.
