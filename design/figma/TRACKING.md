@@ -28,7 +28,7 @@ Mỗi section cùng bố cục: tiêu đề, mục UX spec, route, rồi các h�
 | J3    | Tổng quan           | `/overview`                                                                                           | §3.2        | `14:5`    | 8   | Đã dựng 08/11/2026 (#410), chờ anh xem |
 | J4    | Bài nhắc tới        | `/mentions`                                                                                           | §3.3        | `17:2325` | 9   | Đã dựng 08/11/2026, chờ anh xem        |
 | J5    | Chi tiết bài        | `/mentions/[id]`                                                                                      | §3.4        | `19:4727` | 9   | Đã dựng 08/11/2026, chờ anh xem        |
-| J6    | Rà soát             | `/reviews`                                                                                            | §3.8        |           |     | Đã ship, chưa dựng Figma               |
+| J6    | Rà soát             | `/reviews`                                                                                            | §3.8        | `21:5649` | 9   | Đã dựng 08/11/2026, chờ anh xem        |
 | J7    | Truy vấn theo dõi   | `/listening-queries`                                                                                  | §3.5        |           |     | Đã ship, chưa dựng Figma               |
 | J8    | Trạng thái hệ thống | `/system-status`                                                                                      | §3.6        |           |     | Đã ship, chưa dựng Figma               |
 | J9    | Cài đặt             | `/settings`, `/settings/project`, `/settings/members`, `/settings/integrations`, `/settings/analysis` | §3.7        |           |     | Đã ship, chưa dựng Figma               |
