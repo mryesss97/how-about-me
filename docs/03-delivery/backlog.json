@@ -45,6 +45,12 @@
       "title": "M6 · Analyst Workflow & Export (P1)",
       "due": "2026-12-12",
       "description": "Overrides, review queue, bulk re-analysis, backfill UI, CSV export, P1 charts, analysis settings."
+    },
+    {
+      "id": "M7",
+      "title": "M7 · MVP+1: Onboarding, Alerts, Digest, Cases",
+      "due": "2027-01-29",
+      "description": "PO decision D-001 (docs/01-product/10-product-decisions.md): first-run setup, invite/password access, faster review, alerts, digest, saved views, cases, ops visibility. Design: Figma J10–J17."
     }
   ],
   "openInputs": [
@@ -89,6 +95,12 @@
       "needed_by": "M2",
       "item": "QA test accounts (admin/analyst/viewer emails) on staging Supabase Auth",
       "blocks": ["T-017"]
+    },
+    {
+      "id": "IN-8",
+      "needed_by": "M7",
+      "item": "Email sender for alerts/digests/invites (SMTP or provider API key + from address) and a Slack incoming webhook for the team channel",
+      "blocks": ["T-160", "T-163"]
     }
   ],
   "tasks": [
@@ -2916,6 +2928,294 @@
       "summary": "Re-run A9 and P1 chart checks.",
       "scope": ["Checklist", "Evidence"],
       "acceptance": ["Rows pass"],
+      "qc": []
+    },
+    {
+      "id": "T-156",
+      "title": "First-run setup checklist and empty-state precedence (web)",
+      "type": "feature",
+      "role": "engineer",
+      "area": ["web"],
+      "priority": "P1",
+      "milestone": "M7",
+      "epic": "E14",
+      "estimate": "S",
+      "stories": ["US-200"],
+      "requirements": ["FR-210", "FR-211"],
+      "docs": [
+        "docs/01-product/09-ux-specification.md#39-first-run-setup-mvp1-proposed--figma-j10--fr-210-fr-211-br-044",
+        "docs/01-product/10-product-decisions.md",
+        "design/figma/TRACKING.md"
+      ],
+      "code": [],
+      "depends_on": [],
+      "summary": "Checklist board on Overview, Mentions and landing when no query exists; BR-044 empty states.",
+      "scope": ["Checklist board", "Empty-state precedence", "Read-only for non-admins"],
+      "acceptance": ["New project shows checklist", "Steps tick when done", "No 'widen range' advice without queries"],
+      "qc": []
+    },
+    {
+      "id": "T-157",
+      "title": "Set password, forgot password and magic link (web, Supabase)",
+      "type": "feature",
+      "role": "engineer",
+      "area": ["web"],
+      "priority": "P1",
+      "milestone": "M7",
+      "epic": "E14",
+      "estimate": "M",
+      "stories": ["US-201"],
+      "requirements": ["FR-212", "FR-213", "FR-215"],
+      "docs": [
+        "docs/01-product/09-ux-specification.md#310-access-invite-password-magic-link-mvp1-proposed--figma-j11--fr-212fr-215",
+        "docs/01-product/10-product-decisions.md",
+        "design/figma/TRACKING.md"
+      ],
+      "code": [],
+      "depends_on": [],
+      "summary": "Invite/reset land on /auth/set-password; login gets forgot password and magic link; neutral messages.",
+      "scope": ["Set-password page", "Forgot password", "Magic link", "Expired link state"],
+      "acceptance": ["Invited user sets password and lands on /", "Same message for unknown email"],
+      "qc": []
+    },
+    {
+      "id": "T-158",
+      "title": "Members invite status and resend (API + web)",
+      "type": "feature",
+      "role": "engineer",
+      "area": ["api", "web"],
+      "priority": "P1",
+      "milestone": "M7",
+      "epic": "E14",
+      "estimate": "S",
+      "stories": ["US-202"],
+      "requirements": ["FR-214"],
+      "docs": [
+        "docs/01-product/09-ux-specification.md#310-access-invite-password-magic-link-mvp1-proposed--figma-j11--fr-212fr-215",
+        "docs/01-product/10-product-decisions.md",
+        "design/figma/TRACKING.md"
+      ],
+      "code": [],
+      "depends_on": ["T-157"],
+      "summary": "lastSignInAt in members DTO, resend invite endpoint, status column.",
+      "scope": ["DTO + endpoint", "Status column + resend"],
+      "acceptance": ["Pending member shows 'Chưa đăng nhập'", "Resend audited"],
+      "qc": []
+    },
+    {
+      "id": "T-159",
+      "title": "Alert rules, evaluator and alert centre (API + web)",
+      "type": "feature",
+      "role": "engineer",
+      "area": ["api", "web"],
+      "priority": "P1",
+      "milestone": "M7",
+      "epic": "E15",
+      "estimate": "L",
+      "stories": ["US-203", "US-204"],
+      "requirements": ["FR-220", "FR-221", "FR-222", "FR-223", "FR-224", "FR-227"],
+      "docs": [
+        "docs/01-product/09-ux-specification.md#311-alerts-mvp1-proposed--figma-j12--fr-220fr-227-br-045",
+        "docs/01-product/10-product-decisions.md",
+        "design/figma/TRACKING.md"
+      ],
+      "code": [],
+      "depends_on": [],
+      "summary": "Rule model, evaluator after sync/analysis + every 15 min with cooldown, firings, bell + alert centre, acknowledge.",
+      "scope": ["Tables + endpoints", "Evaluator", "Bell + drawer", "Settings → Cảnh báo"],
+      "acceptance": ["Spike rule fires once per cooldown", "Firing links to exact mentions", "Ack records who"],
+      "qc": []
+    },
+    {
+      "id": "T-160",
+      "title": "Alert channels: email, Slack, signed webhook (API + web)",
+      "type": "feature",
+      "role": "engineer",
+      "area": ["api", "web"],
+      "priority": "P1",
+      "milestone": "M7",
+      "epic": "E15",
+      "estimate": "M",
+      "stories": ["US-203"],
+      "requirements": ["FR-225", "FR-226"],
+      "docs": [
+        "docs/01-product/09-ux-specification.md#311-alerts-mvp1-proposed--figma-j12--fr-220fr-227-br-045",
+        "docs/01-product/10-product-decisions.md",
+        "design/figma/TRACKING.md"
+      ],
+      "code": [],
+      "depends_on": ["T-159"],
+      "summary": "Encrypted channel secrets, masked UI, test send, delivery failures surfaced.",
+      "scope": ["Channel config", "Senders", "Test send", "Failure surfacing"],
+      "acceptance": ["Secrets never logged", "Test send works per channel"],
+      "qc": []
+    },
+    {
+      "id": "T-161",
+      "title": "Analyzer budget in System Status and audit 'Hệ thống' filter (API + web)",
+      "type": "feature",
+      "role": "engineer",
+      "area": ["api", "web"],
+      "priority": "P1",
+      "milestone": "M7",
+      "epic": "E11",
+      "estimate": "S",
+      "stories": ["US-205"],
+      "requirements": ["FR-177", "FR-202"],
+      "docs": [
+        "docs/01-product/09-ux-specification.md#315-ops-additions-mvp1-proposed--figma-j16--fr-177-fr-202-fr-197",
+        "docs/01-product/10-product-decisions.md",
+        "design/figma/TRACKING.md"
+      ],
+      "code": [],
+      "depends_on": [],
+      "summary": "Expose budget/spend/reset; actor=system audit filter.",
+      "scope": ["system-status fields", "audit param + select"],
+      "acceptance": ["Paused-for-budget card says when it resumes", "Hệ thống filter lists scheduler actions"],
+      "qc": []
+    },
+    {
+      "id": "T-162",
+      "title": "Review speed-ups: reviewed filter, one-tap verdict, unmark (API + web)",
+      "type": "feature",
+      "role": "engineer",
+      "area": ["api", "web"],
+      "priority": "P1",
+      "milestone": "M7",
+      "epic": "E11",
+      "estimate": "M",
+      "stories": ["US-111", "US-206"],
+      "requirements": ["FR-197", "FR-198", "FR-199"],
+      "docs": [
+        "docs/01-product/09-ux-specification.md#38-reviews-reviews--p1",
+        "docs/01-product/10-product-decisions.md",
+        "design/figma/TRACKING.md"
+      ],
+      "code": [],
+      "depends_on": [],
+      "summary": "reviewStatus filter in Mentions; one-tap relevance override with undo; unmark endpoint + UI.",
+      "scope": ["Filter", "One-tap + undo", "Unmark single/bulk"],
+      "acceptance": ["Uncertain item settled in one tap", "Undo restores previous state", "Unmark audited"],
+      "qc": []
+    },
+    {
+      "id": "T-163",
+      "title": "Scheduled digest (API + web + email)",
+      "type": "feature",
+      "role": "engineer",
+      "area": ["api", "web"],
+      "priority": "P1",
+      "milestone": "M7",
+      "epic": "E15",
+      "estimate": "L",
+      "stories": ["US-207"],
+      "requirements": ["FR-230", "FR-231", "FR-232", "FR-233"],
+      "docs": [
+        "docs/01-product/09-ux-specification.md#312-digest-mvp1-proposed--figma-j13--fr-230fr-233",
+        "docs/01-product/10-product-decisions.md",
+        "design/figma/TRACKING.md"
+      ],
+      "code": [],
+      "depends_on": ["T-160", "T-164"],
+      "summary": "Digest config, scheduler in project timezone, email template, AI summary, preview and test send.",
+      "scope": ["Config", "Scheduler", "Template", "Preview/test"],
+      "acceptance": ["Weekly digest arrives at the set time", "Every number links to the same filter"],
+      "qc": []
+    },
+    {
+      "id": "T-164",
+      "title": "Saved views (API + web)",
+      "type": "feature",
+      "role": "engineer",
+      "area": ["api", "web"],
+      "priority": "P1",
+      "milestone": "M7",
+      "epic": "E16",
+      "estimate": "M",
+      "stories": ["US-208"],
+      "requirements": ["FR-240", "FR-241", "FR-242"],
+      "docs": [
+        "docs/01-product/09-ux-specification.md#313-saved-views-mvp1-proposed--figma-j14--fr-240fr-242-br-047",
+        "docs/01-product/10-product-decisions.md",
+        "design/figma/TRACKING.md"
+      ],
+      "code": [],
+      "depends_on": [],
+      "summary": "Personal and shared views for Overview and Mentions; drift indicator; manage.",
+      "scope": ["Table + endpoints", "View select", "Save/save as/manage"],
+      "acceptance": ["Shared view visible to team", "Relative presets stay relative"],
+      "qc": []
+    },
+    {
+      "id": "T-165",
+      "title": "Cases: model, create from mentions, status machine (API + web)",
+      "type": "feature",
+      "role": "engineer",
+      "area": ["api", "web"],
+      "priority": "P1",
+      "milestone": "M7",
+      "epic": "E16",
+      "estimate": "L",
+      "stories": ["US-209"],
+      "requirements": ["FR-250", "FR-251", "FR-255"],
+      "docs": [
+        "docs/01-product/09-ux-specification.md#314-cases-mvp1-proposed--figma-j15--fr-250fr-257-br-048-br-049",
+        "docs/01-product/10-product-decisions.md",
+        "design/figma/TRACKING.md"
+      ],
+      "code": [],
+      "depends_on": [],
+      "summary": "Case + case_mentions + events; create dialog from row/drawer/detail/selection; case badge on mentions.",
+      "scope": ["Tables + endpoints", "Create dialog", "Case badge", "Audit"],
+      "acceptance": ["Status follows BR-048", "Mention in one open case only"],
+      "qc": []
+    },
+    {
+      "id": "T-166",
+      "title": "Cases: /cases list, case page, notes, SLA (web + API)",
+      "type": "feature",
+      "role": "engineer",
+      "area": ["api", "web"],
+      "priority": "P1",
+      "milestone": "M7",
+      "epic": "E16",
+      "estimate": "L",
+      "stories": ["US-210"],
+      "requirements": ["FR-252", "FR-253", "FR-254", "FR-256", "FR-257"],
+      "docs": [
+        "docs/01-product/09-ux-specification.md#314-cases-mvp1-proposed--figma-j15--fr-250fr-257-br-048-br-049",
+        "docs/01-product/10-product-decisions.md",
+        "design/figma/TRACKING.md"
+      ],
+      "code": [],
+      "depends_on": ["T-165"],
+      "summary": "List with tabs and filters, case page with timeline and notes (@ notify), SLA countdown, Overview KPI.",
+      "scope": ["List", "Case page", "Notes", "SLA + overdue alert hook"],
+      "acceptance": ["Overdue cases marked", "Viewer read-only"],
+      "qc": []
+    },
+    {
+      "id": "T-167",
+      "title": "Phone layouts for Overview, Mentions, detail, Reviews, Cases, alert centre (web)",
+      "type": "feature",
+      "role": "engineer",
+      "area": ["web"],
+      "priority": "P1",
+      "milestone": "M7",
+      "epic": "E14",
+      "estimate": "M",
+      "stories": ["US-200"],
+      "requirements": ["FR-210"],
+      "docs": [
+        "docs/01-product/09-ux-specification.md#4-responsive-behaviour",
+        "docs/01-product/10-product-decisions.md",
+        "design/figma/TRACKING.md"
+      ],
+      "code": [],
+      "depends_on": [],
+      "summary": "Implement Figma J17 phone screens (section jump chips, collapsible charts).",
+      "scope": ["Overview phone", "Lists/detail phone", "Alert centre phone"],
+      "acceptance": ["No horizontal scroll at 390 px", "Section jump works"],
       "qc": []
     }
   ]

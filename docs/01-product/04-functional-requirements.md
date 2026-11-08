@@ -167,15 +167,16 @@ Each requirement is atomic, testable and has a priority. "Verify" names the test
 
 ## FR-17x · System Status & Observability
 
-| ID     | Requirement                                                                                                | Pri | Stories | Verify |
-| ------ | ---------------------------------------------------------------------------------------------------------- | --- | ------- | ------ |
-| FR-170 | System Status page SHALL show Threads, collector, analyzer, database sections and auto-refresh every 30 s. | P0  | US-130  | TC-SYS |
-| FR-171 | `GET …/system-status` per API contract.                                                                    | P0  | US-131  | TC-SYS |
-| FR-172 | `GET /health/live` (process) and `GET /health/ready` (DB required; providers informational).               | P0  | US-132  | TC-SYS |
-| FR-173 | Logs SHALL be structured JSON with correlation fields; secrets redacted by key pattern.                    | P0  | US-133  | TC-SYS |
-| FR-174 | Metrics per observability doc exposed at `/metrics` (protected) or periodic log lines.                     | P0  | US-134  | TC-SYS |
-| FR-175 | Admin SHALL retry failed analysis runs / sync jobs from System Status.                                     | P0  | US-135  | TC-SYS |
-| FR-176 | Collection lag and analysis lag SHALL be computed per definitions.                                         | P0  | US-136  | TC-SYS |
+| ID     | Requirement                                                                                                                                                                                         | Pri | Stories | Verify |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- | ------- | ------ |
+| FR-170 | System Status page SHALL show Threads, collector, analyzer, database sections and auto-refresh every 30 s.                                                                                          | P0  | US-130  | TC-SYS |
+| FR-171 | `GET …/system-status` per API contract.                                                                                                                                                             | P0  | US-131  | TC-SYS |
+| FR-172 | `GET /health/live` (process) and `GET /health/ready` (DB required; providers informational).                                                                                                        | P0  | US-132  | TC-SYS |
+| FR-173 | Logs SHALL be structured JSON with correlation fields; secrets redacted by key pattern.                                                                                                             | P0  | US-133  | TC-SYS |
+| FR-174 | Metrics per observability doc exposed at `/metrics` (protected) or periodic log lines.                                                                                                              | P0  | US-134  | TC-SYS |
+| FR-175 | Admin SHALL retry failed analysis runs / sync jobs from System Status.                                                                                                                              | P0  | US-135  | TC-SYS |
+| FR-176 | Collection lag and analysis lag SHALL be computed per definitions.                                                                                                                                  | P0  | US-136  | TC-SYS |
+| FR-177 | System Status SHALL show the analyzer daily budget (`ANALYSIS_DAILY_BUDGET_USD`), today's spend and the reset time; when analysis is paused for budget it SHALL say so and when it resumes (D-001). | P1  | US-205  | TC-SYS |
 
 ## FR-18x · Export (P1)
 
@@ -187,15 +188,18 @@ Each requirement is atomic, testable and has a priority. "Verify" names the test
 
 ## FR-19x · Analyst Workflow (P1)
 
-| ID     | Requirement                                                                                                        | Pri | Stories        | Verify          |
-| ------ | ------------------------------------------------------------------------------------------------------------------ | --- | -------------- | --------------- |
-| FR-190 | Admin SHALL edit confidence bands and safety policy thresholds; changes create a new policy version.               | P1  | US-142, US-160 | TC-REV          |
-| FR-191 | Analyst/Admin SHALL create an override for `relevance, sentiment, safety_level, intents, topics` with reason.      | P1  | US-150         | TC-REV          |
-| FR-192 | Effective value SHALL be `active override > latest completed AI analysis` and used by analytics & lists.           | P1  | US-150         | TC-REV, TC-DASH |
-| FR-193 | Overrides SHALL be revocable with history retained (`revoked_at`).                                                 | P1  | US-151         | TC-REV          |
-| FR-194 | UI SHALL distinguish AI vs Analyst values with explicit badges/tooltips.                                           | P1  | US-152         | TC-REV          |
-| FR-195 | Review queue SHALL list `uncertain`, low-confidence (< band) and failed runs; items can be marked reviewed.        | P1  | US-153         | TC-REV          |
-| FR-196 | Bulk re-analysis SHALL preview count, enforce `ANALYSIS_BULK_MAX`, rate limit (1 per 5 min per project) and audit. | P1  | US-154         | TC-REV          |
+| ID     | Requirement                                                                                                                                                                                                      | Pri | Stories        | Verify          |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- | -------------- | --------------- |
+| FR-190 | Admin SHALL edit confidence bands and safety policy thresholds; changes create a new policy version.                                                                                                             | P1  | US-142, US-160 | TC-REV          |
+| FR-191 | Analyst/Admin SHALL create an override for `relevance, sentiment, safety_level, intents, topics` with reason.                                                                                                    | P1  | US-150         | TC-REV          |
+| FR-192 | Effective value SHALL be `active override > latest completed AI analysis` and used by analytics & lists.                                                                                                         | P1  | US-150         | TC-REV, TC-DASH |
+| FR-193 | Overrides SHALL be revocable with history retained (`revoked_at`).                                                                                                                                               | P1  | US-151         | TC-REV          |
+| FR-194 | UI SHALL distinguish AI vs Analyst values with explicit badges/tooltips.                                                                                                                                         | P1  | US-152         | TC-REV          |
+| FR-195 | Review queue SHALL list `uncertain`, low-confidence (< band) and failed runs; items can be marked reviewed.                                                                                                      | P1  | US-153         | TC-REV          |
+| FR-196 | Bulk re-analysis SHALL preview count, enforce `ANALYSIS_BULK_MAX`, rate limit (1 per 5 min per project) and audit.                                                                                               | P1  | US-154         | TC-REV          |
+| FR-197 | Mentions SHALL filter by review status (`reviewStatus[]`: chưa xem lại / đã xem lại) using the existing API param (US-111).                                                                                      | P1  | US-111         | TC-MEN          |
+| FR-198 | An `uncertain` item SHALL offer a one-tap relevance verdict (Liên quan / Không liên quan) that creates an override with a fixed reason and marks the item reviewed; undo within 10 s revokes it (D-002, BR-043). | P1  | US-206         | TC-REV          |
+| FR-199 | A reviewed item SHALL be unmarkable (single and bulk); it returns to the queue and is audited as `review.unmarked` (D-003).                                                                                      | P1  | US-206         | TC-REV          |
 
 ## FR-20x · Audit
 
@@ -203,8 +207,63 @@ Each requirement is atomic, testable and has a priority. "Verify" names the test
 | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- | ------- | ------ |
 | FR-200 | The system SHALL write `audit_logs` for: integration changes, query create/update/delete/restore/run/backfill, project/member changes, re-analysis, override, export, threshold changes. Metadata contains no secrets. | P0  | many    | TC-SYS |
 | FR-201 | Admin SHALL view audit logs with filters.                                                                                                                                                                              | P0  | US-137  | TC-SYS |
+| FR-202 | The audit log actor filter SHALL include "Hệ thống" (actions without a user: scheduler, retention, automatic retries).                                                                                                 | P1  | US-205  | TC-SYS |
 
 ---
+
+## FR-21x · Onboarding & Access (MVP+1, D-001)
+
+| ID     | Requirement                                                                                                                                                                                                                                                                | Pri | Stories | Verify  |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- | ------- | ------- |
+| FR-210 | A project with no listening query SHALL show a setup checklist (Kết nối Threads → Thêm truy vấn → Chọn cụm từ landing → Mời thành viên) on Overview, landing and Mentions instead of the "widen the range" empty state; each step links to its screen and ticks when done. | P1  | US-200  | TC-ONB  |
+| FR-211 | Empty states SHALL distinguish "chưa có truy vấn", "chưa đồng bộ lần nào" and "không có bài trong khoảng" (BR-044).                                                                                                                                                        | P1  | US-200  | TC-ONB  |
+| FR-212 | An invited user opening the invite link SHALL land on "Đặt mật khẩu" (password + confirm, policy shown) and then on `/`.                                                                                                                                                   | P1  | US-201  | TC-AUTH |
+| FR-213 | Login SHALL offer "Quên mật khẩu?" (email → reset link → set new password) and "Gửi link đăng nhập" (magic link, FR-010).                                                                                                                                                  | P1  | US-201  | TC-AUTH |
+| FR-214 | Members SHALL show invite status (Đã mời · chưa đăng nhập / Hoạt động, last sign-in) and "Gửi lại lời mời" for pending members (admin).                                                                                                                                    | P1  | US-202  | TC-SET  |
+| FR-215 | Login responses and reset SHALL not reveal whether an email exists (same message for every email).                                                                                                                                                                         | P1  | US-201  | TC-AUTH |
+
+## FR-22x · Alerts (MVP+1, D-001, D-004)
+
+| ID     | Requirement                                                                                                                                                                                                                                                                        | Pri | Stories | Verify |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- | ------- | ------ |
+| FR-220 | Admin SHALL create alert rules of type: volume spike (mentions in the last window vs the same window over the last 7 days), negative share above a threshold, any `severe` safety mention, and system health (token expiring/expired, sync failing, collector or analyzer paused). | P1  | US-203  | TC-ALR |
+| FR-221 | A rule SHALL have a scope (all queries, selected queries or a saved view), a window (1 h, 6 h, 24 h), a threshold, channels and recipients, and can be paused.                                                                                                                     | P1  | US-203  | TC-ALR |
+| FR-222 | The evaluator SHALL run after each successful sync and analysis batch and at least every 15 min; it SHALL fire at most once per rule per cooldown (BR-045) and record each firing with the counted mentions.                                                                       | P1  | US-203  | TC-ALR |
+| FR-223 | The app shell SHALL show an alert bell with the unread count; the alert centre lists firings (newest first) with rule, numbers, time and a link that opens the counted mentions with the exact filter (FR-142).                                                                    | P1  | US-204  | TC-ALR |
+| FR-224 | A firing SHALL be acknowledgeable ("Đã nắm") by any member; acknowledging records who and when and stops repeats until the next cooldown.                                                                                                                                          | P1  | US-204  | TC-ALR |
+| FR-225 | Channels: email, Slack incoming webhook, generic webhook (JSON, HMAC-SHA256 signature header). Channel secrets are encrypted at rest and masked in the UI (D-004, NFR-019).                                                                                                        | P1  | US-203  | TC-ALR |
+| FR-226 | Each channel SHALL have "Gửi thử"; delivery failures are shown on the rule and in System Status.                                                                                                                                                                                   | P1  | US-203  | TC-ALR |
+| FR-227 | Alert rules and channels are admin-only; analysts and viewers see the alert centre (FR-015).                                                                                                                                                                                       | P1  | US-203  | TC-ALR |
+
+## FR-23x · Digest (MVP+1, D-001)
+
+| ID     | Requirement                                                                                                                                                                                                                                                                                                | Pri | Stories | Verify |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- | ------- | ------ |
+| FR-230 | Admin SHALL configure digests: frequency (daily at HH:mm or weekly on a weekday), scope (project or a saved view), recipients (members and/or extra emails).                                                                                                                                               | P1  | US-207  | TC-DIG |
+| FR-231 | A digest email SHALL contain: period, mentions + growth, positive/negative share, top 3 negative topics, 5 most important mentions (severe first, then most negative), alerts fired in the period, and a 3-sentence AI summary marked as AI-generated; every number links to the app with the same filter. | P1  | US-207  | TC-DIG |
+| FR-232 | "Xem trước" SHALL render the next digest in the app; "Gửi thử" sends it to the editor only.                                                                                                                                                                                                                | P1  | US-207  | TC-DIG |
+| FR-233 | Digest periods use the project timezone (BR-046); a digest with 0 mentions still sends, saying so.                                                                                                                                                                                                         | P1  | US-207  | TC-DIG |
+
+## FR-24x · Saved views (MVP+1, D-001)
+
+| ID     | Requirement                                                                                                                                                             | Pri | Stories | Verify  |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- | ------- | ------- |
+| FR-240 | Users SHALL save the current filters of Overview or Mentions as a named view (personal or shared with the project).                                                     | P1  | US-208  | TC-VIEW |
+| FR-241 | A view menu next to the filter bar SHALL list shared and personal views, apply one in a click, show "đã sửa" when filters drift and offer "Lưu" / "Lưu thành view mới". | P1  | US-208  | TC-VIEW |
+| FR-242 | Only the creator or an admin SHALL rename or delete a shared view (BR-047). Relative presets (7 ngày, 30 ngày) stay relative when a view is applied.                    | P1  | US-208  | TC-VIEW |
+
+## FR-25x · Cases (MVP+1, D-001, D-005)
+
+| ID     | Requirement                                                                                                                                                                                  | Pri | Stories | Verify  |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- | ------- | ------- |
+| FR-250 | Admin and analyst SHALL create a case from a mention (list row menu, drawer, detail) or from several selected mentions, with title, priority (Cao / Thường / Thấp), assignee and first note. | P1  | US-209  | TC-CASE |
+| FR-251 | Case status SHALL follow `Mới → Đang xử lý → Chờ phản hồi → Đã xong`, plus `Bỏ qua` from any open state (BR-048); every change is timestamped and audited.                                   | P1  | US-209  | TC-CASE |
+| FR-252 | `/cases` SHALL list cases with tabs "Việc của tôi", "Chưa giao", "Tất cả", filters (status, priority, assignee, quá hạn) and SLA countdown.                                                  | P1  | US-210  | TC-CASE |
+| FR-253 | A case page SHALL show linked mentions, status timeline, internal notes (mentions of members with @ notify by email) and actions.                                                            | P1  | US-210  | TC-CASE |
+| FR-254 | SLA due = created + priority hours (admin-set defaults Cao 4 h, Thường 24 h, Thấp 72 h); overdue cases are marked and can trigger an alert (FR-220).                                         | P1  | US-210  | TC-CASE |
+| FR-255 | Mentions linked to an open case SHALL show a case badge in lists and detail; a mention belongs to at most one open case (BR-049).                                                            | P1  | US-209  | TC-CASE |
+| FR-256 | Viewers SHALL see cases read-only; only admin/analyst change status, assignee or notes (FR-015).                                                                                             | P1  | US-210  | TC-CASE |
+| FR-257 | Overview SHALL get a "Việc chăm sóc" KPI (open · quá hạn) linking to `/cases`.                                                                                                               | P2  | US-210  | TC-CASE |
 
 ## Traceability matrix (FR → Story → Test-case file → Epic)
 

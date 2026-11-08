@@ -704,3 +704,34 @@ Threads connection, collector (active queries, last global sync, jobs in progres
 ### US-189 Deployment (P0) — staging & production deploy pipelines; runbook. Realises: NFR-062.
 
 ### US-190 Documentation upkeep (P0) — docs updated in the same PR as behaviour changes (DoD). Realises: NFR-070.
+
+## MVP+1 · Onboarding, Alerts, Cases (M7, D-001)
+
+| Epic | Name                         | Priority | Milestone | Stories                |
+| ---- | ---------------------------- | -------- | --------- | ---------------------- |
+| E14  | Onboarding & Access          | P1       | M7        | US-200…US-202          |
+| E15  | Alerts & Digest              | P1       | M7        | US-203, US-204, US-207 |
+| E16  | Cases & Saved Views          | P1       | M7        | US-208…US-210          |
+| E11  | Analyst Workflow (additions) | P1       | M7        | US-205, US-206         |
+
+### US-200 First-run setup (P1) — As an admin of a new project, I see what to do next (connect Threads, add a query, choose landing phrases, invite members) instead of an empty dashboard. Realises: FR-210, FR-211.
+
+### US-201 Get in without help (P1) — As an invited member, I set my password from the invite link, and I can reset it or ask for a sign-in link myself. Realises: FR-212, FR-213, FR-215.
+
+### US-202 Invite status (P1) — As an admin, I see who has not signed in yet and resend their invite. Realises: FR-214.
+
+### US-203 Alert rules (P1) — As an ops lead, I am told by email or Slack when mentions spike, negativity rises, a severe mention appears or collection breaks, without opening the app. Realises: FR-220…FR-222, FR-225…FR-227.
+
+### US-204 Alert centre (P1) — As any member, I see fired alerts in the app, open the exact mentions behind them and mark that I have them in hand. Realises: FR-223, FR-224.
+
+### US-205 Ops visibility (P1) — As an admin, I see the analyzer budget and when a paused analyzer resumes, and I can filter the audit log for system actions. Realises: FR-177, FR-202.
+
+### US-206 Faster review (P1) — As an analyst, I filter mentions by review status, settle "Chưa chắc" items in one tap and undo a wrong mark. Realises: FR-197…FR-199.
+
+### US-207 Digest (P1) — As a marketing lead, I get a daily or weekly email with the numbers, the worst mentions and a short summary. Realises: FR-230…FR-233.
+
+### US-208 Saved views (P1) — As an analyst, I save the filters I use every day and share them with my team. Realises: FR-240…FR-242.
+
+### US-209 Create a case (P1) — As a CS supervisor, I turn a complaint into a case with an owner and priority. Realises: FR-250, FR-251, FR-255.
+
+### US-210 Work my cases (P1) — As a CS agent, I see my cases with their SLA, add notes and close them. Realises: FR-252…FR-254, FR-256, FR-257.
