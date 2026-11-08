@@ -628,5 +628,65 @@
     "number": 126,
     "url": "https://github.com/mryesss97/how-about-me/issues/126",
     "title": "[T-155] QC: P1 analytics reconciliation (overrides affect metrics, P1 charts)"
+  },
+  "T-156": {
+    "number": 431,
+    "url": "https://github.com/mryesss97/how-about-me/issues/431",
+    "title": "[T-156] First-run setup checklist and empty-state precedence (web)"
+  },
+  "T-157": {
+    "number": 432,
+    "url": "https://github.com/mryesss97/how-about-me/issues/432",
+    "title": "[T-157] Set password, forgot password and magic link (web, Supabase)"
+  },
+  "T-158": {
+    "number": 433,
+    "url": "https://github.com/mryesss97/how-about-me/issues/433",
+    "title": "[T-158] Members invite status and resend (API + web)"
+  },
+  "T-159": {
+    "number": 434,
+    "url": "https://github.com/mryesss97/how-about-me/issues/434",
+    "title": "[T-159] Alert rules, evaluator and alert centre (API + web)"
+  },
+  "T-160": {
+    "number": 435,
+    "url": "https://github.com/mryesss97/how-about-me/issues/435",
+    "title": "[T-160] Alert channels: email, Slack, signed webhook (API + web)"
+  },
+  "T-161": {
+    "number": 436,
+    "url": "https://github.com/mryesss97/how-about-me/issues/436",
+    "title": "[T-161] Analyzer budget in System Status and audit 'Hệ thống' filter (API + web)"
+  },
+  "T-162": {
+    "number": 437,
+    "url": "https://github.com/mryesss97/how-about-me/issues/437",
+    "title": "[T-162] Review speed-ups: reviewed filter, one-tap verdict, unmark (API + web)"
+  },
+  "T-163": {
+    "number": 438,
+    "url": "https://github.com/mryesss97/how-about-me/issues/438",
+    "title": "[T-163] Scheduled digest (API + web + email)"
+  },
+  "T-164": {
+    "number": 439,
+    "url": "https://github.com/mryesss97/how-about-me/issues/439",
+    "title": "[T-164] Saved views (API + web)"
+  },
+  "T-165": {
+    "number": 440,
+    "url": "https://github.com/mryesss97/how-about-me/issues/440",
+    "title": "[T-165] Cases: model, create from mentions, status machine (API + web)"
+  },
+  "T-166": {
+    "number": 441,
+    "url": "https://github.com/mryesss97/how-about-me/issues/441",
+    "title": "[T-166] Cases: /cases list, case page, notes, SLA (web + API)"
+  },
+  "T-167": {
+    "number": 442,
+    "url": "https://github.com/mryesss97/how-about-me/issues/442",
+    "title": "[T-167] Phone layouts for Overview, Mentions, detail, Reviews, Cases, alert centre (web)"
   }
 }
