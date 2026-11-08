@@ -39,8 +39,21 @@ Thứ tự J theo hành trình người dùng (vào landing, xem cụm từ, đ�
 
 Chưa có. Khi nối: mỗi section một flow `★` theo hàng Luồng chính; ghi ở đây các flow đã bấm thử thật và ngày thử.
 
+## Kết quả đợt dựng 08/11/2026
+
+Claude làm PO theo uỷ quyền của anh Đước (08/11/2026), chạy WORKFLOW mục 2 cho từng chặng, mỗi chặng một PR: J3 (#411), J4 + J5 (#413), J6 (#415), J7 (#417), J8 (#420), J9 (#422), J0 + J1 + J2 (#424). Tổng 85 màn, dựng từ bản đang chạy với `pnpm db:seed:demo`, mọi màn dùng instance và biến (không màu cứng, font Inter, Bungee, Saira ExtraCondensed).
+
+Quyết định PO và lệch đã ghi:
+
+- Code là nguồn: UX §3.2 nhãn KPI 17px (#411), UX §3.0 bỏ dòng "30 NGÀY QUA" trên biển chính (#424).
+- Chữ: nhật ký thao tác thống nhất "Đánh dấu đã xem lại" (Figma đã đổi, code ở #418).
+- Lỗi code tìm thấy: hydration mismatch ở `/overview` (#409).
+
 ## Còn lại
 
-- Component chưa dựng (cột Node id trống trong [COMPONENTS.md](COMPONENTS.md)): ButtonUtility, ButtonGroup, InputTags, Textarea, Checkbox, RadioButtons, Toggle, Tooltip, Tags, Dropdown, Tabs, DateRangePicker, Pagination, EmptyState, LoadingIndicator, Chart và các component theo màn. Dựng khi flow đầu tiên cần tới (WORKFLOW mục 2 bước 3).
-- Dựng section J0–J9 trên `03 App`, mỗi lần một flow (WORKFLOW mục 2).
+- Prototype: chưa nối. Khi nối, mỗi section một flow `★` theo hàng Luồng chính.
+- Màn điện thoại 390: chưa dựng. Bố cục điện thoại theo UX §4; ưu tiên Tổng quan, Bài nhắc, Chi tiết bài, landing.
+- Component chưa dựng (cột Node id trống trong [COMPONENTS.md](COMPONENTS.md)): ButtonUtility, Tooltip, Pagination, Chart (biểu đồ đang vẽ thẳng trong thẻ), lịch của DateRangePicker và các component theo màn chưa tách (FilterBar, popover Bộ lọc khác, drawer chi tiết). Tách khi flow sau sửa tới.
+- Lỗi phân tích trong drawer J4 và màn `/mentions?item=` dùng bố cục J5; nếu drawer đổi riêng thì tách section.
 - `/dev/ui` là trang thử component cho dev, không dựng.
+- File nháp trống "How About Me · Design System" trong Drafts của team Mr Yesss (tạo nhầm trước khi có link folder): anh xoá tay.
