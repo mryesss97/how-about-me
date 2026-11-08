@@ -33,5 +33,6 @@ Monorepo for **How About Me**, an internal Threads social-listening product (MVP
 ## Where to look
 
 - Requirements: `docs/01-product/04-functional-requirements.md`, metrics `07-metric-definitions.md`, taxonomy `08-taxonomy-classification.md`, UX `09-ux-specification.md`.
+- Design (docs ↔ Figma ↔ code): `design/figma/WORKFLOW.md` — tokens `tokens/TOKENS.md` mirror `theme.css`, components `COMPONENTS.md`, one TRACKING row per route. Docs first, then Figma, then code; `pnpm design:check` (in `verify`) fails when they drift.
 - Architecture: `docs/02-architecture/*` (backend 02, frontend 03, data model 04, API 05, ingestion 06, analysis 07).
 - Task list: `docs/03-delivery/backlog.json` (→ GitHub issues `[T-###]`).

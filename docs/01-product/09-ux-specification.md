@@ -1,10 +1,11 @@
 # 09 · UX Specification
 
-| Field            | Value                                                                                                                                                                                          |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Status           | Approved (baseline v1.0) — visual design in Untitled UI; no separate Figma required for MVP, wireframe descriptions below are normative                                                        |
-| Source           | [00-source/01_PRODUCT_REQUIREMENTS.md](../00-source/01_PRODUCT_REQUIREMENTS.md) §11–§15, §19–§20 · [00-source/02_TECHNICAL_ARCHITECTURE.md](../00-source/02_TECHNICAL_ARCHITECTURE.md) §5, §23 |
-| Component system | Untitled UI React (Tailwind v4, React Aria) — `apps/web/src/components/**`                                                                                                                     |
+| Field            | Value                                                                                                                                                                                             |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Status           | Approved (baseline v1.0) — visual design in Untitled UI; no separate Figma required for MVP, wireframe descriptions below are normative                                                           |
+| Source           | [00-source/01_PRODUCT_REQUIREMENTS.md](../00-source/01_PRODUCT_REQUIREMENTS.md) §11–§15, §19–§20 · [00-source/02_TECHNICAL_ARCHITECTURE.md](../00-source/02_TECHNICAL_ARCHITECTURE.md) §5, §23    |
+| Component system | Untitled UI React (Tailwind v4, React Aria) — `apps/web/src/components/**`                                                                                                                        |
+| Design workflow  | Docs → Figma → code per screen group: [design/figma/WORKFLOW.md](../../design/figma/WORKFLOW.md) (#403). Figma mirrors the shipped tokens and components; this spec stays normative for behaviour |
 
 ## 1. Information architecture & routes
 

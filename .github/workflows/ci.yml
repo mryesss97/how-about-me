@@ -27,6 +27,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @how-about-me/api prisma:generate
       - run: pnpm format:check
+      - run: pnpm design:check
       - run: pnpm lint
       - run: pnpm typecheck
 

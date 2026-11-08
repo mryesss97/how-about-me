@@ -116,7 +116,7 @@ Agent vẫn làm việc cần suy nghĩ: đọc ticket, viết plan, viết code
 
 Đầy đủ ở [docs/03-delivery/05-definition-of-ready-done.md](../docs/03-delivery/05-definition-of-ready-done.md). Phần script kiểm:
 
-1. `pnpm verify` pass: prisma generate · format:check · lint · typecheck · unit test · test script workflow. Hook `pre-push` chạy nó (cùng gitleaks, shellcheck), vì GitHub Actions chưa tự chạy trên push/PR ở repo này.
+1. `pnpm verify` pass: prisma generate · format:check · design:check · lint · typecheck · unit test · test script workflow. Hook `pre-push` chạy nó (cùng gitleaks, shellcheck), vì GitHub Actions chưa tự chạy trên push/PR ở repo này.
 2. E2E pass khi root có script `test:e2e`. Hiện chưa có, `issue:ship` ghi rõ.
 3. PR đổi UI có screenshot trước và sau. `issue:ship` đẩy ảnh lên nhánh orphan `pr-assets` và ghi bảng ảnh vào mục Definition of Done của mô tả PR.
 

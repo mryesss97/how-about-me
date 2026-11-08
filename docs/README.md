@@ -19,6 +19,7 @@ Every GitHub issue links back to the relevant section here. When a decision chan
 | 3   | Engineers    | [02-architecture/01-system-overview.md](02-architecture/01-system-overview.md) → [06-engineering/01-local-setup.md](06-engineering/01-local-setup.md) |
 | 4   | PM / Lead    | [03-delivery/01-milestones-timeline.md](03-delivery/01-milestones-timeline.md) → [03-delivery/02-work-breakdown.md](03-delivery/02-work-breakdown.md) |
 | 5   | QC           | [04-qa/01-test-plan.md](04-qa/01-test-plan.md) → [04-qa/test-cases/](04-qa/test-cases/)                                                               |
+| 6   | Design       | [../design/figma/WORKFLOW.md](../design/figma/WORKFLOW.md) → [01-product/09-ux-specification.md](01-product/09-ux-specification.md)                   |
 
 ---
 
@@ -33,6 +34,8 @@ docs/
 ├─ 04-qa/              Test plan, test cases per epic, analytics QA checklist, AI evaluation plan, bug guideline
 ├─ 05-operations/      Threads API POC plan, runbook, cost model, retention & purge
 └─ 06-engineering/     Local setup, monorepo structure, coding conventions, git workflow, code review, env vars, CI/CD
+
+design/figma/          Docs ↔ Figma ↔ code workflow: tokens, components, tracking per screen, roles, demo data (#403)
 ```
 
 ## Document index

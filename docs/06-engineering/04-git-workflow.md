@@ -89,7 +89,7 @@ The husky `pre-push` hook runs gitleaks, shellcheck and `pnpm verify` (reusing t
 
 ### Definition of Done checked by `issue:ship`
 
-1. `pnpm verify` passes on the pushed commit (prisma generate · format:check · lint · typecheck · unit tests · `pnpm agent:test`).
+1. `pnpm verify` passes on the pushed commit (prisma generate · format:check · design:check · lint · typecheck · unit tests · `pnpm agent:test`).
 2. `pnpm test:e2e` passes, once the root declares it. Until then the section says e2e did not run.
 3. A branch that changes UI files (`apps/web/src`, except tests, `__tests__`, `__mocks__` and `.md`) has a before/after screenshot pair, or `--no-shots "<reason>"` when the screen does not change.
 
