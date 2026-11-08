@@ -2,15 +2,17 @@
 
 Quy trình: [WORKFLOW.md](WORKFLOW.md). Role theo màn: [ROLES.md](ROLES.md). Data mẫu: [DATA-MAU.md](DATA-MAU.md).
 
-File chính: chưa tạo. Khi tạo, ghi link và id file ở đây.
+Folder Figma: https://www.figma.com/files/team/1554682555569327021/folder/686779774 (team Mr Yesss)
 
-| Page           | Nội dung                                                                       |
-| -------------- | ------------------------------------------------------------------------------ |
-| 00 Định hướng  | Hướng biển hiệu Sài Gòn (`apps/web/DESIGN.md`), sơ đồ route                    |
-| 01 Foundations | Biến `primitives`, `semantic`, `sign`, `scale`; text style; effect style; logo |
-| 02 Components  | Theo [COMPONENTS.md](COMPONENTS.md)                                            |
-| 03 App         | Một section mỗi chặng bên dưới                                                 |
-| 99 Lưu trữ     | Bản nháp cũ, không dùng cho việc mới                                           |
+File chính: https://www.figma.com/design/jczRPmHz0rLbbGrK1uxqK5 (dựng 08/11/2026, #405)
+
+| Page           | Id    | Nội dung                                                                                                                         |
+| -------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------- |
+| 00 Định hướng  | `0:1` | Bìa: cách dùng file, danh sách page, sơ đồ J0–J9. Frame `5:771`                                                                  |
+| 01 Foundations | `2:2` | Bảng tra biến `primitives` (131), `semantic` Light (215), `sign` (6), `scale` (28); 42 text style; 7 effect style. Frame `5:202` |
+| 02 Components  | `2:3` | 7 component set, xem [COMPONENTS.md](COMPONENTS.md)                                                                              |
+| 03 App         | `2:4` | Chưa có section                                                                                                                  |
+| 99 Lưu trữ     | `2:5` | Trống                                                                                                                            |
 
 ## Trạng thái section
 
@@ -39,5 +41,7 @@ Chưa có. Khi nối: mỗi section một flow `★` theo hàng Luồng chính; 
 
 ## Còn lại
 
-- Tạo file Figma, dựng `01 Foundations` và `02 Components` từ code (chặng 2).
+- Dựng tiếp component còn thiếu trong [COMPONENTS.md](COMPONENTS.md) (Input, Select, Table, Modal, SlideoutMenu, khung app) trước khi dựng section màn.
+- Biểu tượng trong `SemanticBadge`, `PageBanner` đang là vòng tròn giữ chỗ; thay bằng icon Untitled UI khi có bộ icon trên Figma.
+- Dựng section J0–J9 trên `03 App`, mỗi lần một flow (WORKFLOW mục 2).
 - `/dev/ui` là trang thử component cho dev, không dựng.

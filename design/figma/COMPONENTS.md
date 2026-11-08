@@ -1,6 +1,6 @@
 # How About Me: components
 
-Nguồn là code. Mỗi component màn dùng có một component trên page `02 Components` của Figma, cùng tên, cùng variant với props trong code. Mọi màu, bo góc, khoảng cách gắn token ở [tokens/TOKENS.md](tokens/TOKENS.md). Node id và key ghi vào bảng khi dựng trên Figma (cột trống = chưa dựng).
+Nguồn là code. Mỗi component màn dùng có một component trên page `02 Components` của Figma, cùng tên, cùng variant với props trong code. Mọi màu, bo góc, khoảng cách gắn token ở [tokens/TOKENS.md](tokens/TOKENS.md). File Figma: https://www.figma.com/design/jczRPmHz0rLbbGrK1uxqK5, page `02 Components` (`2:3`). Node id và key ghi vào bảng khi dựng (cột trống = chưa dựng). Import từ file khác sau khi publish: `figma.importComponentSetByKeyAsync(key)`; trong file này: `getNodeByIdAsync(id)`.
 
 `pnpm design:check` kiểm mọi đường dẫn `components/…`, `features/…` trong file này có thật dưới `apps/web/src/`.
 
@@ -15,33 +15,33 @@ Quy ước chung:
 
 ## Node id theo nhóm
 
-| Nhóm                                 | Section id | Page           |
-| ------------------------------------ | ---------- | -------------- |
-| Base (Untitled UI)                   |            | 02 Components  |
-| Application (Untitled UI)            |            | 02 Components  |
-| App dùng chung (`features/shared`)   |            | 02 Components  |
-| Biển hiệu (`Sign/*`)                 |            | 02 Components  |
-| Biểu đồ                              |            | 02 Components  |
-| Foundations: màu, chữ, spacing, bóng |            | 01 Foundations |
+| Nhóm                                 | Section id                                                                           | Page           |
+| ------------------------------------ | ------------------------------------------------------------------------------------ | -------------- |
+| Base (Untitled UI)                   | Button `5:74`, Badge `5:87`                                                          | 02 Components  |
+| Application (Untitled UI)            |                                                                                      | 02 Components  |
+| App dùng chung (`features/shared`)   | SemanticBadge `5:114`, StatusPlate `5:132`, PlaqueButton `5:147`, PageBanner `5:195` | 02 Components  |
+| Biển hiệu (`Sign/*`)                 | Sign/Board `5:174`                                                                   | 02 Components  |
+| Biểu đồ                              |                                                                                      | 02 Components  |
+| Foundations: màu, chữ, spacing, bóng | `5:202`                                                                              | 01 Foundations |
 
 ## Base (Untitled UI)
 
-| Component       | Code                                              | Variant / trạng thái                                                                                                                                                            | Node id | Key |
-| --------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --- |
-| `Button`        | `components/base/buttons/button.tsx`              | size: sm, md, lg, xl · color: primary, secondary, tertiary, link-color, link-gray, primary-destructive, secondary-destructive · State: Default, Hover, Focus, Disabled, Loading |         |     |
-| `ButtonUtility` | `components/base/buttons/button-utility.tsx`      | Nút chỉ biểu tượng, có tooltip                                                                                                                                                  |         |     |
-| `ButtonGroup`   | `components/base/button-group/button-group.tsx`   | Nhóm nút chọn                                                                                                                                                                   |         |     |
-| `Badge`         | `components/base/badges/badges.tsx`               | type: pill-color, color · color: gray, brand, error, warning, success, …                                                                                                        |         |     |
-| `Input`         | `components/base/input/input.tsx`                 | size: sm, md · State: Default, Focus, Filled, Error, Disabled                                                                                                                   |         |     |
-| `InputTags`     | `components/base/input/input-tags.tsx`            | Nhập nhiều cụm từ                                                                                                                                                               |         |     |
-| `Textarea`      | `components/base/textarea/textarea.tsx`           | State như Input                                                                                                                                                                 |         |     |
-| `Select`        | `components/base/select/select.tsx`               | Có `SelectNative`, `ComboBox`, `MultiSelect` cùng thư mục                                                                                                                       |         |     |
-| `Checkbox`      | `components/base/checkbox/checkbox.tsx`           | Checked: Off, On, Mixed · State: Default, Disabled                                                                                                                              |         |     |
-| `RadioButtons`  | `components/base/radio-buttons/radio-buttons.tsx` | Selected: Off, On                                                                                                                                                               |         |     |
-| `Toggle`        | `components/base/toggle/toggle.tsx`               | On: True, False · State: Default, Disabled                                                                                                                                      |         |     |
-| `Tooltip`       | `components/base/tooltip/tooltip.tsx`             | Định nghĩa chỉ số (UX §2.4)                                                                                                                                                     |         |     |
-| `Tags`          | `components/base/tags/tags.tsx`                   | Chip bộ lọc                                                                                                                                                                     |         |     |
-| `Dropdown`      | `components/base/dropdown/dropdown.tsx`           | Menu thao tác                                                                                                                                                                   |         |     |
+| Component       | Code                                              | Variant / trạng thái                                                                                                                                                                                                                | Node id | Key                                        |
+| --------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ------------------------------------------ |
+| `Button`        | `components/base/buttons/button.tsx`              | Hierarchy: primary, secondary, tertiary, link-color, primary-destructive, secondary-destructive · Size: sm, md · State: Default, Hover, Disabled (36 variant). Label là text property. lg, xl chưa dựng (cùng màu, padding lớn hơn) | `5:74`  | `65f83d9ceb6de06565126ed5369ff554fd2f14fe` |
+| `ButtonUtility` | `components/base/buttons/button-utility.tsx`      | Nút chỉ biểu tượng, có tooltip                                                                                                                                                                                                      |         |                                            |
+| `ButtonGroup`   | `components/base/button-group/button-group.tsx`   | Nhóm nút chọn                                                                                                                                                                                                                       |         |                                            |
+| `Badge`         | `components/base/badges/badges.tsx`               | Color: gray, brand, error, warning, success (pill-color, size sm). Label là text property                                                                                                                                           | `5:87`  | `fc938adfe31bda849bb90b07a32b7b1cf8f4b8d3` |
+| `Input`         | `components/base/input/input.tsx`                 | size: sm, md · State: Default, Focus, Filled, Error, Disabled                                                                                                                                                                       |         |                                            |
+| `InputTags`     | `components/base/input/input-tags.tsx`            | Nhập nhiều cụm từ                                                                                                                                                                                                                   |         |                                            |
+| `Textarea`      | `components/base/textarea/textarea.tsx`           | State như Input                                                                                                                                                                                                                     |         |                                            |
+| `Select`        | `components/base/select/select.tsx`               | Có `SelectNative`, `ComboBox`, `MultiSelect` cùng thư mục                                                                                                                                                                           |         |                                            |
+| `Checkbox`      | `components/base/checkbox/checkbox.tsx`           | Checked: Off, On, Mixed · State: Default, Disabled                                                                                                                                                                                  |         |                                            |
+| `RadioButtons`  | `components/base/radio-buttons/radio-buttons.tsx` | Selected: Off, On                                                                                                                                                                                                                   |         |                                            |
+| `Toggle`        | `components/base/toggle/toggle.tsx`               | On: True, False · State: Default, Disabled                                                                                                                                                                                          |         |                                            |
+| `Tooltip`       | `components/base/tooltip/tooltip.tsx`             | Định nghĩa chỉ số (UX §2.4)                                                                                                                                                                                                         |         |                                            |
+| `Tags`          | `components/base/tags/tags.tsx`                   | Chip bộ lọc                                                                                                                                                                                                                         |         |                                            |
+| `Dropdown`      | `components/base/dropdown/dropdown.tsx`           | Menu thao tác                                                                                                                                                                                                                       |         |                                            |
 
 ## Application (Untitled UI)
 
@@ -60,33 +60,33 @@ Quy ước chung:
 
 ## App dùng chung (`features/shared`)
 
-| Component           | Code                                     | Ghi chú                                                        | Node id | Key |
-| ------------------- | ---------------------------------------- | -------------------------------------------------------------- | ------- | --- |
-| `AppSidebar`        | `features/shared/app-sidebar.tsx`        | Điều hướng chính, chọn project                                 |         |     |
-| `ProjectSwitcher`   | `features/shared/project-switcher.tsx`   |                                                                |         |     |
-| `PageHeader`        | `features/shared/page-header.tsx`        | Tiêu đề trang dạng biển hiệu                                   |         |     |
-| `PageFrame`         | `features/shared/page-frame.tsx`         | Khung nội dung trang                                           |         |     |
-| `PageBanner`        | `features/shared/page-banner.tsx`        | Tone: warning, info, error; có biểu tượng và tiêu đề (UX §2.3) |         |     |
-| `SectionTabs`       | `features/shared/section-tabs.tsx`       | Tab theo URL                                                   |         |     |
-| `SemanticBadge`     | `features/shared/semantic-badge.tsx`     | Cảm xúc, an toàn, ý định: biểu tượng + chữ (NFR-030)           |         |     |
-| `StatusPlate`       | `features/shared/status-plate.tsx`       | Bảng tên trạng thái kèm chữ                                    |         |     |
-| `PlaqueButton`      | `features/shared/plaque-button.tsx`      | Nút kiểu biển cửa                                              |         |     |
-| `QueryState`        | `features/shared/query-state.tsx`        | Đang tải, trống, lỗi, cũ, một phần (UX §2.3)                   |         |     |
-| `StateIllustration` | `features/shared/state-illustration.tsx` | Hình cho trạng thái trống, lỗi                                 |         |     |
-| `DetailSlideout`    | `features/shared/detail-slideout.tsx`    | Drawer chi tiết bài, lượt đồng bộ                              |         |     |
-| `HealthStrip`       | `features/shared/health-strip.tsx`       | Dải tình trạng thu thập                                        |         |     |
-| `CopyLinkButton`    | `features/shared/copy-link-button.tsx`   |                                                                |         |     |
-| `AppToaster`        | `features/shared/app-toaster.tsx`        | Toast                                                          |         |     |
-| `SettingsDialog`    | `features/shared/settings-dialog.tsx`    |                                                                |         |     |
+| Component           | Code                                     | Ghi chú                                                                                                                                                                                         | Node id | Key                                        |
+| ------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ------------------------------------------ |
+| `AppSidebar`        | `features/shared/app-sidebar.tsx`        | Điều hướng chính, chọn project                                                                                                                                                                  |         |                                            |
+| `ProjectSwitcher`   | `features/shared/project-switcher.tsx`   |                                                                                                                                                                                                 |         |                                            |
+| `PageHeader`        | `features/shared/page-header.tsx`        | Tiêu đề trang dạng biển hiệu                                                                                                                                                                    |         |                                            |
+| `PageFrame`         | `features/shared/page-frame.tsx`         | Khung nội dung trang                                                                                                                                                                            |         |                                            |
+| `PageBanner`        | `features/shared/page-banner.tsx`        | Tone: warning, info, error; vạch trái 2px, biểu tượng + tiêu đề (UX §2.3). Sửa chữ lớp Title, Description                                                                                       | `5:195` | `66224e755d96bed81cdaa64bf6c4b41b98d36760` |
+| `SectionTabs`       | `features/shared/section-tabs.tsx`       | Tab theo URL                                                                                                                                                                                    |         |                                            |
+| `SemanticBadge`     | `features/shared/semantic-badge.tsx`     | Dimension × Value: Cảm xúc (Tích cực, Trung tính, Tiêu cực), An toàn (An toàn, Nhạy cảm, Nghiêm trọng đặc), Liên quan (Liên quan, Chưa chắc). Biểu tượng + chữ (NFR-030); lớp Icon đang giữ chỗ | `5:114` | `30ec981b599f35f8bb29daea832e952b11b0f56f` |
+| `StatusPlate`       | `features/shared/status-plate.tsx`       | Tone: success, error (men đặc), warning, progress, neutral. Chữ sửa trên instance                                                                                                               | `5:132` | `c9afbdc108399fcc7594f6ad60bcbf09220d1808` |
+| `PlaqueButton`      | `features/shared/plaque-button.tsx`      | Size: xs, sm, md · State: Default, Hover. Label là text property, style `Sign/Label`                                                                                                            | `5:147` | `8310bd7231d040a6feb93fd546b0fdba9ec56784` |
+| `QueryState`        | `features/shared/query-state.tsx`        | Đang tải, trống, lỗi, cũ, một phần (UX §2.3)                                                                                                                                                    |         |                                            |
+| `StateIllustration` | `features/shared/state-illustration.tsx` | Hình cho trạng thái trống, lỗi                                                                                                                                                                  |         |                                            |
+| `DetailSlideout`    | `features/shared/detail-slideout.tsx`    | Drawer chi tiết bài, lượt đồng bộ                                                                                                                                                               |         |                                            |
+| `HealthStrip`       | `features/shared/health-strip.tsx`       | Dải tình trạng thu thập                                                                                                                                                                         |         |                                            |
+| `CopyLinkButton`    | `features/shared/copy-link-button.tsx`   |                                                                                                                                                                                                 |         |                                            |
+| `AppToaster`        | `features/shared/app-toaster.tsx`        | Toast                                                                                                                                                                                           |         |                                            |
+| `SettingsDialog`    | `features/shared/settings-dialog.tsx`    |                                                                                                                                                                                                 |         |                                            |
 
 ## Biển hiệu (`Sign/*`, landing)
 
 Đặc tả đủ ở frontmatter `components` của `apps/web/DESIGN.md`.
 
-| Component       | Code                                     | Variant                                                                        | Node id | Key |
-| --------------- | ---------------------------------------- | ------------------------------------------------------------------------------ | ------- | --- |
-| `Sign/Board`    | `features/landing/landing-board.tsx`     | neutral, negative-solid, positive-solid, negative-mixed, positive-mixed, blank |         |     |
-| `Sign/MainSign` | `features/landing/landing-main-sign.tsx` | Biển chính, biển cửa                                                           |         |     |
+| Component       | Code                                     | Variant                                                                                                              | Node id | Key                                        |
+| --------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------- | ------------------------------------------ |
+| `Sign/Board`    | `features/landing/landing-board.tsx`     | Tone: neutral, negative-solid, positive-solid, negative-mixed, positive-mixed, blank. Sửa chữ lớp Phrase, Share line | `5:174` | `08e30cdb0bb56a9de10c0a80cbc54679d33f8ac5` |
+| `Sign/MainSign` | `features/landing/landing-main-sign.tsx` | Biển chính, biển cửa                                                                                                 |         |                                            |
 
 ## Theo màn
 

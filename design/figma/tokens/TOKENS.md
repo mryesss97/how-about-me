@@ -76,13 +76,15 @@ Chọn theo vai trò, không theo màu. Những biến hay dùng:
 
 ## 5. scale
 
-| Nhóm    | Giá trị                                                                            | Ứng với code                       |
-| ------- | ---------------------------------------------------------------------------------- | ---------------------------------- |
-| Spacing | 0, 2, 4, 6, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80, 96                              | spacing của Tailwind, 4px × n      |
-| Radius  | `none` 0, `xs` 2, `sm` 4, `md` 6, `lg` 8, `xl` 12, `2xl` 16, `3xl` 24, `full` 9999 | `--radius-xs` … `--radius-full`    |
-| Viền    | 1, 2                                                                               | `ring-1`, `ring-2` của Untitled UI |
+| Nhóm    | Giá trị                                                                              | Ứng với code                       |
+| ------- | ------------------------------------------------------------------------------------ | ---------------------------------- |
+| Spacing | 0, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 32, 40, 48, 64, 80, 96 (Figma `spacing/<px>`) | spacing của Tailwind, 4px × n      |
+| Radius  | `none` 0, `xs` 2, `sm` 4, `md` 6, `lg` 8, `xl` 12, `2xl` 16, `3xl` 24, `full` 9999   | `--radius-xs` … `--radius-full`    |
+| Viền    | 1, 2                                                                                 | `ring-1`, `ring-2` của Untitled UI |
 
 ## 6. Typography
+
+Figma: file https://www.figma.com/design/jczRPmHz0rLbbGrK1uxqK5, page `01 Foundations`. Text style `Sign/Display`, `Sign/Headline` (Bungee), `Sign/Title`, `Sign/Figure`, `Sign/Label`, `Sign/Share line` (Figma gọi font là "Saira ExtraCondensed").
 
 Font app Inter (`--font-body`, `--font-display`, subset latin và vietnamese), mono `--font-mono`. Text style Figma đặt tên theo Untitled UI: `<cỡ>/<độ đậm>`, ví dụ `Text sm/Medium`, `Display xs/Semibold`.
 
