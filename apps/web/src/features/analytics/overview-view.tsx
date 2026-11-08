@@ -1,6 +1,7 @@
 "use client";
 
 import { useCurrentProject } from "@/features/auth/use-current-project";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { useRole } from "@/features/auth/use-role";
 import { OverviewBanners } from "@/features/shared/overview-banners";
 import { useFilters } from "@/lib/filters/use-filters";
@@ -23,7 +24,12 @@ import { useOverviewDrillDown } from "./use-overview-drill-down";
  * Fragments so every chart stays a direct child of the 12-column grid.
  */
 export function OverviewView() {
-  const { project } = useCurrentProject();
+  const { project: cachedProject } = useCurrentProject();
+  // #409: read the project (and so every query keyed on it) only after hydration. TanStack Query may already hold
+  // /me and the analytics data when the Suspense boundary hydrates; rendering them then would differ from the
+  // server HTML (loading markup) and React regenerates the tree. Same pattern as `useHydrated` in mentions-view.
+  const hydrated = useHydrated();
+  const project = hydrated ? cachedProject : null;
   const { filters, apiParams } = useFilters("analytics");
   const { href, navigate, kpiHref, pendingHref } = useOverviewDrillDown(filters, apiParams);
   const topicSentiment = useTopicSentiment(project?.id, apiParams);

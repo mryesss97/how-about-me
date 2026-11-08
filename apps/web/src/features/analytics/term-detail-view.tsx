@@ -4,6 +4,7 @@ import type { SentimentResponse } from "@how-about-me/contracts";
 import type { SentimentLabel } from "@how-about-me/taxonomy";
 import { type ReactNode, useCallback, useMemo } from "react";
 import { useCurrentProject } from "@/features/auth/use-current-project";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { appliedChips } from "@/lib/filters/api-params";
 import { bucketDrillDown, bucketSentimentDrillDown, segmentDrillDown } from "@/lib/filters/drill-down";
 import { DEFAULT_TZ } from "@/lib/filters/parsers";
@@ -77,7 +78,12 @@ export function TermDetailView({
   term: string;
   renderList?: (p: TermListSlotProps) => ReactNode;
 }) {
-  const { project } = useCurrentProject();
+  const { project: cachedProject } = useCurrentProject();
+  // #409: read the project (and so every query keyed on it) only after hydration. TanStack Query may already hold
+  // /me and the analytics data when the Suspense boundary hydrates; rendering them then would differ from the
+  // server HTML (loading markup) and React regenerates the tree. Same pattern as `useHydrated` in mentions-view.
+  const hydrated = useHydrated();
+  const project = hydrated ? cachedProject : null;
   const { filters, setFilters, apiParams: live } = useFilters("analytics");
   const apiParams = useMemo(() => {
     const { compare: _compare, ...rest } = live;
