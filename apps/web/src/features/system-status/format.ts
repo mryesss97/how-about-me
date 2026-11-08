@@ -121,7 +121,7 @@ export const auditActionLabel: Record<AuditAction, string> = {
   "analysis.retry_requested": "Thử lại phân tích",
   "override.created": "Ghi đè",
   "override.revoked": "Thu hồi ghi đè",
-  "review.marked": "Đánh dấu đã xem xét",
+  "review.marked": "Đánh dấu đã xem lại", // #418: same wording as the Reviews screen
   "mentions.exported": "Xuất CSV bài nhắc",
   "analysis_settings.updated": "Cập nhật cài đặt phân tích",
   "sync_job.retry_requested": "Thử lại lượt đồng bộ",

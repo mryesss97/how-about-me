@@ -52,5 +52,7 @@ describe("#344 one vocabulary", () => {
     expect(auditActionLabel["override.created"]).toBe("Ghi đè");
     expect(auditActionLabel["override.revoked"]).toBe("Thu hồi ghi đè");
     expect(auditActionLabel["mentions.exported"]).toBe("Xuất CSV bài nhắc");
+    // #418: same verb as the Reviews screen ("Đánh dấu đã xem lại"), not "xem xét".
+    expect(auditActionLabel["review.marked"]).toBe("Đánh dấu đã xem lại");
   });
 });
