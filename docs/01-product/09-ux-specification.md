@@ -299,11 +299,52 @@ Built in #219 (`apps/web/src/features/reviews`):
 - **URL state:** `?reason=uncertain|low_confidence|failed` (missing/invalid → All), `?status=reviewed` (toggle "Hiện mục đã xem lại"; default unreviewed), `?item=<postId>` (slide-out). Tabs and the toggle replace history; opening a row pushes, so Back closes the slide-out. Changing tab/status clears the selection.
 - **Table:** post (user, time with tz tooltip, 2-line text, override icon "Có ghi đè"), reasons, relevance, sentiment, confidence (`%` + band; a band, not a probability — BR-020), analysis status (+ Vietnamese error label when failed, raw code in the tooltip; relevance/sentiment of a failed item are prefixed "Lần trước:", #338), and "Reviewed by" when Show reviewed is on. "Tải thêm" (plaque) paginates (25 / page). Confidence renders vi-VN (`42,0%`), band as Thấp / Trung bình / Cao. Column headers: Bài nhắc, Lý do, Mức liên quan, Cảm xúc, Độ tin cậy, Trạng thái, Người xem lại.
 - **Mark reviewed (admin, analyst):** checkboxes; no idle "(0)" button — selecting ≥ 1 item shows a sticky **selection bar** at the bottom of the list (#339): "N mục đã chọn · Bỏ chọn" left, primary "Đánh dấu đã xem lại (N)" right; Esc clears the selection while the slide-out is closed; changing tab/status clears it too. Select-all and manual selection are capped at 50 (`MARK_REVIEWED_MAX`, helper "Tối đa 50 mục mỗi lần" inside the bar). Role-dependent controls render only after hydration (no SSR mismatch). Success toast "Đã đánh dấu N mục đã xem lại" (+ "(bỏ qua M)"). Rows disappear optimistically and come back with a toast "Không thể đánh dấu đã xem lại" (incl. "Mã yêu cầu") on error. Not offered under Show reviewed; no "Unmark" in v1. A new analysis run reopens an item (BR-040).
+- **MVP+1 (D-002, D-003, proposed, Figma J16):** uncertain items get a one-tap verdict "Liên quan" / "Không liên quan" in the row and the slide-out (FR-198, undo in the toast for 10 s); "Hiện mục đã xem lại" items get "Bỏ đánh dấu" (single and in the selection bar, FR-199). Supersedes "no Unmark in v1".
 - **Keyboard (#339):** table rows — ↑/↓ move focus, Space selects, Enter opens. Slide-out — J next, K previous (ignored while typing or with a modifier; ↑/↓ stay for scrolling the panel), Esc closes. Hint "J/K: chuyển mục · Esc: đóng" under the title from `md`.
 - **Slide-out (#339):** title "Chi tiết bài nhắc" + `‹ n / N ›` (N = loaded items, "+" while more pages exist; never the tab count). Prev/next **replace** `?item` (Back still closes the panel); › on the last loaded item loads the next page. The item's reason plates (+ confidence % for "Độ tin cậy thấp") sit under the title. Footer (sticky, all sizes): primary **"Đánh dấu đã xem lại · tiếp"** — marks that one item (BR-040) and opens the next; on the last item it reads "Đánh dấu đã xem lại" and closes. On error the item stays and a toast shows. Focus moves to the heading of the new item. Navigation is available to every role; marking only to admin/analyst. "Mở trang đầy đủ" → `/mentions/:id?back=/reviews?<tab filters>` so the full page shows "Về Cần xem lại" (#331). The override dialog has a checkbox "Đánh dấu đã xem lại sau khi lưu" (checked by default) → after saving it runs the same mark-and-next. The detail body (MentionDetail, override form) is restyled with Mentions (#277). **Deep link outside the loaded pages (#390):** the queue loads further pages (max 4 × 25 = 100 rows) until it finds `?item`; if still absent, the slide-out falls back to the post's own `review` (from mention detail, BR-040): reason plates from `review.reasons` (no confidence %), `‹ – / N ›` shown but disabled, muted hint "Mục này nằm ngoài danh sách đang tải", and — for admin/analyst when `review.status = unreviewed` — "Đánh dấu đã xem lại" (closes after marking) plus the override checkbox. The one-tap "Liên quan / Không liên quan" decision strip for "Chưa chắc" items is **not built** (needs owner decision).
 - **Mobile (< md, #339):** rows become cards (user · time, 3-line text, reasons + verdicts + confidence in one wrapping line), checkbox and tab targets ≥ 44 px, "Chọn tất cả" above the cards. Slide-out header stays on one line: "Mở trang đầy đủ" is a 44 px icon button, nav moves to a second row; the primary action stays visible in the footer.
 - **Viewer:** read-only — no checkboxes, no Mark reviewed, no override form.
 - **Empty:** "Không có mục nào cần xem lại" / "Đã xem hết." (unreviewed) / "Chưa có mục nào đã xem lại" (reviewed).
+
+### 3.9 First-run setup (MVP+1, proposed — Figma J10) — FR-210, FR-211, BR-044
+
+- **Setup checklist** replaces the empty Overview, Mentions and landing wall while the project has no listening query: a white enamel board "Bắt đầu với dự án này" with 4 numbered steps — Kết nối Threads (→ Settings → Kết nối), Thêm truy vấn đầu tiên (→ drawer of §3.5 opened), Chọn cụm từ cho landing (→ Settings → Dự án), Mời thành viên (→ Settings → Thành viên). Each step shows "Xong" with a check once done; the board disappears after the first successful sync.
+- Non-admins see the same list read-only with "Nhờ quản trị viên hoàn tất các bước này".
+- After queries exist but before the first successful sync: "Đang chờ lần đồng bộ đầu · truy vấn chạy mỗi N phút" with a link to System Status.
+
+### 3.10 Access: invite, password, magic link (MVP+1, proposed — Figma J11) — FR-212…FR-215
+
+- **Đặt mật khẩu** (`/auth/set-password`, from the invite or reset link): same enamel board as Login, "Chào {email}", Mật khẩu + Nhập lại, rule line "Ít nhất 8 ký tự, có chữ và số", primary "Lưu và đăng nhập". Expired link → "Link đã hết hạn" + "Gửi lại link" (email field).
+- **Login** adds "Quên mật khẩu?" under the password field and a tertiary "Gửi link đăng nhập qua e-mail". Both open a one-field step "E-mail công việc" + "Gửi link"; the confirmation is always "Nếu e-mail có trong hệ thống, link đã được gửi." (FR-215).
+- **Members** table gets a status column: "Hoạt động · đăng nhập 2 giờ trước" or the warning plate "Chưa đăng nhập" + link "Gửi lại lời mời" (admin; toast "Đã gửi lại lời mời").
+
+### 3.11 Alerts (MVP+1, proposed — Figma J12) — FR-220…FR-227, BR-045
+
+- **Bell** in the sidebar header (and the phone header) with an enamel count plate; opens the **alert centre** drawer (400 px): tabs "Chưa xử lý · N" / "Tất cả"; each firing is a row with an icon + rule name, the numbers ("Bài nhắc tiêu cực 38,2% · ngưỡng 30% · 6 giờ qua"), time, "Xem bài nhắc" (exact filter) and "Đã nắm" (records who).
+- **Settings → Cảnh báo** (`/settings/alerts`, admin): table of rules (name, type, scope, channels, last fired, on/off) + "Tạo cảnh báo". Rule drawer: type (radio: Lượng bài tăng đột biến · Tỉ lệ tiêu cực · Bài nghiêm trọng · Sức khoẻ hệ thống), scope (Tất cả truy vấn / Chọn truy vấn / View đã lưu), window (1 / 6 / 24 giờ), threshold with a live "Hôm qua sẽ báo 2 lần" preview, channels (checkboxes), recipients. Section "Kênh gửi": Email (members + extra emails), Slack (webhook URL, masked), Webhook (URL + secret, masked) each with "Gửi thử".
+- Alert colour follows meaning: system and severe = error tone, spike/negative = warning tone; always icon + words.
+
+### 3.12 Digest (MVP+1, proposed — Figma J13) — FR-230…FR-233
+
+- **Settings → Bản tin** (`/settings/digest`, admin): list of digests + "Tạo bản tin"; editor with frequency (Hằng ngày lúc 08:00 / Hằng tuần thứ Hai 08:00), scope, recipients, "Xem trước", "Gửi thử", "Lưu".
+- **Preview / email**: 600 px email layout in the signboard style (white board, navy keyline, Bungee title "Bản tin tuần"), 4 figures, top negative topics as bars, 5 key mentions with badges in words, alerts of the period, AI summary box labelled "Tóm tắt do AI viết", footer "Mở How About Me".
+
+### 3.13 Saved views (MVP+1, proposed — Figma J14) — FR-240…FR-242, BR-047
+
+- A **"View" select** at the left of the filter bar (Overview, Mentions): "Mặc định", then "View chung" and "View của tôi" groups. When the filters differ from the applied view the select shows "· đã sửa" and a plaque "Lưu" appears; "Lưu thành view mới" opens a dialog (Tên, Chia sẻ với dự án toggle). Manage (rename, delete, share) in the select's footer "Quản lý view".
+
+### 3.14 Cases (MVP+1, proposed — Figma J15) — FR-250…FR-257, BR-048, BR-049
+
+- **Create** from the mention row menu / drawer / detail ("Tạo việc chăm sóc") or from the Mentions selection bar: dialog with Tiêu đề (prefilled from the mention), Ưu tiên (radio Cao / Thường / Thấp), Giao cho (member select, default me), Ghi chú đầu tiên.
+- **`/cases`** (sidebar item "Việc chăm sóc" between Cần xem lại and Truy vấn theo dõi, count plate = my open cases): plaque tabs "Việc của tôi · N", "Chưa giao · N", "Tất cả"; filters status, priority, assignee, "Quá hạn"; table: case, mentions (n), priority plate, status plate, assignee, SLA ("còn 2 giờ" / "quá 3 giờ" in error tone), updated.
+- **Case page** `/cases/[id]`: fascia with title and status plate; left: linked mentions (MentionRow) + "Thêm bài"; right: details (priority, assignee, SLA, created by), status buttons for the allowed next states, timeline of status changes and notes, note composer (@ member).
+- Mentions linked to an open case show a small plate "Việc #12 · Đang xử lý" in lists and detail.
+
+### 3.15 Ops additions (MVP+1, proposed — Figma J16) — FR-177, FR-202, FR-197
+
+- System Status → Bộ phân tích card adds "Ngân sách hôm nay $3,20 / $5,00" with a bar and, when paused for budget, "Tạm dừng vì hết ngân sách · chạy lại lúc 00:00".
+- Audit log "Người thực hiện" select adds "Hệ thống".
+- Mentions "Bộ lọc khác" adds "Trạng thái xem lại" (Chưa xem lại / Đã xem lại).
 
 ## 4. Responsive behaviour
 
@@ -311,7 +352,7 @@ Built in #219 (`apps/web/src/features/reviews`):
 - ≥ 1280 px: full sidebar, 12-col grid.
 - 768–1279 px: collapsed slim sidebar, charts 2-per-row → 1-per-row, tables horizontally scrollable.
   - **Current state (#95):** the slim icon-only sidebar is not built yet (follow-up issue). Shipped behaviour: full sidebar from Tailwind `lg` (1024 px); below that a sticky 56 px header with a 44 px hamburger; the drawer closes on any route change, on tapping any link (including the current page) and on sign-out; one close button, flat ink scrim at 60% (no blur), drawer targets ≥ 44 px (#325). Overview grid is 1-per-row < 1024 px and 2–3-per-row ≥ 1024 px; no horizontal page scroll at 900 px (checked in `e2e/a11y.auth.spec.ts`).
-- < 768 px: read-only Overview/Mentions acceptable; admin forms not optimised. Reviews shows cards instead of the table below `md` (#339).
+- < 768 px: read-only Overview/Mentions acceptable; admin forms not optimised. MVP+1 (proposed, Figma J17): phone layouts are designed for Overview (section jump chips + collapsible chart cards), Mentions, mention detail, Reviews, Cases and the alert centre. Reviews shows cards instead of the table below `md` (#339).
 - Below `lg` the filter bar is a 48 px sticky summary strip at `top-14` (under the 56 px header) with a bottom sheet (#332, §2.1).
 
 ## 5. Copy guidelines

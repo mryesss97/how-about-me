@@ -51,6 +51,7 @@ design/figma/          Docs ↔ Figma ↔ code workflow: tokens, components, tra
 - [07-metric-definitions.md](01-product/07-metric-definitions.md) — KPI formulas, denominators, edge cases
 - [08-taxonomy-classification.md](01-product/08-taxonomy-classification.md) — taxonomy v1, confidence policy, safety policy v1
 - [09-ux-specification.md](01-product/09-ux-specification.md) — information architecture, routes, per-screen spec, states, a11y
+- [10-product-decisions.md](01-product/10-product-decisions.md) — PO decision log (D-001 MVP+1 scope, D-002…D-005)
 
 ### 02 — Architecture
 

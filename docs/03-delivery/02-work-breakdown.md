@@ -5,28 +5,30 @@
 
 ## Summary
 
-| Milestone                                                      | Tasks | Engineer | QC  | S / M / L   |
-| -------------------------------------------------------------- | ----- | -------- | --- | ----------- |
-| **M0** Kickoff & Engineering Foundation (due 2026-09-12)       | 17    | 16       | 1   | 9 / 7 / 1   |
-| **M1** Threads API POC (due 2026-09-19)                        | 8     | 7        | 1   | 5 / 3 / 0   |
-| **M2** Platform Foundation (due 2026-10-03)                    | 37    | 32       | 5   | 16 / 16 / 5 |
-| **M3** Content Intelligence Pipeline (due 2026-10-17)          | 14    | 11       | 3   | 3 / 7 / 4   |
-| **M4** Dashboard, Mentions Explorer & Screens (due 2026-10-31) | 23    | 19       | 4   | 4 / 13 / 6  |
-| **M5** MVP Hardening & Release v0.1.0 (due 2026-11-14)         | 11    | 9        | 2   | 4 / 6 / 1   |
-| **M6** Analyst Workflow & Export (P1) (due 2026-12-12)         | 16    | 14       | 2   | 5 / 8 / 3   |
-| **Total**                                                      | 126   | 108      | 18  |             |
+| Milestone                                                        | Tasks | Engineer | QC  | S / M / L   |
+| ---------------------------------------------------------------- | ----- | -------- | --- | ----------- |
+| **M0** Kickoff & Engineering Foundation (due 2026-09-12)         | 17    | 16       | 1   | 9 / 7 / 1   |
+| **M1** Threads API POC (due 2026-09-19)                          | 8     | 7        | 1   | 5 / 3 / 0   |
+| **M2** Platform Foundation (due 2026-10-03)                      | 37    | 32       | 5   | 16 / 16 / 5 |
+| **M3** Content Intelligence Pipeline (due 2026-10-17)            | 14    | 11       | 3   | 3 / 7 / 4   |
+| **M4** Dashboard, Mentions Explorer & Screens (due 2026-10-31)   | 23    | 19       | 4   | 4 / 13 / 6  |
+| **M5** MVP Hardening & Release v0.1.0 (due 2026-11-14)           | 11    | 9        | 2   | 4 / 6 / 1   |
+| **M6** Analyst Workflow & Export (P1) (due 2026-12-12)           | 16    | 14       | 2   | 5 / 8 / 3   |
+| **M7** MVP+1: Onboarding, Alerts, Digest, Cases (due 2027-01-29) | 12    | 12       | 0   | 3 / 5 / 4   |
+| **Total**                                                        | 138   | 120      | 18  |             |
 
 ## Open inputs (Product Owner)
 
-| ID   | Needed by       | Item                                                                                                                   | Blocks       |
-| ---- | --------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------ |
-| IN-1 | M1 (2026-09-08) | Meta developer account access, Threads app creation, App Review path; long-lived token                                 | T-020        |
-| IN-2 | M0 (2026-09-12) | Supabase projects for staging (and production by M5): URL, anon key, DB URLs, JWT settings                             | T-004, T-123 |
-| IN-3 | M3 (2026-09-29) | Classifier provider/model decision + OpenAI API key (default assumption: OpenAI structured outputs with a small model) | T-072        |
-| IN-4 | M0 (2026-09-12) | Hosting decision for API/worker (Railway/Fly/Render/VM) and web (Vercel)                                               | T-005, T-006 |
-| IN-5 | M0              | Team roster & GitHub handles for CODEOWNERS and assignments                                                            | T-002        |
-| IN-6 | M4              | Untitled UI PRO licence only if a needed component is PRO-only                                                         | —            |
-| IN-7 | M2              | QA test accounts (admin/analyst/viewer emails) on staging Supabase Auth                                                | T-017        |
+| ID   | Needed by       | Item                                                                                                                                | Blocks       |
+| ---- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| IN-1 | M1 (2026-09-08) | Meta developer account access, Threads app creation, App Review path; long-lived token                                              | T-020        |
+| IN-2 | M0 (2026-09-12) | Supabase projects for staging (and production by M5): URL, anon key, DB URLs, JWT settings                                          | T-004, T-123 |
+| IN-3 | M3 (2026-09-29) | Classifier provider/model decision + OpenAI API key (default assumption: OpenAI structured outputs with a small model)              | T-072        |
+| IN-4 | M0 (2026-09-12) | Hosting decision for API/worker (Railway/Fly/Render/VM) and web (Vercel)                                                            | T-005, T-006 |
+| IN-5 | M0              | Team roster & GitHub handles for CODEOWNERS and assignments                                                                         | T-002        |
+| IN-6 | M4              | Untitled UI PRO licence only if a needed component is PRO-only                                                                      | —            |
+| IN-7 | M2              | QA test accounts (admin/analyst/viewer emails) on staging Supabase Auth                                                             | T-017        |
+| IN-8 | M7              | Email sender for alerts/digests/invites (SMTP or provider API key + from address) and a Slack incoming webhook for the team channel | T-160, T-163 |
 
 ## M0 · Kickoff & Engineering Foundation — due 2026-09-12
 
@@ -203,6 +205,25 @@ Overrides, review queue, bulk re-analysis, backfill UI, CSV export, P1 charts, a
 | T-154 | [#125](https://github.com/mryesss97/how-about-me/issues/125) | QC: TC-REV and TC-EXP execution (analyst workflow, export)                                  | qc      | qc       | qa       | P1  | M   | E11  | T-143, T-144, T-146, T-147, T-151 | US-150, US-170, FR-191, FR-180         | [TC-REV-analyst-workflow.md](../04-qa/test-cases/TC-REV-analyst-workflow.md)<br>[TC-EXP-export.md](../04-qa/test-cases/TC-EXP-export.md)                                                                |
 | T-155 | [#126](https://github.com/mryesss97/how-about-me/issues/126) | QC: P1 analytics reconciliation (overrides affect metrics, P1 charts)                       | qc      | qc       | qa       | P1  | S   | E07  | T-142, T-148, T-149, T-150        | US-150, US-103, FR-192, FR-144         | [02-analytics-qa-checklist.md](../04-qa/02-analytics-qa-checklist.md)                                                                                                                                   |
 
+## M7 · MVP+1: Onboarding, Alerts, Digest, Cases — due 2027-01-29
+
+PO decision D-001 (docs/01-product/10-product-decisions.md): first-run setup, invite/password access, faster review, alerts, digest, saved views, cases, ops visibility. Design: Figma J10–J17.
+
+| ID    | Issue | Task                                                                             | Type    | Role     | Area     | Pri | Est | Epic | Depends on   | Stories / FRs                                                  | Docs                                                                                                                                                                                                                                                             |
+| ----- | ----- | -------------------------------------------------------------------------------- | ------- | -------- | -------- | --- | --- | ---- | ------------ | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T-156 | —     | First-run setup checklist and empty-state precedence (web)                       | feature | engineer | web      | P1  | S   | E14  | —            | US-200, FR-210, FR-211                                         | [09-ux-specification.md](../01-product/09-ux-specification.md#39-first-run-setup-mvp1-proposed--figma-j10--fr-210-fr-211-br-044)<br>[10-product-decisions.md](../01-product/10-product-decisions.md)<br>[TRACKING.md](../../design/figma/TRACKING.md)            |
+| T-157 | —     | Set password, forgot password and magic link (web, Supabase)                     | feature | engineer | web      | P1  | M   | E14  | —            | US-201, FR-212, FR-213, FR-215                                 | [09-ux-specification.md](../01-product/09-ux-specification.md#310-access-invite-password-magic-link-mvp1-proposed--figma-j11--fr-212fr-215)<br>[10-product-decisions.md](../01-product/10-product-decisions.md)<br>[TRACKING.md](../../design/figma/TRACKING.md) |
+| T-158 | —     | Members invite status and resend (API + web)                                     | feature | engineer | api, web | P1  | S   | E14  | T-157        | US-202, FR-214                                                 | [09-ux-specification.md](../01-product/09-ux-specification.md#310-access-invite-password-magic-link-mvp1-proposed--figma-j11--fr-212fr-215)<br>[10-product-decisions.md](../01-product/10-product-decisions.md)<br>[TRACKING.md](../../design/figma/TRACKING.md) |
+| T-159 | —     | Alert rules, evaluator and alert centre (API + web)                              | feature | engineer | api, web | P1  | L   | E15  | —            | US-203, US-204, FR-220, FR-221, FR-222, FR-223, FR-224, FR-227 | [09-ux-specification.md](../01-product/09-ux-specification.md#311-alerts-mvp1-proposed--figma-j12--fr-220fr-227-br-045)<br>[10-product-decisions.md](../01-product/10-product-decisions.md)<br>[TRACKING.md](../../design/figma/TRACKING.md)                     |
+| T-160 | —     | Alert channels: email, Slack, signed webhook (API + web)                         | feature | engineer | api, web | P1  | M   | E15  | T-159        | US-203, FR-225, FR-226                                         | [09-ux-specification.md](../01-product/09-ux-specification.md#311-alerts-mvp1-proposed--figma-j12--fr-220fr-227-br-045)<br>[10-product-decisions.md](../01-product/10-product-decisions.md)<br>[TRACKING.md](../../design/figma/TRACKING.md)                     |
+| T-161 | —     | Analyzer budget in System Status and audit 'Hệ thống' filter (API + web)         | feature | engineer | api, web | P1  | S   | E11  | —            | US-205, FR-177, FR-202                                         | [09-ux-specification.md](../01-product/09-ux-specification.md#315-ops-additions-mvp1-proposed--figma-j16--fr-177-fr-202-fr-197)<br>[10-product-decisions.md](../01-product/10-product-decisions.md)<br>[TRACKING.md](../../design/figma/TRACKING.md)             |
+| T-162 | —     | Review speed-ups: reviewed filter, one-tap verdict, unmark (API + web)           | feature | engineer | api, web | P1  | M   | E11  | —            | US-111, US-206, FR-197, FR-198, FR-199                         | [09-ux-specification.md](../01-product/09-ux-specification.md#38-reviews-reviews--p1)<br>[10-product-decisions.md](../01-product/10-product-decisions.md)<br>[TRACKING.md](../../design/figma/TRACKING.md)                                                       |
+| T-163 | —     | Scheduled digest (API + web + email)                                             | feature | engineer | api, web | P1  | L   | E15  | T-160, T-164 | US-207, FR-230, FR-231, FR-232, FR-233                         | [09-ux-specification.md](../01-product/09-ux-specification.md#312-digest-mvp1-proposed--figma-j13--fr-230fr-233)<br>[10-product-decisions.md](../01-product/10-product-decisions.md)<br>[TRACKING.md](../../design/figma/TRACKING.md)                            |
+| T-164 | —     | Saved views (API + web)                                                          | feature | engineer | api, web | P1  | M   | E16  | —            | US-208, FR-240, FR-241, FR-242                                 | [09-ux-specification.md](../01-product/09-ux-specification.md#313-saved-views-mvp1-proposed--figma-j14--fr-240fr-242-br-047)<br>[10-product-decisions.md](../01-product/10-product-decisions.md)<br>[TRACKING.md](../../design/figma/TRACKING.md)                |
+| T-165 | —     | Cases: model, create from mentions, status machine (API + web)                   | feature | engineer | api, web | P1  | L   | E16  | —            | US-209, FR-250, FR-251, FR-255                                 | [09-ux-specification.md](../01-product/09-ux-specification.md#314-cases-mvp1-proposed--figma-j15--fr-250fr-257-br-048-br-049)<br>[10-product-decisions.md](../01-product/10-product-decisions.md)<br>[TRACKING.md](../../design/figma/TRACKING.md)               |
+| T-166 | —     | Cases: /cases list, case page, notes, SLA (web + API)                            | feature | engineer | api, web | P1  | L   | E16  | T-165        | US-210, FR-252, FR-253, FR-254, FR-256, FR-257                 | [09-ux-specification.md](../01-product/09-ux-specification.md#314-cases-mvp1-proposed--figma-j15--fr-250fr-257-br-048-br-049)<br>[10-product-decisions.md](../01-product/10-product-decisions.md)<br>[TRACKING.md](../../design/figma/TRACKING.md)               |
+| T-167 | —     | Phone layouts for Overview, Mentions, detail, Reviews, Cases, alert centre (web) | feature | engineer | web      | P1  | M   | E14  | —            | US-200, FR-210                                                 | [09-ux-specification.md](../01-product/09-ux-specification.md#4-responsive-behaviour)<br>[10-product-decisions.md](../01-product/10-product-decisions.md)<br>[TRACKING.md](../../design/figma/TRACKING.md)                                                       |
+
 ## Epic index
 
 | Epic | Name                              | Tasks                                                                                                                                                                                                     |
@@ -217,7 +238,7 @@ Overrides, review queue, bulk re-analysis, backfill UI, CSV export, P1 charts, a
 | E08  | Mentions Explorer & Detail        | T-095, T-096, T-103, T-104, T-105, T-108, T-110                                                                                                                                                           |
 | E09  | System Status & Observability     | T-057, T-058, T-059, T-060, T-061, T-077, T-106, T-111, T-122                                                                                                                                             |
 | E10  | Settings                          | T-107, T-151                                                                                                                                                                                              |
-| E11  | Analyst Workflow (P1)             | T-141, T-142, T-143, T-144, T-145, T-146, T-154                                                                                                                                                           |
+| E11  | Analyst Workflow (P1)             | T-141, T-142, T-143, T-144, T-145, T-146, T-154, T-161, T-162                                                                                                                                             |
 | E12  | Export (P1)                       | T-147                                                                                                                                                                                                     |
 | E13  | Engineering Foundation & Delivery | T-001, T-002, T-003, T-004, T-005, T-006, T-007, T-008, T-009, T-010, T-011, T-012, T-013, T-014, T-015, T-016, T-017, T-097, T-120, T-121, T-123, T-124, T-125, T-126, T-127, T-128, T-129, T-130, T-153 |
 

@@ -50,6 +50,17 @@ Rules are normative and referenced by code comments (`// BR-007`) and tests.
 - **BR-041** Key phrases (classifier-v2+, FR-120) are normalised before storage and filtering: Unicode NFC, lowercase, `, ; |` and line breaks → space, quotes/punctuation stripped at both ends (inner `-` and `/` kept, e.g. `check-in`), whitespace collapsed and trimmed. Empty, letter/digit-free or > 60-character phrases are dropped; duplicates after normalisation collapse; at most 5 per post. Vietnamese accents are **not** stripped and synonyms are **not** merged (`gia ve` ≠ `giá vé`). Phrases are stored append-only per analysis (`analysis_phrases`), never updated; irrelevant posts have none.
 - **BR-042** Landing terms (#261, FR-149): the project setting `landingTerms` holds at most 20 terms, each normalised like key phrases (BR-041, 1–60 characters, needs a letter or digit) and de-duplicated after normalisation (first occurrence order kept). A post mentions a term when its text — Unicode NFC, lowercased, with whitespace and `, ; |` collapsed to one space — contains the term, or when a key phrase of its **current** analysis contains the term (substring; case-insensitive; accents significant; `%`/`_` literal). A post matching both ways counts once per term; a post may count under several terms. Lowercasing relies on the database ctype (UTF-8 locale). The same matching is the `term` filter (#273): one term, normalised per BR-041; the base set keeps only posts that mention it.
 
+### MVP+1 (D-001)
+
+- **BR-043** A one-tap verdict is a normal override (FR-191) with reason "Xác nhận nhanh từ hàng chờ"; undo revokes it (FR-193) and restores the previous review state. It never changes sentiment or safety (BR-017).
+- **BR-044** Empty-state precedence: no listening query → setup checklist; queries but no successful sync yet → "Đang chờ lần đồng bộ đầu"; otherwise "Không có bài nhắc trong khoảng này".
+- **BR-045** Alert cooldown: a rule fires at most once per window length (min 1 h); an acknowledged firing does not repeat before the next cooldown. Volume spike = current window count ≥ max(threshold × baseline, minimum count 10), baseline = median of the same window over the previous 7 days.
+- **BR-046** Digest and alert windows use the project timezone; stored times stay UTC (ADR-0011).
+- **BR-047** Shared views belong to the project; personal views to the user. Deleting a view never deletes data. Views store filters, not results.
+- **BR-048** Case status machine: Mới → Đang xử lý → Chờ phản hồi ↔ Đang xử lý → Đã xong; any open state → Bỏ qua; Đã xong / Bỏ qua → Đang xử lý (reopen). SLA clock stops in Chờ phản hồi, Đã xong, Bỏ qua.
+- **BR-049** A mention belongs to at most one open case; linking it to another case moves it and logs the move.
+- **BR-050** Alert, digest and case emails never include Threads tokens, webhook URLs or analysis prompts; mention text is quoted at most 280 characters.
+
 ### Analytics
 
 - **BR-028** All timestamps stored in UTC; bucketing and previous-period boundaries follow the selected timezone (default project timezone `Asia/Ho_Chi_Minh`).
