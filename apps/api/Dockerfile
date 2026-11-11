@@ -18,7 +18,11 @@ COPY packages ./packages
 COPY apps/api ./apps/api
 RUN pnpm --filter @how-about-me/taxonomy build && pnpm --filter @how-about-me/contracts build \
  && pnpm --filter @how-about-me/api prisma:generate && pnpm --filter @how-about-me/api build \
- && pnpm --filter @how-about-me/api deploy --prod /out
+ && pnpm --filter @how-about-me/api deploy --prod --legacy /out \
+ && cp -r apps/api/prisma /out/prisma \
+ && cd /out && /repo/apps/api/node_modules/.bin/prisma generate --schema prisma/schema.prisma
+# pnpm 10 needs --legacy for non-injected workspace deps; the deployed @prisma/client is
+# regenerated inside /out because `pnpm deploy` reinstalls it ungenerated.
 
 FROM node:24-alpine AS runtime
 ENV NODE_ENV=production
@@ -26,8 +30,9 @@ WORKDIR /app
 RUN addgroup -S app && adduser -S app -G app
 COPY --from=build /out ./
 COPY --from=build /repo/apps/api/dist ./dist
-COPY --from=build /repo/apps/api/prisma ./prisma
 USER app
 EXPOSE 4000
-HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD wget -qO- http://127.0.0.1:4000/health/live || exit 1
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+# Railway injects PORT and ignores Docker HEALTHCHECK; kept for plain docker runs.
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD wget -qO- "http://127.0.0.1:${PORT:-4000}/health/live" || exit 1
+# Migrations run as a separate pipeline step before deploy (deploy-staging.yml); the image has no Prisma CLI.
+CMD ["node", "dist/main.js"]
