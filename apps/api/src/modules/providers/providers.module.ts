@@ -14,8 +14,12 @@ import {
 import { OpenAiModerationProvider } from "../analysis/providers/openai-moderation.provider";
 import { OpenAiStructuredClassifier } from "../analysis/providers/openai-structured.classifier";
 import { FakeThreadsProvider } from "../integrations/threads/fake-threads.provider";
+import { ThreadsDiscoveryProvider } from "../integrations/threads/threads-discovery.provider";
 import { ThreadsTokenStore, type TokenStore } from "../integrations/threads/threads-token.store";
-import { SOCIAL_DISCOVERY_PROVIDER } from "../integrations/threads/social-discovery.provider";
+import {
+  SOCIAL_DISCOVERY_PROVIDER,
+  type SocialDiscoveryProvider,
+} from "../integrations/threads/social-discovery.provider";
 import {
   FakeThreadsTokenSource,
   THREADS_TOKEN_SOURCE,
@@ -27,9 +31,8 @@ import {
  * FR-112, FR-047) — docs/02-architecture/02-backend-design.md §10.
  *
  * Consumers inject the tokens, never the classes, so no module outside this one imports a provider
- * implementation (TC-INT-014). The safety (T-071) and classifier (T-072) adapters are real; Threads
- * (T-039) still fails fast in `PROVIDERS_MODE=real` with a message naming the missing task
- * instead of silently running against nothing.
+ * implementation (TC-INT-014, enforced by `apps/api/eslint.config.mjs`). Real mode uses the Threads (T-039),
+ * safety (T-071) and classifier (T-072) adapters.
  */
 @Global()
 @Module({
@@ -37,8 +40,7 @@ import {
     {
       provide: SOCIAL_DISCOVERY_PROVIDER,
       inject: [APP_CONFIG],
-      useFactory: (cfg: AppConfig) =>
-        cfg.PROVIDERS_MODE === "fake" ? new FakeThreadsProvider() : notImplemented("ThreadsDiscoveryProvider", "T-039"),
+      useFactory: createDiscoveryProvider,
     },
     {
       provide: THREADS_TOKEN_SOURCE,
@@ -62,6 +64,12 @@ import {
   exports: [SOCIAL_DISCOVERY_PROVIDER, THREADS_TOKEN_SOURCE, SAFETY_PROVIDER, CONTENT_CLASSIFIER],
 })
 export class ProvidersModule {}
+
+/** `SOCIAL_DISCOVERY_PROVIDER` factory (T-039): fake offline, the real Threads adapter in real mode. */
+export function createDiscoveryProvider(cfg: AppConfig): SocialDiscoveryProvider {
+  if (cfg.PROVIDERS_MODE === "fake") return new FakeThreadsProvider();
+  return new ThreadsDiscoveryProvider({ baseUrl: cfg.THREADS_API_BASE_URL, timeoutMs: cfg.THREADS_REQUEST_TIMEOUT_MS });
+}
 
 /** `SAFETY_PROVIDER` factory (T-071): fake offline, OpenAI moderation in real mode; fails fast on bad config. */
 export function createSafetyProvider(cfg: AppConfig): SafetyProvider {
@@ -99,10 +107,6 @@ export function createContentClassifier(cfg: AppConfig): ContentClassifier {
     skipSummaryForSpam: cfg.ANALYSIS_SKIP_SUMMARY_FOR_SPAM,
     promptVersion: cfg.ANALYSIS_PROMPT_VERSION,
   });
-}
-
-function notImplemented(name: string, task: string): never {
-  throw new Error(`PROVIDERS_MODE=real requires ${name}, which is implemented in ${task}. Use PROVIDERS_MODE=fake.`);
 }
 
 /**

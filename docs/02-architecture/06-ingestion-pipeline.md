@@ -45,11 +45,21 @@ export type SearchPage = {
 export type ProviderContext = { accessToken: string; requestId: string; projectId: string };
 ```
 
-- Requested fields (verify in POC): `id, media_type, media_url, permalink, username, text, timestamp, shortcode, thumbnail_url, is_quote_post, quoted_post, reposted_post, has_replies, alt_text, link_attachment_url`.
+- Requested fields (`THREADS_SEARCH_FIELDS`, BR-038): `id, media_type, media_url, permalink, username, text, timestamp, shortcode, thumbnail_url, is_quote_post, quoted_post, reposted_post, has_replies, alt_text, link_attachment_url`.
 - Mapping: `query_type=keyword → search_mode=KEYWORD`, `topic_tag → TAG`; `#` stripped before sending.
 - Timeout per request `THREADS_REQUEST_TIMEOUT_MS=15000`; `User-Agent` set; JSON parsed defensively.
 - Error mapping (FR-082): HTTP 401 → `THREADS_UNAUTHORIZED`; 403 → `THREADS_FORBIDDEN`; 429 → `THREADS_RATE_LIMITED` (`Retry-After` parsed); 5xx → `THREADS_UPSTREAM_ERROR`; network/timeout → `THREADS_TIMEOUT`; invalid JSON/shape → `THREADS_MALFORMED_RESPONSE`. Meta error subcodes stored in `error_message`.
 - Contract fixtures recorded during POC live in `apps/api/src/modules/integrations/threads/__fixtures__/` and back `FakeThreadsProvider`.
+
+**Implemented (T-039, decisions 2026-11-11)** — `ThreadsDiscoveryProvider` in `modules/integrations/threads/` (bound in real mode by `ProvidersModule`). One call = one HTTP request; retries stay in `withRetry` (§7).
+
+- Auth: token only in `Authorization: Bearer` (confirmed live). Never `access_token` in the query. Exception: `/debug_token` needs Meta's `input_token` query param — that URL is never logged and errors name the path only (BR-036).
+- Search: `GET {THREADS_API_BASE_URL}/keyword_search` with `q` (leading `#` stripped), `search_type`, `search_mode`, `fields`, `limit`, `since`/`until` (unix seconds), `after` (cursor). `nextCursor = paging.cursors.after` only while `paging.next` exists; the `next` URL is never followed.
+- Error mapping uses the Graph `error.code` first, then HTTP status: code 190 or 401 → `THREADS_UNAUTHORIZED`; code 4/17/32/613 or 429 → `THREADS_RATE_LIMITED`; code 10 / 200–299 or 403 → `THREADS_FORBIDDEN` (code 10 = missing `threads_keyword_search`); 5xx, code 1/2 or `is_transient` → `THREADS_UPSTREAM_ERROR`; any other 4xx (bad param) → `THREADS_UPSTREAM_ERROR` with `retryable: false` on `ProviderError` (no `THREADS_BAD_REQUEST` in contracts — owner decision 2026-11-11); network/abort → `THREADS_TIMEOUT`; bad JSON or shape → `THREADS_MALFORMED_RESPONSE` (`details.sample` = first 200 chars, redacted). `subcode` = `"<code>/<error_subcode> <fbtrace_id>"`; the message is `Threads HTTP <status> on <path>: <type>/<code>` — Meta's free-text `error.message` is never copied.
+- Rate limit (FR-089): `raw` keeps only `x-app-usage`, `x-business-use-case-usage`, `x-fb-ads-insights-throttle`, `retry-after`, `x-ratelimit-*`. `remaining` = `x-ratelimit-remaining`, else `100 − max(call_count, total_time, total_cputime)` of `x-app-usage` (a **percentage**); `resetAt` = now + max `estimated_time_to_regain_access` minutes. Header names follow Graph convention; real Threads headers are still unmeasured, all optional.
+- `verifyConnection`: `GET /me?fields=id,username` → `accountIdentifier = username ?? id`; `GET /debug_token?input_token=…` → `grantedScopes = scopes`, `tokenExpiresAt = expires_at > 0 ? expires_at : null`; `is_valid: false` → `THREADS_UNAUTHORIZED`. No `refreshToken` (FR-046 unconfirmed).
+- HTTP fixtures (anonymised) in `__fixtures__/http/` back the contract test `threads-discovery.provider.spec.ts`.
+- TC-INT-014 lint: `apps/api/eslint.config.mjs` forbids importing the adapters, HTTP helpers and fixtures outside `integrations/threads` and `modules/providers`.
 
 ## 3. Scheduling
 
@@ -172,3 +182,5 @@ Log lines with `job_id, query_id, project_id, provider='threads', page, status, 
 ## 11. Open questions for POC (M1)
 
 Max `limit`; whether `since/until` are honoured for `TAG` mode; max pages per query; lag between post time and searchability; behaviour for deleted posts; whether `TOP` returns a cursor; rate-limit headers exposed; long-lived token refresh endpoint & lifetime. Answers go to [../05-operations/01-poc-threads-api.md](../05-operations/01-poc-threads-api.md) and update this doc.
+
+Known (POC 2026-11-11): timestamps use `+0000` (no colon); missing `threads_keyword_search` → error code 10; before App Review `keyword_search` only returns the token owner's own posts (an empty/small result is not an error); long-lived token ~60 days. Still open: max `limit`, `since/until` for `TAG`, real rate-limit headers, refresh endpoint.

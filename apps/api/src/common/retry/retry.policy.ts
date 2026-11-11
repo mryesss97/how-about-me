@@ -64,6 +64,7 @@ export function retryPolicyFromConfig(cfg: { COLLECTOR_MAX_RETRIES: number }, ov
  * transient network problem — the provider adapter maps what it can recognise, this is the safety net.
  */
 export function isRetryable(error: unknown): boolean {
+  if (error instanceof ProviderError && error.retryable === false) return false;
   if (error instanceof AppError) return RETRYABLE_ERROR_CODES.includes(error.code);
   return error instanceof Error;
 }

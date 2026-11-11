@@ -1,0 +1,10 @@
+{
+  "data": {
+    "is_valid": true,
+    "type": "USER",
+    "application": "Placeholder App",
+    "scopes": ["threads_basic", "threads_keyword_search"],
+    "expires_at": 1793318400,
+    "issued_at": 1788134400
+  }
+}
