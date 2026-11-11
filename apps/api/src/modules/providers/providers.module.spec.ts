@@ -11,7 +11,14 @@ import { SOCIAL_DISCOVERY_PROVIDER } from "../integrations/threads/social-discov
 import { loadEnv } from "../../config/env.schema";
 import { OpenAiModerationProvider } from "../analysis/providers/openai-moderation.provider";
 import { OpenAiStructuredClassifier } from "../analysis/providers/openai-structured.classifier";
-import { createContentClassifier, createSafetyProvider, ProvidersModule, storeTokenSource } from "./providers.module";
+import { ThreadsDiscoveryProvider } from "../integrations/threads/threads-discovery.provider";
+import {
+  createContentClassifier,
+  createDiscoveryProvider,
+  createSafetyProvider,
+  ProvidersModule,
+  storeTokenSource,
+} from "./providers.module";
 
 /** Stands in for the global Prisma/Crypto modules; the token-source factory only needs them in real mode. */
 @Global()
@@ -50,8 +57,25 @@ describe("ProvidersModule (PROVIDERS_MODE wiring, FR-112, FR-047)", () => {
     expect(moduleRef.get(SOCIAL_DISCOVERY_PROVIDER)).toBeInstanceOf(FakeThreadsProvider);
   });
 
-  it("fails fast in real mode, naming the task that implements the adapter", async () => {
-    await expect(compile({ PROVIDERS_MODE: "real" })).rejects.toThrow(/T-039|T-071|T-072/);
+  it("binds the real Threads adapter in real mode (T-039)", async () => {
+    const moduleRef = await compile({
+      PROVIDERS_MODE: "real",
+      OPENAI_API_KEY: "sk-test",
+      ANALYSIS_CLASSIFIER_MODEL: "m-test",
+    });
+    expect(moduleRef.get(SOCIAL_DISCOVERY_PROVIDER)).toBeInstanceOf(ThreadsDiscoveryProvider);
+  });
+
+  describe("createDiscoveryProvider (T-039, FR-047)", () => {
+    const cfg = (env: Record<string, string>) => loadEnv({ NODE_ENV: "test", ...BASE_ENV, ...env });
+
+    it("builds the real Threads adapter in real mode", () => {
+      expect(createDiscoveryProvider(cfg({ PROVIDERS_MODE: "real" }))).toBeInstanceOf(ThreadsDiscoveryProvider);
+    });
+
+    it("keeps the fake in fake mode", () => {
+      expect(createDiscoveryProvider(cfg({ PROVIDERS_MODE: "fake" }))).toBeInstanceOf(FakeThreadsProvider);
+    });
   });
 
   it("passes the configured token prices to the fake classifier", async () => {

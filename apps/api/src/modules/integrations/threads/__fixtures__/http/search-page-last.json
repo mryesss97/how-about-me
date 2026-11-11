@@ -1,0 +1,12 @@
+{
+  "data": [
+    {
+      "id": "10000000000000003",
+      "text": "Last page placeholder",
+      "username": "tester_username",
+      "timestamp": "2026-07-01T11:00:00+0000",
+      "permalink": "https://www.threads.com/@tester_username/post/AAAAAAAAAA3"
+    }
+  ],
+  "paging": { "cursors": { "before": "CURSOR_BEFORE_2", "after": "CURSOR_AFTER_2" } }
+}

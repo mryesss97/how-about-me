@@ -51,30 +51,30 @@ Measurements per test: result count; pages; latency p50/p95; lag post time → d
 
 ### 5.1 Access & permissions
 
-| Item                                 | Finding                                                                                    |
-| ------------------------------------ | ------------------------------------------------------------------------------------------ |
-| Permission path for keyword search   |                                                                                            |
-| App Review needed before production? |                                                                                            |
-| Token type & lifetime                |                                                                                            |
-| Refresh endpoint & behaviour         | Not confirmed yet — refresh job ships off by default (T-040, `THREADS_TOKEN_REFRESH_MODE`) |
+| Item                                 | Finding                                                                                     |
+| ------------------------------------ | ------------------------------------------------------------------------------------------- |
+| Permission path for keyword search   | OAuth scope `threads_keyword_search` (2026-11-11); without it → error code 10               |
+| App Review needed before production? | Yes — before review, search returns only the token owner's own posts (2026-11-11)           |
+| Token type & lifetime                | User token; long-lived via `th_exchange_token`, ~60 days; `/debug_token` gives `expires_at` |
+| Refresh endpoint & behaviour         | Not confirmed yet — refresh job ships off by default (T-040, `THREADS_TOKEN_REFRESH_MODE`)  |
 
 ### 5.2 Search behaviour
 
-| Item                                       | Finding |
-| ------------------------------------------ | ------- |
-| Base URL / version used                    |         |
-| Max `limit`                                |         |
-| Pagination (cursor param names, max pages) |         |
-| `since/until` honoured (KEYWORD / TAG)     |         |
-| `TOP` cursor & ordering                    |         |
-| Fields returned                            |         |
-| Lag post → discoverable (median / p95)     |         |
-| Duplicate rate across polls (10 min)       |         |
-| Overlap KEYWORD vs TAG for same term       |         |
-| Historical depth                           |         |
-| Rate-limit headers & observed limits       |         |
-| Error shapes (400/401/403/429/5xx)         |         |
-| Deleted/unavailable content behaviour      |         |
+| Item                                       | Finding                                                                                         |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| Base URL / version used                    | `https://graph.threads.net/v1.0`, `Authorization: Bearer` works (2026-11-11)                    |
+| Max `limit`                                |                                                                                                 |
+| Pagination (cursor param names, max pages) | Graph style `paging.cursors.after` / `paging.next`; max pages not measured                      |
+| `since/until` honoured (KEYWORD / TAG)     |                                                                                                 |
+| `TOP` cursor & ordering                    |                                                                                                 |
+| Fields returned                            | Requested ones; `timestamp` like `2026-07-01T13:25:35+0000`, `permalink` on `www.threads.com`   |
+| Lag post → discoverable (median / p95)     |                                                                                                 |
+| Duplicate rate across polls (10 min)       |                                                                                                 |
+| Overlap KEYWORD vs TAG for same term       |                                                                                                 |
+| Historical depth                           |                                                                                                 |
+| Rate-limit headers & observed limits       |                                                                                                 |
+| Error shapes (400/401/403/429/5xx)         | `{"error":{"message","type":"THApiException","code":10}}` on missing scope; others not measured |
+| Deleted/unavailable content behaviour      |                                                                                                 |
 
 ### 5.3 Data quality (sample of 100 posts per term)
 

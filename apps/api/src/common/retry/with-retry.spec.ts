@@ -68,6 +68,19 @@ describe("withRetry (FR-083)", () => {
     expect(onGiveUp).toHaveBeenCalledWith(expect.objectContaining({ attempts: 1, reason: "not_retryable" }));
   });
 
+  it("FR-082: a Threads 400 mapped to THREADS_UPSTREAM_ERROR with retryable=false is attempted once", async () => {
+    const { slept, policy } = testPolicy();
+    const onGiveUp = jest.fn();
+    const fn = jest
+      .fn()
+      .mockRejectedValue(new ProviderError("THREADS_UPSTREAM_ERROR", "Threads HTTP 400", { retryable: false }));
+
+    await expect(withRetry(fn, { ...policy, onGiveUp })).rejects.toMatchObject({ code: "THREADS_UPSTREAM_ERROR" });
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(slept).toEqual([]);
+    expect(onGiveUp).toHaveBeenCalledWith(expect.objectContaining({ attempts: 1, reason: "not_retryable" }));
+  });
+
   it.each(["THREADS_UNAUTHORIZED", "THREADS_FORBIDDEN", "THREADS_MALFORMED_RESPONSE"] as const)(
     "%s is never retried",
     async (code) => {

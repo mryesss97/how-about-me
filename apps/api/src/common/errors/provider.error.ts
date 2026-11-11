@@ -14,17 +14,29 @@ export class ProviderError extends AppError {
   readonly providerStatus?: number;
   /** Meta error subcode, stored in `sync_jobs.error_message` for diagnosis. */
   readonly subcode?: string;
+  /**
+   * `false` forces "do not retry" even when the code is normally retryable — e.g. a Threads 400 (bad param)
+   * is mapped to `THREADS_UPSTREAM_ERROR` because contracts has no `THREADS_BAD_REQUEST` (doc 06 §2/§7).
+   */
+  readonly retryable?: boolean;
 
   constructor(
     code: ErrorCode,
     message?: string,
-    opts: { retryAfterMs?: number; providerStatus?: number; subcode?: string; details?: unknown } = {},
+    opts: {
+      retryAfterMs?: number;
+      providerStatus?: number;
+      subcode?: string;
+      details?: unknown;
+      retryable?: boolean;
+    } = {},
   ) {
     super(code, message, opts.details);
     this.name = "ProviderError";
     if (opts.retryAfterMs !== undefined) this.retryAfterMs = opts.retryAfterMs;
     if (opts.providerStatus !== undefined) this.providerStatus = opts.providerStatus;
     if (opts.subcode !== undefined) this.subcode = opts.subcode;
+    if (opts.retryable !== undefined) this.retryable = opts.retryable;
   }
 }
 
