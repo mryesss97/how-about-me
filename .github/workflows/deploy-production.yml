@@ -14,4 +14,4 @@ jobs:
       - name: Guard — hosting not configured yet
         if: ${{ !vars.API_HOST_PROVIDER }}
         run: echo "::warning::Production deploy not configured (task T-123)."
-      # TODO(T-123): build, push, migrate (db:deploy), deploy, smoke (/health/ready)
+      # TODO(T-123): mirror deploy-staging.yml on Railway (production env): migrate (db:deploy), deploy, smoke (/health/ready)

@@ -1,0 +1,16 @@
+# Keeps secrets and local artefacts out of docker build context and `railway up` uploads.
+**/node_modules
+**/.next
+**/dist
+**/coverage
+**/.turbo
+.git
+.claude
+.env
+.env.*
+**/.env
+**/.env.*
+!**/.env.example
+*.log
+design
+docs

@@ -110,11 +110,11 @@ curl -s -X POST "${AUTH[@]}" "$API/projects/$PID/mentions/reanalyze" -d '{"analy
 
 ## 8. Deploy / rollback
 
-Deploy via CI on `main` tag. Rollback: redeploy previous tag (host UI) — migrations are additive; if a migration must be reverted, restore from backup to staging first and follow the migration's documented down-path.
+Staging: every green `ci` on `develop` triggers `deploy-staging.yml` (migrate → `railway up` → health gate); rerun with `gh workflow run deploy-staging.yml --ref develop`. Staging rollback: Railway → API service → Deployments → previous deployment → Redeploy (or `railway redeploy`). Production: deploy via CI on `main` tag (T-123). Rollback: redeploy previous tag (host UI) — migrations are additive; if a migration must be reverted, restore from backup to staging first and follow the migration's documented down-path.
 
 ## 9. Health & restart
 
-`GET /health/ready` 503 → DB unreachable: check Supabase status, pooler limits (`connection_limit`), restart API. Worker restart is safe (locks expire in 15 min; claims are idempotent).
+`GET /health/ready` 503 → DB unreachable: check Supabase status, pooler limits (`connection_limit`), restart API (Railway → service → Restart, or `railway redeploy`). If the DB is down at boot the API exits (P1001) and Railway restarts it (`ON_FAILURE`, max 10 retries) — check deploy logs. Worker restart is safe (locks expire in 15 min; claims are idempotent).
 
 ## 10. Incident notes
 

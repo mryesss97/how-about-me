@@ -1,0 +1,16 @@
+# `railway up` upload filter (mirrors .dockerignore): never ship .env files or node_modules.
+**/node_modules
+**/.next
+**/dist
+**/coverage
+**/.turbo
+.git
+.claude
+.env
+.env.*
+**/.env
+**/.env.*
+!**/.env.example
+*.log
+design
+docs

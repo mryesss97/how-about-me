@@ -1,7 +1,10 @@
 name: deploy-staging
 
+# Deploys only after `ci` is green on develop (T-005), or manually.
 on:
-  push:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
     branches: [develop]
   workflow_dispatch:
 
@@ -9,24 +12,64 @@ concurrency: { group: deploy-staging, cancel-in-progress: false }
 
 jobs:
   api:
-    name: api → staging
+    name: api → staging (Railway)
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push') }}
     runs-on: ubuntu-latest
     environment: staging
+    env:
+      ENABLED: ${{ vars.API_HOST_PROVIDER == 'railway' }}
     steps:
-      - uses: actions/checkout@v4
       - name: Guard — hosting not configured yet
-        if: ${{ !vars.API_HOST_PROVIDER }}
+        if: ${{ vars.API_HOST_PROVIDER != 'railway' }}
         run: |
-          echo "::warning::Set repository variable API_HOST_PROVIDER (railway|fly|render|docker) and the matching secrets to enable API deploys (task T-005)."
+          echo "::warning::Set repository variable API_HOST_PROVIDER=railway plus staging secrets RAILWAY_TOKEN, STAGING_DIRECT_URL and variables RAILWAY_SERVICE, API_BASE_URL to enable API deploys (T-005)."
           exit 0
-      - uses: docker/setup-buildx-action@v3
-        if: ${{ vars.API_HOST_PROVIDER }}
-      - name: Build image
-        if: ${{ vars.API_HOST_PROVIDER }}
-        run: docker build -f apps/api/Dockerfile -t how-about-me-api:${{ github.sha }} .
-      # TODO(T-005): push image & deploy with the chosen provider CLI, then run migrations:
-      #   pnpm --filter @how-about-me/api db:deploy   (needs DIRECT_URL secret)
-      # and health-check: curl -f $API_BASE_URL/health/ready
+      - uses: actions/checkout@v4
+        if: ${{ env.ENABLED == 'true' }}
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: pnpm/action-setup@v4
+        if: ${{ env.ENABLED == 'true' }}
+      - uses: actions/setup-node@v4
+        if: ${{ env.ENABLED == 'true' }}
+        with: { node-version-file: .nvmrc, cache: pnpm }
+      - name: Install API deps
+        if: ${{ env.ENABLED == 'true' }}
+        run: pnpm install --frozen-lockfile --filter @how-about-me/api...
+      # Migrate BEFORE deploy: the image has no Prisma CLI and migrations are additive (11-environments §6).
+      # STAGING_DIRECT_URL must be the Supabase session pooler on 5432 (runners have no IPv6).
+      - name: Migrate (prisma migrate deploy)
+        if: ${{ env.ENABLED == 'true' }}
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DIRECT_URL }}
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+        run: pnpm --filter @how-about-me/api db:deploy
+      - name: Deploy (railway up)
+        if: ${{ env.ENABLED == 'true' }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE: ${{ vars.RAILWAY_SERVICE }}
+          RAILWAY_ENV: ${{ vars.RAILWAY_ENVIRONMENT || 'staging' }}
+        run: |
+          npm i -g @railway/cli@5.71.0
+          railway up --service "$RAILWAY_SERVICE" --environment "$RAILWAY_ENV" --ci
+      # Railway switches traffic only after its own /health/ready check passes, so poll until ready.
+      - name: Health gate
+        if: ${{ env.ENABLED == 'true' }}
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS --max-time 10 "$API_BASE_URL/health/ready" > /dev/null; then
+              live=$(curl -fsS --max-time 10 "$API_BASE_URL/health/live")
+              echo "live: $live"
+              echo "$live" | grep -q '"role":"all"' || { echo "::error::APP_ROLE is not 'all'"; exit 1; }
+              exit 0
+            fi
+            echo "not ready yet ($i/30)"; sleep 10
+          done
+          echo "::error::/health/ready did not return 200 within 5 minutes"
+          exit 1
 
   web:
     name: web → staging (Vercel)

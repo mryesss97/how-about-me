@@ -2,15 +2,15 @@
 
 ## 1. Workflows (`.github/workflows/`)
 
-| Workflow                | Trigger                                                      | Jobs                                                                                                                                                                                                                  |
-| ----------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ci.yml`                | PR to `develop`/`main`/`release/*`, push to `develop`/`main` | `lint-typecheck` (turbo lint + typecheck), `test` (unit + API integration with Postgres service), `build` (turbo build; FE secret scan `--build-env`), `security` (`pnpm audit:check` high+ with allowlist, gitleaks) |
-| `deploy-staging.yml`    | push to `develop`                                            | build API image → deploy to host (staging) → `prisma migrate deploy` → web deploy (Vercel Git integration or CLI) → Playwright smoke                                                                                  |
-| `deploy-production.yml` | tag `v*` on `main`                                           | same with manual approval environment `production`                                                                                                                                                                    |
-| `labels.yml`            | change to `.github/labels.yml`                               | sync labels                                                                                                                                                                                                           |
-| `nightly.yml`           | schedule 02:00 UTC                                           | Playwright e2e against staging (no audit; it runs in `ci.yml` job `security`)                                                                                                                                         |
+| Workflow                | Trigger                                                                             | Jobs                                                                                                                                                                                                                                                                                                                  |
+| ----------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ci.yml`                | PR to `develop`/`main`/`release/*`, push to `develop`/`main`                        | `lint-typecheck` (turbo lint + typecheck), `test` (unit + API integration with Postgres service), `build` (turbo build; FE secret scan `--build-env`), `security` (`pnpm audit:check` high+ with allowlist, gitleaks)                                                                                                 |
+| `deploy-staging.yml`    | `workflow_run` after `ci` succeeds on a push to `develop`, plus `workflow_dispatch` | `api`: `prisma migrate deploy` (via `STAGING_DIRECT_URL`) → `railway up --ci` (Railway builds `apps/api/Dockerfile` per `railway.json`) → poll `/health/ready` up to 5 min and check `/health/live` role `all`. Skips with a warning while `vars.API_HOST_PROVIDER != railway`. `web`: Vercel Git integration (T-006) |
+| `deploy-production.yml` | tag `v*` on `main`                                                                  | same with manual approval environment `production`                                                                                                                                                                                                                                                                    |
+| `labels.yml`            | change to `.github/labels.yml`                                                      | sync labels                                                                                                                                                                                                                                                                                                           |
+| `nightly.yml`           | schedule 02:00 UTC                                                                  | Playwright e2e against staging (no audit; it runs in `ci.yml` job `security`)                                                                                                                                                                                                                                         |
 
-Deploy jobs are scaffolded with placeholders for the hosting provider (decision pending — see risk R14); they fail fast with a clear message until secrets are configured.
+Hosting is decided (IN-4: Railway for API, Vercel for web; risk R14 closed). `ci.yml` also has a `docker-build` job (build only, no push) so Dockerfile regressions fail before deploy. `deploy-production.yml` is still a placeholder (T-123).
 
 ## 1.1 Manual dispatch & current status (2026-09-05)
 
@@ -39,7 +39,13 @@ pnpm store cache (`actions/setup-node` with `cache: pnpm`), Turborepo remote cac
 
 ## 4. Secrets in GitHub
 
-`STAGING_*` / `PRODUCTION_*` environment secrets: API host token, `DATABASE_URL`/`DIRECT_URL` (for migrations), Vercel token/org/project (if CLI deploy). Web build env comes from Vercel project settings. Never store provider keys in GitHub if the host injects them.
+Staging (GitHub environment `staging`):
+
+- Secrets: `RAILWAY_TOKEN` (Railway **project token** scoped to the staging environment), `STAGING_DIRECT_URL` (Supabase session pooler, port 5432 — IPv4; used as both `DATABASE_URL` and `DIRECT_URL` for migrate only).
+- Variables: repo `API_HOST_PROVIDER=railway`; env `RAILWAY_SERVICE` (e.g. `api`), `RAILWAY_ENVIRONMENT` (default `staging`), `API_BASE_URL` (e.g. `https://<service>.up.railway.app`).
+- Secrets are passed only through `env:` and never echoed. Runtime app env lives in Railway Variables, not GitHub (see 06-environment-variables).
+
+Production: `PRODUCTION_*` equivalents (T-123), Vercel token/org/project (if CLI deploy). Web build env comes from Vercel project settings. Never store provider keys in GitHub if the host injects them.
 
 ## 5. Release automation
 
