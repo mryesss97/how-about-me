@@ -70,7 +70,7 @@ Mỗi flow ứng với một mục màn trong UX spec §3. Flow chỉ xong khi �
 Chi tiết token ở [tokens/TOKENS.md](tokens/TOKENS.md), component ở [COMPONENTS.md](COMPONENTS.md).
 
 - Màu, khoảng cách, bo góc, cỡ chữ đều gắn biến; không ghi màu cứng trên màn. Tên biến giống tên CSS bỏ `--color-` (`bg-primary`, `text-secondary`), code syntax WEB `var(--color-bg-primary)`.
-- 3 collection: `primitives` (thang màu, ẩn khỏi danh sách chọn), `semantic` (vai trò, mode Light), `sign` (landing biển hiệu). Thêm `scale` cho spacing, radius. Không biến nào `ALL_SCOPES`.
+- 4 tầng như short-videos: `brand` (thang, font, số; ẩn) → `alias` (vai trò màu ẩn; spacing, radius, viền, font) → `mapped` (tên code Untitled UI, mode Light) + `sign` (biển hiệu) → `responsive` (Desktop, Mobile). Không biến nào `ALL_SCOPES`. Chi tiết [tokens/TOKENS.md](tokens/TOKENS.md).
 - Text style dùng tên Untitled UI (`Text sm/Medium`, `Display xs/Semibold`), font Inter. Landing dùng Bungee và Saira Extra Condensed theo `apps/web/DESIGN.md`.
 - Màn làm việc (bảng, bộ lọc, nội dung bài) giữ Untitled UI. Biển hiệu chỉ là điểm nhấn: tiêu đề trang, bảng tên trạng thái, landing.
 - Ý nghĩa không dựa vào màu một mình: badge cảm xúc, an toàn luôn có biểu tượng và chữ (NFR-030, UX §2.2). Cảm xúc khác an toàn, không suy cái này từ cái kia (BR-017).
