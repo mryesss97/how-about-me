@@ -119,10 +119,11 @@ Dựng cho J10–J17 (D-001…D-005). Chưa có file code nên cột code là "�
 
 Đặc tả đủ ở frontmatter `components` của `apps/web/DESIGN.md`.
 
-| Component       | Code                                     | Variant                                                                                                              | Node id | Key                                        |
-| --------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------- | ------------------------------------------ |
-| `Sign/Board`    | `features/landing/landing-board.tsx`     | Tone: neutral, negative-solid, positive-solid, negative-mixed, positive-mixed, blank. Sửa chữ lớp Phrase, Share line | `5:174` | `08e30cdb0bb56a9de10c0a80cbc54679d33f8ac5` |
-| `Sign/MainSign` | `features/landing/landing-main-sign.tsx` | Biển chính, biển cửa                                                                                                 |         |                                            |
+| Component               | Code                                     | Variant                                                                                                                                                                               | Node id  | Key                                        |
+| ----------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------ |
+| `Sign/Board`            | `features/landing/landing-board.tsx`     | Tone: neutral, negative-solid, positive-solid, negative-mixed, positive-mixed, blank, add (biển '+ Thêm cụm từ' bù cho đủ 4 biển, chưa có trong code). Sửa chữ lớp Phrase, Share line | `5:174`  | `08e30cdb0bb56a9de10c0a80cbc54679d33f8ac5` |
+| `Sign/MainSign`         | `features/landing/landing-main-sign.tsx` | Biển chính, biển cửa                                                                                                                                                                  |          |                                            |
+| `Landing/ProjectSwitch` | `features/shared/project-switcher.tsx`   | Count: single (1 dự án, tên tĩnh), multi (≥ 2 dự án, select). Prop text "Project name". Đặt góc trên phải biển chính (owner 14/11/2026)                                               | `77:275` | `777eaa76366759d3557ce18ed24f8c61b1d00c72` |
 
 ## Theo màn
 

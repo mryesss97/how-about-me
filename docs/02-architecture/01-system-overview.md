@@ -16,6 +16,8 @@
 | AI       | OpenAI Moderation `omni-moderation-latest` (safety) · configurable structured-output LLM (classifier) behind interfaces                          | provider/model from env               |
 | Tooling  | pnpm workspaces · Turborepo · ESLint 9 · Prettier · Husky · commitlint · Jest (api) · Vitest (web, packages) · Playwright (e2e) · GitHub Actions | —                                     |
 
+**Tenancy (owner 2026-11-14):** one deployment per company, on the company's own domain. Inside it the unit is the project (users belong to projects through `project_members`); the landing page and the shell switch projects, never companies.
+
 ## 2. Context diagram
 
 ```mermaid
