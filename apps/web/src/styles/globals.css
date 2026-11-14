@@ -204,6 +204,127 @@ input[type="search"]::-webkit-search-cancel-button {
   --enamel-white: #fbfdff;
 }
 
+/* Token names in the short-videos scheme (#449). Figma `mapped` and `alias` use these names; each one
+ points at the Untitled UI variable it replaces in Figma, so `bg-primary` and `--surface-color-card` stay the same
+ colour. Values live in theme.css; never set a colour here. design/figma/tokens/TOKENS.md lists the pairs. */
+:root {
+  /* text */
+  --text-color-primary: var(--color-text-primary);
+  --text-color-secondary: var(--color-text-secondary);
+  --text-color-secondary-hover: var(--color-text-secondary_hover);
+  --text-color-tertiary: var(--color-text-tertiary);
+  --text-color-tertiary-hover: var(--color-text-tertiary_hover);
+  --text-color-quaternary: var(--color-text-quaternary);
+  --text-color-placeholder: var(--color-text-placeholder);
+  --text-color-white: var(--color-text-white);
+  --text-color-brand: var(--color-text-brand-secondary);
+  --text-color-brand-hover: var(--color-text-brand-secondary_hover);
+  --text-color-brand-strong: var(--color-text-brand-primary);
+  --text-color-brand-tertiary: var(--color-text-brand-tertiary);
+  --text-color-brand-tertiary-alt: var(--color-text-brand-tertiary_alt);
+  --text-color-error: var(--color-text-error-primary);
+  --text-color-error-hover: var(--color-text-error-primary_hover);
+  --text-color-warning: var(--color-text-warning-primary);
+  --text-color-success: var(--color-text-success-primary);
+  --text-color-on-primary: var(--color-text-primary_on-brand);
+  --text-color-on-primary-secondary: var(--color-text-secondary_on-brand);
+  --text-color-on-primary-tertiary: var(--color-text-tertiary_on-brand);
+  --text-color-on-primary-quaternary: var(--color-text-quaternary_on-brand);
+  --text-color-editor-icon: var(--color-text-editor-icon-fg);
+  --text-color-editor-icon-active: var(--color-text-editor-icon-fg_active);
+  /* icon */
+  --icon-color-primary: var(--color-fg-primary);
+  --icon-color-secondary: var(--color-fg-secondary);
+  --icon-color-secondary-hover: var(--color-fg-secondary_hover);
+  --icon-color-tertiary: var(--color-fg-tertiary);
+  --icon-color-tertiary-hover: var(--color-fg-tertiary_hover);
+  --icon-color-quaternary: var(--color-fg-quaternary);
+  --icon-color-quaternary-hover: var(--color-fg-quaternary_hover);
+  --icon-color-white: var(--color-fg-white);
+  --icon-color-brand: var(--color-fg-brand-primary);
+  --icon-color-brand-alt: var(--color-fg-brand-primary_alt);
+  --icon-color-brand-secondary: var(--color-fg-brand-secondary);
+  --icon-color-brand-secondary-alt: var(--color-fg-brand-secondary_alt);
+  --icon-color-brand-secondary-hover: var(--color-fg-brand-secondary_hover);
+  --icon-color-error: var(--color-fg-error-primary);
+  --icon-color-error-secondary: var(--color-fg-error-secondary);
+  --icon-color-warning: var(--color-fg-warning-primary);
+  --icon-color-warning-secondary: var(--color-fg-warning-secondary);
+  --icon-color-success: var(--color-fg-success-primary);
+  --icon-color-success-secondary: var(--color-fg-success-secondary);
+  /* surface */
+  --surface-color-page: var(--color-bg-secondary);
+  --surface-color-page-hover: var(--color-bg-secondary_hover);
+  --surface-color-grouped: var(--color-bg-secondary_alt);
+  --surface-color-card: var(--color-bg-primary);
+  --surface-color-card-alt: var(--color-bg-primary_alt);
+  --surface-color-hover: var(--color-bg-primary_hover);
+  --surface-color-sunken: var(--color-bg-tertiary);
+  --surface-color-muted: var(--color-bg-quaternary);
+  --surface-color-selected: var(--color-bg-active);
+  --surface-color-inverse: var(--color-bg-primary-solid);
+  --surface-color-overlay: var(--color-bg-overlay);
+  --surface-color-brand-subtle: var(--color-bg-brand-primary);
+  --surface-color-brand-subtle-alt: var(--color-bg-brand-primary_alt);
+  --surface-color-brand-muted: var(--color-bg-brand-secondary);
+  --surface-color-brand-section: var(--color-bg-brand-section);
+  --surface-color-brand-section-subtle: var(--color-bg-brand-section_subtle);
+  --surface-color-error-subtle: var(--color-bg-error-primary);
+  --surface-color-error-muted: var(--color-bg-error-secondary);
+  --surface-color-warning-subtle: var(--color-bg-warning-primary);
+  --surface-color-warning-muted: var(--color-bg-warning-secondary);
+  --surface-color-success-subtle: var(--color-bg-success-primary);
+  --surface-color-success-muted: var(--color-bg-success-secondary);
+  /* action */
+  --action-color-primary: var(--color-bg-brand-solid);
+  --action-color-primary-hover: var(--color-bg-brand-solid_hover);
+  --action-color-neutral: var(--color-bg-secondary-solid);
+  --action-color-danger: var(--color-bg-error-solid);
+  --action-color-danger-hover: var(--color-bg-error-solid_hover);
+  --action-color-warning: var(--color-bg-warning-solid);
+  --action-color-success: var(--color-bg-success-solid);
+  /* border */
+  --border-color-strong: var(--color-border-primary);
+  --border-color-default: var(--color-border-secondary);
+  --border-color-default-alt: var(--color-border-secondary_alt);
+  --border-color-subtle: var(--color-border-tertiary);
+  --border-color-error: var(--color-border-error);
+  --border-color-error-subtle: var(--color-border-error_subtle);
+  --border-color-selected: var(--color-border-brand);
+  --border-color-brand: var(--color-border-brand_alt);
+  --border-color-focus: var(--color-focus-ring);
+  --border-color-focus-error: var(--color-focus-ring-error);
+  /* spacing (4px Tailwind steps), border width, font */
+  --spacing-0: calc(var(--spacing) * 0);
+  --spacing-50: calc(var(--spacing) * 0.5);
+  --spacing-100: calc(var(--spacing) * 1);
+  --spacing-150: calc(var(--spacing) * 1.5);
+  --spacing-200: calc(var(--spacing) * 2);
+  --spacing-250: calc(var(--spacing) * 2.5);
+  --spacing-300: calc(var(--spacing) * 3);
+  --spacing-350: calc(var(--spacing) * 3.5);
+  --spacing-400: calc(var(--spacing) * 4);
+  --spacing-500: calc(var(--spacing) * 5);
+  --spacing-600: calc(var(--spacing) * 6);
+  --spacing-800: calc(var(--spacing) * 8);
+  --spacing-1000: calc(var(--spacing) * 10);
+  --spacing-1100: calc(var(--spacing) * 12);
+  --spacing-1300: calc(var(--spacing) * 16);
+  --spacing-1450: calc(var(--spacing) * 20);
+  --spacing-1500: calc(var(--spacing) * 24);
+  --border-width-none: 0px;
+  --border-width-xs: 1px;
+  --border-width-md: 2px;
+  --border-width-lg: 4px;
+  --font-family-primary: var(--font-body);
+  --font-family-sign: var(--font-sign), sans-serif;
+  --font-family-figure: var(--font-figure), sans-serif;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+}
+
 .sign-wall {
   background: var(--wall);
   color: var(--ink);

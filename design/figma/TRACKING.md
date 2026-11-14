@@ -6,13 +6,13 @@ Folder Figma: https://www.figma.com/files/team/1554682555569327021/folder/686779
 
 File chính: https://www.figma.com/design/jczRPmHz0rLbbGrK1uxqK5 (dựng 08/11/2026, #405)
 
-| Page           | Id    | Nội dung                                                                                                                         |
-| -------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------- |
-| 00 Định hướng  | `0:1` | Bìa: cách dùng file, danh sách page, sơ đồ J0–J9. Frame `5:771`                                                                  |
-| 01 Foundations | `2:2` | Bảng tra biến `primitives` (131), `semantic` Light (215), `sign` (6), `scale` (28); 42 text style; 7 effect style. Frame `5:202` |
-| 02 Components  | `2:3` | 76 icon, 19 component và set: atoms, form, bảng, hộp thoại, drawer, khung app, biển hiệu. Xem [COMPONENTS.md](COMPONENTS.md)     |
-| 03 App         | `2:4` | Chưa có section                                                                                                                  |
-| 99 Lưu trữ     | `2:5` | Trống                                                                                                                            |
+| Page           | Id    | Nội dung                                                                                                                                                                                                                                                                                          |
+| -------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 00 Định hướng  | `0:1` | Bìa: cách dùng file, danh sách page, sơ đồ J0–J9. Frame `5:771`                                                                                                                                                                                                                                   |
+| 01 Foundations | `2:2` | Bố cục như short-videos (14/11/2026): Thương hiệu `65:2`, brand · Thang màu `65:90`, mapped · Light `65:671`, Typography Desktop/Mobile `65:1095`, Spacing/Radius/Border `65:1294`, Effect `65:1418`. Biến: brand 168, alias 94, mapped 215, sign 6, responsive 42; 45 text style; 7 effect style |
+| 02 Components  | `2:3` | 76 icon, 19 component và set: atoms, form, bảng, hộp thoại, drawer, khung app, biển hiệu. Xem [COMPONENTS.md](COMPONENTS.md)                                                                                                                                                                      |
+| 03 App         | `2:4` | Chưa có section                                                                                                                                                                                                                                                                                   |
+| 99 Lưu trữ     | `2:5` | Trống                                                                                                                                                                                                                                                                                             |
 
 ## Trạng thái section
 
