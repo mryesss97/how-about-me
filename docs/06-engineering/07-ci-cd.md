@@ -27,6 +27,8 @@ Steps: install → `prisma generate` → `db:deploy` on the Postgres service →
 
 State at #149 (2026-10-13): `next` 16.3.8; root `package.json` `pnpm.overrides` force fixed versions of transitive deps using range selectors (`pkg@<fixed`): `multer@<2.4.0`, `proxy-addr@<2.0.8`, `sharp@<0.35.5`, `postcss@<8.5.23`, `brace-expansion@<1.1.21`, `brace-expansion@>=4.0.0 <5.0.12`, `source-map-js@<1.2.2`, `deepmerge-ts@<8.0.0` (major bump; Prisma 6 pins 7.1.5). The allowlist holds only `braces` GHSA-vfj7-8cjw-p6xm (no patch, ESLint tooling only), expiring 2027-01-11.
 
+State at #451 (2026-11-14): `next` 16.4.6 (GHSA-2464-fhr4-w9xw, GHSA-673q-mjm6-r5xr, GHSA-p3m5-59mp-jv5r), `zod` ^4.6.7 in `apps/api`, `apps/web`, `packages/contracts` (GHSA-mrhx-c7xc-m3w5), `@nestjs/common|core|platform-express|testing` ^11.2.10 (stays on major 11; platform-express 11.2.10 pins `multer` 2.5.0). Overrides changed: `multer@<2.4.0` → `multer@<2.5.0` (GHSA-q7qp-rjg7-q26m) and new `body-parser@>=2.0.0 <2.4.0` (GHSA-27r3-jxmh-p828; express 5.2.1 allows `^2.3.0`). The `braces` entry stopped being reported and was removed; the allowlist is empty.
+
 When upstream ships a fix: remove the allowlist entry; remove an override once every dependent resolves the fixed version on its own (range selectors are already a no-op then).
 
 ## 2. Required checks
