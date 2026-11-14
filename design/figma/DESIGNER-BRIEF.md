@@ -18,7 +18,7 @@ File Figma: xem [TRACKING.md](TRACKING.md). Nguồn gốc là `docs/` và code �
 ## Bắt buộc
 
 - Dùng instance từ `02 Components`, biến và style có sẵn. Không màu cứng, không frame dùng một lần. Font Inter; landing Bungee, Saira Extra Condensed.
-- Khung 1440×900 (màn dài cao theo nội dung), mode `semantic = Light`. Thêm một màn 390 khi màn có bố cục điện thoại riêng.
+- Khung 1440×900 (màn dài cao theo nội dung), mode `mapped = Light`, `responsive = Desktop`. Thêm một màn 390 (`responsive = Mobile` ở frame) khi màn có bố cục điện thoại riêng.
 - Section theo WORKFLOW mục 3: đầu section ghi mục UX spec và route. Hàng Luồng chính, Trạng thái, Theo role, Thành công. Trên mỗi màn có nhãn: loại, số bước, tên bước, mã FR, BR.
 - Đủ trạng thái UX §2.3: đang tải, trống, lỗi, dữ liệu cũ, một phần; mỗi mục trong menu có màn kết quả. Chữ dài vẽ một ví dụ.
 - Role theo [ROLES.md](ROLES.md); số liệu theo [DATA-MAU.md](DATA-MAU.md).
