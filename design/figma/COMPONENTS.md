@@ -119,10 +119,10 @@ Dựng cho J10–J17 (D-001…D-005). Chưa có file code nên cột code là "�
 
 Đặc tả đủ ở frontmatter `components` của `apps/web/DESIGN.md`.
 
-| Component       | Code                                     | Variant                                                                                                              | Node id | Key                                        |
-| --------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------- | ------------------------------------------ |
-| `Sign/Board`    | `features/landing/landing-board.tsx`     | Tone: neutral, negative-solid, positive-solid, negative-mixed, positive-mixed, blank. Sửa chữ lớp Phrase, Share line | `5:174` | `08e30cdb0bb56a9de10c0a80cbc54679d33f8ac5` |
-| `Sign/MainSign` | `features/landing/landing-main-sign.tsx` | Biển chính, biển cửa                                                                                                 |         |                                            |
+| Component       | Code                                     | Variant                                                                                                                                                                               | Node id | Key                                        |
+| --------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ------------------------------------------ |
+| `Sign/Board`    | `features/landing/landing-board.tsx`     | Tone: neutral, negative-solid, positive-solid, negative-mixed, positive-mixed, blank, add (biển '+ Thêm cụm từ' bù cho đủ 4 biển, chưa có trong code). Sửa chữ lớp Phrase, Share line | `5:174` | `08e30cdb0bb56a9de10c0a80cbc54679d33f8ac5` |
+| `Sign/MainSign` | `features/landing/landing-main-sign.tsx` | Biển chính, biển cửa                                                                                                                                                                  |         |                                            |
 
 ## Theo màn
 
