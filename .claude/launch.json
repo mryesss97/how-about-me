@@ -4,8 +4,8 @@
     {
       "name": "web",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["turbo", "run", "dev", "--filter=@how-about-me/web"],
-      "port": 3000
+      "runtimeArgs": ["--filter", "@how-about-me/web", "exec", "next", "dev", "-p", "3100"],
+      "port": 3100
     },
     {
       "name": "api",
